@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cu3qd3p2n0tdr"
-path="res://.godot/imported/​DialogBox_1.png-082cbd389fe4e7bdcbf8314f95e33418.ctex"
+uid="uid://by474f70pkvpq"
+path="res://.godot/imported/resize_panel_texture.png-ddadc6e532623bd02eb729293aca8767.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/konado/runtime/assets/template/dialog_box/​DialogBox_1.png"
-dest_files=["res://.godot/imported/​DialogBox_1.png-082cbd389fe4e7bdcbf8314f95e33418.ctex"]
+source_file="res://addons/konado/editor/components/resize_component/resize_panel_texture.png"
+dest_files=["res://.godot/imported/resize_panel_texture.png-ddadc6e532623bd02eb729293aca8767.ctex"]
 
 [params]
 

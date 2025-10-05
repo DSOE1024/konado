@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://b5njwitmejk76"]
 
-[ext_resource type="Script" uid="uid://cqjotblvlkg3y" path="res://addons/konado/runtime/assets/template/ui_template/save_commponect/save_componect.gd" id="1_4ot8c"]
+[ext_resource type="Script" uid="uid://cqjotblvlkg3y" path="res://addons/konado/template/ui_template/save_commponect/save_componect.gd" id="1_4ot8c"]
 [ext_resource type="Texture2D" uid="uid://cfau2duojvd33" path="res://addons/konado/runtime/assets/KonadoBanner.png" id="2_8xdhd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kt3kp"]
