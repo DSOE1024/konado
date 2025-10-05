@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bybbh76d07hoo"]
 
-[ext_resource type="Script" uid="uid://bthw861stienm" path="res://addons/konado/editor/view/ks_editor/component/staff_component.gd" id="1_o2hu1"]
+[ext_resource type="Script" uid="uid://bthw861stienm" path="res://addons/konado/editor/view/ks_editor/staff_component/staff_component.gd" id="1_o2hu1"]
 
 [node name="staff_component" type="BoxContainer"]
 anchors_preset = -1

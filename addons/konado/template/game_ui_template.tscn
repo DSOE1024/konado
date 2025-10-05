@@ -1,15 +1,15 @@
 [gd_scene load_steps=12 format=3 uid="uid://t5hwv7sqfex4"]
 
-[ext_resource type="Script" uid="uid://bruaou4gwjdwl" path="res://addons/konado/runtime/assets/template/ui_template/ui_template.gd" id="1_8pelu"]
-[ext_resource type="PackedScene" uid="uid://b5njwitmejk76" path="res://addons/konado/runtime/assets/template/ui_template/save_commponect/save_componect.tscn" id="1_jj3o7"]
-[ext_resource type="Theme" uid="uid://bb865dga7c5sp" path="res://addons/konado/theme_system/game_theme.tres" id="3_or8n0"]
+[ext_resource type="Script" uid="uid://bruaou4gwjdwl" path="res://addons/konado/template/ui_template/ui_template.gd" id="1_8pelu"]
+[ext_resource type="PackedScene" uid="uid://b5njwitmejk76" path="res://addons/konado/template/ui_template/save_commponect/save_componect.tscn" id="1_jj3o7"]
+[ext_resource type="Theme" uid="uid://bb865dga7c5sp" path="res://addons/konado/editor/theme/game_theme.tres" id="3_or8n0"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_jj3o7"]
 font_size = 35
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8a3b0"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1mrvb"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ysc00"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_bewkk"]
 
 [sub_resource type="Gradient" id="Gradient_ytwdp"]
 offsets = PackedFloat32Array(0, 0.996764, 1)
@@ -26,9 +26,9 @@ fill_to = Vector2(0.7, 0.7)
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_5shdr"]
 texture = SubResource("GradientTexture2D_m86f6")
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_bewkk"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ysc00"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1mrvb"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8a3b0"]
 
 [node name="game_ui" type="CanvasLayer"]
 layer = 50
@@ -169,55 +169,55 @@ alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
-theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
 theme_override_styles/normal = SubResource("StyleBoxEmpty_1mrvb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
+theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
 text = "存档"
 
 [node name="读档" type="Button" parent="game_ui_buttons/ActionsContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
-theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
 theme_override_styles/normal = SubResource("StyleBoxEmpty_1mrvb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
+theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
 text = "读档"
 
 [node name="记录" type="Button" parent="game_ui_buttons/ActionsContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
-theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
 theme_override_styles/normal = SubResource("StyleBoxEmpty_1mrvb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
+theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
 text = "记录"
 
 [node name="退出" type="Button" parent="game_ui_buttons/ActionsContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
-theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
 theme_override_styles/normal = SubResource("StyleBoxEmpty_1mrvb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
+theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
 text = "退出"
 
 [node name="自动" type="Button" parent="game_ui_buttons/ActionsContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
-theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
 theme_override_styles/normal = SubResource("StyleBoxEmpty_1mrvb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
+theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
 toggle_mode = true
 text = "自动播放"
 
@@ -225,10 +225,10 @@ text = "自动播放"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
-theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
 theme_override_styles/normal = SubResource("StyleBoxEmpty_1mrvb")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_bewkk")
+theme_override_styles/hover = SubResource("StyleBoxTexture_5shdr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_ysc00")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_8a3b0")
 toggle_mode = true
 text = "回顾"
