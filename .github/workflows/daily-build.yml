@@ -6,7 +6,7 @@ on:
   workflow_dispatch:  # 手动触发
 
 env:
-  GODOT_VERSION: 4.5.1
+  GODOT_VERSION: 4.6
   EXPORT_NAME: "konado-demo"
   PROJECT_PATH: "."
 
@@ -54,7 +54,7 @@ jobs:
     if: needs.check_new_commits.outputs.has_new_commits == 'true'
     runs-on: ubuntu-24.04
     container:
-      image: barichello/godot-ci:4.5.1
+      image: barichello/godot-ci:4.6
     permissions:
       contents: write  # 需该权限删除Tag/Release
 

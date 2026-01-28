@@ -7,7 +7,7 @@ on:
   workflow_dispatch:  # 保留手动触发，方便测试/紧急发布
 
 env:
-  GODOT_VERSION: 4.5.1
+  GODOT_VERSION: 4.6
   EXPORT_NAME: "konado-demo"
   PROJECT_PATH: "."
 
@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     container:
-      image: barichello/godot-ci:4.5.1
+      image: barichello/godot-ci:4.6
     permissions:
       contents: write
 
