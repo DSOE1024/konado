@@ -1,20 +1,33 @@
 ---
-name: "Bug Report"
-about: "Create a report to help us improve"
-title: "[Bug] "
+name: Bug 报告
+about: 当程序出现错误、崩溃或行为不符合预期时，请使用此模板提交信息，帮助我们更快定位与修复。
+title: "[BUG] "
 labels: ["bug"]
-assignees: ''
-
+assignees: []
 ---
 
-## Describe the Bug
-A clear and concise description of what the bug is (e.g., functional abnormalities, crashes, display errors, etc.).
+### 请简要描述你遇到的 Bug
+请用一两句话描述问题所在、实际行为与期望行为。
 
-## Steps to Reproduce
-1. Open [XX feature/page]
-2. Perform [XX action] (e.g., click a button, enter content, etc.)
-3. Observe [XX abnormal result]
-(Please provide stable, reproducible steps to help locate the issue)
+### 复现步骤
+请按顺序提供最小可复现步骤，例如：
+1. 在什么场景/页面/命令下出现
+2. 执行的具体命令或操作（若是 API，请给出请求示例）
+3. 使用的数据或配置（如有）
 
-## Screenshots
-If applicable, add screenshots, screen recordings, or log information here (you can paste images directly).
+示例：
+- 环境：操作系统、版本、浏览器（若适用）
+- 命令：`xxx` 或 API 请求示例
+
+### 期望行为
+请说明你期望的正确行为是什么。
+
+### 错误日志与堆栈（如有）
+请粘贴相关错误日志、堆栈信息或截图。敏感信息请脱敏。
+
+### 版本信息（必填）
+- 应用/仓库版本（如 commit sha、release 版本）：
+- 运行环境（操作系统 / 运行时 / 依赖版本）：
+
+### 其它信息（可选）
+任何可能有助于定位问题的补充信息或临时解决办法.
