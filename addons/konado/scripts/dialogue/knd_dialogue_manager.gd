@@ -13,21 +13,53 @@ class_name KND_DialogueManager
 @export var autostart: bool = true
 
 ## 是否开启演员自动高亮，如果为true，则根据对话中的角色姓名自动高亮对应的演员，否则不自动高亮
+## 一般来说大部分场景可能需要打开能获得更好的效果
 @export var actor_auto_highlight: bool = true
 
-
-## 对话当前行，同时也是用于读取对话列表的下标，在游戏中的初始值应该为0或者任何大于0的整数
-var curline: int
-
-## 是否第一进入当前句对话，由于一些方法只需要在首次进入当前行对话时调用一次，而一些方法需要循环调用（如检查打字动画是否完成的方法）
-## 因此，需要判断是否第一次进入当前行对话
-var justenter: bool
 @export_group("播放设置")
 @export var autoplay: bool
 ## 对话播放速度
-@export var dialogspeed: float = 0.03
+@export var dialogspeed: float = 0.04
 ## 自动播放速度
 @export var autoplayspeed: float = 2
+
+
+## 对话界面接口类，包括对话人物姓名（RichTextLabel）和对话（RichTextLabel）
+@onready var _dialog_interface: DialogueInterface = $DialogUI/DialogueInterface
+
+## 对话框
+@export var _konado_dialogue_box: KND_DialogueBox
+
+## 背景和角色UI界面接口
+@onready var _acting_interface: ActingInterface = $DialogUI/ActingInterface
+## 音频接口
+@onready var _audio_interface: DialogAudioInterface = $AudioInterface
+
+## 对话的交互按钮，比如存档按钮，读档按钮，继续按钮
+## 存档按钮
+#@onready var _saveButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/存档"
+### 读档按钮
+#@onready var _loadButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/读档"
+#
+### 记录按钮
+#@onready var _logButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/记录"
+### 退出按钮
+#@onready var _exitButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/退出"
+### 自动按钮
+#@onready var _autoPlayButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/自动"
+## 选项容器（用于实现点击事件屏蔽）
+@onready var _choicesContainer: VBoxContainer = $DialogUI/DialogueInterface/ChoicesBox/ChoicesContainer
+
+## 对话资源
+var dialog_data: KND_Shot = null
+
+## 对话资源ID
+var _dialog_data_id: int = 0
+
+var option_triggered: bool = false
+
+# 添加节流器，防止快速点击
+var can_continue = true
 
 ## 对话状态（0:关闭，1:播放，2:播放完成下一个）
 enum DialogState {OFF, PLAYING, PAUSED}
@@ -38,44 +70,12 @@ enum DialogState {OFF, PLAYING, PAUSED}
 ## 2.播放完成状态
 var dialogueState: DialogState
 
-## 对话界面接口类，包括对话人物姓名（RichTextLabel）和对话（RichTextLabel）
-@onready var _dialog_interface: DialogueInterface = $DialogUI/DialogueInterface
-## 背景和角色UI界面接口
-@onready var _acting_interface: ActingInterface = $DialogUI/ActingInterface
-## 音频接口
-@onready var _audio_interface: DialogAudioInterface = $AudioInterface
+## 对话当前行，同时也是用于读取对话列表的下标，在游戏中的初始值应该为0或者任何大于0的整数
+var curline: int
 
-## 对话的交互按钮，比如存档按钮，读档按钮，继续按钮
-## 存档按钮
-@onready var _saveButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/存档"
-## 读档按钮
-@onready var _loadButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/读档"
-
-## 记录按钮
-@onready var _logButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/记录"
-## 退出按钮
-@onready var _exitButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/退出"
-## 自动按钮
-@onready var _autoPlayButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/自动"
-## 选项容器（用于实现点击事件屏蔽）
-@onready var _choicesContainer: VBoxContainer = $DialogUI/DialogueInterface/ChoicesBox/ChoicesContainer
-
-
-## 对话资源
-var dialog_data: KND_Shot = null
-
-
-## 对话资源ID
-var _dialog_data_id: int = 0
-
-#存档用变量
-var se_id: String
-
-var option_triggered: bool = false
-
-# 添加节流器，防止快速点击
-var can_continue = true
-
+## 是否第一进入当前句对话，由于一些方法只需要在首次进入当前行对话时调用一次，而一些方法需要循环调用（如检查打字动画是否完成的方法）
+## 因此，需要判断是否第一次进入当前行对话
+var justenter: bool
 
 ## 资源列表
 @export_group("资源列表")
@@ -111,17 +111,15 @@ signal dialogue_line_end(line: int)
 func _ready() -> void:
 	# 连接按钮信号
 	# Save
-	if not _saveButton.button_up.is_connected(_on_savebutton_press):
-		_saveButton.button_up.connect(_on_savebutton_press)
-	# Load
-	if not _loadButton.button_up.is_connected(_on_loadbutton_press):
-		_loadButton.button_up.connect(_on_loadbutton_press)
-	# Auto
-	if not _autoPlayButton.toggled.is_connected(start_autoplay):
-		_autoPlayButton.toggled.connect(start_autoplay)
+	#if not _saveButton.button_up.is_connected(_on_savebutton_press):
+		#_saveButton.button_up.connect(_on_savebutton_press)
+	## Load
+	#if not _loadButton.button_up.is_connected(_on_loadbutton_press):
+		#_loadButton.button_up.connect(_on_loadbutton_press)
+	## Auto
+	#if not _autoPlayButton.toggled.is_connected(start_autoplay):
+		#_autoPlayButton.toggled.connect(start_autoplay)
 		
-	if is_in_editor_and_idle():
-		return
 
 	if not debug_mode:
 		# 自动初始化和开始对话
@@ -141,17 +139,7 @@ func _ready() -> void:
 					)
 		else:
 			print("请手动初始化对话")
-
-
-## 检查是否在编辑器中并且处于空闲状态
-## 编辑器中“未播放”状态的本质是场景树未激活，如果场景树未激活，则认为处于空闲状态
-func is_in_editor_and_idle() -> bool:
-	# 没招，Godot根本没设计运行时和编辑器的区分，只能用这种很傻的方式~
-	# 目前想不到什么优化的方法...
-	if not Engine.is_editor_hint():
-		return false
-	var root = get_tree().get_root()
-	return root != null and !root.is_processing_internal()
+			
 
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:
@@ -172,7 +160,6 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 	# 初始化各管理器
 	_acting_interface.delete_all_character()
-	_dialog_interface.init_dialog_box()
 
 	justenter = true
 	dialogueState == DialogState.OFF
@@ -268,25 +255,16 @@ func _process(delta) -> void:
 						content = dialog.dialog_content
 					if dialog.voice_id:
 						voice_id = dialog.voice_id
-					
-					##以下：对话回顾用数据
-					if (dialog.character_id != null) and (dialog.dialog_content != null) :
-						var datas : Dictionary = {
-							"name" : "name",
-							"content" : "content"
-						}
-						datas["name"] = chara_id
-						datas["content"] = content
 		
-					var speed = dialogspeed
 					var playvoice
 					if voice_id:
 						playvoice = true
 					else:
 						playvoice = false
-					if _dialog_interface.finish_typing.is_connected(isfinishtyping):
-						_dialog_interface.finish_typing.disconnect(isfinishtyping)
-					_dialog_interface.finish_typing.connect(isfinishtyping.bind(playvoice))
+					if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
+						_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
+					
+					_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice))
 					# 显示UI
 					_dialog_interface.show()
 					# 设置角色高亮
@@ -294,7 +272,10 @@ func _process(delta) -> void:
 						if chara_id:
 							_acting_interface.highlight_actor(chara_id)
 					# 播放对话
-					_display_dialogue(chara_id, content, speed)
+					_konado_dialogue_box.typing_interval = dialogspeed
+					_konado_dialogue_box.dialogue_text = content
+					_konado_dialogue_box.character_name = chara_id
+					#_display_dialogue(chara_id, content, speed)
 					# 如果有配音播放配音
 					if voice_id:
 						_play_voice(voice_id)
@@ -421,28 +402,7 @@ func _process(delta) -> void:
 				justenter = false
 				print_rich("[color=cyan][b]状态：[/b][/color][color=orange]播放完成状态[/color]")
 
-## 检查是否没有点击到按钮
-func is_click_valid(event):
-	var excluded_buttons: Array[Button] = [
-		_saveButton,
-		_loadButton,
-		_autoPlayButton,
-		_logButton,
-		_exitButton
-	]
-	# 对话选项
-	for cbtn in _choicesContainer.get_children():
-		var tcbtn = cbtn as Button
-		if tcbtn:
-			excluded_buttons.append(tcbtn)
-	var mouse_pos = event.global_position
-	for btn in excluded_buttons:
-		var rect = btn.get_global_rect()
-		if btn.visible && rect.has_point(mouse_pos):
-			# 向下传递
-			btn.emit_signal("button_up")
-			return false
-	return true
+
 
 ## 处理输入
 func _input(event):
@@ -450,13 +410,6 @@ func _input(event):
 		return
 
 	if not debug_mode:
-		# 这么写是导致一切神奇bug的罪魁祸首，别学我。。。
-		# if event is InputEventMouseButton:
-		# 	if event.button_index == MOUSE_BUTTON_LEFT:
-		# 		# 全屏点击下一句
-		# 		if is_click_valid(event):
-		# 			_continue()
-
 		# 先用enter和空格键代替鼠标点击，全屏幕点击功能等后续修复
 		if event is InputEventKey and event.pressed:
 			if event.keycode in [KEY_ENTER, KEY_SPACE]:
@@ -468,7 +421,7 @@ func _input(event):
 		
 ## 打字完成
 func isfinishtyping(wait_voice: bool) -> void:
-	_dialog_interface.finish_typing.disconnect(isfinishtyping)
+	#_dialog_interface.finish_typing.disconnect(isfinishtyping)
 	_dialogue_goto_state(DialogState.PAUSED)
 
 	print("触发打字完成信号")
@@ -571,27 +524,14 @@ func _continue() -> void:
 ## 开始自动播放的方法
 func start_autoplay(value: bool):
 	autoplay = value
-	if value:
-		_autoPlayButton.set_text("停止播放")
-	else:
-		_autoPlayButton.set_text("自动播放")
+	#if value:
+		##_autoPlayButton.set_text("停止播放")
+	#else:
+		##_autoPlayButton.set_text("自动播放")
 	_continue()
 	pass
 	
-## 显示对话的方法
-func _display_dialogue(chara_id: String, content: String, speed: float) -> void:
-	var chara_name: String = "旁白"
-	#if chara_id:
-		#for chara in chara_list.characters:
-			#if chara.chara_id == chara_id:
-				#chara_name = str(chara.chara_name)
-	if chara_id.length() > 0:
-		chara_name = chara_id
-	# 设置姓名
-	_dialog_interface.set_character_name(chara_name)
-	# 显示对话
-	_dialog_interface.set_content(content, speed)
-
+	
 ## 显示背景的方法
 func _display_background(bg_name: String, effect: ActingInterface.BackgroundTransitionEffectsType) -> void:
 	if bg_name == null:
@@ -701,8 +641,6 @@ func _play_soundeffect(se_name: String) -> void:
 			target_soundeffect = soundeffect.se
 			break
 	_audio_interface.play_sound_effect(target_soundeffect)
-	#同步存档用变量
-	se_id = se_name
 	pass
 ## 显示对话选项的方法
 func _display_options(choices: Array[DialogueChoice]) -> void:
@@ -720,7 +658,6 @@ func on_option_triggered(choice: DialogueChoice) -> void:
 
 	
 ## 跳转到对话标签的方法
-## TODO：应该需要性能优化
 func _jump_tag(tag: String) -> void:
 	print_rich("跳转到标签： " + str(tag))
 	var target_dialogue: Dialogue = dialog_data.branches[tag]
@@ -795,7 +732,7 @@ func _on_loadbutton_press():
 ## 读取存档用的跳转
 func jump_data_and_curline(data_id: String, _curline: int, bgm_id: String, actor_dict: Dictionary = {}):
 	print("对话ID" + data_id + "   对话线" + str(_curline) + "   角色表：" + str(actor_dict))
-	if debug_jump_data(data_id):
+	if _jump_shot(data_id):
 		_play_bgm(bgm_id)
 		_jump_curline(_curline)
 	# 如果角色列表不为空
@@ -825,8 +762,6 @@ func _jump_curline(value: int) -> bool:
 			# 只在编辑器模式这样
 			if Engine.is_editor_hint():
 				_acting_interface.delete_all_character()
-				# 遍历演员操作相关的对话到当前行
-				# 临时先这么写吧，以后再优化，目前不崩就行~
 
 				for i in value:
 					var dialog = dialog_data.dialogues[i]
@@ -891,39 +826,3 @@ func _jump_cur_dialogue(dialog: Dialogue) -> bool:
 		_dialogue_goto_state(DialogState.PLAYING)
 		return true
 	return false
-
-## 调试模式跳转到章节
-func debug_jump_data(value: String) -> bool:
-	var error = _jump_shot(value)
-	return error
-	
-## 调试模式获取信息
-func debug_get_info() -> String:
-	var info = "章节ID：" + str(dialog_data.chapter_id) \
-	+"  章节：" + str(dialog_data.chapter_name) \
-	+"  对话行：" + str(curline) \
-	+"  状态：" + str(dialogueState)
-	return info
-
-
-## 获取当前对话帧信息
-func debug_get_dialogue_frame_info() -> String:
-	var chapter_id = dialog_data.chapter_id
-	var dialogue_id = curline
-	var dialogue_type = dialog_data.dialogs[curline].dialog_type
-	
-	var info = "当前对话帧" + str(dialogue_id) \
-	+"  对话类型：" + str(dialogue_type) \
-	+"  章节ID：" + str(chapter_id)
-	return info
-	
-## 调试加载外部剧情
-func debug_load_dialog_data(data) -> bool:
-	var error = await _switch_data(data)
-	return error
-
-## 退出节点
-func _exit_tree():
-	if not is_in_editor_and_idle():
-		stop_dialogue()
-	pass

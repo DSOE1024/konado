@@ -1,7 +1,7 @@
 name: "Build Demo Project"
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
     tags: [ "v*" ]
     paths:
       - 'addons/**'
@@ -10,7 +10,7 @@ on:
       - 'export_presets.cfg'
       - 'project.godot'
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
     paths:
       - 'addons/**'
       - 'assets/**'

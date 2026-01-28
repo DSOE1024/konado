@@ -9,10 +9,8 @@ const CODENAME := "Lebkuchen"
 
 ## 自定义EditorImportPlugin脚本
 const KS_IMPORTER_SCRIPT := preload("res://addons/konado/importer/konado_importer.gd")
-const KDIC_IMPORTER_SCRIPT := preload("res://addons/konado/editor/components/ks_csv_importer/ks_csv_importer.gd")
+const KDIC_IMPORTER_SCRIPT := preload("res://addons/konado/editor/ks_csv_importer/ks_csv_importer.gd")
 
-## 全局自动加载脚本
-const KONADO_MACROS := "res://addons/konado/konado_macros.gd"
 
 ## 翻译文件路径
 const TRANSLATION_PATHS: PackedStringArray = [
@@ -24,8 +22,7 @@ const TRANSLATION_PATHS: PackedStringArray = [
 	#"res://addons/konado/i18n/i18n.de.translation"
 ]
 
-## 自动加载单例名称
-const AUTOLOAD_KONADO_MACROS := "KonadoMacros"
+
 
 ## 插件实例变量
 var konado_editor_instance: KonadoEditorWindow = null
@@ -38,6 +35,8 @@ var ks_tooltip_plugin: EditorResourceTooltipPlugin
 
 var ks_editor: KsEditorWindow
 
+var inspector_plugin: EditorInspectorPlugin = null
+
 func _get_plugin_name() -> String:
 	return "Konado"
 	
@@ -48,7 +47,6 @@ func _has_main_screen() -> bool:
 	return true
 
 func _enter_tree() -> void:
-	_setup_autoload_singletons()
 	_setup_import_plugins()
 	#_setup_internationalization()
 	
@@ -62,6 +60,10 @@ func _enter_tree() -> void:
 	ks_editor = load("res://addons/konado/editor/view/ks_editor/ks_editor.tscn").instantiate() as KsEditorWindow
 	EditorInterface.get_editor_main_screen().add_child(ks_editor)
 	ks_editor.hide()
+	
+	var inspector_plugin = preload("res://addons/konado/audioeffect/audioeffect_inspector_plugin.gd").new()
+	# add_inspector_plugin完成注册
+	add_inspector_plugin(inspector_plugin)
 	
 # 控制显示
 func _make_visible(visible:bool) -> void:
@@ -78,7 +80,6 @@ func _make_visible(visible:bool) -> void:
 
 func _exit_tree() -> void:
 	_cleanup_import_plugins()
-	_cleanup_autoload_singletons()
 	
 	if filesystem_dock:
 		filesystem_dock.remove_resource_tooltip_plugin(ks_tooltip_plugin)
@@ -87,6 +88,9 @@ func _exit_tree() -> void:
 	if ks_editor:
 		remove_control_from_bottom_panel(ks_editor)
 	
+	if inspector_plugin != null:
+		remove_inspector_plugin(inspector_plugin)
+		inspector_plugin = null
 	print("Konado unloaded")
 
 ## 用于处理ks文件
@@ -97,10 +101,6 @@ func _handles(object: Object) -> bool:
 	return false
 	
 	
-## 设置自动加载单例
-func _setup_autoload_singletons() -> void:
-	add_autoload_singleton(AUTOLOAD_KONADO_MACROS, KONADO_MACROS)
-
 
 ## 设置导入插件
 func _setup_import_plugins() -> void:
@@ -143,10 +143,6 @@ func _cleanup_import_plugins() -> void:
 
 
 
-
-## 清理自动加载单例
-func _cleanup_autoload_singletons() -> void:
-	remove_autoload_singleton(AUTOLOAD_KONADO_MACROS)
 
 
 ## 打印加载信息

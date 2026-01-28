@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://0sc04evetbux"]
+[gd_scene format=3 uid="uid://0sc04evetbux"]
 
 [ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/acting_Interface.gd" id="2_wkmvg"]
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/dialogue_Interface.gd" id="3_e54me"]
@@ -23,13 +23,13 @@ colors = PackedColorArray(0, 0, 0, 0.870588, 0.141176, 0.141176, 0.141176, 0.749
 gradient = SubResource("Gradient_qodmk")
 fill_to = Vector2(1, 1)
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_m5nin"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_wkmvg"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_r5ho2"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_e54me"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_w8bt0"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_nx2db"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ytbee"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_j1brb"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_3sqld"]
 
@@ -77,7 +77,7 @@ texture = SubResource("GradientTexture2D_m86f6")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_3v8po"]
 
-[node name="KonadoDialogue" type="Control"]
+[node name="KonadoDialogue" type="Control" unique_id=262601720]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -86,7 +86,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("5_dmo3m")
 
-[node name="MaskLayer" type="ColorRect" parent="."]
+[node name="MaskLayer" type="ColorRect" parent="." unique_id=823028692]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -95,7 +95,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="DialogUI" type="PanelContainer" parent="."]
+[node name="DialogUI" type="PanelContainer" parent="." unique_id=2065805272]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -104,17 +104,17 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_e5o0s")
 
-[node name="ActingInterface" type="PanelContainer" parent="DialogUI"]
+[node name="ActingInterface" type="PanelContainer" parent="DialogUI" unique_id=459297635]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_b1osp")
 script = ExtResource("2_wkmvg")
 
-[node name="BackgroundLayer" type="ColorRect" parent="DialogUI/ActingInterface"]
+[node name="BackgroundLayer" type="ColorRect" parent="DialogUI/ActingInterface" unique_id=1906628226]
 material = SubResource("ShaderMaterial_h66lv")
 layout_mode = 2
 color = Color(0, 0, 0, 1)
 
-[node name="CharaControl" type="Control" parent="DialogUI/ActingInterface/BackgroundLayer"]
+[node name="CharaControl" type="Control" parent="DialogUI/ActingInterface/BackgroundLayer" unique_id=1378514315]
 layout_mode = 1
 anchors_preset = 0
 offset_left = 14.111111
@@ -122,22 +122,22 @@ offset_right = 1294.1111
 offset_bottom = 720.0
 scale = Vector2(1.2763889, 1.2763889)
 
-[node name="EffectLayer" type="ColorRect" parent="DialogUI/ActingInterface"]
+[node name="EffectLayer" type="ColorRect" parent="DialogUI/ActingInterface" unique_id=278868908]
 layout_mode = 2
 color = Color(0, 0, 0, 0)
 
-[node name="DialogueInterface" type="VBoxContainer" parent="DialogUI"]
+[node name="DialogueInterface" type="VBoxContainer" parent="DialogUI" unique_id=1636130766]
 layout_mode = 2
 alignment = 2
 script = ExtResource("3_e54me")
 
-[node name="ChoicesBox" type="Control" parent="DialogUI/DialogueInterface"]
+[node name="ChoicesBox" type="Control" parent="DialogUI/DialogueInterface" unique_id=1390587980]
 custom_minimum_size = Vector2(380, 290)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
-[node name="ChoicesContainer" type="VBoxContainer" parent="DialogUI/DialogueInterface/ChoicesBox"]
+[node name="ChoicesContainer" type="VBoxContainer" parent="DialogUI/DialogueInterface/ChoicesBox" unique_id=392436196]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 1
 anchors_preset = 8
@@ -150,60 +150,60 @@ grow_vertical = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="DialogueBox" type="PanelContainer" parent="DialogUI/DialogueInterface"]
+[node name="DialogueBox" type="PanelContainer" parent="DialogUI/DialogueInterface" unique_id=212114843]
 custom_minimum_size = Vector2(0, 230)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_25pr6")
 
-[node name="Background" type="TextureRect" parent="DialogUI/DialogueInterface/DialogueBox"]
+[node name="Background" type="TextureRect" parent="DialogUI/DialogueInterface/DialogueBox" unique_id=2072656144]
 layout_mode = 2
 texture = SubResource("GradientTexture2D_qodmk")
 
-[node name="MarginContainer" type="MarginContainer" parent="DialogUI/DialogueInterface/DialogueBox"]
+[node name="MarginContainer" type="MarginContainer" parent="DialogUI/DialogueInterface/DialogueBox" unique_id=1361317337]
 layout_mode = 2
 theme_override_constants/margin_left = 130
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 130
 theme_override_constants/margin_bottom = 5
 
-[node name="DialogContent" type="VBoxContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer"]
+[node name="DialogContent" type="VBoxContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer" unique_id=1163675238]
 layout_mode = 2
 theme_override_constants/separation = 30
 
-[node name="VBoxContainer" type="VBoxContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent"]
+[node name="VBoxContainer" type="VBoxContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent" unique_id=1662942484]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 30
 
-[node name="Name" type="RichTextLabel" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/VBoxContainer"]
+[node name="Name" type="RichTextLabel" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/VBoxContainer" unique_id=1963549524]
 custom_minimum_size = Vector2(0, 35)
 layout_mode = 2
 theme_override_font_sizes/normal_font_size = 25
-theme_override_styles/normal = SubResource("StyleBoxEmpty_m5nin")
-theme_override_styles/background = SubResource("StyleBoxEmpty_r5ho2")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_wkmvg")
+theme_override_styles/background = SubResource("StyleBoxEmpty_e54me")
 bbcode_enabled = true
 fit_content = true
 
-[node name="MarginContainer" type="MarginContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/VBoxContainer" unique_id=1393808626]
 layout_mode = 2
 theme_override_constants/margin_right = 200
 
-[node name="ContentLable" type="RichTextLabel" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/VBoxContainer/MarginContainer"]
+[node name="ContentLable" type="RichTextLabel" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/VBoxContainer/MarginContainer" unique_id=66986320]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 22
-theme_override_styles/normal = SubResource("StyleBoxEmpty_w8bt0")
-theme_override_styles/background = SubResource("StyleBoxEmpty_ytbee")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_nx2db")
+theme_override_styles/background = SubResource("StyleBoxEmpty_j1brb")
 bbcode_enabled = true
 fit_content = true
 autowrap_mode = 2
 tab_size = 8
 
-[node name="ActionsContainer" type="HBoxContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent"]
+[node name="ActionsContainer" type="HBoxContainer" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent" unique_id=1422621487]
 layout_mode = 2
 alignment = 1
 
-[node name="存档" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer"]
+[node name="存档" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer" unique_id=2051990127]
 custom_minimum_size = Vector2(75, 35)
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_3sqld")
@@ -213,7 +213,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_d61i7")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_f70o6")
 text = "存档"
 
-[node name="读档" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer"]
+[node name="读档" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer" unique_id=1679319754]
 custom_minimum_size = Vector2(75, 35)
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_3sqld")
@@ -223,7 +223,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_d61i7")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_f70o6")
 text = "读档"
 
-[node name="记录" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer"]
+[node name="记录" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer" unique_id=1324843649]
 custom_minimum_size = Vector2(75, 35)
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_3sqld")
@@ -233,7 +233,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_d61i7")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_f70o6")
 text = "记录"
 
-[node name="退出" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer"]
+[node name="退出" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer" unique_id=823329573]
 custom_minimum_size = Vector2(75, 35)
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_3sqld")
@@ -243,7 +243,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_d61i7")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_f70o6")
 text = "退出"
 
-[node name="自动" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer"]
+[node name="自动" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer" unique_id=1127343951]
 custom_minimum_size = Vector2(75, 35)
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_3sqld")
@@ -254,7 +254,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_f70o6")
 toggle_mode = true
 text = "自动播放"
 
-[node name="回顾" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer"]
+[node name="回顾" type="Button" parent="DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer" unique_id=460805674]
 custom_minimum_size = Vector2(75, 35)
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_3sqld")
@@ -265,14 +265,13 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_f70o6")
 toggle_mode = true
 text = "回顾"
 
-[node name="SaveLoad" type="Control" parent="DialogUI" node_paths=PackedStringArray("root_container")]
+[node name="SaveLoad" type="Control" parent="DialogUI" unique_id=1801723334]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 script = ExtResource("4_nx2db")
-root_container = NodePath("Panel/ScrollContainer/MarginContainer/RootSlotContainer")
 
-[node name="Panel" type="Panel" parent="DialogUI/SaveLoad"]
+[node name="Panel" type="Panel" parent="DialogUI/SaveLoad" unique_id=609803442]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -281,7 +280,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"Background"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="DialogUI/SaveLoad/Panel"]
+[node name="ScrollContainer" type="ScrollContainer" parent="DialogUI/SaveLoad/Panel" unique_id=1709437322]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -289,7 +288,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="DialogUI/SaveLoad/Panel/ScrollContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="DialogUI/SaveLoad/Panel/ScrollContainer" unique_id=723661548]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -298,21 +297,21 @@ theme_override_constants/margin_top = 150
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 100
 
-[node name="RootSlotContainer" type="BoxContainer" parent="DialogUI/SaveLoad/Panel/ScrollContainer/MarginContainer"]
+[node name="RootSlotContainer" type="BoxContainer" parent="DialogUI/SaveLoad/Panel/ScrollContainer/MarginContainer" unique_id=2054154964]
 layout_mode = 2
 size_flags_horizontal = 6
 size_flags_vertical = 2
 theme_override_constants/separation = 50
 vertical = true
 
-[node name="game_ui_buttons" type="Panel" parent="DialogUI"]
+[node name="game_ui_buttons" type="Panel" parent="DialogUI" unique_id=1785001351]
 custom_minimum_size = Vector2(0, 55)
 layout_mode = 2
 size_flags_vertical = 8
 theme = ExtResource("4_wtlve")
 metadata/_edit_group_ = true
 
-[node name="ActionsContainer" type="HBoxContainer" parent="DialogUI/game_ui_buttons" node_paths=PackedStringArray("continue_btn", "replay_btn", "save_btn", "load_btn", "record_btn", "exit_btn", "autoplay_btn", "review_btn", "save_load_ui")]
+[node name="ActionsContainer" type="HBoxContainer" parent="DialogUI/game_ui_buttons" unique_id=783060822 node_paths=PackedStringArray("continue_btn", "replay_btn", "save_btn", "load_btn", "record_btn", "exit_btn", "autoplay_btn", "review_btn", "save_load_ui")]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -336,7 +335,7 @@ autoplay_btn = NodePath("自动")
 review_btn = NodePath("回顾")
 save_load_ui = NodePath("../../SaveLoad")
 
-[node name="继续" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="继续" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=1678491115]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -348,7 +347,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_n5ysx")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 text = "继续"
 
-[node name="重新播放" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="重新播放" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=2110643319]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -360,7 +359,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_n5ysx")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 text = "重新播放"
 
-[node name="存档" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="存档" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=1221767690]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -373,7 +372,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 toggle_mode = true
 text = "存档"
 
-[node name="读档" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="读档" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=814934337]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -386,7 +385,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 toggle_mode = true
 text = "读档"
 
-[node name="记录" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="记录" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=1898608570]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -398,7 +397,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_n5ysx")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 text = "记录"
 
-[node name="退出" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="退出" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=1656690407]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -410,7 +409,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_n5ysx")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 text = "退出"
 
-[node name="自动" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="自动" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=1458324386]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -423,7 +422,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 toggle_mode = true
 text = "自动播放"
 
-[node name="回顾" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer"]
+[node name="回顾" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer" unique_id=1743135803]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
@@ -436,7 +435,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 toggle_mode = true
 text = "回顾"
 
-[node name="ActionsContainer2" type="HBoxContainer" parent="DialogUI/game_ui_buttons"]
+[node name="ActionsContainer2" type="HBoxContainer" parent="DialogUI/game_ui_buttons" unique_id=1363781340]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -446,7 +445,7 @@ offset_right = 560.0
 offset_bottom = 17.5
 grow_vertical = 2
 
-[node name="version" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer2"]
+[node name="version" type="Button" parent="DialogUI/game_ui_buttons/ActionsContainer2" unique_id=1724718874]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -458,12 +457,12 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_n5ysx")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_3v8po")
 text = "version: konado2-neo-v2.0.4"
 
-[node name="AudioInterface" type="Node2D" parent="."]
+[node name="AudioInterface" type="Node2D" parent="." unique_id=814559037]
 visible = false
 script = ExtResource("7_3phje")
 
-[node name="BGMPlayer" type="AudioStreamPlayer" parent="AudioInterface"]
+[node name="BGMPlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=878410943]
 
-[node name="VoicePlayer" type="AudioStreamPlayer" parent="AudioInterface"]
+[node name="VoicePlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=263974479]
 
-[node name="SoundEffectPlayer" type="AudioStreamPlayer" parent="AudioInterface"]
+[node name="SoundEffectPlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=2124542243]
