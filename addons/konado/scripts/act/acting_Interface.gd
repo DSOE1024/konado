@@ -172,7 +172,7 @@ func change_background_image(tex: Texture, name: String, effects_type: Backgroun
 
 	# 基础状态更新
 	background_id = name
-	print_rich("[color=cyan]切换背景为: [/color]"+str(name) +" " + "效果" + str(effects_type))
+	print_rich("[color=cyan]切换背景为: [/color]"+str(name) +" " + "过渡效果: " + str(effects_type))
 	
 	# 获取当前效果配置
 	var config = TRANSITION_CONFIGS.get(effects_type, TRANSITION_CONFIGS[BackgroundTransitionEffectsType.NONE_EFFECT])
