@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bgpl5q55u0eby"]
 
 [ext_resource type="Theme" uid="uid://bb865dga7c5sp" path="res://addons/konado/editor/theme/game_theme.tres" id="1_t8rxq"]
-[ext_resource type="Script" uid="uid://di4l2xhmfedcd" path="res://addons/konado/scenes/dialogbox/dialog_box_temp.gd" id="2_c0wvo"]
+[ext_resource type="Script" uid="uid://di4l2xhmfedcd" path="res://addons/konado/scripts/dialoguebox/konado_dialogue_box.gd" id="2_c0wvo"]
 [ext_resource type="Texture2D" uid="uid://mxrma0a1bgu" path="res://addons/konado/editor/template/dialogue_box/dialoguebox1.png" id="3_86a4y"]
 [ext_resource type="AudioStream" uid="uid://fdsf5bv3xln5" path="res://addons/konado/audioeffect/typewriter/typing_01.wav" id="3_c0wvo"]
 [ext_resource type="Texture2D" uid="uid://cikw85v0iyjij" path="res://addons/konado/editor/template/progress/love_progress_under.svg" id="4_npsm6"]

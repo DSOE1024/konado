@@ -87,6 +87,5 @@ func load_csv(ks_statement_path: String) -> Dictionary:
 				data[key] = entry
 	
 	file.close()
-	# print("CSV 数据已加载:")
-	# print(data)
+	
 	return data
