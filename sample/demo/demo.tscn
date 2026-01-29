@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://bcl2e6o0kb5dm"]
+[gd_scene format=3 uid="uid://bcl2e6o0kb5dm"]
 
 [ext_resource type="PackedScene" uid="uid://bj8ynu8013j4j" path="res://addons/konado/scenes/konado_dialogue.tscn" id="1_57pxw"]
 [ext_resource type="Script" uid="uid://5dxx84u6uyy0" path="res://addons/konado/scripts/character/character.gd" id="2_gl4m8"]
@@ -49,7 +49,7 @@ metadata/_custom_type_script = "uid://uur73dv6qen8"
 script = ExtResource("12_b8e6k")
 metadata/_custom_type_script = "uid://csvufy3iw3tni"
 
-[node name="Demo" type="Control"]
+[node name="Demo" type="Control" unique_id=1757308143]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -57,7 +57,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="DialogManager" parent="." instance=ExtResource("1_57pxw")]
+[node name="DialogManager" parent="." unique_id=1728771569 instance=ExtResource("1_57pxw")]
 layout_mode = 1
 chara_list = SubResource("Resource_ifbv6")
 background_list = SubResource("Resource_1xv1s")

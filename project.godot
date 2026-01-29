@@ -28,7 +28,7 @@ config/icon="uid://b5olx2vwoscbr"
 
 [autoload]
 
-KonadoAPI="*res://addons/konadotnet/Runtime/API/KonadoAPI.cs"
+KonadoAPI="*uid://ptylvcqylq7j"
 
 [display]
 
@@ -42,7 +42,7 @@ project/assembly_name="Konado"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/konado/plugin.cfg")
+enabled=PackedStringArray("res://addons/konado/plugin.cfg", "res://addons/konadotnet/plugin.cfg")
 
 [file_customization]
 

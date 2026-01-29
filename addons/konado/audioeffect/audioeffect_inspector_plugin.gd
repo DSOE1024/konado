@@ -8,7 +8,6 @@ var AudioDropdownEditor = preload("res://addons/konado/audioeffect/audioeffect_d
 func _can_handle(object: Object) -> bool:
 	return object is KND_DialogueBox
 
-# 官方重写方法：解析对象属性 → 仅替换typing_effect_audio的编辑器
 func _parse_property(
 	object: Object,
 	type: Variant.Type,

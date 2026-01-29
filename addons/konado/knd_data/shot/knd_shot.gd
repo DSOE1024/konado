@@ -12,7 +12,7 @@ const icon: Texture2D = preload("uid://b62h640a6knig")
 ## 源剧情文本
 @export var source_story: String = ""
 
-# TODO: 对话列表
+## 对话
 @export var dialogues: Array[Dialogue] = []
 
 ## 对话源数据

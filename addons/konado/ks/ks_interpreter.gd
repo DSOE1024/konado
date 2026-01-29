@@ -270,19 +270,8 @@ func _parse_metadata(lines: PackedStringArray, path: String) -> PackedStringArra
 			"shot_id":
 				metadata.append(value)
 	return metadata
-
 	
-
-# 解析注释
-#func _parse_label(line: String, dialog: Dialogue) -> bool:
-	#if not line.begins_with("##"):
-		#return false
-#
-	#dialog.dialog_type = Dialogue.Type.LABEL
-	#dialog.label_notes = line.replace("##", "").strip_edges()
-#
-	#return true
-
+	
 # 背景切换解析
 func _parse_background(line: String, dialog: Dialogue) -> bool:
 	if not line.begins_with("background"):
@@ -522,7 +511,6 @@ func _parse_dialog(line: String, dialog: Dialogue) -> bool:
 	
 	return true
 
-# 检查tag和choice
 # 检查tag和choice
 func _check_tag_and_choice() -> bool:
 	for line_num in cur_tmp_option_lines:
