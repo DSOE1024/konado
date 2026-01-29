@@ -283,7 +283,6 @@ theme_override_constants/separation = 50
 vertical = true
 
 [node name="AudioInterface" type="Node2D" parent="." unique_id=1896821847]
-visible = false
 script = ExtResource("4_gd2ll")
 
 [node name="BGMPlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=1295733151]
@@ -291,3 +290,31 @@ script = ExtResource("4_gd2ll")
 [node name="VoicePlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=704065821]
 
 [node name="SoundEffectPlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=743748580]
+
+[node name="ErrorToolTip" type="ColorRect" parent="." unique_id=1152539807]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08627451, 0.08627451, 0.08627451, 0.9137255)
+
+[node name="MarginContainer" type="MarginContainer" parent="ErrorToolTip" unique_id=531884272]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 66
+theme_override_constants/margin_top = 66
+theme_override_constants/margin_right = 66
+theme_override_constants/margin_bottom = 66
+
+[node name="ErrorText" type="Label" parent="ErrorToolTip/MarginContainer" unique_id=735988474]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+size_flags_vertical = 1
+autowrap_mode = 3
