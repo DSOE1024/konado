@@ -1,11 +1,7 @@
-<!--
- * @Author: DSOE1024 computerlub@163.com
- * @Date: 2025-07-14 17:25:47
- * @LastEditors: DSOE1024 computerlub@163.com
- * @LastEditTime: 2025-07-14 17:25:55
- * @FilePath: \konado\addons\konado\docs\zh-cn\配置\对话配置文件.md
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
--->
+# 基础配置
 
-# 对话配置文件
+## 添加到场景
 
+安装完成后，可以将Konado的对话模板添加到你的场景中，只需要将Konado的对话模板拖放到场景中即可。
+
+模板的位置在：

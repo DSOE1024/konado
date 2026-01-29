@@ -7,6 +7,8 @@ background bg1 none
 
 background bg2 cyberglitch
 
+"角色ID" "对话内容"
+
 "Kona" "What would you like today?"
 
 background bg1 windmill

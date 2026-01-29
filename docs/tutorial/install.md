@@ -2,15 +2,13 @@
 
 ## 依赖环境
 
-需要使用 **Godot 4.5 或更高版本**
+需要使用 **Godot 4.6 或更高版本**
 
 以下的Godot版本均经过开发者测试，可以正常使用：
 
-- 4.6-dev
+- 4.6
 - 4.5.1
 - 4.5
-- 4.4.1
-- 4.4
 
 ### 插件下载
 
@@ -27,29 +25,6 @@
 
 > Caution：每日构建版仅用于体验最新开发特性，由于包含未经过完整测试的新功能，可能会存在未修复的 Bug，**请不要用于生产环境**，请根据实际需求谨慎选择。
 
-#### Git Submodule 方式
-
-如果你想随时体验最新的开发特性，你可以选择使用 Git submodule 方式，这个方式可以让你在本地仓库中直接获取最新的插件代码，并且可以随时更新到最新的代码，我们为此专门创建了一个分支，你可以通过以下步骤来安装：
-
-   添加子模块：
-   ```bash
-   git submodule add -b addon-master https://github.com/GodotHub/konado.git addons/konado
-   ```
-   更新插件：
-
-   ```bash
-   git submodule update --remote
-   git submodule update --init --recursive
-   ```
-
-   移除子模块（不会删除文件）：
-
-   ```bash
-   git submodule deinit -f -- addons/konado
-   git rm --cached addons/konado
-   ```
-
-
 
 ## 安装步骤
 
@@ -59,7 +34,7 @@
 3. 解压到`addons`目录下
 4. 在Godot项目设置中启用插件，并重新加载当前项目
 
-Tip: 在首次安装并启用插件的时候可能会有一些报错，可以忽略，重新加载项目即可。
+> Tip: 在首次安装并启用插件的时候可能会有一些报错，可以忽略，重新加载项目即可。
 
 
 ## 开发团队寄语
