@@ -1,5 +1,9 @@
-class_name KND_Logger
 extends Logger
+class_name KND_Logger
+
+## Konado Logger
+
+const LOG_FILE_PATH: String = "user://konado_log.log"
 
 signal error_caught(msg: String)
 signal message_caught(msg: String, error: bool)	
@@ -18,28 +22,31 @@ func _log_error(
 	error_type: int, 
 	script_backtraces: Array[ScriptBacktrace]
 ) -> void:
+	
 	_mutex.lock()
 	
 	var sb := PackedStringArray()
-	sb.append("Caught an error:")
-	sb.append("function: {0}".format([function]))
-	sb.append("file: {0}".format([file]))
-	sb.append("line: {0}".format([line]))
-	sb.append("code: {0}".format([code]))
-	sb.append("rationale: {0}".format([rationale]))
-	sb.append("editor notify: {0}".format([editor_notify]))
-	sb.append("error type: {0}".format([_error_type_name[error_type]]))
+	sb.append("Something's broken in Konado!")
+	sb.append("=============================")
+	sb.append("  Timestamp: " + Time.get_datetime_string_from_system())
+	sb.append("  Function: {0}".format([function]))
+	sb.append("  File Path: {0}".format([file]))
+	sb.append("  Line Number: {0}".format([line]))
+	sb.append("  Error Code: {0}".format([code]))
+	sb.append("  Reason: {0}".format([rationale]))
+	sb.append("  Editor Notify: {0}".format(["YES" if editor_notify else "NO"]))
+	sb.append("  Error Type: {0}".format([_error_type_name[error_type] if error_type < _error_type_name.size() else "UNKNOWN"]))
 	if script_backtraces.size() > 0:
-		sb.append("script backtraces:")
+		sb.append("=============================")
+		sb.append("  script backtraces:")
 		for i in script_backtraces:
-			sb.append(i.format())
-
-	var msg = "\n".join(sb)
-	var filestream = FileAccess.open("user://error_log.txt", FileAccess.WRITE)
-	filestream.store_string(msg)
-	filestream.close()
-
-	error_caught.emit(msg)
+			if i.format().find("res://addons/konado") != -1:
+				sb.append("      " + i.format())
+				var msg = "\n".join(sb)
+				var filestream = FileAccess.open(LOG_FILE_PATH, FileAccess.WRITE)
+				filestream.store_string(msg)
+				filestream.close()
+				error_caught.emit(msg)
 	
 	_mutex.unlock()
 

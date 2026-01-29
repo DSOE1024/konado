@@ -23,6 +23,9 @@ class_name KND_DialogueManager
 ## 自动播放速度
 @export var autoplayspeed: float = 2
 
+## 是否显示错误日志覆盖
+@export var enable_overlay_log: bool = true
+
 
 ## 对话界面接口类，包括对话人物姓名（RichTextLabel）和对话（RichTextLabel）
 @onready var _dialog_interface: DialogueInterface = $DialogUI/DialogueInterface
@@ -49,6 +52,10 @@ class_name KND_DialogueManager
 #@onready var _autoPlayButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/自动"
 ## 选项容器（用于实现点击事件屏蔽）
 @onready var _choicesContainer: VBoxContainer = $DialogUI/DialogueInterface/ChoicesBox/ChoicesContainer
+
+## 报错提示面板
+@onready var error_tooltip_panel: ColorRect = $ErrorToolTip
+@onready var error_tooltip_label: Label = $ErrorToolTip/MarginContainer/ErrorText
 
 ## 对话资源
 var dialog_data: KND_Shot = null
@@ -120,7 +127,11 @@ func _ready() -> void:
 	#if not _autoPlayButton.toggled.is_connected(start_autoplay):
 		#_autoPlayButton.toggled.connect(start_autoplay)
 		
-
+	var logger: KND_Logger = KND_Logger.new()
+	OS.add_logger(logger)
+	# 使用Deferred避免线程问题
+	logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
+	
 	if not debug_mode:
 		# 自动初始化和开始对话
 		if init_onstart:
@@ -140,6 +151,11 @@ func _ready() -> void:
 		else:
 			print("请手动初始化对话")
 			
+## 显示报错
+func _show_error(msg: String) -> void:
+	if enable_overlay_log:
+		error_tooltip_label.text = msg
+		error_tooltip_panel.show()
 
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:

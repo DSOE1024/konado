@@ -1,11 +1,11 @@
 @tool
 extends EditorPlugin
 class_name KonadoEditorPlugin
-# Konado框架引擎插件入口文件，负责初始化插件和注册相关功能
+# Konado框架入口文件，负责初始化插件和注册相关功能
 
 ## 插件版本信息
-const VERSION := "2.1"
-const CODENAME := "Lebkuchen"
+const VERSION := "2.2"
+const CODENAME := "Yuanxiao"
 
 ## 自定义EditorImportPlugin脚本
 const KS_IMPORTER_SCRIPT := preload("res://addons/konado/importer/konado_importer.gd")
@@ -57,7 +57,7 @@ func _enter_tree() -> void:
 	filesystem_dock.add_resource_tooltip_plugin(ks_tooltip_plugin)
 	
 
-	ks_editor = load("res://addons/konado/editor/view/ks_editor/ks_editor.tscn").instantiate() as KsEditorWindow
+	ks_editor = load("res://addons/konado/editor/ks_editor/ks_editor.tscn").instantiate() as KsEditorWindow
 	EditorInterface.get_editor_main_screen().add_child(ks_editor)
 	ks_editor.hide()
 	
@@ -116,11 +116,8 @@ func _setup_internationalization() -> void:
 	ProjectSettings.set_setting("internationalization/locale/translations", TRANSLATION_PATHS)
 	ProjectSettings.set_setting("internationalization/locale/locale_filter_mode", 1)  # 允许所有区域
 	ProjectSettings.save()
-
-
-
-
-
+	
+	
 ## 打开Konado编辑器
 func open_konado_editor() -> void:
 	if konado_editor_instance and is_instance_valid(konado_editor_instance):
@@ -140,11 +137,8 @@ func _cleanup_import_plugins() -> void:
 	if kdic_import_plugin:
 		remove_import_plugin(kdic_import_plugin)
 		kdic_import_plugin = null
-
-
-
-
-
+		
+		
 ## 打印加载信息
 func _print_loading_message() -> void:
 	print("Konado %s %s" % [VERSION, CODENAME])

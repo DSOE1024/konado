@@ -20,6 +20,10 @@ Konado.NET 是 Konado 对话系统的 C# API 扩展，通过 Konado.NET，开发
 正在禁用位于 “res://addons/konadotnet/plugin.cfg” 的附加组件以阻止其进一步报错。
 ```
 
+```
+Unable to load addon script from path: 'res://addons/konadotnet/Konadotnet.cs'.
+```
+
 这是正常现象，请重新在Godot编译 Konado.NET，然后重新打开项目即可解决。
 
 如果无法启用插件，并且在MSBuild中没有任何报错，可以尝试关闭项目后，删除项目根目录的 .godot/ 文件夹，然后重新生成项目。

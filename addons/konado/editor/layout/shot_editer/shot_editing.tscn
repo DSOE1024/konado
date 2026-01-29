@@ -1,9 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://dga5qsts51yjl"]
+[gd_scene format=3 uid="uid://dga5qsts51yjl"]
 
-[ext_resource type="Script" uid="uid://b04pryoxytbhb" path="res://addons/konado/editor/layout/main_editor/ui_shot_edit.gd" id="2_n68jt"]
-[ext_resource type="PackedScene" uid="uid://x8t7cxfhviko" path="res://addons/konado/editor/view/ks_editor/ks_editor.tscn" id="4_2nmgn"]
+[ext_resource type="Script" uid="uid://b04pryoxytbhb" path="res://addons/konado/editor/layout/shot_editer/ui_shot_edit.gd" id="2_n68jt"]
+[ext_resource type="PackedScene" uid="uid://x8t7cxfhviko" path="res://addons/konado/editor/ks_editor/ks_editor.tscn" id="4_2nmgn"]
 
-[node name="shot_editing" type="SplitContainer"]
+[node name="shot_editing" type="SplitContainer" unique_id=1792887019]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -13,32 +13,33 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 metadata/_tab_index = 1
 
-[node name="SplitContainer2" type="SplitContainer" parent="."]
+[node name="SplitContainer2" type="SplitContainer" parent="." unique_id=1599957641]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 size_flags_stretch_ratio = 4.0
-split_offset = 250
+split_offsets = PackedInt32Array(250)
 vertical = true
+split_offset = 250
 
-[node name="SplitContainer" type="SplitContainer" parent="SplitContainer2"]
+[node name="SplitContainer" type="SplitContainer" parent="SplitContainer2" unique_id=300320491]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="画布区" type="Panel" parent="SplitContainer2/SplitContainer"]
+[node name="画布区" type="Panel" parent="SplitContainer2/SplitContainer" unique_id=2428984]
 custom_minimum_size = Vector2(500, 300)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 4.0
 
-[node name="ui_shot_editing" type="Node" parent="SplitContainer2/SplitContainer/画布区"]
+[node name="ui_shot_editing" type="Node" parent="SplitContainer2/SplitContainer/画布区" unique_id=1733607121]
 editor_description = "UI 管理组件
 镜头编辑界面的ui"
 script = ExtResource("2_n68jt")
 position_offset = Vector2(285, -43.5)
 
-[node name="BoxContainer2" type="BoxContainer" parent="SplitContainer2/SplitContainer/画布区"]
+[node name="BoxContainer2" type="BoxContainer" parent="SplitContainer2/SplitContainer/画布区" unique_id=275938345]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 1
 anchors_preset = 15
@@ -48,21 +49,21 @@ grow_horizontal = 2
 grow_vertical = 2
 vertical = true
 
-[node name="BoxContainer" type="BoxContainer" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2"]
+[node name="BoxContainer" type="BoxContainer" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2" unique_id=947827908]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer"]
+[node name="Label" type="Label" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer" unique_id=735416549]
 layout_mode = 2
 size_flags_vertical = 0
 text = "镜头 1"
 
-[node name="Control" type="Control" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer"]
+[node name="Control" type="Control" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer" unique_id=1241417778]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="zoom_button" type="OptionButton" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer"]
+[node name="zoom_button" type="OptionButton" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer" unique_id=597819785]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
@@ -80,20 +81,20 @@ popup/item_3/id = 3
 popup/item_4/text = "自适应"
 popup/item_4/id = 4
 
-[node name="center​_button" type="Button" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer"]
+[node name="center​_button" type="Button" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/BoxContainer" unique_id=544056794]
 layout_mode = 2
 text = "居中"
 
-[node name="HSeparator" type="HSeparator" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2"]
+[node name="HSeparator" type="HSeparator" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2" unique_id=1414049652]
 layout_mode = 2
 
-[node name="CanvasContainer" type="Control" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2"]
+[node name="CanvasContainer" type="Control" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2" unique_id=236442028]
 unique_name_in_owner = true
 clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Panel" type="Panel" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/CanvasContainer"]
+[node name="Panel" type="Panel" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/CanvasContainer" unique_id=102980664]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -102,7 +103,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"Background"
 
-[node name="Canvas" type="SubViewportContainer" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/CanvasContainer"]
+[node name="Canvas" type="SubViewportContainer" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/CanvasContainer" unique_id=651675248]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 285.0
@@ -114,21 +115,21 @@ mouse_filter = 2
 stretch_shrink = 2
 mouse_target = true
 
-[node name="SubViewport" type="SubViewport" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/CanvasContainer/Canvas"]
+[node name="SubViewport" type="SubViewport" parent="SplitContainer2/SplitContainer/画布区/BoxContainer2/CanvasContainer/Canvas" unique_id=1190456667]
 handle_input_locally = false
 size = Vector2i(1920, 1080)
 render_target_update_mode = 0
 
-[node name="文本编辑" parent="SplitContainer2" instance=ExtResource("4_2nmgn")]
+[node name="文本编辑" parent="SplitContainer2" unique_id=979762480 instance=ExtResource("4_2nmgn")]
 layout_mode = 2
 size_flags_stretch_ratio = 3.0
 
-[node name="Panel" type="Panel" parent="."]
+[node name="Panel" type="Panel" parent="." unique_id=439736306]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="BoxContainer" type="BoxContainer" parent="Panel"]
+[node name="BoxContainer" type="BoxContainer" parent="Panel" unique_id=841574798]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 1
 anchors_preset = 10
@@ -137,16 +138,16 @@ offset_bottom = 49.0
 grow_horizontal = 2
 size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="Panel/BoxContainer"]
+[node name="Label" type="Label" parent="Panel/BoxContainer" unique_id=1609329205]
 layout_mode = 2
 size_flags_vertical = 0
 text = "剧本 文本"
 
-[node name="Control" type="Control" parent="Panel/BoxContainer"]
+[node name="Control" type="Control" parent="Panel/BoxContainer" unique_id=1741816697]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CodeEdit" type="CodeEdit" parent="Panel"]
+[node name="CodeEdit" type="CodeEdit" parent="Panel" unique_id=703163959]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

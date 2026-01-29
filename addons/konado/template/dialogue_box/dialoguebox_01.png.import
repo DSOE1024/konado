@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://m3yl5jmfhhep"
-path="res://.godot/imported/love_progress.svg-1ab894a4af36bc30c260bf75b9747485.ctex"
+uid="uid://mxrma0a1bgu"
+path="res://.godot/imported/dialoguebox_01.png-009003ad9d557c853e1e1febc25fe3f2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/konado/editor/template/progress/love_progress.svg"
-dest_files=["res://.godot/imported/love_progress.svg-1ab894a4af36bc30c260bf75b9747485.ctex"]
+source_file="res://addons/konado/template/dialogue_box/dialoguebox_01.png"
+dest_files=["res://.godot/imported/dialoguebox_01.png-009003ad9d557c853e1e1febc25fe3f2.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

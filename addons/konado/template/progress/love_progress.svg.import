@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cikw85v0iyjij"
-path="res://.godot/imported/love_progress_under.svg-14f71b2f03eef98efe51078552e7a170.ctex"
+uid="uid://m3yl5jmfhhep"
+path="res://.godot/imported/love_progress.svg-1ea7fdccbb5a4050c53f87673c7714ed.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/konado/editor/template/progress/love_progress_under.svg"
-dest_files=["res://.godot/imported/love_progress_under.svg-14f71b2f03eef98efe51078552e7a170.ctex"]
+source_file="res://addons/konado/template/progress/love_progress.svg"
+dest_files=["res://.godot/imported/love_progress.svg-1ea7fdccbb5a4050c53f87673c7714ed.ctex"]
 
 [params]
 

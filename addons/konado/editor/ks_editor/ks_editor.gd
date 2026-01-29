@@ -16,7 +16,7 @@ func _ready() -> void:
 	# 多语言
 	var sys_lang: String = OS.get_locale()
 	if sys_lang.begins_with("zh_CN"):
-		kscsv = ResourceLoader.load("res://addons/konado/editor/view/ks_editor/ks_dict_cn.kdic")
+		kscsv = ResourceLoader.load("res://addons/konado/editor/ks_editor/ks_dict_cn.kdic")
 	else:
 		kscsv = ResourceLoader.load("res://addons/konado/editor/view/ks_editor/ks_dict_en.kdic")
 	## 直接从资源加载
