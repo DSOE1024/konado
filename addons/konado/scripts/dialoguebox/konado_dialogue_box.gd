@@ -1,5 +1,6 @@
 extends Control
 class_name KND_DialogueBox
+
 ## 对话框模板
 ## 可以自定义设置画面显示内容、位置、尺寸
 
@@ -56,9 +57,9 @@ signal typing_completed
 @export var button_texture :Texture2D
 
 
-# 动态音频播放器（无需手动添加场景节点）
+# 动态音频播放器
 @onready var audio_player: AudioStreamPlayer = AudioStreamPlayer.new()
-# 【新增】音效状态变量 - 记录上一次播放时间、当前随机间隔
+# 音效状态变量 - 记录上一次播放时间、当前随机间隔
 var last_audio_play_time: float = 0.0
 var current_random_interval: float = 0.0
 
@@ -66,12 +67,12 @@ var current_random_interval: float = 0.0
 @onready var character_name_label: Label = %character_name_label
 @onready var dialogue_label: RichTextLabel = %dialogue_label
 @onready var progress_bar: TextureProgressBar = %ProgressBar
-@onready var button: Button = %Button
+@onready var next_button: Button = %Button
 @onready var dialogue_box_bg: NinePatchRect = %dialogue_box_bg
 
 var typing_tween: Tween = null
 
-# 【新增】节点初始化 - 配置音频播放器
+
 func _ready() -> void:
 	# 将音频播放器添加为子节点，自动完成初始化
 	add_child(audio_player)
@@ -84,6 +85,7 @@ func _ready() -> void:
 
 	# 初始化随机间隔
 	current_random_interval = randf_range(min_audio_interval, max_audio_interval)
+	
 
 ## 更新对话框
 func update_dialogue():
@@ -100,6 +102,8 @@ func update_character_name() -> void:
 	character_name_label.label_settings.font_color = name_color
 	
 func update_dialogue_content() -> void:
+	if next_button:
+		next_button.hide()
 	if not is_inside_tree() or dialogue_text.is_empty():
 		return
 	dialogue_label.visible_ratio = 0
@@ -117,14 +121,15 @@ func update_dialogue_content() -> void:
 	# 停止原有打字动画
 	if typing_tween != null and typing_tween.is_running():
 		typing_tween.kill()
-	# 【新增】重置音效状态 - 重新打字时从头计算间隔
+	# 重置音效状态 - 重新打字时从头计算间隔
 	last_audio_play_time = 0.0
 	current_random_interval = randf_range(min_audio_interval, max_audio_interval)
 	
 	# 创建新的打字动画
 	typing_tween = get_tree().create_tween()
-	typing_tween.finished.connect(typing_completed.emit)
-	# 优化：按**字符数**计算总时长（原单词数计算逻辑不合理，贴合真实打字节奏）
+	typing_tween.finished.connect(func(): 
+		typing_completed.emit())
+	# 优化：按**字符数**计算总时长
 	var total_typing_time = dialogue_text.length() * typing_interval
 	typing_tween.tween_property(dialogue_label, "visible_ratio", 1.0, total_typing_time).set_trans(Tween.TRANS_LINEAR)
 
