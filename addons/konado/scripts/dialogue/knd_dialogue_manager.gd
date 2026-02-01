@@ -144,7 +144,6 @@ func _ready() -> void:
 			else:
 				init_dialogue(func():
 					print("自动开始对话")
-					#await get_tree().create_timer(0.1).timeout
 					await get_tree().process_frame
 					start_dialogue()
 					)
@@ -345,7 +344,7 @@ func _process(delta) -> void:
 				elif dialog_type == Dialogue.Type.Show_Choice:
 					var dialog_choices = dialog.choices
 					# 生成并显示选项
-					_display_options(dialog_choices)
+					_dialog_interface.display_options(dialog_choices)
 					_acting_interface.show()
 					_dialog_interface.show()
 					_dialog_interface._choice_container.show()
@@ -385,13 +384,10 @@ func _process(delta) -> void:
 							print_rich("[color=red]标签对话中不能包含标签对话[/color]")
 							continue
 						dialog_data.dialogues.insert(insert_position + i, tag_dialogues[i])
-					#await get_tree().create_timer(0.001).timeout
 					await get_tree().process_frame
 					
 					print("添加了 %d 个标签对话" % tag_dialogues.size())
 					print("当前对话总数: " + str(dialog_data.dialogues.size()))
-
-					#await get_tree().create_timer(0.01).timeout
 					_process_next()
 					pass
 				# 跳过注释
@@ -431,13 +427,11 @@ func _input(event):
 			if event.keycode in [KEY_ENTER, KEY_SPACE]:
 				can_continue = false
 				_continue()
-				#await get_tree().create_timer(0.2).timeout  # 200ms冷却
 				await get_tree().process_frame
 				can_continue = true
 		
 ## 打字完成
 func isfinishtyping(wait_voice: bool) -> void:
-	#_dialog_interface.finish_typing.disconnect(isfinishtyping)
 	_dialogue_goto_state(DialogState.PAUSED)
 
 	print("触发打字完成信号")
@@ -463,7 +457,6 @@ func _process_next(s: Signal = Signal()) -> void:
 
 	
 	# 暂时先用等待的方法，没找到更好的解决方法
-	#await get_tree().create_timer(0.001).timeout
 	await get_tree().process_frame
 	print_rich("[color=yellow]点击继续按钮，判断状态[/color]")
 	match dialogueState:
@@ -658,10 +651,7 @@ func _play_soundeffect(se_name: String) -> void:
 			break
 	_audio_interface.play_sound_effect(target_soundeffect)
 	pass
-## 显示对话选项的方法
-func _display_options(choices: Array[DialogueChoice]) -> void:
-	_dialog_interface.display_options(choices, null, 22)
-	pass
+
 
 ## 选项触发方法
 func on_option_triggered(choice: DialogueChoice) -> void:
@@ -687,13 +677,10 @@ func _jump_tag(tag: String) -> void:
 		如果你想尝试解决这个问题请查看该脚本的_input()函数和is_click_valid()函数，但我不确定问题在哪
 	"""
 	if not target_dialogue.is_branch_loaded:
-		# _jump_cur_dialogue(target_dialogue)
 		dialog_data.dialogues.insert(curline + 1, target_dialogue)
 		print("插入标签，对话长度" + str(dialog_data.dialogues.size()))
 		target_dialogue.is_branch_loaded = true
 		_jump_curline(curline + 1)
-	# else:
-	# 	print("标签已加载和跳转")
 		
 
 ## 跳转剧情的方法
@@ -725,7 +712,6 @@ func _switch_data(data: KND_Shot) -> bool:
 	print("切换到 " + data.shot_id + " 剧情文件")
 	dialog_data = data
 	init_dialogue()
-	#await get_tree().create_timer(0.01).timeout
 	await get_tree().process_frame
 	start_dialogue()
 	return true
@@ -775,58 +761,6 @@ func get_game_progress() -> Dictionary:
 func _jump_curline(value: int) -> bool:
 	if value >= 0:
 		if not value >= dialog_data.dialogues.size():
-			# 只在编辑器模式这样
-			if Engine.is_editor_hint():
-				_acting_interface.delete_all_character()
-
-				for i in value:
-					var dialog = dialog_data.dialogues[i]
-					var dialog_type = dialog.dialog_type
-					# if dialog.dialog_type == Dialogue.Type.Display_Actor:
-					# 	_display_character(dialog.show_actor)
-					# if dialog.dialog_type == Dialogue.Type.Move_Actor:
-					# 	_acting_interface.move_actor(dialog.target_move_chara, dialog.target_move_pos)
-					# if dialog.dialog_type == Dialogue.Type.Exit_Actor:
-					# 	_exit_actor(dialog.exit_actor)
-					# if dialog.dialog_type == Dialogue.Type.Actor_Change_State:
-					# 	_actor_change_state(dialog.change_state_actor, dialog.change_state)
-					
-					# 如果是显示演员
-					if dialog_type == Dialogue.Type.Display_Actor:
-						# 显示演员
-						var actor = dialog.show_actor
-						_display_character(actor)
-						# 创建定时器，不加这个给我来千手观音是吧
-						# Godot没有同步真的很难蚌
-						# 抱歉，我找到了（
-						#await get_tree().create_timer(0.01).timeout
-						await get_tree().process_frame
-						pass
-					# 如果修改演员状态
-					if dialog_type == Dialogue.Type.Actor_Change_State:
-						var actor = dialog.change_state_actor
-						var target_state = dialog.change_state
-						_actor_change_state(actor, target_state)
-						#await get_tree().create_timer(0.01).timeout
-						await get_tree().process_frame
-						pass
-					# 如果是移动演员
-					if dialog_type == Dialogue.Type.Move_Actor:
-						var actor = dialog.target_move_chara
-						var pos = dialog.target_move_pos
-						_acting_interface.move_actor(actor, pos)
-						#await get_tree().create_timer(0.01).timeout
-						await get_tree().process_frame
-						pass
-					# 如果是删除演员
-					if dialog_type == Dialogue.Type.Exit_Actor:
-						# 删除演员
-						var actor = dialog.exit_actor
-						_exit_actor(actor)
-
-						#await get_tree().create_timer(0.01).timeout
-						await get_tree().process_frame
-						pass
 			_dialogue_goto_state(DialogState.OFF)
 			curline = value
 			print_rich("跳转到：" + str(curline))

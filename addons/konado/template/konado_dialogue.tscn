@@ -9,8 +9,6 @@
 [ext_resource type="Script" uid="uid://bh2origtxajo3" path="res://addons/konado/scripts/actionbar/actionbar.gd" id="6_m5nin"]
 [ext_resource type="PackedScene" uid="uid://bgpl5q55u0eby" path="res://addons/konado/template/konado_dialogue_box.tscn" id="6_r5ho2"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_e5o0s"]
-
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_b1osp"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_h66lv"]
@@ -57,17 +55,21 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="DialogUI" type="PanelContainer" parent="." unique_id=930577122]
+[node name="DialogUI" type="Control" parent="." unique_id=363853147]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxEmpty_e5o0s")
 
 [node name="ActingInterface" type="PanelContainer" parent="DialogUI" unique_id=580713454]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_b1osp")
 script = ExtResource("2_pq6sw")
 
@@ -78,27 +80,33 @@ color = Color(0, 0, 0, 1)
 
 [node name="CharaControl" type="Control" parent="DialogUI/ActingInterface/BackgroundLayer" unique_id=245679010]
 layout_mode = 1
-anchors_preset = 0
-offset_left = 14.111111
-offset_right = 1294.1111
-offset_bottom = 720.0
-scale = Vector2(1.2763889, 1.2763889)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="EffectLayer" type="ColorRect" parent="DialogUI/ActingInterface" unique_id=1654107269]
 layout_mode = 2
 color = Color(0, 0, 0, 0)
 
 [node name="DialogueInterface" type="Control" parent="DialogUI" unique_id=254950114]
-layout_mode = 2
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
 script = ExtResource("3_gl7il")
+
+[node name="KonadoDialogueBox" parent="DialogUI/DialogueInterface" unique_id=1215106161 instance=ExtResource("6_r5ho2")]
+layout_mode = 1
 
 [node name="ChoicesBox" type="Control" parent="DialogUI/DialogueInterface" unique_id=313017594]
 custom_minimum_size = Vector2(380, 290)
-anchors_preset = 0
-offset_left = 770.0
-offset_top = 731.0
-offset_right = 1150.0
-offset_bottom = 1021.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
@@ -115,10 +123,8 @@ grow_vertical = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="KonadoDialogueBox" parent="DialogUI/DialogueInterface" unique_id=1215106161 instance=ExtResource("6_r5ho2")]
-layout_mode = 1
-
 [node name="ActionButtons" type="Panel" parent="DialogUI/DialogueInterface" unique_id=787754962]
+visible = false
 custom_minimum_size = Vector2(0, 55)
 layout_mode = 0
 offset_top = 1025.0
@@ -246,7 +252,7 @@ text = "回顾"
 [node name="SaveLoad" type="Control" parent="DialogUI" unique_id=1232795751]
 unique_name_in_owner = true
 visible = false
-layout_mode = 2
+anchors_preset = 0
 script = ExtResource("4_m5nin")
 
 [node name="Panel" type="Panel" parent="DialogUI/SaveLoad" unique_id=2128743651]
