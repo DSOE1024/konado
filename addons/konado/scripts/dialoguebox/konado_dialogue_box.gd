@@ -35,10 +35,9 @@ signal typing_completed
 	set(value):
 		typing_interval = value
 		update_dialogue_content()
-
-# 【新增】打字滴滴音效配置 - 编辑器可视化调节
+		
 @export_group("打字音效配置")
-# 打字音效资源
+@export var enable_typing_effect_audio: bool = true
 @export var typing_effect_audio: AudioStream
 @export var audio_trigger_chance: float = 0.8  ## 音效触发概率(0-1)，1=每次必播，0=不播
 @export var min_audio_interval: float = 0.02   ## 音效最小播放间隔（秒），适配滴滴声快速节奏
@@ -74,18 +73,19 @@ var typing_tween: Tween = null
 
 
 func _ready() -> void:
-	# 将音频播放器添加为子节点，自动完成初始化
-	add_child(audio_player)
-	audio_player.name = "TypingAudioPlayer"
-	# 绑定滴滴音效资源
-	audio_player.stream = typing_effect_audio
-	# 设置音量，关闭自动播放
-	audio_player.volume_db = linear_to_db(audio_volumn)
-	audio_player.autoplay = false
+	if enable_typing_effect_audio:
+		# 将音频播放器添加为子节点，自动完成初始化
+		add_child(audio_player)
+		audio_player.name = "TypingAudioPlayer"
+		# 绑定滴滴音效资源
+		audio_player.stream = typing_effect_audio
+		# 设置音量，关闭自动播放
+		audio_player.volume_db = linear_to_db(audio_volumn)
+		audio_player.autoplay = false
 
-	# 初始化随机间隔
-	current_random_interval = randf_range(min_audio_interval, max_audio_interval)
-	
+		# 初始化随机间隔
+		current_random_interval = randf_range(min_audio_interval, max_audio_interval)
+		
 
 ## 更新对话框
 func update_dialogue():
@@ -143,17 +143,16 @@ func _process(delta: float) -> void:
 	var current_time = Time.get_unix_time_from_system()
 	# 距离上一次播放音效的时间差
 	var time_since_last_play = current_time - last_audio_play_time
-
-	# 音效播放条件（缺一不可）：
-	# 1. 超过当前随机间隔 2. 随机概率命中 3. 打字未到末尾（避免最后多播一声）
-	if time_since_last_play > current_random_interval and randf() < audio_trigger_chance and dialogue_label.visible_ratio < 0.98:
-		# 防重叠：播放前先停止上一次音效（避免滴滴声叠加变吵）
-		audio_player.stop()
-		audio_player.play()
-		# 更新上一次播放时间
-		last_audio_play_time = current_time
-		# 重新生成随机间隔（每次播放后更新，保证间隔不重复）
-		current_random_interval = randf_range(min_audio_interval, max_audio_interval)
+	
+	if enable_typing_effect_audio:
+		if time_since_last_play > current_random_interval and randf() < audio_trigger_chance and dialogue_label.visible_ratio < 0.98:
+			# 防重叠：播放前先停止上一次音效（避免滴滴声叠加变吵）
+			audio_player.stop()
+			audio_player.play()
+			# 更新上一次播放时间
+			last_audio_play_time = current_time
+			# 重新生成随机间隔（每次播放后更新，保证间隔不重复）
+			current_random_interval = randf_range(min_audio_interval, max_audio_interval)
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.is_pressed():
