@@ -29,29 +29,15 @@ func distroy_options() -> void:
 			child.queue_free()
 
 ## 显示对话选项的方法
-func display_options(choices: Array[DialogueChoice], choices_tex: Texture = null, choices_font_size: int = 22) -> void:
-	# # 隐藏选项容器
-	# _choice_container.hide()
-	# # 删除原有选项
-	# if _choice_container.get_child_count() != 0:
-	# 	for child in _choice_container.get_children():
-	# 		child.queue_free()
-
+func display_options(choices: Array[DialogueChoice], choices_font_size: int = 24) -> void:
 	distroy_options()
 	# 生成新选项
 	for choice in choices:
-		var choiceButton := Button.new()
-		choiceButton.custom_minimum_size.y = 75
-		# 选项文字大小
-		#choiceButton.font_size = int(22)
+		var choiceButton: Button = Button.new()
+		choiceButton.custom_minimum_size.y = 135
 		# 选项文本内容
 		choiceButton.set_text(choice.choice_text)
-		# 选项icon主题，图标居中
-		choiceButton.set_button_icon(choices_tex)
-		choiceButton.set_icon_alignment(1)
-		choiceButton.remove_theme_font_size_override("normal")
 		choiceButton.add_theme_font_size_override("font_size", int(choices_font_size))
-		choiceButton.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 		# 选项触发
 		choiceButton.button_up.connect(
 			func():
@@ -65,7 +51,3 @@ func display_options(choices: Array[DialogueChoice], choices_tex: Texture = null
 		print_rich("[color=cyan]生成选项按钮: [/color]"+str(choiceButton))
 	# 显示选项容器
 	_choice_container.show()
-	
-	#为对话回顾提供的数据
-	var curline : int = _dialog_manager.curline
-	var options:Array=choices
