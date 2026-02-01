@@ -132,6 +132,8 @@ func _ready() -> void:
 	# 使用Deferred避免线程问题
 	logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
 	
+	_konado_dialogue_box.on_dialogue_click.connect(_continue)
+	
 	if not debug_mode:
 		# 自动初始化和开始对话
 		if init_onstart:
@@ -502,7 +504,7 @@ func _nextline() -> void:
 	curline += 1
 	print_rich("---------------------------------------------")
 	# 打印时间 日期+时间
-	print("当前时间：" + str(Time.get_date_string_from_system()) + " " + str(Time.get_time_string_from_system()))
+	print("当前时间：" + str(Time.get_time_string_from_system()))
 	print("对话下标：" + str(curline))
 
 ## 继续，下一句按钮
