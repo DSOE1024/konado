@@ -1,68 +1,63 @@
-# 文档贡献指南
+# 文件貢獻指南
 
-## 在线编辑
+## 線上編輯
 
-在线编辑文档，点击在线文档左下角的 `在线编辑此页`，浏览器会跳转到仓库文件所在目录位置，此时点击右上角 `编辑` 按钮，修改后预览查看效果，确认无误后点击 `提交修改` 提交。
+線上編輯文件，點擊線上文件左下角的 `線上編輯此頁`，瀏覽器會跳轉到儲存庫檔案所在目錄位置，此時點擊右上角 `編輯` 按鈕，修改後預覽查看效果，確認無誤後點擊 `提交修改` 提交。
 
-提交后会经过审查，通过后合并到主仓库。一般主仓库合并后，在线文档会自动更新，如果没有更新，请手动刷新页面，或者提交后等待几分钟再刷新。
+提交後會經過審查，通過後合併到主儲存庫。一般主儲存庫合併後，線上文件會自動更新，如果沒有更新，請手動重新整理頁面，或者提交後等待幾分鐘再重新整理。
 
-## 本地编辑
+## 本地編輯
 
-文档可以直接向 `master` 分支`提交PR`，不必创建特性分支。
+文件可以直接向 `master` 分支`提交 PR`，不必建立功能分支。
 
-在提交代码之前请确保在本地完成了 Git 的全局配置
+在提交程式碼之前請確保在本地完成了 Git 的全域設定
 ```
-git config --global user.name 你的Git用户名
-git config --global user.email 你的提交邮箱，必须和代码平台账户邮箱一致
+git config --global user.name 你的Git使用者名稱
+git config --global user.email 你的提交電子信箱，必須和程式碼平台帳戶電子信箱一致
 ```
 
-1. **Fork 项目**：点击右上角 Fork 到自己的仓库  
-2. **克隆仓库**：`git clone`  
-3. **编辑文档**：在 `docs` 目录下找到需要修改的文件，使用 Markdown 语法进行编辑（参考 [Markdown 语法](https://www.markdownguide.org/basic-syntax)）
-4. **提交更改**：`git commit -m "描述你的文档更改"`  
+1. **Fork 專案**：點擊右上角 Fork 到自己的儲存庫
+2. **Clone 儲存庫**：`git clone`
+3. **編輯文件**：在 `docs` 目錄下找到需要修改的檔案，使用 Markdown 語法進行編輯（參考 [Markdown 語法](https://www.markdownguide.org/basic-syntax)）
+4. **提交變更**：`git commit -m "描述你的文件變更"`
 5. **推送分支**：`git push origin master`
 
-提交后，在自己fork的仓库页面、点击`Pull Request`按钮，创建 PR。
+提交後，在自己 Fork 的儲存庫頁面、點擊 `Pull Request` 按鈕，建立 PR。
 
-## 本地预览Konado文档
-Konado 文档基于 [VitePress](https://vitepress.dev/) 构建，为确保文档修改内容符合预期，建议先在本地预览验证后再提交代码。
+## 本地預覽 Konado 文件
+Konado 文件基於 [VitePress](https://vitepress.dev/) 建置，為了確保文件修改內容符合預期，建議先在本地預覽驗證後再提交程式碼。
 
-### 前置准备：安装 Node.js
-VitePress 依赖 Node.js 环境运行，需先安装符合版本要求的 Node.js：
-1. **版本要求**：推荐安装 Node.js 18.x 及以上版本（LTS 长期支持版最佳，兼容性更优）。
-2. **下载安装**：
-   - 访问 Node.js 官方下载地址：[https://nodejs.org/](https://nodejs.org/)
-   - 根据操作系统（Windows/macOS/Linux）选择对应安装包，按向导完成安装（Windows 建议勾选“Add to PATH”选项）。
-3. **验证安装**：
-   打开终端（Windows 为命令提示符/PowerShell，macOS/Linux 为终端），执行以下命令验证 Node.js 和 npm（Node.js 自带包管理器）是否安装成功：
+### 前置準備：安裝 Node.js
+VitePress 依賴 Node.js 環境執行，需先安裝符合版本要求的 Node.js：
+1. **版本要求**：推薦安裝 Node.js 18.x 及以上版本（LTS 長期支援版最佳，相容性更佳）。
+2. **下載安裝**：
+   - 前往 Node.js 官方下載頁面：[https://nodejs.org/](https://nodejs.org/)
+   - 根據作業系統（Windows/macOS/Linux）選擇對應安裝檔，按安裝精靈完成安裝（Windows 建議勾選「Add to PATH」選項）。
+3. **驗證安裝**：
+   打開終端機（Windows 為命令提示字元/PowerShell，macOS/Linux 為終端機），執行以下指令驗證 Node.js 和 npm（Node.js 內建套件管理器）是否安裝成功：
    ```shell
    # 查看 Node.js 版本
    node -v
    # 查看 npm 版本
    npm -v
    ```
-   若输出清晰的版本号（如 `v20.10.0`、`10.2.3`），说明安装成功。
+   若輸出清晰的版本號（如 `v20.10.0`、`10.2.3`），說明安裝成功。
 
-> 可选优化：若 npm 下载依赖速度较慢，可配置国内镜像提升速度：
-> ```shell
-> npm config set registry https://registry.npmmirror.com
-> ```
-
-### 安装项目依赖
-进入 Konado 项目的根目录，执行以下命令安装文档预览所需依赖：
+### 安裝專案依賴
+進入 Konado 專案的根目錄，執行以下指令安裝文件預覽所需依賴：
 ```shell
 npm install
 ```
-等待命令执行完成，终端无报错即表示依赖安装成功。
+等待指令執行完成，終端機無錯誤訊息即表示依賴安裝成功。
 
-### 启动本地预览服务
-依赖安装完成后，执行以下命令启动 VitePress 开发服务：
+### 啟動本地預覽服務
+依賴安裝完成後，執行以下指令啟動 VitePress 開發伺服器：
 ```shell
 npm run docs:dev
 ```
 
-### 访问预览文档
-命令执行成功后，终端会输出类似以下的信息：
+### 存取預覽文件
+指令執行成功後，終端機會輸出類似以下的資訊：
 ```shell
 vitepress v1.6.4
 
@@ -70,10 +65,10 @@ vitepress v1.6.4
 ➜  Network: use --host to expose
 ➜  press h to show help
 ```
-打开浏览器，访问输出信息中的 `Local` 地址（默认：`http://localhost:5173/konado/`），即可查看本地文档。
+打開瀏覽器，開啟輸出資訊中的 `Local` 位址（預設：`http://localhost:5173/konado/`），即可查看本地文件。
 
-### 补充说明
-1. 实时刷新：修改文档内容后，无需重启服务，浏览器会自动刷新页面，实时展示修改后的效果；
-2. 端口异常：若 `localhost:5173` 端口被占用，VitePress 会自动切换到可用端口（如 5174），请以终端实际输出的地址为准；
-3. 局域网访问：如需在局域网内其他设备（如手机、另一台电脑）预览文档，可执行 `npm run docs:dev -- --host` 命令，终端会输出网络可访问的 IP 地址；
-4. 停止服务器：在终端中按下 `Ctrl + C` 即可停止本地预览服务。
+### 補充說明
+1. 即時重新整理：修改文件內容後，無需重啟服務，瀏覽器會自動重新整理頁面，即時展示修改後的效果；
+2. 連接埠異常：若 `localhost:5173` 連接埠被佔用，VitePress 會自動切換到可用連接埠（如 5174），請以終端機實際輸出的位址為準；
+3. 區域網路存取：如需在區域網路內其他裝置（如手機、另一台電腦）預覽文件，可執行 `npm run docs:dev -- --host` 指令，終端機會輸出網路可存取的 IP 位址；
+4. 停止伺服器：在終端機中按下 `Ctrl + C` 即可停止本地預覽服務。
