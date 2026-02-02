@@ -1,7 +1,7 @@
-# 翻译贡献指南
+# 翻譯貢獻指南
 
-## 贡献方式
+## 貢獻方式
 
-### 文档翻译
+### 文件翻譯
 
-文档的目录在`docs`下，使用markdown格式编写，请按照markdown语法进行翻译，并提交PR到项目中，详细请参考[文档贡献指南](./doc-contribute.md)。
+文件的目錄在 `docs` 下，使用 Markdown 格式編寫，請按照 Markdown 語法進行翻譯，並提交 PR 到專案中，詳細請參考[文件貢獻指南](./doc-contribute.md)。
