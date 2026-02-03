@@ -1,241 +1,241 @@
 # Konado .NET API
 
-## 简介
+## 簡介
 
-Konado.NET 是 Konado 对话系统的 C# API 扩展，通过 Konado.NET，开发者可以在 C# 项目中轻松地创建、管理和执行对话内容。
+Konado.NET 是 Konado 對話系統的 C# API 擴充，透過 Konado.NET，開發者可以在 C# 專案中輕鬆地建立、管理和執行對話內容。
 
 ## 使用方法
 
-### 启用插件
+### 啟用插件
 
 
-请先启用Konado插件，然后再启用Konado .NET API插件。
+請先啟用 Konado 插件，然後再啟用 Konado .NET API 插件。
 
-场景中应包含 DialogueManager 节点，否则 Konado .NET API 将无法正常工作。
+場景中應包含 DialogueManager 節點，否則 Konado .NET API 將無法正常工作。
 
-首次启用 Konado.NET，会遇到如下报错：
+首次啟用 Konado.NET，會遇到如下報錯：
 
 ```
-无法从路径 “res://addons/konadotnet/Konadotnet.cs” 加载附加组件脚本：该脚本可能有代码错误。
-正在禁用位于 “res://addons/konadotnet/plugin.cfg” 的附加组件以阻止其进一步报错。
+無法從路徑 “res://addons/konadotnet/Konadotnet.cs” 加載附加組件腳本：該腳本可能有代碼錯誤。
+正在禁用位於 “res://addons/konadotnet/plugin.cfg” 的附加組件以阻止其進一步報錯。
 ```
 
 ```
 Unable to load addon script from path: 'res://addons/konadotnet/Konadotnet.cs'.
 ```
 
-这是正常现象，请重新在Godot编译 Konado.NET，然后重新打开项目即可解决。
+這是正常現象，請重新在 Godot 編譯 Konado.NET，然後重新打開專案即可解決。
 
-如果无法启用插件，并且在MSBuild中没有任何报错，可以尝试关闭项目后，删除项目根目录的 .godot/ 文件夹，然后重新生成项目。
+如果無法啟用插件，並且在 MSBuild 中沒有任何報錯，可以嘗試關閉專案後，刪除專案根目錄的 `.godot/` 資料夾，然後重新生成專案。
 
 
-## API 参考
+## API 參考
 
 ### KonadoAPI
 
-核心 API 类，提供对 Konado 系统的访问。
+核心 API 類別，提供對 Konado 系統的存取。
 
-#### 属性
+#### 屬性
 
-- `bool IsApiReady`: 指示 API 是否已准备就绪
-- `KonadoAPI API`: 静态实例，提供对 Konado API 的访问
-- `DialogueManagerAPI DialogueManagerApi`: 对话管理器 API 实例
+- `bool IsApiReady`: 指示 API 是否已準備就緒
+- `KonadoAPI API`: 靜態實例，提供對 Konado API 的存取
+- `DialogueManagerAPI DialogueManagerApi`: 對話管理器 API 實例
 
 ### DialogueManagerAPI
 
-对话管理器 API，用于控制对话的执行。
+對話管理器 API，用於控制對話的執行。
 
 #### 方法
 
-- `InitDialogue()`: 初始化对话
-- `StartDialogue()`: 开始对话
-- `StopDialogue()`: 停止对话
+- `InitDialogue()`: 初始化對話
+- `StartDialogue()`: 開始對話
+- `StopDialogue()`: 停止對話
 
 #### 事件
 
-- `ShotStart`: 对话场景开始时触发
-- `ShotEnd`: 对话场景结束时触发
-- `DialogueLineStart(int line)`: 对话行开始时触发
-- `DialogueLineEnd(int line)`: 对话行结束时触发
+- `ShotStart`: 對話場景開始時觸發
+- `ShotEnd`: 對話場景結束時觸發
+- `DialogueLineStart(int line)`: 對話行開始時觸發
+- `DialogueLineEnd(int line)`: 對話行結束時觸發
 
 ### ActingInterface
 
-表演接口，定义背景过渡效果类型。
+表演介面，定義背景過渡效果類型。
 
-#### 枚举
+#### 枚舉
 
-- `BackgroundTransitionEffectsType`: 背景过渡效果类型
-  - `NoneEffect`: 无效果
+- `BackgroundTransitionEffectsType`: 背景過渡效果類型
+  - `NoneEffect`: 無效果
   - `EraseEffect`: 擦除效果
-  - `BlindsEffect`: 百叶窗效果
+  - `BlindsEffect`: 百葉窗效果
   - `WaveEffect`: 波浪效果
-  - `AlphaFadeEffect`: 透明度渐变效果
-  - `VortexSwapEffect`: 涡流切换效果
-  - `WindmillEffect`: 风车效果
-  - `CyberGlitchEffect`: 赛博故障效果
+  - `AlphaFadeEffect`: 透明度漸變效果
+  - `VortexSwapEffect`: 渦流切換效果
+  - `WindmillEffect`: 風車效果
+  - `CyberGlitchEffect`: 賽博故障效果
 
-### Wrapper 类
+### Wrapper 類別
 
-Wrapper 类提供了对 GDScript 对象的 C# 封装，使开发者可以在 C# 中操作 Konado 的各种数据结构，不过目前这些类并未完全实现，仅提供了部分属性和方法，有待进一步完善。
+Wrapper 類別提供了對 GDScript 物件的 C# 封裝，使開發者可以在 C# 中操作 Konado 的各種資料結構，不過目前這些類別並未完全實作，僅提供了部分屬性和方法，有待進一步完善。
 
 #### Dialogue
 
-对话对象包装器，表示单个对话元素。
+對話物件包裝器，表示單個對話元素。
 
-##### 属性
+##### 屬性
 
-- `Type DialogueType`: 对话类型（枚举）
+- `Type DialogueType`: 對話類型（枚舉）
 - `string BranchId`: 分支 ID
-- `Array<Dialogue> BranchDialogue`: 分支对话
-- `bool IsBranchLoaded`: 分支是否已加载
-- `string CharacterId`: 角色ID
-- `string DialogueContent`: 对话内容
-- `DialogueActor ShowActor`: 显示的角色
+- `Array<Dialogue> BranchDialogue`: 分支對話
+- `bool IsBranchLoaded`: 分支是否已載入
+- `string CharacterId`: 角色 ID
+- `string DialogueContent`: 對話內容
+- `DialogueActor ShowActor`: 顯示的角色
 - `string ExitActor`: 退出的角色
-- `string ChangeStateActor`: 状态变更的角色
-- `string TargetMoveChara`: 移动目标角色
-- `Vector2 TargetMovePos`: 移动目标位置
-- `Array<DialogueChoice> Choices`: 对话选项
-- `string BgmName`: 背景音乐名称
-- `string VoiceId`: 语音 ID
-- `string SoundeffectName`: 音效名称
-- `string BackgroundImageName`: 背景图像名称
-- `BackgroundTransitionEffectsType BackgroundToggleEffects`: 背景切换效果
-- `string JumpShotId`: 跳转场景 ID
-- `string LabelNotes`: 标签注释
+- `string ChangeStateActor`: 狀態變更的角色
+- `string TargetMoveChara`: 移動目標角色
+- `Vector2 TargetMovePos`: 移動目標位置
+- `Array<DialogueChoice> Choices`: 對話選項
+- `string BgmName`: 背景音樂名稱
+- `string VoiceId`: 語音 ID
+- `string SoundeffectName`: 音效名稱
+- `string BackgroundImageName`: 背景圖像名稱
+- `BackgroundTransitionEffectsType BackgroundToggleEffects`: 背景切換效果
+- `string JumpShotId`: 跳轉場景 ID
+- `string LabelNotes`: 標籤註釋
 - `Dictionary ActorSnapshots`: 角色快照
 
-##### 对话类型枚举
+##### 對話類型枚舉
 
-- `Start`: 开始
-- `OrdinaryDialog`: 普通对话
-- `DisplayActor`: 显示角色
-- `ActorChangeState`: 角色状态变更
-- `MoveActor`: 移动角色
-- `SwitchBackground`: 切换背景
+- `Start`: 開始
+- `OrdinaryDialog`: 普通對話
+- `DisplayActor`: 顯示角色
+- `ActorChangeState`: 角色狀態變更
+- `MoveActor`: 移動角色
+- `SwitchBackground`: 切換背景
 - `ExitActor`: 角色退出
-- `PlayBgm`: 播放背景音乐
-- `StopBgm`: 停止背景音乐
+- `PlayBgm`: 播放背景音樂
+- `StopBgm`: 停止背景音樂
 - `PlaySoundEffect`: 播放音效
-- `ShowChoice`: 显示选项
+- `ShowChoice`: 顯示選項
 - `Branch`: 分支
-- `JumpTag`: 跳转标签
-- `JumpShot`: 跳转场景
-- `TheEnd`: 结束
-- `Label`: 标签
+- `JumpTag`: 跳轉標籤
+- `JumpShot`: 跳轉場景
+- `TheEnd`: 結束
+- `Label`: 標籤
 
 #### DialogueActor
 
-对话角色包装器，表示对话中的角色对象。
+對話角色包裝器，表示對話中的角色物件。
 
-##### 属性
+##### 屬性
 
-- `string CharacterName`: 角色名称
-- `string CharacterState`: 角色状态
+- `string CharacterName`: 角色名稱
+- `string CharacterState`: 角色狀態
 - `Vector2 ActorPosition`: 角色位置
-- `Vector2 ActorScale`: 角色缩放
-- `bool ActorMirror`: 角色镜像
+- `Vector2 ActorScale`: 角色縮放
+- `bool ActorMirror`: 角色鏡像
 
 #### DialogueChoice
 
-对话选项包装器，表示对话中的选项对象。
+對話選項包裝器，表示對話中的選項物件。
 
-##### 属性
+##### 屬性
 
-- `string ChoiceText`: 选项文本
-- `string JumpTag`: 跳转标签
+- `string ChoiceText`: 選項文字
+- `string JumpTag`: 跳轉標籤
 
 #### KndData
 
-Konado KND_Data 数据基类包装器。
+Konado KND_Data 資料基底類別包裝器。
 
-##### 属性
+##### 屬性
 
-- `string Type`: 数据类型
-- `bool Love`: 是否为喜爱内容
-- `string Tip`: 提示信息
+- `string Type`: 資料類型
+- `bool Love`: 是否為喜愛內容
+- `string Tip`: 提示資訊
 
 #### KndShot
 
-Konado KND_Shot 镜头包装器，继承自 KndData。
+Konado KND_Shot 鏡頭包裝器，繼承自 KndData。
 
-##### 属性
+##### 屬性
 
-- `string Name`: 场景名称
-- `string ShotId`: 场景 ID
+- `string Name`: 場景名稱
+- `string ShotId`: 場景 ID
 - `string SourceStory`: 源故事
-- `Array<Dictionary> DialoguesSourceData`: 对话源数据
+- `Array<Dictionary> DialoguesSourceData`: 對話源資料
 - `Dictionary Branches`: 分支
 - `Dictionary<string, Dictionary> SourceBranches`: 源分支
 - `Dictionary<string, int> ActorCharacterMap`: 角色映射
 
 #### KonadoScriptsInterpreter
 
-KonadoScriptsInterpreter 脚本解释器包装器，用于解析 Konado 脚本文件。
+KonadoScriptsInterpreter 腳本直譯器包裝器，用於解析 Konado 腳本檔案。
 
 ##### 方法
 
-- `KndShot ProcessScriptsToData(string path)`: 处理脚本文件为数据
-- `Dialogue ParseSingleLine(string line, long lineNumber, string path)`: 解析单行脚本
+- `KndShot ProcessScriptsToData(string path)`: 處理腳本檔案為資料
+- `Dialogue ParseSingleLine(string line, long lineNumber, string path)`: 解析單行腳本
 
-## 示例代码
+## 範例程式碼
 
-### 对话管理
+### 對話管理
 
 ```csharp
 using Konado.Runtime.API;
 
-// 获取 Konado API 实例
+// 獲取 Konado API 實例
 var konadoAPI = KonadoAPI.API;
 var dialogueManager = KonadoAPI.DialogueManagerApi;
 
-// 检查 API 是否就绪
+// 檢查 API 是否就緒
 if (dialogueManager.IsReady)
 {
-    // 初始化对话
+    // 初始化對話
     dialogueManager.InitDialogue();
 
-    // 开始对话
+    // 開始對話
     dialogueManager.StartDialogue();
 
-    // 停止对话
+    // 停止對話
     dialogueManager.StopDialogue();
 }
 ```
 
-### 对话事件监听
+### 對話事件監聽
 
 ```csharp
-// 监听对话开始事件
+// 監聽對話開始事件
 dialogueManager.ShotStart += () => {
-    GD.Print("对话场景开始");
+    GD.Print("對話場景開始");
 };
 
-// 监听对话结束事件
+// 監聽對話結束事件
 dialogueManager.ShotEnd += () => {
-    GD.Print("对话场景结束");
+    GD.Print("對話場景結束");
 };
 
-// 监听对话行开始事件
+// 監聽對話行開始事件
 dialogueManager.DialogueLineStart += (int line) => {
-    GD.Print($"对话行 {line} 开始");
+    GD.Print($"對話行 {line} 開始");
 };
 
-// 监听对话行结束事件
+// 監聽對話行結束事件
 dialogueManager.DialogueLineEnd += (int line) => {
-    GD.Print($"对话行 {line} 结束");
+    GD.Print($"對話行 {line} 結束");
 };
 ```
 
-### 解析 Konado 脚本
+### 解析 Konado 腳本
 
 ```csharp
 using Konado.Wrapper;
 
-// 创建脚本解释器
+// 建立腳本直譯器
 var flags = new Godot.Collections.Dictionary<string, Variant>();
 var interpreter = new KonadoScriptsInterpreter(flags);
 
-// 解析整个脚本文件
+// 解析整個腳本檔案
 var shot = interpreter.ProcessScriptsToData("res://dialogues/example.ks");
 ```
