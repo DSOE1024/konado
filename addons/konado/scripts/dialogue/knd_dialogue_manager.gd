@@ -345,12 +345,18 @@ func _process(delta) -> void:
 				# 如果是选项
 				elif dialog_type == Dialogue.Type.Show_Choice:
 					var dialog_choices = dialog.choices
-					# 生成并显示选项
-					_dialog_interface.display_options(dialog_choices)
-					_acting_interface.show()
-					_dialog_interface.show()
-					_dialog_interface._choice_container.show()
-					pass
+					if dialog_choices.size() <= 0:
+						printerr("当前没有任何选项，为不影响运行跳过")
+						_dialogue_goto_state(DialogState.PAUSED)
+						get_tree().process_frame
+						_continue()
+					else:
+						# 生成并显示选项
+						_dialog_interface.display_options(dialog_choices)
+						_acting_interface.show()
+						_dialog_interface.show()
+						_dialog_interface._choice_container.show()
+						pass
 				# 如果是播放BGM
 				elif dialog_type == Dialogue.Type.Play_BGM:
 					var s = _audio_interface.finish_playbgm
@@ -415,22 +421,7 @@ func _process(delta) -> void:
 			if justenter:
 				justenter = false
 				print_rich("[color=cyan][b]状态：[/b][/color][color=orange]播放完成状态[/color]")
-
-
-
-## 处理输入
-func _input(event):
-	if not can_continue:
-		return
-
-	if not debug_mode:
-		# 先用enter和空格键代替鼠标点击，全屏幕点击功能等后续修复
-		if event is InputEventKey and event.pressed:
-			if event.keycode in [KEY_ENTER, KEY_SPACE]:
-				can_continue = false
-				_continue()
-				await get_tree().process_frame
-				can_continue = true
+				
 		
 ## 打字完成
 func isfinishtyping(wait_voice: bool) -> void:
@@ -446,9 +437,7 @@ func isfinishtyping(wait_voice: bool) -> void:
 		else:
 			await get_tree().create_timer(autoplayspeed).timeout
 		_continue()
-
 	
-
 	
 ## 自动下一个
 func _process_next(s: Signal = Signal()) -> void:
@@ -668,9 +657,12 @@ func on_option_triggered(choice: DialogueChoice) -> void:
 ## 跳转到对话标签的方法
 func _jump_tag(tag: String) -> void:
 	print_rich("跳转到标签： " + str(tag))
+	if dialog_data.branches == null || dialog_data.branches.size() <= 0:
+		printerr("该对话没有分支")
+		return
 	var target_dialogue: Dialogue = dialog_data.branches[tag]
 	if target_dialogue == null:
-		print("无法完成跳转，没有这个标签")
+		print("无法完成跳转，没有这个分支")
 		return
 
 	"""
