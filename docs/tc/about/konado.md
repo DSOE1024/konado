@@ -1,44 +1,44 @@
-# 关于Konado
+# 關於 Konado
 
-## 项目简介
+## 專案簡介
 
-Konado是一款基于Godot Engine的视觉小说引擎框架，由开源社区驱动。Konado致力于为开发者提供高效、便捷的视觉小说开发体验，助力创作者快速构建高质量的视觉小说作品，为创作赋能。
+Konado 是一款基於 Godot Engine 的視覺小說引擎框架，由開源社群驅動。Konado 致力於為開發者提供高效、便捷的視覺小說開發體驗，助力創作者快速建構高品質的視覺小說作品，為創作賦能。
 
 ## Konado Project
 
-Konado Project 开发组是一个由社区驱动的开源项目团队，归属于[Godot Hub](https://godothub.com)社区。我们致力于 Konado 项目的开发、维护与持续发展。欢迎所有对 Konado 项目感兴趣的开发者加入我们，共同推动开源项目的完善与创新，为开源社区贡献力量。
+Konado Project 開發組是一個由社群驅動的開源專案團隊，歸屬於 [Godot Hub](https://godothub.com) 社群。我們致力於 Konado 專案的開發、維護與持續發展。歡迎所有對 Konado 專案感興趣的開發者加入我們，共同推動開源專案的完善與創新，為開源社群貢獻力量。
 
-## 我们的目标
+## 我們的目標
 
-我们致力于自主开发一套完整的视觉小说游戏框架，不依赖任何第三方现有解决方案。Konado的目标是打造更友好、更高效的工具，让游戏创作者能够专注于故事叙述和艺术表现，而非陷入程序实现的细节中。
+我們致力於自主開發一套完整的視覺小說遊戲框架，不依賴任何第三方現有解決方案。Konado 的目標是打造更友好、更高效的工具，讓遊戲創作者能夠專注於故事敘述和藝術表現，而非陷入程式實作的細節中。
 
-## 赞助我们
+## 贊助我們
 
-如果您喜欢Konado项目，并希望支持我们的工作，可以通过以下方式赞助我们：
+如果您喜歡 Konado 專案，並希望支持我們的工作，可以透過以下方式贊助我們：
 
-- [爱发电](https://afdian.com/item/52230b2860a011f083ef52540025c377)
+- [愛發電](https://afdian.com/item/52230b2860a011f083ef52540025c377)
 
-## 联系我们
+## 聯絡我們
 
-如果您对Konado项目感兴趣，欢迎加入我们的QQ频道交流群组，与我们共同探讨Konado项目的未来发展方向：
+如果您對 Konado 專案感興趣，歡迎加入我們的 QQ 頻道交流群組，與我們共同探討 Konado 專案的未來發展方向：
 
-QQ频道交流群组：https://pd.qq.com/g/GodotHub999/text/707799746
+QQ 頻道交流群組：https://pd.qq.com/g/GodotHub999/text/707799746
 
-如有问题反馈或功能建议，欢迎前往Konado的项目[仓库提交 Issue](https://github.com/godothub/konado/issues)
+如有問題回饋或功能建議，歡迎前往 Konado 的專案[倉庫提交 Issue](https://github.com/godothub/konado/issues)
 
-如果是其他问题，欢迎发送邮件至：konadoproject@163.com
+如果是其他問題，歡迎發送電子郵件至：konadoproject@163.com
 
 <a href="https://godothub.com">
 <img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
 </a>
 
 
-## 统计信息
+## 統計資訊
 
 
-### 项目贡献者
+### 專案貢獻者
 
-以下图表通过[contrib.rocks](https://contrib.rocks)生成，实时更新项目贡献者信息。
+以下圖表透過 [contrib.rocks](https://contrib.rocks) 生成，即時更新專案貢獻者資訊。
 
 <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://contrib.rocks/image?repo=GodotHub/konado&theme=dark" />
@@ -58,4 +58,3 @@ QQ频道交流群组：https://pd.qq.com/g/GodotHub999/text/707799746
 ### AtomGit Star History
 
 ![AtomGit Star History](https://atomgit.com/godothub/konado/starcharts.svg?variant=adaptive)
-
