@@ -3,7 +3,7 @@ class_name DialogueInterface
 # 对话UI控制脚本
 
 ## 对话选项按钮容器
-@onready var _choice_container: Container = $ChoicesBox/ChoicesContainer
+@onready var _choice_container: Container = $ChoicesContainer
 @onready var _dialog_manager: KND_DialogueManager = $"../.."
 
 ## 完成打字的信号
@@ -29,12 +29,11 @@ func distroy_options() -> void:
 			child.queue_free()
 
 ## 显示对话选项的方法
-func display_options(choices: Array[DialogueChoice], choices_font_size: int = 24) -> void:
+func display_options(choices: Array[DialogueChoice], choices_font_size: int = 40) -> void:
 	distroy_options()
 	# 生成新选项
 	for choice in choices:
 		var choiceButton: Button = Button.new()
-		choiceButton.custom_minimum_size.y = 135
 		# 选项文本内容
 		choiceButton.set_text(choice.choice_text)
 		choiceButton.add_theme_font_size_override("font_size", int(choices_font_size))

@@ -1,4 +1,3 @@
-@tool
 extends RefCounted
 class_name KonadoScriptsInterpreter
 
@@ -17,8 +16,8 @@ var tmp_content_lines = []
 
 ## 对话内容正则表达式
 var dialogue_content_regex: RegEx
-## 元数据正则表达式
-var dialogue_metadata_regex: RegEx
+## Shot Id 元数据正则表达式
+var shot_id_metedata_regex: RegEx
 
 ## 演员验证表
 var cur_tmp_actors = []
@@ -41,10 +40,17 @@ var allow_skip_error_line: bool = false
 ## 是否开启演员验证，开启后将针对所有演员语法进行验证，判断是否存在
 var enable_actor_validation: bool = true
 
+# ====================== choice缩进解析临时变量 ====================== #
+## 是否处于choice缩进选项解析中（支持缩进式choice）
+var tmp_in_choice_indent: bool = false
+## 当前正在解析的choice对话框对象（支持缩进式choice）
+var tmp_current_choice_dialog: Dialogue = null
+## 缩进式choice的起始行号（支持缩进式choice）
+var tmp_choice_start_line: int = 0
+
 # ====================================================== #
 
 
-## 初始化解释器
 func _init(flags: Dictionary[String, Variant]) -> void:
 	is_init = false
 	if flags.has("allow_custom_suffix"):
@@ -67,8 +73,8 @@ func _init(flags: Dictionary[String, Variant]) -> void:
 	dialogue_content_regex = RegEx.new()
 	dialogue_content_regex.compile("^\"(.*?)\"\\s+\"(.*?)\"(?:\\s+(\\S+))?$")
 
-	dialogue_metadata_regex = RegEx.new()
-	dialogue_metadata_regex.compile("^(shot_id)\\s+(\\S+)")
+	shot_id_metedata_regex = RegEx.new()
+	shot_id_metedata_regex.compile("^(shot_id)\\s+(\\S+)")
 	
 	is_init = true
 	print("解释器初始化完成" + " " + "flags: " + str(flags))
@@ -77,7 +83,7 @@ func _init(flags: Dictionary[String, Variant]) -> void:
 func process_scripts_to_data(path: String) -> KND_Shot:
 	if not is_init:
 		_scripts_debug(path, 0, "解释器未初始化，无法解析脚本文件")
-		return
+		return null  # 统一返回null，符合返回值类型
 	if not path:
 		_scripts_debug(path, 0, "路径为空，无法打开脚本文件")
 		return null
@@ -100,7 +106,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	if not file:
 		_scripts_debug(path, 0, "无法打开脚本文件")
 		return null
-	var lines = file.get_as_text().split("\n")
+	var raw_script_lines = file.get_as_text().split("\n")
 	file.close()
 
 	
@@ -109,11 +115,11 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	var diadata: KND_Shot = KND_Shot.new()
 
 	# 解析元数据
-	var metadata_result = _parse_metadata(lines, path)
-	dialogue_metadata_regex = null
+	var metadata_result = _parse_metadata(raw_script_lines, path)
+	shot_id_metedata_regex = null
 	if not metadata_result:
 		_scripts_debug(path, 0, "元数据解析失败")
-		return diadata
+		return null  # 元数据失败直接终止，返回null
 	diadata.shot_id = metadata_result[0]
 
 
@@ -123,51 +129,98 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	cur_tmp_actors = []
 
 	# 只保留内容行
-	var content_lines = lines.slice(1)
+	var content_lines = raw_script_lines.slice(1)
 
 	tmp_content_lines = content_lines
+
+	# 重置choice缩进解析状态（新增：防止解析多文件时状态污染）
+	_reset_choice_indent_state()
 
 	# 解析内容行
 	for i in content_lines.size():
 		tmp_line_number = i
-		var line = content_lines[i]
+		var original_line = content_lines[i]  # 保留原始行（未strip），用于判断缩进（核心）
+		var line = original_line.strip_edges()  # 处理后的行，用于内容解析
 		var original_line_number =  i + 2
 
 		tmp_original_line_number = original_line_number
 
-		# 不处理缩进的行
-		if line.begins_with("    ") or line.begins_with("\t"):
-			#print("解析成功：忽略标签内缩进行\n")
+		# ========== 核心缩进行处理逻辑 - 保留原始行判断缩进 ========== #
+		# 非choice缩进解析中：跳过缩进行（保持原有逻辑）
+		# choice缩进解析中：处理缩进行（新增逻辑）
+		if (original_line.begins_with("    ") or original_line.begins_with("\t")) and not tmp_in_choice_indent:
 			continue
-		line = line.strip_edges()
+		# ===================================================================== #
+
 		# 空行或注释行，必须提前处理strip_edges
 		if line.is_empty():
-			#print("解析成功：忽略空行\n")
 			continue
 		if line.begins_with("#") or line.begins_with("##"):
-			#_scripts_debug(path, original_line_number, "注释行请用 ## 代替 #：%s" % line)
 			continue
 
-		print("解析第%d行" % original_line_number)
 		print("第%d行内容：" % original_line_number, line)
 
-		var dialog: Dialogue = parse_line(line, original_line_number, path)
+		# ========== 核心Choice缩进解析 - 无缩进即终止缩进（关键） ========== #
+		if tmp_in_choice_indent:
+			# 检查当前行是否有缩进：无缩进 → 自动结束Choice缩进，切换回普通行解析
+			if not (original_line.begins_with("    ") or original_line.begins_with("\t")):
+				_scripts_info(path, original_line_number, "检测到无缩进行，自动结束choice缩进解析")
+				# 提交已解析的choice数据（如果有）
+				if tmp_current_choice_dialog and tmp_current_choice_dialog.choices.size() > 0:
+					var dialogue_dic: Dictionary = tmp_current_choice_dialog.serialize_to_dict()
+					diadata.dialogues_source_data.append(dialogue_dic)
+					_scripts_info(path, tmp_choice_start_line, "缩进式choice解析完成 选项数量: %d" % tmp_current_choice_dialog.choices.size())
+				# 重置缩进状态
+				_reset_choice_indent_state()
+				# 不continue，继续处理当前无缩进行（作为普通行解析）
+			else:
+				# 有缩进 → 解析为choice选项行
+				if not _parse_choice_indent_line(line, original_line_number, path):
+					if allow_skip_error_line:
+						_scripts_warning(path, original_line_number, "choice缩进选项行解析失败，跳过该行: %s" % line)
+						continue
+					else:
+						_scripts_debug(path, original_line_number, "choice缩进选项行解析失败，终止解析: %s" % line)
+						_reset_choice_indent_state()
+						return null  # 用return null真正终止，替代break
+				# 解析成功则跳过后续普通行解析
+				continue
+		# =============================================== #
+
+		# 解析普通行（非choice缩进状态）
+		var dialog: Dialogue = parse_line(line, original_line_number, path, diadata)  # 传入diadata给parse_line
 		if dialog:
 			# 如果是标签对话，则添加到标签对话字典中
 			if dialog.dialog_type == Dialogue.Type.Branch:
 				diadata.source_branches.set(dialog.branch_id, dialog.serialize_to_dict())
 			else:
-				var dialogue_dic: Dictionary = dialog.serialize_to_dict()
-				diadata.dialogues_source_data.append(dialogue_dic)
+				# ====================== 修复重复空对话：核心3行修改 ====================== #
+				# 一行式choice：正常添加；缩进式choice（刚解析完choice:）：跳过添加，仅缩进结束后统一提交
+				# 避免解析choice:时添加空dialog，后续缩进结束又加一次造成重复
+				if not (dialog.dialog_type == Dialogue.Type.Show_Choice and tmp_in_choice_indent):
+					var dialogue_dic: Dictionary = dialog.serialize_to_dict()
+					diadata.dialogues_source_data.append(dialogue_dic)
+				# ========================================================================= #
 		else:
 			if allow_skip_error_line:
 				_scripts_warning(path, original_line_number, "解析失败：无法识别的语法，请检查语法是否正确或删除该行: %s" % line)
 				continue
 			else:
-				_scripts_debug(path, original_line_number, "解析失败：无法识别的语法，请检查语法是否正确或删除该行: %s" % line)
-				break
-			print("\n")
+				_scripts_debug(path, original_line_number, "解析失败：无法识别的语法，终止解析: %s" % line)
+				_reset_choice_indent_state()
+				return null  # 用return null真正终止，替代break
 			
+	# 解析结束后检查是否有未完成的choice缩进（文件末尾是缩进行的情况）
+	if tmp_in_choice_indent and tmp_current_choice_dialog:
+		if tmp_current_choice_dialog.choices.size() > 0:
+			var dialogue_dic: Dictionary = tmp_current_choice_dialog.serialize_to_dict()
+			diadata.dialogues_source_data.append(dialogue_dic)
+			_scripts_info(path, tmp_choice_start_line, "缩进式choice解析完成 选项数量: %d" % tmp_current_choice_dialog.choices.size())
+		else:
+			_scripts_warning(path, tmp_choice_start_line, "choice: 后无有效选项行，忽略该choice")
+			# 无有效选项时，不添加任何空dialog到diadata
+		_reset_choice_indent_state()
+
 	diadata.get_dialogues()
 	
 
@@ -176,13 +229,14 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 
 	tmp_path = ""
 
+	# 标签验证失败 → 真正终止解析，返回null
 	if not _check_tag_and_choice():
-		_scripts_debug(path, 0, "标签和选项解析失败")
+		_scripts_debug(path, 0, "标签和选项解析失败，终止所有解析")
+		return null
 
 	# 生成演员快照
 	var cur_actor_dic: Dictionary = {}
 	for dialogue in diadata.get_dialogues():
-		#print("当前演员快照：", cur_actor_dic)
 		if dialogue.dialog_type == Dialogue.Type.Display_Actor:
 				var actor: DialogueActor = dialogue.show_actor
 				var chara_dict := {
@@ -210,16 +264,13 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 
 # 单行解析模式
 func parse_single_line(line: String, line_number: int, path: String) -> Dialogue:
-	return parse_line(line.strip_edges(), line_number, path)
+	return parse_line(line.strip_edges(), line_number, path, null)
 
-# 内部解析实现
-func parse_line(line: String, line_number: int, path: String) -> Dialogue:
+# 内部解析实现 - 新增diadata参数，给_parse_end用
+func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot) -> Dialogue:
 	var dialog := Dialogue.new()
 	dialog.source_file_line = line_number
 	
-	#if _parse_label(line, dialog):
-		#print("解析成功：注释相关\n")
-		#return dialog
 	if _parse_background(line, dialog):
 		print("解析成功：背景切换\n")
 		return dialog
@@ -238,7 +289,7 @@ func parse_line(line: String, line_number: int, path: String) -> Dialogue:
 	if _parse_dialog(line, dialog):
 		print("解析成功：对话相关\n")
 		return dialog
-	if _parse_end(line, dialog): 
+	if _parse_end(line, dialog, diadata):  # 传入diadata
 		print("解析成功：结束相关\n")
 		return dialog
 	if _parse_branch(line, dialog):
@@ -246,21 +297,20 @@ func parse_line(line: String, line_number: int, path: String) -> Dialogue:
 		return dialog
 
 	dialog = null
-
 	return null
 
 # 解析元数据（前两行）
-func _parse_metadata(lines: PackedStringArray, path: String) -> PackedStringArray:
-	if lines.size() < 2:
+func _parse_metadata(raw_script_lines: PackedStringArray, path: String) -> PackedStringArray:
+	if raw_script_lines.size() < 2:
 		_scripts_debug(path, 1, "文件不完整，至少需要shot id")
 		return []
 
 	var metadata: PackedStringArray = []
 
-	if lines[0]:
-		var result = dialogue_metadata_regex.search(lines[0])
+	if raw_script_lines[0]:
+		var result = shot_id_metedata_regex.search(raw_script_lines[0])
 		if not result:
-			_scripts_debug(path, 1, "无效的元数据格式: %s" % lines[0])
+			_scripts_debug(path, 1, "无效的元数据格式: %s" % raw_script_lines[0])
 			return []
 		
 		var key = result.get_string(1)
@@ -387,60 +437,115 @@ func _parse_audio(line: String, dialog: Dialogue) -> bool:
 	
 	return true
 
-# 解析选项
+# 解析选项（重构：支持一行式choice + 缩进式choice:）
 func _parse_choice(line: String, dialog: Dialogue) -> bool:
-	if not line.begins_with("choice"):
+	# 匹配原有一行式choice：choice "文本" 标签 "文本2" 标签2
+	if line.begins_with("choice ") and not line.begins_with("choice:"):
+		dialog.dialog_type = Dialogue.Type.Show_Choice
+		dialog.choices.clear()  # 清空现有选项
+		
+		# 移除开头的"choice"关键字
+		var content = line.substr(6).strip_edges()
+		
+		# 使用正则表达式来正确解析带引号的字符串
+		var regex = RegEx.new()
+		regex.compile('"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|(\\S+)')
+		
+		var matches = regex.search_all(content)
+		var parts = []
+		
+		for match in matches:
+			if match.get_string(1) != "":  # 带引号的部分
+				# 恢复转义的引号
+				var text = match.get_string(1).replace('\\"', '"')
+				parts.append(text)
+			elif match.get_string(2) != "":  # 无引号的部分
+				parts.append(match.get_string(2))
+		
+		# 验证parts数量
+		if parts.size() % 2 != 0:
+			_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签")
+			return false
+		
+		# 创建选项对象
+		for i in range(0, parts.size(), 2):
+			var choice = DialogueChoice.new()
+			choice.choice_text = parts[i]
+			choice.jump_tag = parts[i + 1]
+			dialog.choices.append(choice)
+		
+		# 记录日志
+		var choices_strs = ""
+		for choice in dialog.choices:
+			choices_strs += "\"" + choice.choice_text + "\" -> " + choice.jump_tag + "  "
+		
+		# 记录跳转标签用于后续验证
+		var jump_tags = []
+		for choice in dialog.choices:
+			jump_tags.append(choice.jump_tag)
+		cur_tmp_option_lines[tmp_original_line_number] = jump_tags
+		
+		_scripts_info(tmp_path, tmp_line_number + 1, "一行式选项解析完成 选项数量: " + str(dialog.choices.size()) + "  选项: " + choices_strs)
+		return true
+	
+	# 严格匹配choice:（无多余字符），避免误判
+	if line == "choice:":
+		dialog.dialog_type = Dialogue.Type.Show_Choice
+		dialog.choices.clear()  # 清空现有选项
+		# 设置choice缩进解析状态，后续行将作为选项行解析
+		tmp_in_choice_indent = true
+		tmp_current_choice_dialog = dialog
+		tmp_choice_start_line = tmp_original_line_number
+		_scripts_info(tmp_path, tmp_original_line_number, "开始解析缩进式choice，后续缩进行为选项行")
+		return true
+	return false
+
+# 解析choice缩进选项行，格式："选项文本" 目标分支
+func _parse_choice_indent_line(line: String, line_number: int, path: String) -> bool:
+	# 校验当前是否处于choice缩进解析中，防止非法调用
+	if not tmp_in_choice_indent or not tmp_current_choice_dialog:
+		_scripts_debug(path, line_number, "非法的choice缩进行，未找到choice: 起始标记")
+		_reset_choice_indent_state()
 		return false
 	
-	dialog.dialog_type = Dialogue.Type.Show_Choice
-	dialog.choices.clear()  # 清空现有选项
+	# 校验行是否为空
+	if line.is_empty():
+		return true  # 跳过空行，不报错
 	
-	# 移除开头的"choice"关键字
-	var content = line.substr(6).strip_edges()
-	
-	# 使用正则表达式来正确解析带引号的字符串
+	# 正则匹配："选项文本" 目标分支（兼容转义引号）
 	var regex = RegEx.new()
-	regex.compile('"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|(\\S+)')
-	
-	var matches = regex.search_all(content)
-	var parts = []
-	
-	for match in matches:
-		if match.get_string(1) != "":  # 带引号的部分
-			# 恢复转义的引号
-			var text = match.get_string(1).replace('\\"', '"')
-			parts.append(text)
-		elif match.get_string(2) != "":  # 无引号的部分
-			parts.append(match.get_string(2))
-	
-	# 验证parts数量
-	if parts.size() % 2 != 0:
-		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签")
+	regex.compile('^"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"\\s+(\\S+)$')
+	var result = regex.search(line)
+	if not result:
+		_scripts_debug(path, line_number, "choice缩进选项行格式错误，正确格式：\"选项文本\" 目标分支")
 		return false
 	
-	# 创建选项对象
-	for i in range(0, parts.size(), 2):
-		var choice = DialogueChoice.new()
-		choice.choice_text = parts[i]
-		choice.jump_tag = parts[i + 1]
-		dialog.choices.append(choice)
+	# 提取选项文本和目标分支
+	var choice_text = result.get_string(1).replace('\\"', '"')  # 恢复转义引号
+	var jump_tag = result.get_string(2)
 	
-	# 记录日志
-	var choices_strs = ""
-	for choice in dialog.choices:
-		choices_strs += "\"" + choice.choice_text + "\" -> " + choice.jump_tag + "  "
+	# 创建选项对象并添加到当前choice dialog
+	var choice = DialogueChoice.new()
+	choice.choice_text = choice_text
+	choice.jump_tag = jump_tag
+	tmp_current_choice_dialog.choices.append(choice)
 	
-	# 记录跳转标签用于后续验证
-	var jump_tags = []
-	for choice in dialog.choices:
-		jump_tags.append(choice.jump_tag)
-	cur_tmp_option_lines[tmp_original_line_number] = jump_tags
+	# 记录跳转标签到全局验证表（和原有逻辑一致，保证_check_tag_and_choice生效）
+	if not cur_tmp_option_lines.has(tmp_choice_start_line):
+		cur_tmp_option_lines[tmp_choice_start_line] = []
+	cur_tmp_option_lines[tmp_choice_start_line].append(jump_tag)
 	
-	_scripts_info(tmp_path, tmp_line_number + 1, "选项解析完成 选项数量: " + str(dialog.choices.size()) + "  选项: " + choices_strs)
+	_scripts_info(path, line_number, "choice缩进选项解析成功：\"%s\" -> %s" % [choice_text, jump_tag])
 	return true
 
 # 分支解析
 func _parse_branch(line: String, dialog: Dialogue) -> bool:
+	# 禁止在choice缩进中嵌套branch
+	if tmp_in_choice_indent:
+		_scripts_debug(tmp_path, tmp_original_line_number, "choice缩进中不允许嵌套branch标签")
+		_reset_choice_indent_state()
+		return false
+	
 	if not line.begins_with("branch"):
 		return false
 	
@@ -474,7 +579,7 @@ func _parse_branch(line: String, dialog: Dialogue) -> bool:
 			_scripts_debug(tmp_path, tag_inner_line_number, "branch内不能嵌套branch")
 			return false
 		
-		var inner_dialog = parse_line(inner_line, tag_inner_line_number, tmp_path)
+		var inner_dialog = parse_line(inner_line, tag_inner_line_number, tmp_path, null)
 		if inner_dialog:
 			dialog.branch_dialogue.append(inner_dialog)
 
@@ -511,7 +616,7 @@ func _parse_dialog(line: String, dialog: Dialogue) -> bool:
 	
 	return true
 
-# 检查tag和choice
+# 检查tag和choice（原有逻辑不变，缩进式choice的跳转标签已统一记录到cur_tmp_option_lines）
 func _check_tag_and_choice() -> bool:
 	for line_num in cur_tmp_option_lines:
 		var jump_tags = cur_tmp_option_lines[line_num] as Array
@@ -522,13 +627,31 @@ func _check_tag_and_choice() -> bool:
 	return true
 
 	
-# 解析结束
-func _parse_end(line: String, dialog: Dialogue) -> bool:
+# 解析结束 - 新增diadata参数，解决end行结束缩进时的参数缺失
+func _parse_end(line: String, dialog: Dialogue, diadata: KND_Shot) -> bool:
+	# 如果是end行，结束当前choice缩进解析并添加dialog
+	if tmp_in_choice_indent and tmp_current_choice_dialog and diadata != null:
+		# 检查是否有解析到选项
+		if tmp_current_choice_dialog.choices.size() > 0:
+			var dialogue_dic: Dictionary = tmp_current_choice_dialog.serialize_to_dict()
+			diadata.dialogues_source_data.append(dialogue_dic)
+			_scripts_info(tmp_path, tmp_choice_start_line, "缩进式choice解析完成 选项数量: %d" % tmp_current_choice_dialog.choices.size())
+		else:
+			_scripts_warning(tmp_path, tmp_choice_start_line, "choice: 后无有效选项行，忽略该choice")
+			# 无有效选项时，不添加任何空dialog到diadata
+		# 重置状态
+		_reset_choice_indent_state()
+	
 	if line.begins_with("end"):
 		dialog.dialog_type = Dialogue.Type.THE_END
 		return true
 	return false
 
+# 统一重置Choice缩进状态（核心，避免状态残留）
+func _reset_choice_indent_state() -> void:
+	tmp_in_choice_indent = false
+	tmp_current_choice_dialog = null
+	tmp_choice_start_line = 0
 
 # 错误报告
 func _scripts_debug(path: String, line: int, error_info: String):

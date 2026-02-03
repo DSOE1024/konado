@@ -1,5 +1,6 @@
 extends Control
 class_name ActingInterface
+
 ## 表演管理器
 
 ## 特效种类
