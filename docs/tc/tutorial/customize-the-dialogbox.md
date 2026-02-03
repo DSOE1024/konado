@@ -1,19 +1,17 @@
-# 自定义对话界面
+# 自訂對話介面
 
-## 介绍
+## 介紹
 
-如果你的作品需要自定义对话界面，你可以通过修改模板对话界面来实现，同时Godot Engine本身就拥有强大的主题系统，你可以通过修改自定义主题来达到效果。
+如果你的作品需要自訂對話介面，你可以透過修改模板對話介面來實現，同時 Godot Engine 本身就擁有強大的主題系統，你可以透過修改自訂主題來達到效果。
 
-但是请注意，修改模板对话界面后请不要更新Konado插件，否则你的修改会被覆盖。
+但是請注意，修改模板對話介面後請不要更新 Konado 插件，否則你的修改會被覆蓋。
 
-## 编辑场景文件
+## 編輯場景檔案
 
-`res://addons/konado/scenes/konado_dialogue.tscn` 是对话界面场景，你可以通过修改这个文件来自定义对话界面。
+`res://addons/konado/scenes/konado_dialogue.tscn` 是對話介面場景，你可以透過修改這個檔案來自訂對話介面。
 
-一般情况下请不要修改节点上的脚本，而是通过修改节点上的属性来达到自定义的效果。
+一般情況下請不要修改節點上的腳本，而是透過修改節點上的屬性來達到自訂的效果。
 
-## 编辑存档框
+## 編輯存檔框
 
-`res://addons/konado/template/ui_template/save_commponect/save_componect.tscn` 是存档框场景，你可以通过修改这个文件来自定义存档框。
-
-
+`res://addons/konado/template/ui_template/save_commponect/save_componect.tscn` 是存檔框場景，你可以透過修改這個檔案來自訂存檔框。
