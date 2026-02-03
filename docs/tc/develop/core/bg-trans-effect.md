@@ -1,57 +1,57 @@
-# 背景转场特效
+# 背景轉場特效
 
 ## 前言
 
-背景转场特效，是指在切换场景时，背景图片从当前场景退出，同时新场景的背景图片进入的效果。这种特效可以增加的视觉冲击力，提升用户体验。阅读本章节可以帮助您实现自定义的背景转场特效。
+背景轉場特效，是指在切換場景時，背景圖片從當前場景退出，同時新場景的背景圖片進入的效果。這種特效可以增加視覺衝擊力，提升使用者體驗。閱讀本章節可以幫助您實現自定義的背景轉場特效。
 
-## 背景切换 Shader 规范
+## 背景切換 Shader 規範
 
-为了统一管理和播放背景转场特效，我们约定了一个 Shader 规范，具体如下：
+為了統一管理和播放背景轉場特效，我們約定了一個 Shader 規範，具體如下：
 
-shader类型必须是 `canvas_item`
+shader 類型必須是 `canvas_item`
 
 ```glsl
 shader_type canvas_item;
 ```
 
-必须实现以下三个参数：
+必須實現以下三個參數：
 
 ```glsl
-uniform float progress : hint_range(0, 1) = 0.0; // 转场进度 0=仅current 1=仅target
-uniform sampler2D current_texture : hint_default_black; // 当前纹理
-uniform sampler2D target_texture : hint_default_black; // 目标纹理
+uniform float progress : hint_range(0, 1) = 0.0; // 轉場進度 0=僅current 1=僅target
+uniform sampler2D current_texture : hint_default_black; // 當前紋理
+uniform sampler2D target_texture : hint_default_black; // 目標紋理
 ```
 
-- progress：转场进度，取值范围 0~1，0 表示仅显示当前纹理，1 表示仅显示目标纹理。
-- current_texture：当前纹理，没切换场景时显示的纹理。
-- target_texture：目标纹理，切换场景后显示的纹理。
+- progress：轉場進度，取值範圍 0~1，0 表示僅顯示當前紋理，1 表示僅顯示目標紋理。
+- current_texture：當前紋理，沒切換場景時顯示的紋理。
+- target_texture：目標紋理，切換場景後顯示的紋理。
 
-## 背景切换特效配置
+## 背景切換特效設定
 
-同时，切换背景是一个动态的过程，因此还需要补充以下：
+同時，切換背景是一個動態的過程，因此還需要補充以下：
 
-定义BackgroundTransitionEffectsType枚举，用于标识背景切换特效类型。
+定義 BackgroundTransitionEffectsType 列舉，用於標識背景切換特效類型。
 ```
 YOUR_EFFECT_SHADER
 ```
 
-定义shader变量，推荐使用 `preload` 函数加载 Shader 文件。
+定義 shader 變數，推薦使用 `preload` 函式載入 Shader 檔案。
 ```
 var your_effect_shader: Shader = preload("res://path/to/your_effect_shader.shader")
 ```
 
-接下来需要实现YOUR_EFFECT_SHADER类型的背景切换特效配置。
+接下來需要實現 YOUR_EFFECT_SHADER 類型的背景切換特效設定。
 
 ```gdscript
 BackgroundTransitionEffectsType.YOUR_EFFECT_SHADER: {
-	"shader": your_effect_shader,  // 背景切换 Shader，应和上文中变量一致
-	"duration": 1.0,  // 转场时长，默认为1.0s
-	"progress_target": 1.0,  // 目标进度，默认为1.0
-	"tween_trans": Tween.TRANS_LINEAR  // 切换时缓动类型
+	"shader": your_effect_shader,  // 背景切換 Shader，應和上文中變數一致
+	"duration": 1.0,  // 轉場時長，預設為 1.0s
+	"progress_target": 1.0,  // 目標進度，預設為 1.0
+	"tween_trans": Tween.TRANS_LINEAR  // 切換時緩動類型
 }
 ```
 
-接下来测试一下背景切换特效，在切换场景时，添加以下测试代码，观察背景切换效果是否符合预期。
+接下來測試一下背景切換特效，在切換場景時，添加以下測試程式碼，觀察背景切換效果是否符合預期。
 
 ```gdscript
 bg.material.set("shader", your_effect_shader)
@@ -60,7 +60,7 @@ bg.material.set_shader_parameter("progress", 0.0)
 bg.material.set_shader_parameter("current_texture", current_texture)
 bg.material.set_shader_parameter("target_texture", tex)
 
-# 创建并配置过渡动画
+# 建立並設定過渡動畫
 effect_tween = get_tree().create_tween()
 effect_tween.tween_property(
 	bg.material, 
@@ -71,6 +71,3 @@ effect_tween.tween_property(
 
 effect_tween.play()
 ```
-
-
-
