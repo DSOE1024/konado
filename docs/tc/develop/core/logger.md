@@ -1,20 +1,20 @@
-# 日志器 KND_Logger
+# 日誌器 KND_Logger
 
 ## 前言
 
-KND_Logger 是基于Godot Logger实现的日志模块，支持日志级别、日志格式、日志输出、日志文件等功能，用于记录Konado运行时的日志信息。
+KND_Logger 是基於 Godot Logger 實現的日誌模組，支援日誌級別、日誌格式、日誌輸出、日誌檔案等功能，用於記錄 Konado 執行時的日誌資訊。
 
-## 日志路径
+## 日誌路徑
 
-日志文件默认路径为`C:\Users\{用户名}\AppData\Roaming\Godot\app_userdata\Konado Project\konado_log.log`，可以通过修改`KND_Logger`的`LOG_FILE_PATH`属性来更改日志文件路径。
+日誌檔案預設路徑為 `C:\Users\{使用者名}\AppData\Roaming\Godot\app_userdata\Konado Project\konado_log.log`，可以透過修改 `KND_Logger` 的 `LOG_FILE_PATH` 屬性來更改日誌檔案路徑。
 
-## 屏幕覆盖日志
+## 螢幕覆蓋日誌
 
-在报错时，对话场景会在屏幕上覆盖一个日志窗口，用于显示错误信息并中断游戏运行，如果您希望关闭该功能，可以将`KND_DialogueManager`的`enable_overlay_log`属性中设置为`false`。
+在報錯時，對話場景會在螢幕上覆蓋一個日誌視窗，用於顯示錯誤資訊並中斷遊戲執行，如果您希望關閉該功能，可以將 `KND_DialogueManager` 的 `enable_overlay_log` 屬性設定為 `false`。
 
-## 日志回调
+## 日誌回呼
 
-KND_Logger 提供了日志回调功能，您可以通过以下方式连接日志回调：
+KND_Logger 提供了日誌回呼功能，您可以透過以下方式連接日誌回呼：
 
 ```gdscript
 logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
