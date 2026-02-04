@@ -172,11 +172,13 @@ export default defineConfig({
           {
             text: '开发',
             items: [
-              { text: '核心功能指南', items: [
-                { text: '对话数据', link: '/develop/core/shot-and-dialogue.md'},
-                { text: '背景切换特效' , link: '/develop/core/bg-trans-effect.md'},
-                { text: 'Logger', link: '/develop/core/logger.md'},
-              ]},
+              {
+                text: '核心功能指南', items: [
+                  { text: '对话数据', link: '/develop/core/shot-and-dialogue.md' },
+                  { text: '背景切换特效', link: '/develop/core/bg-trans-effect.md' },
+                  { text: 'Logger', link: '/develop/core/logger.md' },
+                ]
+              },
               { text: '版本规划', link: '/develop/roadmap' },
               { text: '代码贡献', link: '/develop/code-contribute' },
               { text: '文档贡献', link: '/develop/doc-contribute' },
@@ -206,18 +208,152 @@ export default defineConfig({
       }
     },
 
-    // tc: {
-    //   label: '繁体中文',
-    //   lang: 'zh-TW',
-    //   themeConfig: {
-    //     nav: [
-    //       { text: 'Home', link: '/' },
-    //     ],
-    //     sidebar: [
-    //       { text: 'Guide', link: '/' }
-    //     ]
-    //   }
-    // },
+    tc: {
+      label: '繁體中文',
+      lang: 'zh-CN',
+      description: 'Konado: 視覺小說框架',
+      themeConfig: {
+        lastUpdatedText: '最後更新於',
+        editLink: {
+          pattern: 'https://github.com/godothub/konado/edit/master/docs/:path',
+          text: '在線編輯此頁'
+        },
+        outlineTitle: '本頁目錄',
+        returnToTopLabel: '返回頂部',
+        darkModeSwitchLabel: '深色模式',
+        docFooter: {
+          prev: '上一頁',
+          next: '下一頁'
+        },
+        search: {
+          provider: 'local',
+          options: {
+            translations: {
+              button: {
+                buttonText: '搜索',
+                buttonAriaLabel: '搜索'
+              },
+              modal: {
+                footer: {
+                  selectText: '選擇',
+                  navigateText: '切換',
+                  closeText: '關閉'
+                }
+              }
+            }
+          }
+        },
+        nav: [
+          {
+            text: '查看文檔', link: '/tc/tutorial/install'
+          },
+          {
+            text: '下載插件', link: 'https://github.com/GodotHub/konado/releases/latest'
+          },
+          {
+            text: '加入群聊', link: 'https://pd.qq.com/g/GodotHub999/text/707799746'
+          },
+          {
+            text: '贊助我們', link: 'https://afdian.tv/item/52230b2860a011f083ef52540025c377'
+          }
+        ],
+        sidebar: [
+          {
+            text: '基礎教程',
+            items: [
+              { text: '安裝Konado', link: '/tc/tutorial/install' },
+              { text: '對話配置文件', link: '/tc/tutorial/profiles' },
+              { text: '演員坐標與縮放', link: '/tc/tutorial/actor-coordinate-and-scaling' },
+              { text: '自定義對話框', link: '/tc/tutorial/customize-the-dialogbox' }
+            ]
+          },
+          {
+            text: 'Konado Script',
+            items: [
+              { text: '腳本介紹', link: '/tc/script/konado-script' },
+              { text: '元數據', link: '/tc/script/meta-data' },
+              { text: '普通對話', link: '/tc/script/conversation' },
+              {
+                text: '背景',
+                collapsed: true,
+                items: [
+                  { text: '背景切換', link: '/tc/script/background-switch' }
+                ]
+              },
+              {
+                text: '演員',
+                collapsed: true,
+                items: [
+                  { text: '創建演員', link: '/tc/script/create-actor' },
+                  { text: '演員退場', link: '/tc/script/actor-leave' },
+                  { text: '演員移動', link: '/tc/script/actor-move' },
+                  { text: '演員切換狀態', link: '/tc/script/actor-change-state' }
+                ]
+              },
+              {
+                text: '交互',
+                collapsed: true,
+                items: [
+                  { text: '標簽', link: '/tc/script/label' },
+                  { text: '選項跳轉', link: '/tc/script/option-to-jump' },
+                ]
+              },
+              {
+                text: '音頻',
+                collapsed: true,
+                items: [
+                  { text: '播放背景音樂', link: '/tc/script/' },
+                  { text: '停止背景音樂', link: '/tc/script/' },
+                  { text: '播放音效', link: '/tc/script/' }
+                ]
+              },
+              {
+                text: '結束',
+                collapsed: true,
+                items: [
+                  { text: '結束對話', link: '/tc/script/' }
+                ]
+              }
+            ]
+          },
+          {
+            text: '開發',
+            items: [
+              {
+                text: '核心功能指南', items: [
+                  { text: '對話數據', link: '/tc/develop/core/shot-and-dialogue.md' },
+                  { text: '背景切換特效', link: '/tc/develop/core/bg-trans-effect.md' },
+                  { text: 'Logger', link: '/tc/develop/core/logger.md' },
+                ]
+              },
+              { text: '版本規劃', link: '/tc/develop/roadmap' },
+              { text: '代碼貢獻', link: '/tc/develop/code-contribute' },
+              { text: '文檔貢獻', link: '/tc/develop/doc-contribute' },
+              { text: '翻譯貢獻', link: '/tc/develop/translate-contribute' },
+              { text: '問題反饋', link: '/tc/develop/feedback' }
+            ]
+          },
+          {
+            text: 'Konado .NET API',
+            items: [
+              { text: '安裝', link: '/tc/konadotnet/install_konadotnet' },
+              { text: '使用API', link: '/tc/konadotnet/konadotnet_api' }
+            ]
+
+          },
+          {
+            text: '關於',
+            items: [
+              { text: '關於Konado', link: '/tc/about/konado' },
+              { text: '看板娘Kona', link: '/tc/about/kona' },
+              { text: '海報', link: '/tc/about/banner' },
+              { text: '許可證', link: '/tc/about/license' },
+              { text: '鳴謝', link: '/tc/about/thanks' }
+            ]
+          }
+        ]
+      }
+    },
 
     en: {
       label: 'English',
@@ -248,56 +384,56 @@ export default defineConfig({
             text: 'Tutorial',
             items: [
               { text: 'Install', link: '/en/tutorial/install' },
-              { text: '对话配置文件', link: '/tutorial/profiles' },
-              { text: '演员坐标与缩放', link: '/tutorial/actor-coordinate-and-scaling' },
-              { text: '自定义对话框', link: '/tutorial/customize-the-dialogbox' }
+              { text: '对话配置文件', link: '/en/tutorial/profiles' },
+              { text: '演员坐标与缩放', link: '/en/tutorial/actor-coordinate-and-scaling' },
+              { text: '自定义对话框', link: '/en/tutorial/customize-the-dialogbox' }
             ]
           },
           {
             text: 'Konado Script',
             items: [
-              { text: '脚本介绍', link: '/script/konado-script' },
-              { text: '元数据', link: '/script/meta-data' },
-              { text: '普通对话', link: '/script/conversation' },
+              { text: '脚本介绍', link: '/en/script/konado-script' },
+              { text: '元数据', link: '/en/script/meta-data' },
+              { text: '普通对话', link: '/en/script/conversation' },
               {
                 text: '背景',
                 collapsed: true,
                 items: [
-                  { text: '背景切换', link: '/script/background-switch' }
+                  { text: '背景切换', link: '/en/script/background-switch' }
                 ]
               },
               {
                 text: '演员',
                 collapsed: true,
                 items: [
-                  { text: '创建演员', link: '/script/create-actor' },
-                  { text: '演员退场', link: '/script/actor-leave' },
-                  { text: '演员移动', link: '/script/actor-move' },
-                  { text: '演员切换状态', link: '/script/actor-change-state' }
+                  { text: '创建演员', link: '/en/script/create-actor' },
+                  { text: '演员退场', link: '/en/script/actor-leave' },
+                  { text: '演员移动', link: '/en/script/actor-move' },
+                  { text: '演员切换状态', link: '/en/script/actor-change-state' }
                 ]
               },
               {
                 text: '交互',
                 collapsed: true,
                 items: [
-                  { text: '分支', link: '/script/branch' },
-                  { text: '选项跳转', link: '/script/option-to-jump' },
+                  { text: '分支', link: '/en/script/branch' },
+                  { text: '选项跳转', link: '/en/script/option-to-jump' },
                 ]
               },
               {
                 text: '音频',
                 collapsed: true,
                 items: [
-                  { text: '播放背景音乐', link: '/script/' },
-                  { text: '停止背景音乐', link: '/script/' },
-                  { text: '播放音效', link: '/script/' }
+                  { text: '播放背景音乐', link: '/en/script/' },
+                  { text: '停止背景音乐', link: '/en/script/' },
+                  { text: '播放音效', link: '/en/script/' }
                 ]
               },
               {
                 text: '结束',
                 collapsed: true,
                 items: [
-                  { text: '结束对话', link: '/script/' }
+                  { text: '结束对话', link: '/en/script/' }
                 ]
               }
             ]
@@ -305,15 +441,15 @@ export default defineConfig({
           {
             text: ' Konado .NET',
             items: [
-              { text: '安装konadotnet', link: '/konadotnet/install_konadotnet' },
+              { text: '安装konadotnet', link: '/en/konadotnet/install_konadotnet' },
               {
                 text: 'KonadoAPI',
                 collapsed: true,
                 items: [
-                  { text: 'KonadoAPI介绍', link: '/konadotnet/konadoapi' },
-                  { text: 'KonadoAPI使用', link: '/konadotnet/konadoapi_use' },
-                  { text: '对话管理', link: '/konadotnet/konadoapi_example' },
-                  { text: 'KonadoAPI示例', link: '/konadotnet/konadoapi_example' }
+                  { text: 'KonadoAPI介绍', link: '/en/konadotnet/konadoapi' },
+                  { text: 'KonadoAPI使用', link: '/en/konadotnet/konadoapi_use' },
+                  { text: '对话管理', link: '/en/konadotnet/konadoapi_example' },
+                  { text: 'KonadoAPI示例', link: '/en/konadotnet/konadoapi_example' }
                 ]
               }
             ]
@@ -322,11 +458,11 @@ export default defineConfig({
           {
             text: '开发',
             items: [
-              { text: '版本规划', link: '/develop/roadmap' },
-              { text: '代码贡献', link: '/develop/code-contribute' },
-              { text: '文档贡献', link: '/develop/doc-contribute' },
-              { text: '翻译贡献', link: '/develop/translate-contribute' },
-              { text: '问题反馈', link: '/develop/feedback' }
+              { text: '版本规划', link: '/en/develop/roadmap' },
+              { text: '代码贡献', link: '/en/develop/code-contribute' },
+              { text: '文档贡献', link: '/en/develop/doc-contribute' },
+              { text: '翻译贡献', link: '/en/develop/translate-contribute' },
+              { text: '问题反馈', link: '/en/develop/feedback' }
             ]
           },
           {
@@ -334,8 +470,8 @@ export default defineConfig({
             items: [
               { text: 'Konado', link: '/en/about/konado' },
               { text: 'Kona', link: '/en/about/kona' },
-              { text: '许可证', link: '/about/license' },
-              { text: '鸣谢', link: '/about/thanks' }
+              { text: '许可证', link: '/en/about/license' },
+              { text: '鸣谢', link: '/en/about/thanks' }
             ]
           }
         ]
