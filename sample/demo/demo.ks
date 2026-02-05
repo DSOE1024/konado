@@ -5,17 +5,21 @@ background bg1 none
 "Kona" "Hello! Welcome to our cafe."
 "Kona" "What would you like today?"
 
+choice:
+    "Coffe1111111111111111" coffee_choice
+    "Tea11111111111111111111" tea_choice
+
 background bg2 cyberglitch
 
 "角色ID" "对话内容"
 
 "Kona" "What would you like today?"
 
-#background bg1 windmill
+background bg1 windmill
 
-#background bg2 wave
+background bg2 wave
 
-#background bg1 erase
+background bg1 erase
 
 choice "Coffee" coffee_choice "Tea" tea_choice
 
