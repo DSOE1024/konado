@@ -119,6 +119,8 @@ export default defineConfig({
               { text: '脚本介绍', link: '/script/konado-script' },
               { text: '元数据', link: '/script/meta-data' },
               { text: '普通对话', link: '/script/conversation' },
+              { text: '分支', link: '/script/branch' },
+              { text: '选项', link: '/script/option-to-jump' },
               {
                 text: '背景',
                 collapsed: true,
@@ -137,20 +139,12 @@ export default defineConfig({
                 ]
               },
               {
-                text: '交互',
-                collapsed: true,
-                items: [
-                  { text: '标签', link: '/script/label' },
-                  { text: '选项跳转', link: '/script/option-to-jump' },
-                ]
-              },
-              {
                 text: '音频',
                 collapsed: true,
                 items: [
-                  { text: '播放背景音乐', link: '/script/' },
-                  { text: '停止背景音乐', link: '/script/' },
-                  { text: '播放音效', link: '/script/' }
+                  { text: '播放背景音乐', link: '/script/play-bgm.md' },
+                  { text: '停止背景音乐', link: '/script/stop-bgm.md' },
+                  { text: '播放音效', link: '/script/play-sound-effect.md' }
                 ]
               },
               {
@@ -266,6 +260,8 @@ export default defineConfig({
               { text: '腳本介紹', link: '/tc/script/konado-script' },
               { text: '元數據', link: '/tc/script/meta-data' },
               { text: '普通對話', link: '/tc/script/conversation' },
+              { text: '分支', link: '/tc/script/branch' },
+              { text: '選項', link: '/tc/script/option-to-jump' },
               {
                 text: '背景',
                 collapsed: true,
@@ -284,20 +280,12 @@ export default defineConfig({
                 ]
               },
               {
-                text: '交互',
-                collapsed: true,
-                items: [
-                  { text: '標簽', link: '/tc/script/label' },
-                  { text: '選項跳轉', link: '/tc/script/option-to-jump' },
-                ]
-              },
-              {
                 text: '音頻',
                 collapsed: true,
                 items: [
-                  { text: '播放背景音樂', link: '/tc/script/' },
-                  { text: '停止背景音樂', link: '/tc/script/' },
-                  { text: '播放音效', link: '/tc/script/' }
+                  { text: '播放背景音樂', link: '/tc/script/play-bgm.md' },
+                  { text: '停止背景音樂', link: '/tc/script/stop-bgm.md' },
+                  { text: '播放音效', link: '/tc/script/play-sound-effect.md' }
                 ]
               },
               {

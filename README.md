@@ -30,11 +30,11 @@ Konado is a lightweight visual novel engine framework that provides a rich set o
 
 ## Quick Start
 
-Get up and running with Konado in minutes by following our [Quick Start Guide](https://godothub.com/konado/tutorial/install.html).
+Get up and running with Konado in minutes by following our [Quick Start Guide](https://godothub.com/oss/konado/tutorial/install.html).
 
 ## Documentation
 
-For comprehensive guides, API references, and advanced tutorials, visit our official project website: https://godothub.com/konado.
+For comprehensive guides, API references, and advanced tutorials, visit our official project website: https://godothub.com/oss/konado.
 
 ## Community
 
