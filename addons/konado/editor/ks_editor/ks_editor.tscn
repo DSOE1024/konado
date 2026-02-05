@@ -90,7 +90,7 @@ text = "未打开文件"
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "在线文档"
-uri = "https://godothub.com/konado/"
+uri = "https://godothub.com/oss/konado/"
 
 [node name="VBoxContainer2" type="SplitContainer" parent="dock" unique_id=1355989015]
 layout_mode = 2

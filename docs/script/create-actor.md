@@ -25,7 +25,10 @@ actor show [角色ID] [状态] at [x] [y] scale [比例] <mirror>
 
 ## 示例
 ```text
-# 显示角色（左侧，正常状态）
+# 显示角色（正常状态）
 actor show alice normal at 350 500 scale 0.9
+
+# 显示角色（水平镜像翻转）
+actor show alice normal at 350 500 scale 0.9 mirror
 ```
 

@@ -30,12 +30,12 @@ Konado 是一个视觉小说引擎框架，提供多种对话模板以及对话�
 
 ## 快速开始
 
-请参考 [快速开始](https://godothub.com/konado/tutorial/install.html) 文档，了解如何快速开始使用Konado。
+请参考 [快速开始](https://godothub.com/oss/konado/tutorial/install.html) 文档，了解如何快速开始使用Konado。
 
 
 ## 文档
 
-欢迎访问我们的项目网站：https://godothub.com/konado 获取更多详细文档和教程。
+欢迎访问我们的项目网站：https://godothub.com/oss/konado 获取更多详细文档和教程。
 
 ## 社区
 
