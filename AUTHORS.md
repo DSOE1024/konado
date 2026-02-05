@@ -4,15 +4,17 @@ Please note that the contributor list itself does not represent the copyright ow
 
 ## Konado Project Team
 
-- [DSOE1024](https://gitee.com/DSOE1024)
+- [DSOE1024](https://github.com/DSOE1024)
 - [putyk](https://github.com/putyk)
 - [moluopro](https://github.com/moluopro)
+- [ioniccrystal](https://github.com/ioniccrystal)
+- [fangchu](https://github.com/fangchudark)
 
 ## Contributors
 
 The following people contributed to this project:
 <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://contrib.rocks/image?repo=godothub/konado&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://contrib.rocks/image?repo=godothub/konado" />
-   <img alt="Contributors" src="https://contrib.rocks/image?repo=godothub/konado" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://contrib.rocks/image?repo=GodotHub/konado&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://contrib.rocks/image?repo=GodotHub/konado" />
+   <img alt="Contributors" src="https://contrib.rocks/image?repo=GodotHub/konado" />
 </picture>
