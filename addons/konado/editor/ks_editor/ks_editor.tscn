@@ -13,7 +13,7 @@ bg_color = Color(0.0846, 0.0873, 0.09, 1)
 corner_radius_top_right = 15
 corner_radius_bottom_right = 15
 
-[node name="KsEditorWindow" type="Panel" unique_id=1539945055]
+[node name="KonadoEditorWindow" type="Panel" unique_id=1539945055]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
