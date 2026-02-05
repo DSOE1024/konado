@@ -9,9 +9,9 @@
 | Codename | Version |  Status   | Release Date      | Download                                         |
 | :--------------- | :-----: | :-------: | :---------------- | :-------------------------------------------------------- |
 | /                |  3.0    | Planning  | /                 |                                                           |
-| Yuanxiao         |  2.2    | Planning  | 2026-02-02        | https://github.com/GodotHub/konado/releases/tag/v2.2      |
-| Lebkuchen        |  2.1    | Active    | 2025-12-24        | https://github.com/GodotHub/konado/releases/tag/v2.1      |
-| Mooncake         |  2.0    | Release   | 2025-12-03        | https://github.com/GodotHub/konado/releases/tag/v2.0      |
+| Yuanxiao         |  2.2    | Planning  | 2026-02-02        | https://github.com/godothub/konado/releases/tag/v2.2      |
+| Lebkuchen        |  2.1    | Active    | 2025-12-24        | https://github.com/godothub/konado/releases/tag/v2.1      |
+| Mooncake         |  2.0    | Release   | 2025-12-03        | https://github.com/godothub/konado/releases/tag/v2.0      |
 
 
 

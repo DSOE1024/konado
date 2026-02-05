@@ -13,11 +13,11 @@
 ### 插件下載
 
 #### 穩定版（推薦）
-請前往 [Konado 最新版本頁面](https://github.com/GodotHub/konado/releases/latest) 下載最新穩定版的插件 ZIP 壓縮包。穩定版經過充分驗證，穩定性和可靠性更有保障，是生產環境的首選。
+請前往 [Konado 最新版本頁面](https://github.com/godothub/konado/releases/latest) 下載最新穩定版的插件 ZIP 壓縮包。穩定版經過充分驗證，穩定性和可靠性更有保障，是生產環境的首選。
 
 
 #### 每日構建版（嘗鮮版）
-我們同步提供每日構建版，如需體驗最新開發特性，可前往 [Konado 全版本頁面](https://github.com/GodotHub/konado/releases/)，尋找標題標註有 `Konado Daily Build` 的版本下載。
+我們同步提供每日構建版，如需體驗最新開發特性，可前往 [Konado 全版本頁面](https://github.com/godothub/konado/releases/)，尋找標題標註有 `Konado Daily Build` 的版本下載。
 
 如果你是開發人員，並且希望體驗最新的開發特性，可以下載每日構建版，並將使用過程中遇到的問題回饋到 Issues 中。
 

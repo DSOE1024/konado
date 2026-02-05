@@ -41,17 +41,17 @@ QQ 頻道交流群組：https://pd.qq.com/g/GodotHub999/text/707799746
 以下圖表透過 [contrib.rocks](https://contrib.rocks) 生成，即時更新專案貢獻者資訊。
 
 <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://contrib.rocks/image?repo=GodotHub/konado&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://contrib.rocks/image?repo=GodotHub/konado" />
-   <img alt="Contributors" src="https://contrib.rocks/image?repo=GodotHub/konado" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://contrib.rocks/image?repo=godothub/konado&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://contrib.rocks/image?repo=godothub/konado" />
+   <img alt="Contributors" src="https://contrib.rocks/image?repo=godothub/konado" />
 </picture>
 
 
 ### Github Star History
 <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=GodotHub/konado&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=GodotHub/konado&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=GodotHub/konado&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=godothub/konado&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=godothub/konado&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=godothub/konado&type=date&legend=top-left" />
  </picture>
 
 

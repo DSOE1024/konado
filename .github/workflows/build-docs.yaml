@@ -4,7 +4,12 @@ on:
   push:
     branches:
       - main
-      - master
+    paths:
+      - "docs/**"
+      - ".github/workflows/build-docs.yaml"
+  pull_request:
+    branches:
+      - main
     paths:
       - "docs/**"
       - ".github/workflows/build-docs.yaml"
@@ -45,7 +50,8 @@ jobs:
         working-directory: docs
         run: pnpm docs:build
 
-      - name: Deploy to docs branch (force overwrite)
+      - name: Deploy to docs branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           DOCS_BRANCH: docs
           DIST_DIR: docs/.vitepress/dist
@@ -90,4 +96,4 @@ jobs:
           cd ..
           git worktree remove .deploy_docs_branch --force
 
-          curl -v http://godothub.com:8000/konado/build-docs
+          curl -v https://ci.godothub.com/deploy-website
