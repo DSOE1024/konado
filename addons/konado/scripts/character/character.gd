@@ -1,6 +1,6 @@
 @tool
 extends Resource
-class_name Character
+class_name KND_Character
 
 ## 角色姓名
 @export var chara_name: String

@@ -549,7 +549,7 @@ func _display_background(bg_name: String, effect: ActingInterface.BackgroundTran
 
 ## 演员状态切换的方法
 func _actor_change_state(chara_id: String, state_id: String):
-	var target_chara: Character
+	var target_chara: KND_Character
 	var state_tex: Texture
 	for chara in chara_list.characters:
 		if chara.chara_name == chara_id:
@@ -561,7 +561,7 @@ func _actor_change_state(chara_id: String, state_id: String):
 
 ## 从角色列表创建并显示角色
 func _display_character(dialogue: Dialogue) -> void:
-	var target_chara: Character
+	var target_chara: KND_Character
 	var target_chara_name = dialogue.character_name
 	for chara in chara_list.characters:
 		if chara.chara_name == target_chara_name:
