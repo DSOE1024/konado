@@ -28,6 +28,9 @@ var vortex_swap_effect_shader: Shader = preload("res://addons/konado/shader/bg_t
 var windmill_effect_shader: Shader = preload("res://addons/konado/shader/bg_trans_effects/windmill_effect.gdshader")
 var cyber_glitch_effect_shader: Shader = preload("res://addons/konado/shader/bg_trans_effects/cyber_glitch_effect.gdshader")
 
+## 演员模板
+@onready var _konado_actor_template: PackedScene = preload("res://addons/konado/template/character/character_template.tscn")
+
 ## 演员字典
 var actor_dict = {}
 ## 角色列表
@@ -38,6 +41,7 @@ var chara_list: CharacterList
 @onready var _chara_controler: Control = $BackgroundLayer/CharaControl
 ## 效果层
 @onready var _effect_layer: ColorRect = $EffectLayer
+
 ## 完成背景切换的信号
 signal background_change_finished
 ## 完成角色创建的信号
@@ -56,8 +60,6 @@ var background_id : String
 
 var TRANSITION_CONFIGS: Dictionary = {}
 
-## 默认分辨率，用于计算位置，建议保持为1280x720
-@export var reference_resolution: Vector2 = Vector2(1280, 720)
 
 ## 是否保持比例
 @export var keep_ratio: bool = true
@@ -71,34 +73,6 @@ func _ready() -> void:
 	for child in _chara_controler.get_children():
 		child.queue_free()
 	
-	_chara_controler.set_size(reference_resolution)
-	_scale_resolution()
-
-	# 订阅窗口大小变化事件
-	get_viewport().size_changed.connect(_scale_resolution)
-
-## 缩放演员层的分辨率
-func _scale_resolution() -> void:
-	_chara_controler.set_position(Vector2(0, 0))
-	
-	var current_resolution = get_viewport().get_visible_rect().size
-	var scale_x = current_resolution.x / reference_resolution.x
-	var scale_y = current_resolution.y / reference_resolution.y
-	var scale = Vector2(scale_x, scale_y)
-
-	# 如果保持比例
-	if keep_ratio:
-		scale = min(scale_x, scale_y)
-
-	_chara_controler.set_scale(Vector2(scale, scale))
-	
-	# 如果居中调整
-	if center_adjust:
-		if scale_x > scale_y:
-			var move_x = (current_resolution.x - reference_resolution.x * scale) / 2
-			_chara_controler.set_position(Vector2(move_x, _chara_controler.position.y), 0)
-		
-
 ## 获取角色节点的方法
 func get_chara_node(actor_id: String) -> Node:
 	# 检查要删除的角色是否在容器和字典中
@@ -227,7 +201,7 @@ func _on_transition_finished(mat: ShaderMaterial, target_tex: Texture) -> void:
 	
 	
 # 新建角色图片的方法
-func create_new_character(chara_id: String, pos: Vector2, state: String, tex: Texture, _scale: float, mirror: bool) -> void:
+func create_new_character(chara_id: String, division: int, pos: int, state: String, tex: Texture, actor_scale: float, mirror: bool) -> void:
 	# 检查创建的是否为场景已有角色
 	for chara_dict in actor_dict.values():
 		if chara_dict["id"] == chara_id:
@@ -246,39 +220,37 @@ func create_new_character(chara_id: String, pos: Vector2, state: String, tex: Te
 
 	var chara_dict := {
 		"id": chara_id,
-		"x": pos.x,
-		"y": pos.y,
+		"division": division,
+		"pos": pos,
 		"state": state,
-		"c_scale": _scale,
+		"c_scale": actor_scale,
 		"mirror": mirror
 		}
 		
 	# 添加到角色字典
 	actor_dict[chara_dict.id] = chara_dict
 	var node_name : String = str(chara_dict["id"])
-	var temp_node : Node2D = Node2D.new()
+	var temp_node : KND_Actor = _konado_actor_template.instantiate() as KND_Actor
 	temp_node.name = node_name
-	temp_node.set_position(pos)
+	temp_node.division = division
+	temp_node.character_position = pos
+	temp_node.set_character_texture(tex)
+	temp_node.set_texture_scale(actor_scale)
 	# 创建角色的TextureRect
-	var chara_tex = TextureRect.new()
+	#var chara_tex = TextureRect.new()
 	# 先隐藏
-	chara_tex.modulate = Color(1, 1, 1, 0)
-	chara_tex.name = node_name
-	chara_tex.set_texture(tex)
-	chara_tex.scale = Vector2(_scale, _scale)
-	# 设置演员立绘水平镜像翻转，减少立绘文件资源占用
-	chara_tex.flip_h = mirror
-	temp_node.set_name(node_name)
-	temp_node.add_child(chara_tex)
+	#chara_tex.modulate = Color(1, 1, 1, 0)
+	#chara_tex.name = node_name
+	#chara_tex.set_texture(tex)
+	#chara_tex.scale = Vector2(_scale, _scale)
+	## 设置演员立绘水平镜像翻转，减少立绘文件资源占用
+	#chara_tex.flip_h = mirror
+	#temp_node.add_child(chara_tex)
 
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
 	# _chara_controler.add_child(chara_tex)
-	var ctween = temp_node.create_tween()
-	ctween.tween_property(chara_tex, "modulate", Color(1, 1, 1, 1), 0.618)
-	ctween.play()
-	await ctween.finished
-	ctween.kill()
+
 	character_created.emit()
 	print("在位置："+str(pos)+" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
 	
@@ -403,7 +375,7 @@ func delete_character(chara_id: String) -> void:
 				return
 				
 ## 删除所有演员
-func delete_all_character() -> void:
+func delete_all_actor() -> void:
 	actor_dict.clear()
 	for node in _chara_controler.get_children():
 		node.queue_free()

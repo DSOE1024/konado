@@ -2,10 +2,12 @@ shot_id HelloWorld
 
 background bg1 none
 
+actor show 可娜 正常 at 6 2 scale 1.0
+
 "Kona" "Hello! Welcome to our cafe."
 "Kona" "What would you like today?"
 
-
+# 111
 background bg2 cyberglitch
 
 "角色ID" "对话内容"

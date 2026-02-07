@@ -174,7 +174,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		_acting_interface.chara_list = chara_list
 
 	# 初始化各管理器
-	_acting_interface.delete_all_character()
+	_acting_interface.delete_all_actor()
 
 	justenter = true
 	dialogueState == DialogState.OFF
@@ -591,7 +591,7 @@ func _display_character(actor: DialogueActor) -> void:
 	# 角色立绘镜像翻转
 	var mirror = actor.actor_mirror
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, pos, target_state_name, target_state_tex, a_scale, mirror)
+	_acting_interface.create_new_character(target_chara_name, pos.x, pos.y, target_state_name, target_state_tex, a_scale, mirror)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:
