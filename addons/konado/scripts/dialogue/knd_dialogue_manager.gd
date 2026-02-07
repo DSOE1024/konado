@@ -26,9 +26,8 @@ class_name KND_DialogueManager
 ## 是否显示错误日志覆盖
 @export var enable_overlay_log: bool = true
 
-
 ## 对话界面接口类
-@onready var _dialog_interface: DialogueInterface = $DialogUI/DialogueInterface
+@onready var _dialog_interface: KND_ChoiceInterface = $DialogUI/DialogueInterface
 
 ## 对话框
 @export var _konado_dialogue_box: KND_DialogueBox
@@ -175,7 +174,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		_acting_interface.chara_list = chara_list
 
 	# 初始化各管理器
-	_acting_interface.delete_all_character()
+	_acting_interface.delete_all_actor()
 
 	justenter = true
 	dialogueState == DialogState.OFF
@@ -358,7 +357,7 @@ func _process(delta) -> void:
 						_continue()
 					else:
 						# 生成并显示选项
-						_dialog_interface.display_options(dialog_choices)
+						_dialog_interface.display_options(dialog_choices, self)
 						_acting_interface.show()
 						_dialog_interface.show()
 						_dialog_interface._choice_container.show()
@@ -402,12 +401,6 @@ func _process(delta) -> void:
 					
 					print("添加了 %d 个标签对话" % tag_dialogues.size())
 					print("当前对话总数: " + str(dialog_data.dialogues.size()))
-					_process_next()
-					pass
-				# 跳过注释
-				elif dialog_type == Dialogue.Type.LABEL:
-					if Engine.is_editor_hint():
-						print("注释：" + dialog.label_notes)
 					_process_next()
 					pass
 				# 如果开始对话
@@ -598,7 +591,7 @@ func _display_character(actor: DialogueActor) -> void:
 	# 角色立绘镜像翻转
 	var mirror = actor.actor_mirror
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, pos, target_state_name, target_state_tex, a_scale, mirror)
+	_acting_interface.create_new_character(target_chara_name, pos.x, pos.y, target_state_name, target_state_tex, a_scale, mirror)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:

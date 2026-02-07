@@ -23,6 +23,7 @@ config/description="Konado is an open-source framework for creating visual novel
 config/version="2.2"
 run/main_scene="uid://bcl2e6o0kb5dm"
 config/features=PackedStringArray("4.6", "C#", "Forward Plus")
+boot_splash/bg_color=Color(1, 1, 1, 1)
 boot_splash/image="uid://jw3mdmdblgx8"
 config/icon="uid://b5olx2vwoscbr"
 
@@ -43,12 +44,6 @@ project/assembly_name="Konado"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/konado/plugin.cfg", "res://addons/konadotnet/plugin.cfg")
-
-[file_customization]
-
-folder_colors={
-"res://addons/konado/neo/runtime/": "orange"
-}
 
 [gui]
 

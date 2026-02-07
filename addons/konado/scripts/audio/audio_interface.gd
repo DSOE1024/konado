@@ -1,5 +1,3 @@
-@tool
-
 extends Node
 class_name DialogAudioInterface
 
@@ -65,7 +63,3 @@ func play_sound_effect(audio: AudioStream) -> void:
 	sound_effect_player.stream=audio
 	sound_effect_player.play()
 	finish_playsoundeffect.emit()
-
-#获取音乐播放进度
-func get_bgm_progress() -> float :
-	return bgm_player.get_playback_position()
