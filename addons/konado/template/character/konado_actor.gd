@@ -14,7 +14,6 @@ class_name KND_Actor
 
 @export var texture_rect: TextureRect
 
-# ---------------------- 横向位置配置（原有） ----------------------
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
 @export var division: int = 6:
 	set(value):
@@ -44,6 +43,13 @@ class_name KND_Actor
 		if character_y_position != value:
 			character_y_position = clamp(value, 1, y_division - 1)
 			_on_resized()
+		
+## 设置镜像	
+@export var mirror: bool = false:
+	set(value):
+		if mirror != value:
+			mirror = value
+			set_texture_mirror()
 
 func _ready() -> void:
 	if not self.resized.is_connected(_on_resized):
@@ -85,3 +91,8 @@ func set_texture_scale(scale: float) -> void:
 		return
 	texture_rect.scale = Vector2(scale, scale)
 	_on_resized()
+	
+func set_texture_mirror() -> void:
+	if not texture_rect:
+		return
+	texture_rect.flip_h = mirror

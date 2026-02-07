@@ -2,7 +2,7 @@ shot_id HelloWorld
 
 background bg1 none
 
-actor show 可娜 正常 at 6 2 scale 1.1
+actor show 可娜 正常 at 6 2 scale 1.1 mirror
 
 "Kona" "Hello! Welcome to our cafe."
 "Kona" "What would you like today?"

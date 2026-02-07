@@ -54,5 +54,5 @@ metadata/_custom_type_script = "uid://5dxx84u6uyy0"
 
 [resource]
 script = ExtResource("2_vqfl5")
-characters = [SubResource("Resource_7mst4")]
+characters = Array[ExtResource("1_6oy8v")]([SubResource("Resource_7mst4")])
 metadata/_custom_type_script = "uid://bl7m0mtuh2jqi"

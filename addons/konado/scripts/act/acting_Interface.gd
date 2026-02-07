@@ -236,6 +236,7 @@ func create_new_character(chara_id: String, division: int, pos: int, state: Stri
 	temp_node.character_position = pos
 	temp_node.set_character_texture(tex)
 	temp_node.set_texture_scale(actor_scale)
+	temp_node.mirror = mirror
 	# 创建角色的TextureRect
 	#var chara_tex = TextureRect.new()
 	# 先隐藏
@@ -249,7 +250,6 @@ func create_new_character(chara_id: String, division: int, pos: int, state: Stri
 
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
-	# _chara_controler.add_child(chara_tex)
 
 	character_created.emit()
 	print("在位置："+str(pos)+" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
@@ -275,7 +275,7 @@ func create_character_from_dic(_actor_dic: Dictionary) -> void:
 		chara_tex.name = node_name
 
 		var tex: Texture = Texture.new()
-		var target_chara: Character = null
+		var target_chara: KND_Character = null
 
 		
 		for character in chara_list.characters:
