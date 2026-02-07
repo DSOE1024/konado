@@ -404,12 +404,6 @@ func _process(delta) -> void:
 					print("当前对话总数: " + str(dialog_data.dialogues.size()))
 					_process_next()
 					pass
-				# 跳过注释
-				elif dialog_type == Dialogue.Type.LABEL:
-					if Engine.is_editor_hint():
-						print("注释：" + dialog.label_notes)
-					_process_next()
-					pass
 				# 如果开始对话
 				elif dialog_type == Dialogue.Type.START:
 					if dialogueState != DialogState.PLAYING:

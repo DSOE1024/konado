@@ -22,7 +22,6 @@ enum Type {
 	JUMP_Tag, ## 跳转到行
 	JUMP_Shot, ## 跳转
 	THE_END, ## 剧终
-	LABEL ## 注释标签
 }
 
 @export var dialog_type: Type:
@@ -70,9 +69,6 @@ var background_toggle_effects: ActingInterface.BackgroundTransitionEffectsType
 
 # 目标跳转的镜头
 var jump_shot_id: String
-
-## 注释
-var label_notes: String
 
 # 保存不同分支故事线的演员字典，默认故事线为"main"
 # 角色信息字典结构说明:
@@ -229,9 +225,6 @@ func _get_property_list():
 	if dialog_type == Type.JUMP_Shot:
 		var jump_template = Jump_Template.get_property_infos()
 		list.append(jump_template["jump_shot_id"])
-	if dialog_type == Type.LABEL:
-		var label_template = Label_Template.get_property_infos()
-		list.append(label_template["label_notes"])
 	if dialog_type == Type.THE_END:
 		pass
 	return list
@@ -306,9 +299,6 @@ func serialize_to_dict() -> Dictionary:
 		Type.JUMP_Shot:
 			dict["jump_shot_id"] = jump_shot_id
 		
-		Type.LABEL:
-			dict["label_notes"] = label_notes
-	
 	# 演员快照
 	dict["actor_snapshots"] = actor_snapshots.duplicate(true)
 	
@@ -392,10 +382,6 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 			if "jump_shot_id" in dict:
 				jump_shot_id = dict["jump_shot_id"]
 		
-		Type.LABEL:
-			if "label_notes" in dict:
-				label_notes = dict["label_notes"]
-	
 	# 演员快照
 	if "actor_snapshots" in dict:
 		actor_snapshots = dict["actor_snapshots"].duplicate(true)
