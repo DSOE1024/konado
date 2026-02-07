@@ -1,6 +1,7 @@
 extends Node
-class_name DialogueInterface
-# 对话UI控制脚本
+class_name KND_ChoiceInterface
+
+## 对话UI接口
 
 ## 对话选项按钮容器
 @onready var _choice_container: Container = $ChoicesContainer

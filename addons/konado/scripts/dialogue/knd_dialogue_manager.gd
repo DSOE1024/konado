@@ -26,9 +26,8 @@ class_name KND_DialogueManager
 ## 是否显示错误日志覆盖
 @export var enable_overlay_log: bool = true
 
-
 ## 对话界面接口类
-@onready var _dialog_interface: DialogueInterface = $DialogUI/DialogueInterface
+@onready var _dialog_interface: KND_ChoiceInterface = $DialogUI/DialogueInterface
 
 ## 对话框
 @export var _konado_dialogue_box: KND_DialogueBox
