@@ -27,7 +27,7 @@ class_name KND_DialogueManager
 @export var enable_overlay_log: bool = true
 
 
-## 对话界面接口类，包括对话人物姓名（RichTextLabel）和对话（RichTextLabel）
+## 对话界面接口类
 @onready var _dialog_interface: DialogueInterface = $DialogUI/DialogueInterface
 
 ## 对话框
@@ -50,8 +50,6 @@ class_name KND_DialogueManager
 #@onready var _exitButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/退出"
 ### 自动按钮
 #@onready var _autoPlayButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/自动"
-## 选项容器（用于实现点击事件屏蔽）
-@onready var _choicesContainer: VBoxContainer = $DialogUI/DialogueInterface/ChoicesBox/ChoicesContainer
 
 ## 报错提示面板
 @onready var error_tooltip_panel: ColorRect = $ErrorToolTip
@@ -127,6 +125,7 @@ func _ready() -> void:
 	#if not _autoPlayButton.toggled.is_connected(start_autoplay):
 		#_autoPlayButton.toggled.connect(start_autoplay)
 		
+	# 初始化Logger
 	var logger: KND_Logger = KND_Logger.new()
 	OS.add_logger(logger)
 	# 使用Deferred避免线程问题
@@ -221,12 +220,19 @@ func start_dialogue() -> void:
 		_dialog_interface.show()
 	if !_acting_interface:
 		_acting_interface.show()
-	# 切换到播放状态
+		
+	_konado_dialogue_box.character_name = ""
+	_konado_dialogue_box.dialogue_text = " "
+	_konado_dialogue_box.update_dialogue_content()
+	
+	# 显示对话框
+	#_konado_dialogue_box.on_dialogue_show_completed.connect()
+	_konado_dialogue_box.show_dialogue_box()
 	_dialogue_goto_state(DialogState.PLAYING)
 	print_rich("[color=yellow]开始对话 [/color]")
-
 	# 播放镜头信号
 	shot_start.emit()
+
 
 
 func _process(delta) -> void:
@@ -476,6 +482,7 @@ func stop_dialogue() -> void:
 	print_rich("[color=yellow]关闭对话[/color]")
 	# 切换到关闭状态
 	_dialogue_goto_state(DialogState.OFF)
+	_konado_dialogue_box.hide_dialogue_box()
 
 	shot_end.emit()
 	

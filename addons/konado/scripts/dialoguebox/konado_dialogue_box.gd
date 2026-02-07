@@ -1,7 +1,7 @@
 extends Control
 class_name KND_DialogueBox
 
-## 对话框模板
+## Konado对话框模板
 ## 可以自定义设置画面显示内容、位置、尺寸
 
 ## 点击对话框
@@ -12,26 +12,32 @@ signal on_character_name_click
 ## 打字完成
 signal typing_completed
 
+## 对话框显示动画完成
+signal on_dialogue_show_completed
+
+## 对话框隐藏动画完成
+signal on_dialogue_hide_completed
+
 ## 角色对象
 @export_group("名字")
-@export var character_name : String = "" :
+@export var character_name: String = "" :
 	set(value):
 		character_name = value
 		update_dialogue()
 			
-@export var name_size :int=32              ## 名字字体大小
-@export var name_bg :Texture2D              ## 名字标签背景
-@export var name_color :Color = Color.BLACK ## 名字颜色
+@export var name_size: int = 32              ## 名字字体大小
+@export var name_bg: Texture2D              ## 名字标签背景
+@export var name_color: Color = Color.WHITE ## 名字颜色
 
 ## 对话内容
 @export_group("对话文本设置")
-@export var dialogue_text : String= "":
+@export var dialogue_text: String= "":
 	set(value):
 		dialogue_text = value
 		update_dialogue_content()
 
 ## 打字间隔（单字符）
-@export var typing_interval: float = 0.04:
+@export var typing_interval: float = 0.4:
 	set(value):
 		typing_interval = value
 		update_dialogue_content()
@@ -45,22 +51,30 @@ signal typing_completed
 @export var audio_volumn: float = 1.0         ## 音效音量(0-1)
 
 @export_group("对话框设置")
-@export var dialogue_margins :int = 100     ## 对话框到底部距离
-@export var dialogue_bg :Texture2D          ## 对话框背景
-@export var dialogue_color :Color = Color.BLACK ## 对话文字颜色
-@export var dialogue_hight_max :int = 300  ## 对话文本框最大高度
+@export var dialogue_margins: int = 100     ## 对话框到底部距离
+@export var dialogue_bg: Texture2D          ## 对话框背景
+@export var dialogue_color: Color = Color.WHITE ## 对话文字颜色
+@export var dialogue_hight_max: int = 300  ## 对话文本框最大高度
 
 @export_group("按钮")
-@export var button_show :bool =false
-@export var button_text:String =""
-@export var button_texture :Texture2D
+@export var button_show: bool = false
+@export var button_text: String = ""
+@export var button_texture: Texture2D
 
+# 动画相关变量
+@export_group("过渡动画设置")
+@export var fade_duration: float = 0.5      ## 显示/隐藏过渡动画时长
+@export var fade_trans_type: Tween.TransitionType = Tween.TRANS_SINE  ## 过渡动画曲线类型
+@export var fade_ease_type: Tween.EaseType = Tween.EASE_IN_OUT        ## 过渡动画缓动类型
 
 # 动态音频播放器
 @onready var audio_player: AudioStreamPlayer = AudioStreamPlayer.new()
 # 音效状态变量 - 记录上一次播放时间、当前随机间隔
 var last_audio_play_time: float = 0.0
 var current_random_interval: float = 0.0
+
+# 透明度过渡动画Tween
+var fade_tween: Tween = null
 
 ## 加载节点
 @onready var character_name_label: Label = %character_name_label
@@ -73,6 +87,8 @@ var typing_tween: Tween = null
 
 
 func _ready() -> void:
+	self.modulate.a = 0.0
+	
 	if enable_typing_effect_audio:
 		# 将音频播放器添加为子节点，自动完成初始化
 		add_child(audio_player)
@@ -86,8 +102,50 @@ func _ready() -> void:
 		# 初始化随机间隔
 		current_random_interval = randf_range(min_audio_interval, max_audio_interval)
 		
-
-## 更新对话框
+## 隐藏对话框（带透明度过渡动画）
+func hide_dialogue_box() -> void:
+	# 停止原有过渡动画，避免动画冲突
+	if fade_tween != null and fade_tween.is_running():
+		fade_tween.kill()
+	
+	# 创建新的透明度过渡动画
+	fade_tween = get_tree().create_tween()
+	# 设置动画曲线和缓动类型
+	fade_tween.set_trans(fade_trans_type)
+	fade_tween.set_ease(fade_ease_type)
+	# 过渡modulate的alpha值从当前值到0
+	fade_tween.tween_property(self, "modulate:a", 0.0, fade_duration)
+	# 动画结束后隐藏节点并发射隐藏完成信号
+	fade_tween.finished.connect(func():
+		self.hide()
+		# 重置透明度为1，避免下次显示时是透明的
+		self.modulate.a = 1.0
+		# 发射对话框隐藏完成信号
+		on_dialogue_hide_completed.emit()
+	)
+	
+## 显示对话框（带透明度过渡动画）
+func show_dialogue_box() -> void:
+	# 先显示节点并重置透明度
+	self.show()
+	self.modulate.a = 0.0
+	
+	# 停止原有过渡动画，避免动画冲突
+	if fade_tween != null and fade_tween.is_running():
+		fade_tween.kill()
+	
+	# 创建新的透明度过渡动画
+	fade_tween = get_tree().create_tween()
+	# 设置动画曲线和缓动类型
+	fade_tween.set_trans(fade_trans_type)
+	fade_tween.set_ease(fade_ease_type)
+	# 过渡modulate的alpha值从0到1
+	fade_tween.tween_property(self, "modulate:a", 1.0, fade_duration)
+	# 动画结束后发射显示完成信号
+	fade_tween.finished.connect(func():
+		on_dialogue_show_completed.emit()
+	)
+	
 func update_dialogue():
 	if not is_inside_tree():
 		return
@@ -146,7 +204,7 @@ func _process(delta: float) -> void:
 	
 	if enable_typing_effect_audio:
 		if time_since_last_play > current_random_interval and randf() < audio_trigger_chance and dialogue_label.visible_ratio < 0.98:
-			# 防重叠：播放前先停止上一次音效（避免滴滴声叠加变吵）
+			# 防重叠
 			audio_player.stop()
 			audio_player.play()
 			# 更新上一次播放时间

@@ -6,18 +6,12 @@ class_name DialogueInterface
 @onready var _choice_container: Container = $ChoicesContainer
 @onready var _dialog_manager: KND_DialogueManager = $"../.."
 
-## 完成打字的信号
-signal finish_typing
 ## 完成创建选项的信号
 signal finish_display_options
-
-
 
 ## 初始化对话框
 func init_dialog_box() -> void:
 	distroy_options()
-
-
 
 
 func distroy_options() -> void:

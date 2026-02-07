@@ -5,9 +5,6 @@ background bg1 none
 "Kona" "Hello! Welcome to our cafe."
 "Kona" "What would you like today?"
 
-choice:
-    "Coffe1111111111111111" coffee_choice
-    "Tea11111111111111111111" tea_choice
 
 background bg2 cyberglitch
 

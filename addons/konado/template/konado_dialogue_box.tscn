@@ -20,12 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_t8rxq")
 script = ExtResource("2_c0wvo")
-character_name = "角色  "
-name_size = 42
-name_color = Color(1, 1, 1, 1)
-dialogue_text = "对话"
 typing_effect_audio = ExtResource("3_c0wvo")
-audio_trigger_chance = 0.5
 dialogue_bg = ExtResource("3_86a4y")
 
 [node name="dialogue_box_bg" type="NinePatchRect" parent="." unique_id=1517493837]
