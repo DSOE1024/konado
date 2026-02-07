@@ -1,11 +1,10 @@
 extends Node
 class_name KND_ChoiceInterface
 
-## 对话UI接口
+## 对话选项UI接口
 
 ## 对话选项按钮容器
 @onready var _choice_container: Container = $ChoicesContainer
-@onready var _dialog_manager: KND_DialogueManager = $"../.."
 
 ## 完成创建选项的信号
 signal finish_display_options
@@ -24,7 +23,7 @@ func distroy_options() -> void:
 			child.queue_free()
 
 ## 显示对话选项的方法
-func display_options(choices: Array[DialogueChoice], choices_font_size: int = 40) -> void:
+func display_options(choices: Array[DialogueChoice], manager: KND_DialogueManager, choices_font_size: int = 40) -> void:
 	distroy_options()
 	# 生成新选项
 	for choice in choices:
@@ -37,7 +36,7 @@ func display_options(choices: Array[DialogueChoice], choices_font_size: int = 40
 			func():
 				await get_tree().create_timer(0.001).timeout
 				print_rich("[color=green]选项被触发: [/color]"+str(choice))
-				_dialog_manager.on_option_triggered(choice)
+				manager.on_option_triggered(choice)
 				choiceButton.set_disabled(true)
 				)
 		# 添加到选项容器

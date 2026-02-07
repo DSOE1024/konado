@@ -357,7 +357,7 @@ func _process(delta) -> void:
 						_continue()
 					else:
 						# 生成并显示选项
-						_dialog_interface.display_options(dialog_choices)
+						_dialog_interface.display_options(dialog_choices, self)
 						_acting_interface.show()
 						_dialog_interface.show()
 						_dialog_interface._choice_container.show()
