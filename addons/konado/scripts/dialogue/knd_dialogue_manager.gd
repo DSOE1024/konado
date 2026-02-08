@@ -1,8 +1,21 @@
 extends Control
 class_name KND_DialogueManager
+
 ## Konado对话管理器
 
-@export_group("对话配置")
+## 镜头开启播放的信号
+signal shot_start
+
+## 镜头结束播放的信号
+signal shot_end
+
+## 对话开始播放的信号
+signal dialogue_line_start(line: int)
+
+## 对话结束播放的信号
+signal dialogue_line_end(line: int)
+
+@export_group("播放设置")
 
 ## 是否在游戏开始时自动初始化对话，如果为true，则在游戏开始时自动初始化对话，否则需要手动初始化对话
 ## 手动初始化对话的方法为：在游戏开始时，调用`init_dialogue`方法
@@ -16,9 +29,9 @@ class_name KND_DialogueManager
 ## 一般来说大部分场景可能需要打开能获得更好的效果
 @export var actor_auto_highlight: bool = true
 
-@export_group("播放设置")
+
 @export var autoplay: bool
-## 对话播放速度
+## 对话打字播放速度
 @export var dialogspeed: float = 0.04
 ## 自动播放速度
 @export var autoplayspeed: float = 2
@@ -27,32 +40,15 @@ class_name KND_DialogueManager
 @export var enable_overlay_log: bool = true
 
 ## 对话界面接口类
-@onready var _dialog_interface: KND_ChoiceInterface = $DialogUI/DialogueInterface
+@export var _konado_choice_interface: KND_ChoiceInterface
 
 ## 对话框
 @export var _konado_dialogue_box: KND_DialogueBox
 
 ## 背景和角色UI界面接口
-@onready var _acting_interface: ActingInterface = $DialogUI/ActingInterface
+@export var _acting_interface: KND_ActingInterface
 ## 音频接口
-@onready var _audio_interface: DialogAudioInterface = $AudioInterface
-
-## 对话的交互按钮，比如存档按钮，读档按钮，继续按钮
-## 存档按钮
-#@onready var _saveButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/存档"
-### 读档按钮
-#@onready var _loadButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/读档"
-#
-### 记录按钮
-#@onready var _logButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/记录"
-### 退出按钮
-#@onready var _exitButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/退出"
-### 自动按钮
-#@onready var _autoPlayButton: Button = $"DialogUI/DialogueInterface/DialogueBox/MarginContainer/DialogContent/ActionsContainer/自动"
-
-## 报错提示面板
-@onready var error_tooltip_panel: ColorRect = $ErrorToolTip
-@onready var error_tooltip_label: Label = $ErrorToolTip/MarginContainer/ErrorText
+@export var _audio_interface: DialogAudioInterface
 
 ## 对话资源
 var dialog_data: KND_Shot = null
@@ -67,11 +63,7 @@ var can_continue = true
 
 ## 对话状态（0:关闭，1:播放，2:播放完成下一个）
 enum DialogState {OFF, PLAYING, PAUSED}
-## 对话的状态
-## 分别有以下状态：
-## 0.关闭状态
-## 1.播放对话状态
-## 2.播放完成状态
+
 var dialogueState: DialogState
 
 ## 对话当前行，同时也是用于读取对话列表的下标，在游戏中的初始值应该为0或者任何大于0的整数
@@ -82,7 +74,7 @@ var curline: int
 var justenter: bool
 
 ## 资源列表
-@export_group("资源列表")
+@export_group("对话资源")
 ## 角色列表
 @export var chara_list: CharacterList
 ## 背景列表
@@ -96,82 +88,76 @@ var justenter: bool
 ## 音效列表
 @export var soundeffect_list: DialogSoundEffectList
 
-## 调试模式
-@export var debug_mode = false
+@export_group("Logger")
+## 报错提示面板
+@export var error_tooltip_panel: ColorRect
+@export var error_tooltip_label: Label
+@export var error_skip_btn: Button
 
-## 镜头开启播放的信号
-signal shot_start
-
-## 镜头结束播放的信号
-signal shot_end
-
-## 对话开始播放的信号
-signal dialogue_line_start(line: int)
-
-## 对话结束播放的信号
-signal dialogue_line_end(line: int)
 
 
 func _ready() -> void:
-	# 连接按钮信号
-	# Save
-	#if not _saveButton.button_up.is_connected(_on_savebutton_press):
-		#_saveButton.button_up.connect(_on_savebutton_press)
-	## Load
-	#if not _loadButton.button_up.is_connected(_on_loadbutton_press):
-		#_loadButton.button_up.connect(_on_loadbutton_press)
-	## Auto
-	#if not _autoPlayButton.toggled.is_connected(start_autoplay):
-		#_autoPlayButton.toggled.connect(start_autoplay)
+	if enable_overlay_log:
+		print("开启日志记录器")
+		# 初始化Logger
+		var logger: KND_Logger = KND_Logger.new()
+		OS.add_logger(logger)
+		# 使用Deferred避免线程问题
+		logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
 		
-	# 初始化Logger
-	var logger: KND_Logger = KND_Logger.new()
-	OS.add_logger(logger)
-	# 使用Deferred避免线程问题
-	logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
-	
-	_konado_dialogue_box.on_dialogue_click.connect(_continue)
-	
-	if not debug_mode:
-		# 自动初始化和开始对话
-		if init_onstart:
-			print("自动初始化对话")
-			# 初始化对话
-			if not autostart:
-				init_dialogue(func():
-					print("请手动开始对话")
-					)
-			else:
-				init_dialogue(func():
-					print("自动开始对话")
-					await get_tree().process_frame
-					start_dialogue()
-					)
+		if error_skip_btn:
+			error_skip_btn.pressed.connect(func():
+				error_tooltip_panel.hide())
 		else:
-			print("请手动初始化对话")
-			
+			push_warning("未指定 error_skip_btn")
+	
+	if _konado_dialogue_box:
+		_konado_dialogue_box.on_dialogue_click.connect(_continue)
+	else:
+		push_error("未指定 _konado_dialogue_box")
+	
+
+	# 自动初始化和开始对话
+	if init_onstart:
+		print("自动初始化对话")
+		# 初始化对话
+		if not autostart:
+			init_dialogue(func():
+				print("请手动开始对话")
+				)
+		else:
+			init_dialogue(func():
+				print("自动开始对话")
+				await get_tree().process_frame
+				start_dialogue()
+				)
+	else:
+		print("请手动初始化对话")
+
 ## 显示报错
 func _show_error(msg: String) -> void:
 	if enable_overlay_log:
-		error_tooltip_label.text = msg
-		error_tooltip_panel.show()
+		if error_tooltip_label:
+			error_tooltip_label.text = msg
+		else:
+			printerr(msg)
+		if error_tooltip_panel:
+			error_tooltip_panel.show()
 
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:
-	if not debug_mode:
-		if shots == null:
-			printerr("对话镜头列表资源为空")
-			return
-		if shots.size() <= 0:
-			printerr("没有任何对话镜头")
-			return
-		# 如果对话数据为空，则默认为第一个对话数据
-		if dialog_data == null:
-			dialog_data = shots[0]
-			dialog_data.get_dialogues()
-	
-		# 将角色表传给acting_interface
-		_acting_interface.chara_list = chara_list
+	if shots == null:
+		printerr("对话镜头列表资源为空")
+		return
+	if shots.size() <= 0:
+		printerr("没有任何对话镜头")
+		return
+	# 如果对话数据为空，则默认为第一个对话数据
+	if dialog_data == null:
+		dialog_data = shots[0]
+		dialog_data.get_dialogues()
+	# 将角色表传给acting_interface
+	_acting_interface.chara_list = chara_list
 
 	# 初始化各管理器
 	_acting_interface.delete_all_actor()
@@ -215,14 +201,10 @@ func set_bgm_list(bgm_list: DialogBGMList) -> void:
 ## 开始对话的方法
 func start_dialogue() -> void:
 	# 显示
-	if !_dialog_interface:
-		_dialog_interface.show()
+	if !_konado_choice_interface:
+		_konado_choice_interface.show()
 	if !_acting_interface:
 		_acting_interface.show()
-		
-	_konado_dialogue_box.character_name = ""
-	_konado_dialogue_box.dialogue_text = " "
-	_konado_dialogue_box.update_dialogue_content()
 	
 	# 显示对话框
 	#_konado_dialogue_box.on_dialogue_show_completed.connect()
@@ -262,7 +244,7 @@ func _process(delta) -> void:
 				dialogue_line_start.emit(curline)
 
 				# 隐藏选项
-				_dialog_interface._choice_container.hide()
+				_konado_choice_interface._choice_container.hide()
 
 				# 判断对话类型
 				# 如果是普通对话
@@ -287,8 +269,6 @@ func _process(delta) -> void:
 						_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
 					
 					_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice))
-					# 显示UI
-					_dialog_interface.show()
 					# 设置角色高亮
 					if actor_auto_highlight:
 						if chara_id:
@@ -297,11 +277,9 @@ func _process(delta) -> void:
 					_konado_dialogue_box.typing_interval = dialogspeed
 					_konado_dialogue_box.dialogue_text = content
 					_konado_dialogue_box.character_name = chara_id
-					#_display_dialogue(chara_id, content, speed)
 					# 如果有配音播放配音
 					if voice_id:
 						_play_voice(voice_id)
-					pass
 				# 如果是切换背景
 				elif dialog_type == Dialogue.Type.Switch_Background:
 					# 显示背景
@@ -356,10 +334,10 @@ func _process(delta) -> void:
 						_continue()
 					else:
 						# 生成并显示选项
-						_dialog_interface.display_options(dialog_choices, self)
+						_konado_choice_interface.display_options(dialog_choices, self)
 						_acting_interface.show()
-						_dialog_interface.show()
-						_dialog_interface._choice_container.show()
+						_konado_choice_interface.show()
+						_konado_choice_interface._choice_container.show()
 						pass
 				# 如果是播放BGM
 				elif dialog_type == Dialogue.Type.Play_BGM:
@@ -370,7 +348,7 @@ func _process(delta) -> void:
 					pass
 				# 如果是停止BGM
 				elif dialog_type == Dialogue.Type.Stop_BGM:
-					_stop_bgm()
+					_audio_interface.stop_bgm()
 					_process_next()
 					pass
 				# 如果是播放音效
@@ -532,7 +510,7 @@ func start_autoplay(value: bool):
 	
 	
 ## 显示背景的方法
-func _display_background(bg_name: String, effect: ActingInterface.BackgroundTransitionEffectsType) -> void:
+func _display_background(bg_name: String, effect: KND_ActingInterface.BackgroundTransitionEffectsType) -> void:
 	if bg_name == null:
 		return
 	var bg_list = background_list.background_list
@@ -607,10 +585,6 @@ func _play_bgm(bgm_name: String) -> void:
 			break
 	_audio_interface.play_bgm(target_bgm, bgm_name)
 
-## 停止播放BGM
-func _stop_bgm() -> void:
-	_audio_interface.stop_bgm()
-	pass
 
 ## 播放配音
 func _play_voice(voice_name: String) -> void:
@@ -644,7 +618,7 @@ func _play_soundeffect(se_name: String) -> void:
 ## 选项触发方法
 func on_option_triggered(choice: DialogueChoice) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
-	_dialog_interface._choice_container.hide()
+	_konado_choice_interface._choice_container.hide()
 	
 	print("玩家选择按钮： " + str(choice.choice_text))
 	_jump_tag(choice.jump_tag)
@@ -707,10 +681,7 @@ func _switch_data(data: KND_Shot) -> bool:
 	start_dialogue()
 	return true
 	
-## 按下存档按钮
-func _on_savebutton_press():
-	pass
-
+	
 func _get_file_data(slot_id: int):
 	#用于获取变量
 	var dialog = dialog_data.dialogs[curline]
@@ -718,9 +689,6 @@ func _get_file_data(slot_id: int):
 	# 停止语音
 	_audio_interface.stop_voice()
 	
-## 按下读档按钮
-func _on_loadbutton_press():
-	pass
 	
 ## 读取存档用的跳转
 func jump_data_and_curline(data_id: String, _curline: int, bgm_id: String, actor_dict: Dictionary = {}):
@@ -728,25 +696,7 @@ func jump_data_and_curline(data_id: String, _curline: int, bgm_id: String, actor
 	if _jump_shot(data_id):
 		_play_bgm(bgm_id)
 		_jump_curline(_curline)
-	# 如果角色列表不为空
-	if not actor_dict.is_empty():
-		print("存档角色表不为空")
-		#for actor in actor_dict:
-			#var target_actor: DialogueActor = DialogueActor.new()
-			#var actor_dic = actor_dict[actor]
-			#target_actor.character_name = actor_dic["id"]
-			#target_actor.actor_position = Vector2(actor_dic["x"], actor_dic["y"])
-			#target_actor.character_state = actor_dic["state"]
-			#target_actor.actor_scale = actor_dic["c_scale"]
-			#_display_character(target_actor)
 
-# 获取游戏进度，返回一个字典，包括章节名称，章节ID和对话下标
-func get_game_progress() -> Dictionary:
-	var dic = {}
-	dic["chapter_name"] = dialog_data.chapter_name
-	dic["chapter_id"] = dialog_data.chapter_id
-	dic["curline"] = curline
-	return dic
 
 ## 跳转到对话
 func _jump_curline(value: int) -> bool:

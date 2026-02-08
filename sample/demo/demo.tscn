@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://di66ghc1qq8e5" path="res://addons/konado/scripts/background/background.gd" id="4_prjid"]
 [ext_resource type="Texture2D" uid="uid://bb7nhjioefh8a" path="res://sample/demo/sample_arts/示例-咖啡馆-背景.png" id="5_prjid"]
 [ext_resource type="Script" uid="uid://5aqgmxi8gxcw" path="res://addons/konado/scripts/background/background_list.gd" id="5_w3y05"]
-[ext_resource type="Script" uid="uid://bktw5v4hqxfy0" path="res://addons/konado/knd_data/shot/knd_shot.gd" id="6_khogg"]
+[ext_resource type="Script" uid="uid://bktw5v4hqxfy0" path="res://addons/konado/scripts/dialogue/knd_shot.gd" id="6_khogg"]
 [ext_resource type="Texture2D" uid="uid://bkrpa0r41e1n7" path="res://assets/banner/2.0/konado-2.0-banner.png" id="6_w3y05"]
 [ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo.ks" id="7_gl4m8"]
 [ext_resource type="Resource" uid="uid://dgrrw1ydjgx62" path="res://sample/demo/bgm/bgm_list.tres" id="9_gl4m8"]

@@ -12,8 +12,8 @@ dest_files=["res://.godot/imported/EchoesOfHome.mp3-e365aa358c77ef67abee9d20bcf2
 
 [params]
 
-loop=false
-loop_offset=0
-bpm=0
+loop=true
+loop_offset=0.0
+bpm=0.0
 beat_count=0
 bar_beats=4

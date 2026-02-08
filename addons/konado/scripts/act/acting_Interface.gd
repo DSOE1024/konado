@@ -1,7 +1,18 @@
 extends Control
-class_name ActingInterface
+class_name KND_ActingInterface
 
 ## 表演管理器
+
+## 完成背景切换的信号
+signal background_change_finished
+## 完成角色创建的信号
+signal character_created
+## 完成角色删除的信号
+signal character_deleted
+## 完成角色切换状态的信号
+signal character_state_changed
+## 完成角色移动的信号
+signal character_moved
 
 ## 特效种类
 enum BackgroundTransitionEffectsType {
@@ -42,16 +53,7 @@ var chara_list: CharacterList
 ## 效果层
 @onready var _effect_layer: ColorRect = $EffectLayer
 
-## 完成背景切换的信号
-signal background_change_finished
-## 完成角色创建的信号
-signal character_created
-## 完成角色删除的信号
-signal character_deleted
-## 完成角色切换状态的信号
-signal character_state_changed
-## 完成角色移动的信号
-signal character_moved
+
 
 # Tween效果动画节点
 var effect_tween: Tween
@@ -59,13 +61,6 @@ var effect_tween: Tween
 var background_id : String
 
 var TRANSITION_CONFIGS: Dictionary = {}
-
-
-## 是否保持比例
-@export var keep_ratio: bool = true
-
-## 居中调整
-@export var center_adjust: bool = true
 
 
 func _ready() -> void:
@@ -231,19 +226,23 @@ func create_new_character(chara_id: String, division: int, pos: int, state: Stri
 	actor_dict[chara_dict.id] = chara_dict
 	var node_name : String = str(chara_dict["id"])
 	var temp_node : KND_Actor = _konado_actor_template.instantiate() as KND_Actor
+	temp_node.use_tween = false
 	temp_node.name = node_name
 	temp_node.division = division
 	temp_node.character_position = pos
 	temp_node.set_character_texture(tex)
 	temp_node.set_texture_scale(actor_scale)
 	temp_node.mirror = mirror
-
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
+	temp_node.use_tween = true
+	temp_node.enter_actor(true)
+	temp_node.actor_entered.connect(
+		func():
+			character_created.emit()
+			print("在位置："+str(pos)+" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
+			)
 
-	character_created.emit()
-	print("在位置："+str(pos)+" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
-	
 
 # 切换演员的状态
 func change_actor_state(actor_id: String, state_id: String, state_tex: Texture) -> void:
@@ -260,15 +259,15 @@ func change_actor_state(actor_id: String, state_id: String, state_tex: Texture) 
 
 # 高亮角色
 func highlight_actor(actor_id: String) -> void:
+	if actor_dict.size() <= 0:
+		return
 	for actor in actor_dict.keys():
-		if actor_dict.keys() == null:
-			return #防止报错的判空
 		var tmp = get_chara_node(actor).find_child(actor, true, false) as CanvasItem
 		if tmp == null :
-			return#同上
+			return
 		tmp.set_modulate(Color(0.5, 0.5, 0.5))
 
-	var chara_node: Node = get_chara_node(actor_id)
+	var chara_node: KND_Actor = get_chara_node(actor_id)
 	
 	if chara_node != null:
 		#如果剧情角色名字和演员名字不匹配，就pass，防止崩溃
@@ -287,17 +286,9 @@ func delete_character(chara_id: String) -> void:
 			# 删除容器和字典中的角色
 			actor_dict.erase(chara_id)
 			# 通过名称查找索引并删除
-			var chara_controler_node = _chara_controler
-			var chara_node: Node = chara_controler_node.find_child(chara_id, true, false)
+			var chara_node: KND_Actor = _chara_controler.find_child(chara_id, true, false)
 			if chara_node:
-				var ctween = chara_node.create_tween()
-				ctween.tween_property(chara_node.get_child(0), "modulate", Color(1, 1, 1, 0), 0.618)
-				ctween.play()
-				await ctween.finished
-				ctween.kill()
-				chara_node.queue_free()
-				print("演员删除")
-				character_deleted.emit()
+				chara_node.exit_actor(true)
 			else:
 				print("找不到要删除的演员")
 				character_deleted.emit()
@@ -307,9 +298,8 @@ func delete_character(chara_id: String) -> void:
 func delete_all_actor() -> void:
 	actor_dict.clear()
 	for node in _chara_controler.get_children():
-		node.queue_free()
+		node.exit_actor(false)
 	print("删除所有演员")
-	pass
 
 ## 移动演员的方法
 func move_actor(chara_id: String, target_pos: Vector2):

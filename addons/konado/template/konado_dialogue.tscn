@@ -37,7 +37,7 @@ texture = SubResource("GradientTexture2D_m86f6")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ky1ed"]
 
-[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_dialogue_box")]
+[node name="KonadoDialogueManager" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -45,26 +45,23 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_buo3n")
-_konado_dialogue_box = NodePath("DialogUI/DialogueInterface/KonadoDialogueBox")
+_konado_choice_interface = NodePath("KonadoUI/DialogueInterface")
+_konado_dialogue_box = NodePath("KonadoUI/DialogueInterface/KonadoDialogueBox")
+_acting_interface = NodePath("KonadoUI/ActingInterface")
+_audio_interface = NodePath("KonadoAudioInterface")
+error_tooltip_panel = NodePath("KonadoErrorToolTip")
+error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
+error_skip_btn = NodePath("KonadoErrorToolTip/Skip")
 
-[node name="MaskLayer" type="ColorRect" parent="." unique_id=251032314]
+[node name="KonadoUI" type="Control" parent="." unique_id=363853147]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 1)
 
-[node name="DialogUI" type="Control" parent="." unique_id=363853147]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ActingInterface" type="PanelContainer" parent="DialogUI" unique_id=580713454]
+[node name="ActingInterface" type="PanelContainer" parent="KonadoUI" unique_id=580713454]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -74,12 +71,12 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_b1osp")
 script = ExtResource("2_pq6sw")
 
-[node name="BackgroundLayer" type="ColorRect" parent="DialogUI/ActingInterface" unique_id=1466239429]
+[node name="BackgroundLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1466239429]
 material = SubResource("ShaderMaterial_h66lv")
 layout_mode = 2
 color = Color(0, 0, 0, 1)
 
-[node name="CharaControl" type="Control" parent="DialogUI/ActingInterface/BackgroundLayer" unique_id=245679010]
+[node name="CharaControl" type="Control" parent="KonadoUI/ActingInterface/BackgroundLayer" unique_id=245679010]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -87,29 +84,26 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="character" parent="DialogUI/ActingInterface/BackgroundLayer/CharaControl" unique_id=1276474265 instance=ExtResource("3_77vgp")]
+[node name="character" parent="KonadoUI/ActingInterface/BackgroundLayer/CharaControl" unique_id=1276474265 instance=ExtResource("3_77vgp")]
 layout_mode = 1
-show_debug_lines = null
-debug_line_width = null
-y_division = 2
 character_y_position = 1
 
-[node name="EffectLayer" type="ColorRect" parent="DialogUI/ActingInterface" unique_id=1654107269]
+[node name="EffectLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1654107269]
 layout_mode = 2
 color = Color(0, 0, 0, 0)
 
-[node name="DialogueInterface" type="Control" parent="DialogUI" unique_id=254950114]
+[node name="DialogueInterface" type="Control" parent="KonadoUI" unique_id=254950114]
 anchors_preset = 0
 offset_right = 1920.0
 offset_bottom = 1080.0
 script = ExtResource("3_gl7il")
 
-[node name="KonadoDialogueBox" parent="DialogUI/DialogueInterface" unique_id=1215106161 instance=ExtResource("6_r5ho2")]
+[node name="KonadoDialogueBox" parent="KonadoUI/DialogueInterface" unique_id=1215106161 instance=ExtResource("6_r5ho2")]
 layout_mode = 1
 offset_top = 600.0
 offset_bottom = -40.0
 
-[node name="ChoicesContainer" type="VBoxContainer" parent="DialogUI/DialogueInterface" unique_id=256738057]
+[node name="ChoicesContainer" type="VBoxContainer" parent="KonadoUI/DialogueInterface" unique_id=256738057]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 1
 anchors_preset = 13
@@ -124,7 +118,7 @@ grow_vertical = 2
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="ActionButtons" type="Panel" parent="DialogUI/DialogueInterface" unique_id=787754962]
+[node name="ActionButtons" type="Panel" parent="KonadoUI/DialogueInterface" unique_id=787754962]
 custom_minimum_size = Vector2(0, 55)
 layout_mode = 0
 offset_top = 1025.0
@@ -134,7 +128,7 @@ size_flags_vertical = 8
 theme = ExtResource("4_inqap")
 metadata/_edit_group_ = true
 
-[node name="ActionsContainer" type="HBoxContainer" parent="DialogUI/DialogueInterface/ActionButtons" unique_id=1423528034 node_paths=PackedStringArray("continue_btn", "replay_btn", "save_btn", "load_btn", "record_btn", "exit_btn", "autoplay_btn", "review_btn")]
+[node name="ActionsContainer" type="HBoxContainer" parent="KonadoUI/DialogueInterface/ActionButtons" unique_id=1423528034 node_paths=PackedStringArray("continue_btn", "replay_btn", "save_btn", "load_btn", "record_btn", "exit_btn", "autoplay_btn", "review_btn")]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -157,7 +151,7 @@ exit_btn = NodePath("退出")
 autoplay_btn = NodePath("自动")
 review_btn = NodePath("回顾")
 
-[node name="继续" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=912238084]
+[node name="继续" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=912238084]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -168,7 +162,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_ytbee")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 text = "继续"
 
-[node name="重新播放" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=1771917949]
+[node name="重新播放" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=1771917949]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -179,7 +173,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_ytbee")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 text = "重新播放"
 
-[node name="存档" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=37892135]
+[node name="存档" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=37892135]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -191,7 +185,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 toggle_mode = true
 text = "存档"
 
-[node name="读档" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=113153670]
+[node name="读档" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=113153670]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -203,7 +197,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 toggle_mode = true
 text = "读档"
 
-[node name="记录" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=527455984]
+[node name="记录" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=527455984]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -214,7 +208,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_ytbee")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 text = "记录"
 
-[node name="退出" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=641082544]
+[node name="退出" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=641082544]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -225,7 +219,7 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_ytbee")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 text = "退出"
 
-[node name="自动" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=735250380]
+[node name="自动" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=735250380]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -237,7 +231,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 toggle_mode = true
 text = "自动播放"
 
-[node name="回顾" type="Button" parent="DialogUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=344384069]
+[node name="回顾" type="Button" parent="KonadoUI/DialogueInterface/ActionButtons/ActionsContainer" unique_id=344384069]
 custom_minimum_size = Vector2(90, 35)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8646751, 0.86467516, 0.8646751, 1)
@@ -249,13 +243,13 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_ky1ed")
 toggle_mode = true
 text = "回顾"
 
-[node name="SaveLoad" type="Control" parent="DialogUI" unique_id=1232795751]
+[node name="SaveLoad" type="Control" parent="KonadoUI" unique_id=1232795751]
 unique_name_in_owner = true
 visible = false
 anchors_preset = 0
 script = ExtResource("4_m5nin")
 
-[node name="Panel" type="Panel" parent="DialogUI/SaveLoad" unique_id=2128743651]
+[node name="Panel" type="Panel" parent="KonadoUI/SaveLoad" unique_id=2128743651]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -264,7 +258,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"Background"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="DialogUI/SaveLoad/Panel" unique_id=659003428]
+[node name="ScrollContainer" type="ScrollContainer" parent="KonadoUI/SaveLoad/Panel" unique_id=659003428]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -272,7 +266,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="DialogUI/SaveLoad/Panel/ScrollContainer" unique_id=1831805904]
+[node name="MarginContainer" type="MarginContainer" parent="KonadoUI/SaveLoad/Panel/ScrollContainer" unique_id=1831805904]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -281,23 +275,23 @@ theme_override_constants/margin_top = 150
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 100
 
-[node name="RootSlotContainer" type="BoxContainer" parent="DialogUI/SaveLoad/Panel/ScrollContainer/MarginContainer" unique_id=816798458]
+[node name="RootSlotContainer" type="BoxContainer" parent="KonadoUI/SaveLoad/Panel/ScrollContainer/MarginContainer" unique_id=816798458]
 layout_mode = 2
 size_flags_horizontal = 6
 size_flags_vertical = 2
 theme_override_constants/separation = 50
 vertical = true
 
-[node name="AudioInterface" type="Node2D" parent="." unique_id=1896821847]
+[node name="KonadoAudioInterface" type="Node2D" parent="." unique_id=1896821847]
 script = ExtResource("4_gd2ll")
 
-[node name="BGMPlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=1295733151]
+[node name="BGMPlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=1295733151]
 
-[node name="VoicePlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=704065821]
+[node name="VoicePlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=704065821]
 
-[node name="SoundEffectPlayer" type="AudioStreamPlayer" parent="AudioInterface" unique_id=743748580]
+[node name="SoundEffectPlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=743748580]
 
-[node name="ErrorToolTip" type="ColorRect" parent="." unique_id=1152539807]
+[node name="KonadoErrorToolTip" type="ColorRect" parent="." unique_id=1152539807]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -307,7 +301,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.08627451, 0.08627451, 0.08627451, 0.9137255)
 
-[node name="MarginContainer" type="MarginContainer" parent="ErrorToolTip" unique_id=531884272]
+[node name="MarginContainer" type="MarginContainer" parent="KonadoErrorToolTip" unique_id=531884272]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -319,8 +313,23 @@ theme_override_constants/margin_top = 66
 theme_override_constants/margin_right = 66
 theme_override_constants/margin_bottom = 66
 
-[node name="ErrorText" type="Label" parent="ErrorToolTip/MarginContainer" unique_id=735988474]
+[node name="ErrorText" type="Label" parent="KonadoErrorToolTip/MarginContainer" unique_id=735988474]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 size_flags_vertical = 1
 autowrap_mode = 3
+
+[node name="Skip" type="Button" parent="KonadoErrorToolTip" unique_id=283867520]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -24.0
+offset_top = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 42
+text = "Skip this error..."

@@ -48,7 +48,7 @@ signal on_dialogue_hide_completed
 @export var audio_trigger_chance: float = 0.8  ## 音效触发概率(0-1)，1=每次必播，0=不播
 @export var min_audio_interval: float = 0.02   ## 音效最小播放间隔（秒），适配滴滴声快速节奏
 @export var max_audio_interval: float = 0.08   ## 音效最大播放间隔（秒）
-@export var audio_volumn: float = 1.0         ## 音效音量(0-1)
+@export var audio_volumn: float = 0.6         ## 音效音量(0-1)
 
 @export_group("对话框设置")
 @export var dialogue_margins: int = 100     ## 对话框到底部距离
@@ -87,6 +87,9 @@ var typing_tween: Tween = null
 
 
 func _ready() -> void:
+	self.character_name = ""
+	self.dialogue_text = ""
+	self.update_dialogue_content()
 	self.modulate.a = 0.0
 	
 	if enable_typing_effect_audio:
@@ -191,7 +194,6 @@ func update_dialogue_content() -> void:
 	var total_typing_time = dialogue_text.length() * typing_interval
 	typing_tween.tween_property(dialogue_label, "visible_ratio", 1.0, total_typing_time).set_trans(Tween.TRANS_LINEAR)
 
-# 【核心新增】帧检测 - 实时判断并随机播放滴滴音效
 func _process(delta: float) -> void:
 	# 仅当打字动画运行、文本非空时，处理音效逻辑
 	if not (typing_tween and typing_tween.is_running() and not dialogue_text.is_empty()):
