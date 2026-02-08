@@ -89,6 +89,10 @@ grow_vertical = 2
 
 [node name="character" parent="DialogUI/ActingInterface/BackgroundLayer/CharaControl" unique_id=1276474265 instance=ExtResource("3_77vgp")]
 layout_mode = 1
+show_debug_lines = null
+debug_line_width = null
+y_division = 2
+character_y_position = 1
 
 [node name="EffectLayer" type="ColorRect" parent="DialogUI/ActingInterface" unique_id=1654107269]
 layout_mode = 2

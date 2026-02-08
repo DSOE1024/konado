@@ -1,4 +1,3 @@
-@tool
 extends Resource
 class_name Dialogue
 
@@ -43,7 +42,18 @@ var character_id: String
 # 对话内容
 var dialog_content: String
 # 显示的角色
-var show_actor: DialogueActor = DialogueActor.new()
+
+# 创建和显示的角色ID
+var character_name: String
+# 角色图片ID
+var character_state: String
+# 创建角色的位置
+var actor_position: Vector2
+# 角色图片缩放
+var actor_scale: float
+## 演员立绘水平镜像翻转
+var actor_mirror: bool
+
 # 隐藏的角色
 var exit_actor: String
 # 要切换状态的角色
@@ -127,7 +137,11 @@ class Switch_Background_Template:
 		return infos
 		
 class Actor_Template:
-	@export var show_actor: DialogueActor
+	@export var character_name: String
+	@export var character_state: String
+	@export var actor_position: Vector2
+	@export var actor_scale: float
+	@export var actor_mirror: bool
 	@export var exit_actor: String = ""
 	@export var change_state_actor: String = ""
 	@export var change_state: String = ""
@@ -195,7 +209,11 @@ func _get_property_list():
 		list.append(oridinary_dialog_template["voice_id"])
 	if dialog_type == Type.Display_Actor:
 		var actor_template = Actor_Template.get_property_infos()
-		list.append(actor_template["show_actor"])
+		list.append(actor_template["character_name"])
+		list.append(actor_template["character_state"])
+		list.append(actor_template["actor_position"])
+		list.append(actor_template["actor_scale"])
+		list.append(actor_template["actor_mirror"])
 	if dialog_type == Type.Actor_Change_State:
 		var actor_template = Actor_Template.get_property_infos()
 		list.append(actor_template["change_state_actor"])
@@ -228,6 +246,7 @@ func _get_property_list():
 	if dialog_type == Type.THE_END:
 		pass
 	return list
+	
 
 # 转换为JSON字符串
 func to_json() -> String:
@@ -269,8 +288,12 @@ func serialize_to_dict() -> Dictionary:
 			dict["dialog_content"] = dialog_content
 			dict["voice_id"] = voice_id
 		
-		Type.Display_Actor:
-			dict["show_actor"] = show_actor.serialize_to_dict() if show_actor else {}
+		Type.Display_Actor:  # 修复：序列化Display_Actor的正确属性
+			dict["character_name"] = character_name
+			dict["character_state"] = character_state
+			dict["actor_position"] = {"x": actor_position.x, "y": actor_position.y}
+			dict["actor_scale"] = actor_scale
+			dict["actor_mirror"] = actor_mirror
 		
 		Type.Actor_Change_State:
 			dict["change_state_actor"] = change_state_actor
@@ -299,6 +322,7 @@ func serialize_to_dict() -> Dictionary:
 		Type.JUMP_Shot:
 			dict["jump_shot_id"] = jump_shot_id
 		
+	
 	# 演员快照
 	dict["actor_snapshots"] = actor_snapshots.duplicate(true)
 	
@@ -336,11 +360,19 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 			if "voice_id" in dict:
 				voice_id = dict["voice_id"]
 		
-		Type.Display_Actor:
-			if "show_actor" in dict:
-				if show_actor == null:
-					show_actor = DialogueActor.new()
-				show_actor.deserialize_from_dict(dict["show_actor"])
+		Type.Display_Actor:  # 修复：反序列化Display_Actor的正确属性
+			if "character_name" in dict:
+				character_name = dict["character_name"]
+			if "character_state" in dict:
+				character_state = dict["character_state"]
+			if "actor_position" in dict:
+				var pos_dict = dict["actor_position"]
+				if pos_dict is Dictionary and "x" in pos_dict and "y" in pos_dict:
+					actor_position = Vector2(pos_dict["x"], pos_dict["y"])
+			if "actor_scale" in dict:
+				actor_scale = dict["actor_scale"]
+			if "actor_mirror" in dict:
+				actor_mirror = dict["actor_mirror"]
 		
 		Type.Actor_Change_State:
 			if "change_state_actor" in dict:
@@ -382,6 +414,7 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 			if "jump_shot_id" in dict:
 				jump_shot_id = dict["jump_shot_id"]
 		
+
 	# 演员快照
 	if "actor_snapshots" in dict:
 		actor_snapshots = dict["actor_snapshots"].duplicate(true)

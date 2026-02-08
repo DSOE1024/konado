@@ -315,11 +315,10 @@ func _process(delta) -> void:
 				# 如果是显示演员
 				elif dialog_type == Dialogue.Type.Display_Actor:
 					# 显示演员
-					var actor = dialog.show_actor
 					var s = _acting_interface.character_created
 					s.connect(_process_next.bind(s))
 					_acting_interface.show()
-					_display_character(actor)
+					_display_character(dialog)
 					pass
 				# 如果修改演员状态
 				elif dialog_type == Dialogue.Type.Actor_Change_State:
@@ -550,7 +549,7 @@ func _display_background(bg_name: String, effect: ActingInterface.BackgroundTran
 
 ## 演员状态切换的方法
 func _actor_change_state(chara_id: String, state_id: String):
-	var target_chara: Character
+	var target_chara: KND_Character
 	var state_tex: Texture
 	for chara in chara_list.characters:
 		if chara.chara_name == chara_id:
@@ -561,11 +560,9 @@ func _actor_change_state(chara_id: String, state_id: String):
 	_acting_interface.change_actor_state(target_chara.chara_name, state_id, state_tex)
 
 ## 从角色列表创建并显示角色
-func _display_character(actor: DialogueActor) -> void:
-	if actor == null:
-		return
-	var target_chara: Character
-	var target_chara_name = actor.character_name
+func _display_character(dialogue: Dialogue) -> void:
+	var target_chara: KND_Character
+	var target_chara_name = dialogue.character_name
 	for chara in chara_list.characters:
 		if chara.chara_name == target_chara_name:
 			target_chara = chara
@@ -577,19 +574,19 @@ func _display_character(actor: DialogueActor) -> void:
 		
 	# 读取对话的角色状态图片ID
 	var target_states = target_chara.chara_status
-	var target_state_name = actor.character_state
+	var target_state_name = dialogue.character_state
 	var target_state_tex
 	for state in target_states:
 		if state.status_name == target_state_name:
 			target_state_tex = state.status_texture
 			break
 	# 角色位置
-	var pos = actor.actor_position
+	var pos = dialogue.actor_position
 	# 角色缩放
-	var a_scale = actor.actor_scale
+	var a_scale = dialogue.actor_scale
 	
 	# 角色立绘镜像翻转
-	var mirror = actor.actor_mirror
+	var mirror = dialogue.actor_mirror
 	# 创建角色
 	_acting_interface.create_new_character(target_chara_name, pos.x, pos.y, target_state_name, target_state_tex, a_scale, mirror)
 		
@@ -734,14 +731,14 @@ func jump_data_and_curline(data_id: String, _curline: int, bgm_id: String, actor
 	# 如果角色列表不为空
 	if not actor_dict.is_empty():
 		print("存档角色表不为空")
-		for actor in actor_dict:
-			var target_actor: DialogueActor = DialogueActor.new()
-			var actor_dic = actor_dict[actor]
-			target_actor.character_name = actor_dic["id"]
-			target_actor.actor_position = Vector2(actor_dic["x"], actor_dic["y"])
-			target_actor.character_state = actor_dic["state"]
-			target_actor.actor_scale = actor_dic["c_scale"]
-			_display_character(target_actor)
+		#for actor in actor_dict:
+			#var target_actor: DialogueActor = DialogueActor.new()
+			#var actor_dic = actor_dict[actor]
+			#target_actor.character_name = actor_dic["id"]
+			#target_actor.actor_position = Vector2(actor_dic["x"], actor_dic["y"])
+			#target_actor.character_state = actor_dic["state"]
+			#target_actor.actor_scale = actor_dic["c_scale"]
+			#_display_character(target_actor)
 
 # 获取游戏进度，返回一个字典，包括章节名称，章节ID和对话下标
 func get_game_progress() -> Dictionary:

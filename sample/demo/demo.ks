@@ -1,8 +1,10 @@
 shot_id HelloWorld
 
+play bgm echo
+
 background bg1 none
 
-actor show 可娜 正常 at 6 2 scale 1.0
+actor show 可娜 正常 at 6 2 scale 1.1
 
 "Kona" "Hello! Welcome to our cafe."
 "Kona" "What would you like today?"

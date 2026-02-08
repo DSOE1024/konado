@@ -238,16 +238,17 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	var cur_actor_dic: Dictionary = {}
 	for dialogue in diadata.get_dialogues():
 		if dialogue.dialog_type == Dialogue.Type.Display_Actor:
-				var actor: DialogueActor = dialogue.show_actor
-				var chara_dict := {
-					"id": actor.character_name,
-					"x": actor.actor_position.x,
-					"y": actor.actor_position.y,
-					"state": actor.character_state,
-					"c_scale": actor.actor_scale,
-					"mirror": actor.actor_mirror
-					}
-				cur_actor_dic[actor.character_name] = chara_dict
+			pass
+				#var actor: DialogueActor = dialogue.show_actor
+				#var chara_dict := {
+					#"id": actor.character_name,
+					#"x": actor.actor_position.x,
+					#"y": actor.actor_position.y,
+					#"state": actor.character_state,
+					#"c_scale": actor.actor_scale,
+					#"mirror": actor.actor_mirror
+					#}
+				#cur_actor_dic[actor.character_name] = chara_dict
 		if dialogue.dialog_type == Dialogue.Type.Exit_Actor:
 			if cur_actor_dic.has(dialogue.exit_actor):
 				cur_actor_dic.erase(dialogue.exit_actor)
@@ -361,18 +362,24 @@ func _parse_actor(line: String, dialog: Dialogue) -> bool:
 	match parts[1]:
 		"show":
 			dialog.dialog_type = Dialogue.Type.Display_Actor
-			var actor = _create_actor(parts)
-			if actor: 
-				dialog.show_actor = actor
-				if not dep_characters.has(actor.character_name):
-					dep_characters.append(actor.character_name)
-				# 添加检查功能
-				if enable_actor_validation:
-					if not cur_tmp_actors.has(actor.character_name):
-						cur_tmp_actors.append(actor.character_name)
-					else:
-						_scripts_debug(tmp_path, tmp_original_line_number, "角色已存在，请检查角色名称是否重复创建")
-						return false
+			dialog.character_name = parts[2]
+			dialog.character_state = parts[3]
+			dialog.actor_position = Vector2(parts[5].to_float(), parts[6].to_float())
+			dialog.actor_scale = parts[8].to_float()
+			if parts.size() == 10:
+				if parts[9] == "mirror":
+					dialog.actor_mirror = true
+			
+
+			if not dep_characters.has(dialog.character_name):
+				dep_characters.append(dialog.character_name)
+			# 添加检查功能
+			if enable_actor_validation:
+				if not cur_tmp_actors.has(dialog.character_name):
+					cur_tmp_actors.append(dialog.character_name)
+				else:
+					_scripts_debug(tmp_path, tmp_original_line_number, "角色已存在，请检查角色名称是否重复创建")
+					return false
 		"exit":
 			dialog.dialog_type = Dialogue.Type.Exit_Actor
 			dialog.exit_actor = parts[2]
@@ -405,20 +412,7 @@ func _parse_actor(line: String, dialog: Dialogue) -> bool:
 	
 	return true
 
-# 创建角色
-func _create_actor(parts: PackedStringArray) -> DialogueActor:
-	if parts.size() < 9:
-		return null
-	
-	var actor = DialogueActor.new()
-	actor.character_name = parts[2]
-	actor.character_state = parts[3]
-	actor.actor_position = Vector2(parts[5].to_float(), parts[6].to_float())
-	actor.actor_scale = parts[8].to_float()
-	if parts.size() == 10:
-		if parts[9] == "mirror":
-			actor.actor_mirror = true
-	return actor
+
 
 # 音频解析
 func _parse_audio(line: String, dialog: Dialogue) -> bool:

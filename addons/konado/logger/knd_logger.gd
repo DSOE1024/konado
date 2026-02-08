@@ -1,7 +1,7 @@
 extends Logger
 class_name KND_Logger
 
-## Konado Logger
+## Konado Logger，Konado日志记录器
 
 const LOG_FILE_PATH: String = "user://konado_log.log"
 
