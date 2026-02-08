@@ -87,8 +87,8 @@ var typing_tween: Tween = null
 
 
 func _ready() -> void:
-	update_dialogue_box_height()
 	self.modulate.a = 0.0
+	update_dialogue_box_height()
 	
 	if enable_typing_effect_audio:
 		# 将音频播放器添加为子节点，自动完成初始化

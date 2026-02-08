@@ -196,7 +196,7 @@ func _on_transition_finished(mat: ShaderMaterial, target_tex: Texture) -> void:
 	
 	
 # 新建角色图片的方法
-func create_new_character(chara_id: String, division: int, pos: int, state: String, tex: Texture, actor_scale: float, mirror: bool) -> void:
+func create_new_character(chara_id: String, h_division: int, v_division: int, pos_h: int, pos_v: int, state: String, tex: Texture, actor_scale: float, mirror: bool) -> void:
 	# 检查创建的是否为场景已有角色
 	for chara_dict in actor_dict.values():
 		if chara_dict["id"] == chara_id:
@@ -213,10 +213,11 @@ func create_new_character(chara_id: String, division: int, pos: int, state: Stri
 	#     "mirror": bool    # 是否镜像翻转
 	# }
 
-	var chara_dict := {
+	var chara_dict: Dictionary = {
 		"id": chara_id,
-		"division": division,
-		"pos": pos,
+		"h_division": h_division,
+		"v_division": v_division,
+		"pos": pos_h,
 		"state": state,
 		"c_scale": actor_scale,
 		"mirror": mirror
@@ -228,8 +229,10 @@ func create_new_character(chara_id: String, division: int, pos: int, state: Stri
 	var temp_node : KND_Actor = _konado_actor_template.instantiate() as KND_Actor
 	temp_node.use_tween = false
 	temp_node.name = node_name
-	temp_node.division = division
-	temp_node.character_position = pos
+	temp_node.division = h_division
+	temp_node.y_division = v_division
+	temp_node.character_position = pos_h
+	temp_node.character_y_position = pos_v
 	temp_node.set_character_texture(tex)
 	temp_node.set_texture_scale(actor_scale)
 	temp_node.mirror = mirror
@@ -240,21 +243,23 @@ func create_new_character(chara_id: String, division: int, pos: int, state: Stri
 	temp_node.actor_entered.connect(
 		func():
 			character_created.emit()
-			print("在位置："+str(pos)+" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
+			print(" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
 			)
 
 
-# 切换演员的状态
+## 切换演员的状态
 func change_actor_state(actor_id: String, state_id: String, state_tex: Texture) -> void:
 	var chara_node: KND_Actor = get_chara_node(actor_id)
 	if chara_node == null:
-		printerr("切换角色状态失败"+actor_id+"到"+str(state_tex))
-		
-	# 修改字典中角色的状态
-	actor_dict[actor_id]["state"] = state_id
-	chara_node.set_character_texture(state_tex)
-	character_state_changed.emit()
-	print("切换"+actor_id+"到"+str(state_id)+"状态")
+		var tex_info = state_tex.get_path()
+		push_error("切换角色状态失败：角色ID[%s]，目标状态ID[%s]，纹理[%s]，未找到角色节点" % [actor_id, state_id, tex_info])
+		character_state_changed.emit()
+	else:
+		# 修改字典中角色的状态
+		actor_dict[actor_id]["state"] = state_id
+		chara_node.set_character_texture(state_tex)
+		character_state_changed.emit()
+		print("切换"+actor_id+"到"+str(state_id)+"状态")
 
 
 # 高亮角色
@@ -288,6 +293,7 @@ func delete_character(chara_id: String) -> void:
 			# 通过名称查找索引并删除
 			var chara_node: KND_Actor = _chara_controler.find_child(chara_id, true, false)
 			if chara_node:
+				chara_node.tree_exited.connect(func(): character_deleted.emit())
 				chara_node.exit_actor(true)
 			else:
 				print("找不到要删除的演员")
