@@ -1,7 +1,18 @@
 extends Control
-class_name ActingInterface
+class_name KND_ActingInterface
 
 ## 表演管理器
+
+## 完成背景切换的信号
+signal background_change_finished
+## 完成角色创建的信号
+signal character_created
+## 完成角色删除的信号
+signal character_deleted
+## 完成角色切换状态的信号
+signal character_state_changed
+## 完成角色移动的信号
+signal character_moved
 
 ## 特效种类
 enum BackgroundTransitionEffectsType {
@@ -42,16 +53,7 @@ var chara_list: CharacterList
 ## 效果层
 @onready var _effect_layer: ColorRect = $EffectLayer
 
-## 完成背景切换的信号
-signal background_change_finished
-## 完成角色创建的信号
-signal character_created
-## 完成角色删除的信号
-signal character_deleted
-## 完成角色切换状态的信号
-signal character_state_changed
-## 完成角色移动的信号
-signal character_moved
+
 
 # Tween效果动画节点
 var effect_tween: Tween
@@ -59,13 +61,6 @@ var effect_tween: Tween
 var background_id : String
 
 var TRANSITION_CONFIGS: Dictionary = {}
-
-
-## 是否保持比例
-@export var keep_ratio: bool = true
-
-## 居中调整
-@export var center_adjust: bool = true
 
 
 func _ready() -> void:
@@ -291,17 +286,9 @@ func delete_character(chara_id: String) -> void:
 			# 删除容器和字典中的角色
 			actor_dict.erase(chara_id)
 			# 通过名称查找索引并删除
-			var chara_controler_node = _chara_controler
-			var chara_node: Node = chara_controler_node.find_child(chara_id, true, false)
+			var chara_node: KND_Actor = _chara_controler.find_child(chara_id, true, false)
 			if chara_node:
-				var ctween = chara_node.create_tween()
-				ctween.tween_property(chara_node.get_child(0), "modulate", Color(1, 1, 1, 0), 0.618)
-				ctween.play()
-				await ctween.finished
-				ctween.kill()
-				chara_node.queue_free()
-				print("演员删除")
-				character_deleted.emit()
+				chara_node.exit_actor(true)
 			else:
 				print("找不到要删除的演员")
 				character_deleted.emit()
@@ -311,9 +298,8 @@ func delete_character(chara_id: String) -> void:
 func delete_all_actor() -> void:
 	actor_dict.clear()
 	for node in _chara_controler.get_children():
-		node.queue_free()
+		node.exit_actor(false)
 	print("删除所有演员")
-	pass
 
 ## 移动演员的方法
 func move_actor(chara_id: String, target_pos: Vector2):

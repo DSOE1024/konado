@@ -10,8 +10,9 @@ actor show 可娜 正常 at 6 2 scale 1.1
 
 actor change 可娜 害羞
 
-
 "Kona" "What would you like today?"
+
+actor exit 可娜
 
 actor change 可娜 正常
 
