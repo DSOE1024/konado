@@ -1,4 +1,39 @@
-# 行为准则  
+# Code of Conduct
+
+## Our Commitment
+
+This project is committed to providing an inclusive, open, and respectful environment for all participants. Every participant deserves equal respect and kindness, regardless of gender, age or technical level.
+
+## Acceptable Behavior
+
+- Use friendly, inclusive, and respectful language in communication, and refrain from impolite expressions;
+
+- Respect different opinions and suggestions, always maintain an open and inclusive attitude, and discuss differences rationally;
+
+- Adhere to objectivity and rationality in technical discussions, express opinions and exchange experiences based on facts;
+
+- Be patient in listening to others' demands, humbly accept constructive criticism, and actively reflect on and improve one's own behavior.
+
+## Unacceptable Behavior
+
+- Engage in discrimination, insult, threat, incitement of conflict, or personal attack in words or deeds (including but not limited to discrimination based on gender, age, etc.);
+
+- Post harassing, irrelevant, or unsolicited content (including but not limited to spam, commercial advertisements, malicious links, etc.);
+
+- Disclose or reveal others' private information (such as contact information, address, personal photos, etc.) without the explicit permission of the person concerned;
+
+- Maliciously damage project code, documents, or related resources, and interfere with the normal operation and development process of the project.
+
+## Violation Handling
+
+If any violation is found, please contact the project maintainers via project Issues or designated email. The project team is obligated to keep the identity information of the reporter confidential and strictly prohibit the disclosure of relevant information about the reporter. The core project maintainers have the right to interpret "Our Commitment" and take appropriate and fair corrective measures (including but not limited to warnings, prohibition from participating in project-related activities, etc.) against any behavior deemed inappropriate, threatening, offensive, or harmful.
+
+## Scope of Application
+
+This Code of Conduct applies to all relevant platforms of this project (including but not limited to code repositories, discussion groups, community forums, etc.), and also applies to all behaviors of individuals when representing this project or community on other platforms and in public places.
+
+
+# 行为准则
 
 ## 我们的承诺
 

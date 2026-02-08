@@ -1,6 +1,6 @@
 # Konado: Visual Novel Framework
 
-English | [简体中文](README.ZH.md)
+English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md)
 
 
 <div align="center" style="border-radius: 12px; overflow: hidden">
