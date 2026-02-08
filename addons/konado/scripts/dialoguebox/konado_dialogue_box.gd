@@ -87,9 +87,7 @@ var typing_tween: Tween = null
 
 
 func _ready() -> void:
-	self.character_name = ""
-	self.dialogue_text = ""
-	self.update_dialogue_content()
+	update_dialogue_box_height()
 	self.modulate.a = 0.0
 	
 	if enable_typing_effect_audio:
@@ -162,22 +160,25 @@ func update_character_name() -> void:
 	character_name_label.label_settings.font_size = name_size
 	character_name_label.label_settings.font_color = name_color
 	
-func update_dialogue_content() -> void:
-	if next_button:
-		next_button.hide()
-	if not is_inside_tree() or dialogue_text.is_empty():
-		return
-	dialogue_label.visible_ratio = 0
-	dialogue_label.text = dialogue_text
-	await get_tree().process_frame
-	
+func update_dialogue_box_height() -> void:
 	# 计算文本高度并限制最大值
-	var text_hight:int = dialogue_label.get_content_height()
+	var text_hight: int = dialogue_label.get_content_height()
 	dialogue_label.size.y = min(text_hight, dialogue_hight_max)
 	dialogue_label.position.y = size.y - dialogue_label.size.y - dialogue_margins
 	# 适配对话框背景位置和尺寸
 	dialogue_box_bg.position.y = dialogue_label.position.y - 150
 	dialogue_box_bg.size.y = dialogue_label.size.y + 200
+	
+func update_dialogue_content() -> void:
+	if next_button:
+		next_button.hide()
+	if not is_inside_tree() or dialogue_text.is_empty():
+		return
+	
+	update_dialogue_box_height()
+	dialogue_label.visible_ratio = 0
+	dialogue_label.text = dialogue_text
+	await get_tree().process_frame
 	
 	# 停止原有打字动画
 	if typing_tween != null and typing_tween.is_running():
