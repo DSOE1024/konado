@@ -60,7 +60,6 @@ offset_bottom = -100.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/default_color = Color(1, 1, 1, 1)
-text = "Content of the dialogue..."
 
 [node name="character_name_label" type="Label" parent="dialogue_label" unique_id=1294172107]
 unique_name_in_owner = true
@@ -69,7 +68,6 @@ offset_left = -4.0
 offset_top = -101.0
 offset_right = 143.0
 offset_bottom = -34.0
-text = "Name"
 label_settings = SubResource("LabelSettings_bewkk")
 
 [node name="ProgressBar" type="TextureProgressBar" parent="dialogue_label/character_name_label" unique_id=2057163487]

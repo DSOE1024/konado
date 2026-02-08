@@ -10,6 +10,7 @@ signal actor_exited
 
 ## 是否使用补间动画，将会在角色移动时显示动画效果
 @export var use_tween: bool = true
+
 ## 动画时间，为0时则等于禁用动画效果
 @export var animation_time: float = 0.2:
 	set(value):

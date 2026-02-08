@@ -40,15 +40,15 @@ signal dialogue_line_end(line: int)
 @export var enable_overlay_log: bool = true
 
 ## 对话界面接口类
-@onready var _dialog_interface: KND_ChoiceInterface = $DialogUI/DialogueInterface
+@export var _konado_choice_interface: KND_ChoiceInterface
 
 ## 对话框
 @export var _konado_dialogue_box: KND_DialogueBox
 
 ## 背景和角色UI界面接口
-@onready var _acting_interface: KND_ActingInterface = $DialogUI/ActingInterface
+@export var _acting_interface: KND_ActingInterface
 ## 音频接口
-@onready var _audio_interface: DialogAudioInterface = $AudioInterface
+@export var _audio_interface: DialogAudioInterface
 
 ## 对话资源
 var dialog_data: KND_Shot = null
@@ -201,14 +201,10 @@ func set_bgm_list(bgm_list: DialogBGMList) -> void:
 ## 开始对话的方法
 func start_dialogue() -> void:
 	# 显示
-	if !_dialog_interface:
-		_dialog_interface.show()
+	if !_konado_choice_interface:
+		_konado_choice_interface.show()
 	if !_acting_interface:
 		_acting_interface.show()
-		
-	_konado_dialogue_box.character_name = ""
-	_konado_dialogue_box.dialogue_text = " "
-	_konado_dialogue_box.update_dialogue_content()
 	
 	# 显示对话框
 	#_konado_dialogue_box.on_dialogue_show_completed.connect()
@@ -248,7 +244,7 @@ func _process(delta) -> void:
 				dialogue_line_start.emit(curline)
 
 				# 隐藏选项
-				_dialog_interface._choice_container.hide()
+				_konado_choice_interface._choice_container.hide()
 
 				# 判断对话类型
 				# 如果是普通对话
@@ -273,8 +269,6 @@ func _process(delta) -> void:
 						_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
 					
 					_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice))
-					# 显示UI
-					_dialog_interface.show()
 					# 设置角色高亮
 					if actor_auto_highlight:
 						if chara_id:
@@ -283,11 +277,9 @@ func _process(delta) -> void:
 					_konado_dialogue_box.typing_interval = dialogspeed
 					_konado_dialogue_box.dialogue_text = content
 					_konado_dialogue_box.character_name = chara_id
-					#_display_dialogue(chara_id, content, speed)
 					# 如果有配音播放配音
 					if voice_id:
 						_play_voice(voice_id)
-					pass
 				# 如果是切换背景
 				elif dialog_type == Dialogue.Type.Switch_Background:
 					# 显示背景
@@ -342,10 +334,10 @@ func _process(delta) -> void:
 						_continue()
 					else:
 						# 生成并显示选项
-						_dialog_interface.display_options(dialog_choices, self)
+						_konado_choice_interface.display_options(dialog_choices, self)
 						_acting_interface.show()
-						_dialog_interface.show()
-						_dialog_interface._choice_container.show()
+						_konado_choice_interface.show()
+						_konado_choice_interface._choice_container.show()
 						pass
 				# 如果是播放BGM
 				elif dialog_type == Dialogue.Type.Play_BGM:
@@ -626,7 +618,7 @@ func _play_soundeffect(se_name: String) -> void:
 ## 选项触发方法
 func on_option_triggered(choice: DialogueChoice) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
-	_dialog_interface._choice_container.hide()
+	_konado_choice_interface._choice_container.hide()
 	
 	print("玩家选择按钮： " + str(choice.choice_text))
 	_jump_tag(choice.jump_tag)

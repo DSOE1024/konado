@@ -37,7 +37,7 @@ texture = SubResource("GradientTexture2D_m86f6")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ky1ed"]
 
-[node name="KonadoDialogueManager" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_dialogue_box", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn")]
+[node name="KonadoDialogueManager" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -45,7 +45,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_buo3n")
+_konado_choice_interface = NodePath("KonadoUI/DialogueInterface")
 _konado_dialogue_box = NodePath("KonadoUI/DialogueInterface/KonadoDialogueBox")
+_acting_interface = NodePath("KonadoUI/ActingInterface")
+_audio_interface = NodePath("KonadoAudioInterface")
 error_tooltip_panel = NodePath("KonadoErrorToolTip")
 error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
 error_skip_btn = NodePath("KonadoErrorToolTip/Skip")

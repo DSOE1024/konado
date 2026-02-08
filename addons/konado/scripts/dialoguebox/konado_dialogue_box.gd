@@ -87,6 +87,9 @@ var typing_tween: Tween = null
 
 
 func _ready() -> void:
+	self.character_name = ""
+	self.dialogue_text = ""
+	self.update_dialogue_content()
 	self.modulate.a = 0.0
 	
 	if enable_typing_effect_audio:
@@ -191,7 +194,6 @@ func update_dialogue_content() -> void:
 	var total_typing_time = dialogue_text.length() * typing_interval
 	typing_tween.tween_property(dialogue_label, "visible_ratio", 1.0, total_typing_time).set_trans(Tween.TRANS_LINEAR)
 
-# 【核心新增】帧检测 - 实时判断并随机播放滴滴音效
 func _process(delta: float) -> void:
 	# 仅当打字动画运行、文本非空时，处理音效逻辑
 	if not (typing_tween and typing_tween.is_running() and not dialogue_text.is_empty()):
