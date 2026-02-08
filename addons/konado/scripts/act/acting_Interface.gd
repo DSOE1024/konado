@@ -231,19 +231,23 @@ func create_new_character(chara_id: String, division: int, pos: int, state: Stri
 	actor_dict[chara_dict.id] = chara_dict
 	var node_name : String = str(chara_dict["id"])
 	var temp_node : KND_Actor = _konado_actor_template.instantiate() as KND_Actor
+	temp_node.use_tween = false
 	temp_node.name = node_name
 	temp_node.division = division
 	temp_node.character_position = pos
 	temp_node.set_character_texture(tex)
 	temp_node.set_texture_scale(actor_scale)
 	temp_node.mirror = mirror
-
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
+	temp_node.use_tween = true
+	temp_node.enter_actor(true)
+	temp_node.actor_entered.connect(
+		func():
+			character_created.emit()
+			print("在位置："+str(pos)+" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
+			)
 
-	character_created.emit()
-	print("在位置："+str(pos)+" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
-	
 
 # 切换演员的状态
 func change_actor_state(actor_id: String, state_id: String, state_tex: Texture) -> void:
@@ -260,15 +264,15 @@ func change_actor_state(actor_id: String, state_id: String, state_tex: Texture) 
 
 # 高亮角色
 func highlight_actor(actor_id: String) -> void:
+	if actor_dict.size() <= 0:
+		return
 	for actor in actor_dict.keys():
-		if actor_dict.keys() == null:
-			return #防止报错的判空
 		var tmp = get_chara_node(actor).find_child(actor, true, false) as CanvasItem
 		if tmp == null :
-			return#同上
+			return
 		tmp.set_modulate(Color(0.5, 0.5, 0.5))
 
-	var chara_node: Node = get_chara_node(actor_id)
+	var chara_node: KND_Actor = get_chara_node(actor_id)
 	
 	if chara_node != null:
 		#如果剧情角色名字和演员名字不匹配，就pass，防止崩溃

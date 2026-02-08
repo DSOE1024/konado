@@ -48,7 +48,7 @@ signal on_dialogue_hide_completed
 @export var audio_trigger_chance: float = 0.8  ## 音效触发概率(0-1)，1=每次必播，0=不播
 @export var min_audio_interval: float = 0.02   ## 音效最小播放间隔（秒），适配滴滴声快速节奏
 @export var max_audio_interval: float = 0.08   ## 音效最大播放间隔（秒）
-@export var audio_volumn: float = 1.0         ## 音效音量(0-1)
+@export var audio_volumn: float = 0.6         ## 音效音量(0-1)
 
 @export_group("对话框设置")
 @export var dialogue_margins: int = 100     ## 对话框到底部距离

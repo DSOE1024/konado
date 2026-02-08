@@ -7,7 +7,13 @@ background bg1 none
 actor show 可娜 正常 at 6 2 scale 1.1
 
 "Kona" "Hello! Welcome to our cafe."
+
+actor change 可娜 害羞
+
+
 "Kona" "What would you like today?"
+
+actor change 可娜 正常
 
 # 111
 background bg2 cyberglitch

@@ -53,6 +53,7 @@ class_name KND_DialogueManager
 ## 报错提示面板
 @onready var error_tooltip_panel: ColorRect = $ErrorToolTip
 @onready var error_tooltip_label: Label = $ErrorToolTip/MarginContainer/ErrorText
+@onready var error_skip_btn: Button = $ErrorToolTip/Skip
 
 ## 对话资源
 var dialog_data: KND_Shot = null
@@ -67,11 +68,7 @@ var can_continue = true
 
 ## 对话状态（0:关闭，1:播放，2:播放完成下一个）
 enum DialogState {OFF, PLAYING, PAUSED}
-## 对话的状态
-## 分别有以下状态：
-## 0.关闭状态
-## 1.播放对话状态
-## 2.播放完成状态
+
 var dialogueState: DialogState
 
 ## 对话当前行，同时也是用于读取对话列表的下标，在游戏中的初始值应该为0或者任何大于0的整数
@@ -96,8 +93,7 @@ var justenter: bool
 ## 音效列表
 @export var soundeffect_list: DialogSoundEffectList
 
-## 调试模式
-@export var debug_mode = false
+
 
 ## 镜头开启播放的信号
 signal shot_start
@@ -129,27 +125,29 @@ func _ready() -> void:
 	OS.add_logger(logger)
 	# 使用Deferred避免线程问题
 	logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
+	error_skip_btn.pressed.connect(func():
+		error_tooltip_panel.hide())
 	
 	_konado_dialogue_box.on_dialogue_click.connect(_continue)
 	
-	if not debug_mode:
-		# 自动初始化和开始对话
-		if init_onstart:
-			print("自动初始化对话")
-			# 初始化对话
-			if not autostart:
-				init_dialogue(func():
-					print("请手动开始对话")
-					)
-			else:
-				init_dialogue(func():
-					print("自动开始对话")
-					await get_tree().process_frame
-					start_dialogue()
-					)
+
+	# 自动初始化和开始对话
+	if init_onstart:
+		print("自动初始化对话")
+		# 初始化对话
+		if not autostart:
+			init_dialogue(func():
+				print("请手动开始对话")
+				)
 		else:
-			print("请手动初始化对话")
-			
+			init_dialogue(func():
+				print("自动开始对话")
+				await get_tree().process_frame
+				start_dialogue()
+				)
+	else:
+		print("请手动初始化对话")
+
 ## 显示报错
 func _show_error(msg: String) -> void:
 	if enable_overlay_log:
@@ -158,20 +156,19 @@ func _show_error(msg: String) -> void:
 
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:
-	if not debug_mode:
-		if shots == null:
-			printerr("对话镜头列表资源为空")
-			return
-		if shots.size() <= 0:
-			printerr("没有任何对话镜头")
-			return
-		# 如果对话数据为空，则默认为第一个对话数据
-		if dialog_data == null:
-			dialog_data = shots[0]
-			dialog_data.get_dialogues()
-	
-		# 将角色表传给acting_interface
-		_acting_interface.chara_list = chara_list
+
+	if shots == null:
+		printerr("对话镜头列表资源为空")
+		return
+	if shots.size() <= 0:
+		printerr("没有任何对话镜头")
+		return
+	# 如果对话数据为空，则默认为第一个对话数据
+	if dialog_data == null:
+		dialog_data = shots[0]
+		dialog_data.get_dialogues()
+	# 将角色表传给acting_interface
+	_acting_interface.chara_list = chara_list
 
 	# 初始化各管理器
 	_acting_interface.delete_all_actor()

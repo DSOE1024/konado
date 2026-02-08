@@ -1,8 +1,12 @@
-@tool
 extends Control
 class_name KND_Actor
 
 ## Konado对话角色类，用于在对话中显示角色
+
+## 角色进场动画完成信号
+signal actor_entered
+## 角色退场动画完成信号
+signal actor_exited
 
 ## 是否使用补间动画，将会在角色移动时显示动画效果
 @export var use_tween: bool = true
@@ -27,7 +31,6 @@ class_name KND_Actor
 		if character_position != value:
 			character_position = clamp(value, 1, division - 1)
 			_on_resized()
-
 
 ## 屏幕纵向分块数，不得小于3，将屏幕高度分为从上到下递增的块，每个块大小相同
 @export var y_division: int = 3:
@@ -56,33 +59,81 @@ func _ready() -> void:
 		self.resized.connect(_on_resized)
 	# 首次正确计算坐标（此时size已由布局系统计算完成）
 	_on_resized()
+	# 初始化透明度为1（确保初始状态正常）
+	if texture_rect:
+		texture_rect.modulate.a = 1.0
+		texture_rect.visible = true
 
 func _on_resized() -> void:
 	if not texture_rect:
 		print("警告：texture_rect未赋值")
 		return
-	
-	# 横向坐标计算（原有逻辑）
+		
 	var target_x = -size.x / division * (division - character_position) + texture_rect.size.x / 2
-	# 纵向坐标计算（新增，完全对标横向公式逻辑）
 	var target_y = -size.y / y_division * (y_division - character_y_position) + texture_rect.size.y / 2
 	
 	if use_tween:
 		var tween: Tween = texture_rect.create_tween()
-		# 补间动画同时包含x、y轴（新增y轴）
 		tween.tween_property(texture_rect, "position", Vector2(target_x, target_y), animation_time)
 		tween.play()
 	else:
-		# 直接设置x、y坐标（新增y轴）
 		texture_rect.position.x = target_x
 		texture_rect.position.y = target_y
+
+## 角色进场动画（透明度从0过渡到1）
+func enter_actor(play_anim: bool = true) -> void:
+	if not texture_rect:
+		print("警告：texture_rect未赋值，无法执行进场动画")
+		emit_signal("actor_entered")
+		return
 	
-	# 打印横竖坐标，方便调试
-	print("横向目标坐标：", target_x, " | 纵向目标坐标：", target_y)
+	# 重置基础状态
+	texture_rect.visible = true
+	texture_rect.modulate.a = 0.0
+	
+	# 创建补间动画
+	var tween: Tween = texture_rect.create_tween()
+	# 并行执行多个动画轨道
+	tween.set_parallel(true)
+	
+	# 透明度动画（核心进场效果）
+	tween.tween_property(texture_rect, "modulate:a", 1.0, animation_time)
+	
+	# 如果需要同时播放位置动画，先计算目标位置并添加到动画
+	if play_anim:
+		var target_x = -size.x / division * (division - character_position) + texture_rect.size.x / 2
+		var target_y = -size.y / y_division * (y_division - character_y_position) + texture_rect.size.y / 2
+		tween.tween_property(texture_rect, "position", Vector2(target_x, target_y), animation_time)
+	
+	# 动画完成后触发信号
+	tween.finished.connect(_on_enter_animation_finished)
+	tween.play()
+
+## 角色退场动画（透明度从1过渡到0）
+func exit_actor(play_anim: bool = true) -> void:
+	if not texture_rect:
+		print("警告：texture_rect未赋值，无法执行退场动画")
+		emit_signal("actor_exited")
+		return
+	
+	# 创建补间动画
+	var tween: Tween = texture_rect.create_tween()
+	# 透明度淡出动画
+	tween.tween_property(texture_rect, "modulate:a", 0.0, animation_time)
+	
+	# 动画完成后删除节点
+	tween.finished.connect(func(): self.queue_free())
+	tween.play()
+
+## 进场动画完成回调
+func _on_enter_animation_finished() -> void:
+	actor_entered.emit()
 
 func set_character_texture(texture: Texture) -> void:
 	if not texture_rect:
 		return
+	if texture == null:
+		push_error("正在试图设置一个空角色图像")
 	texture_rect.texture = texture
 	_on_resized()
 
