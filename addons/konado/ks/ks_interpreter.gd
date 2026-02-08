@@ -338,15 +338,15 @@ func _parse_background(line: String, dialog: Dialogue) -> bool:
 	if parts.size() >= 3:
 		var effect = parts[2]
 		dialog.background_toggle_effects = {
-			"none": ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT,
-			"erase": ActingInterface.BackgroundTransitionEffectsType.EraseEffect,
-			"blinds": ActingInterface.BackgroundTransitionEffectsType.BlindsEffect,
-			"wave": ActingInterface.BackgroundTransitionEffectsType.WaveEffect,
-			"fade": ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT,
-			"vortex": ActingInterface.BackgroundTransitionEffectsType.VORTEX_SWAP_EFFECT,
-			"windmill": ActingInterface.BackgroundTransitionEffectsType.WINDMILL_EFFECT,
-			"cyberglitch": ActingInterface.BackgroundTransitionEffectsType.CYBER_GLITCH_EFFECT
-		}.get(effect, ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT)
+			"none": KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT,
+			"erase": KND_ActingInterface.BackgroundTransitionEffectsType.EraseEffect,
+			"blinds": KND_ActingInterface.BackgroundTransitionEffectsType.BlindsEffect,
+			"wave": KND_ActingInterface.BackgroundTransitionEffectsType.WaveEffect,
+			"fade": KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT,
+			"vortex": KND_ActingInterface.BackgroundTransitionEffectsType.VORTEX_SWAP_EFFECT,
+			"windmill": KND_ActingInterface.BackgroundTransitionEffectsType.WINDMILL_EFFECT,
+			"cyberglitch": KND_ActingInterface.BackgroundTransitionEffectsType.CYBER_GLITCH_EFFECT
+		}.get(effect, KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT)
 
 	return true
 
