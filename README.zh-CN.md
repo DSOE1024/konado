@@ -1,6 +1,6 @@
 # Konado 可娜多：视觉小说框架
 
-[English](README.md) | 简体中文
+[English](README.md) | 简体中文 | [繁體中文](README.zh-TW.md)
 
 
 <div align="center" style="border-radius: 12px; overflow: hidden">
