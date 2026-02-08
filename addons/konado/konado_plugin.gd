@@ -25,7 +25,6 @@ const TRANSLATION_PATHS: PackedStringArray = [
 
 
 ## 插件实例变量
-var konado_editor_instance: KonadoEditorWindow = null
 var ks_import_plugin: EditorImportPlugin
 var kdic_import_plugin: EditorImportPlugin
 
@@ -117,16 +116,6 @@ func _setup_internationalization() -> void:
 	ProjectSettings.set_setting("internationalization/locale/locale_filter_mode", 1)  # 允许所有区域
 	ProjectSettings.save()
 	
-	
-## 打开Konado编辑器
-func open_konado_editor() -> void:
-	if konado_editor_instance and is_instance_valid(konado_editor_instance):
-		konado_editor_instance.popup()
-	else:
-		konado_editor_instance = KonadoEditorWindow.new()
-		get_editor_interface().get_base_control().add_child(konado_editor_instance)
-		konado_editor_instance.popup()
-
 
 ## 清理导入插件
 func _cleanup_import_plugins() -> void:
@@ -143,8 +132,3 @@ func _cleanup_import_plugins() -> void:
 func _print_loading_message() -> void:
 	print("Konado %s %s" % [VERSION, CODENAME])
 	print("Konado loaded")
-
-
-## 编辑器按钮按下回调
-func _on_konado_editor_button_pressed() -> void:
-	open_konado_editor()
