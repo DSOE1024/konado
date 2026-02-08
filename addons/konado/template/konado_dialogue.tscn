@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd" id="1_buo3n"]
 [ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/acting_interface.gd" id="2_pq6sw"]
-[ext_resource type="PackedScene" uid="uid://dcwk5so2ohcc2" path="res://addons/konado/template/character/character_template.tscn" id="3_77vgp"]
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="3_gl7il"]
 [ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/audio_interface.gd" id="4_gd2ll"]
 [ext_resource type="Theme" uid="uid://bb865dga7c5sp" path="res://addons/konado/editor/theme/game_theme.tres" id="4_inqap"]
@@ -83,10 +82,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="character" parent="KonadoUI/ActingInterface/BackgroundLayer/CharaControl" unique_id=1276474265 instance=ExtResource("3_77vgp")]
-layout_mode = 1
-character_y_position = 1
 
 [node name="EffectLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1654107269]
 layout_mode = 2

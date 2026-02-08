@@ -34,10 +34,10 @@ signal actor_exited
 			_on_resized()
 
 ## 屏幕纵向分块数，不得小于3，将屏幕高度分为从上到下递增的块，每个块大小相同
-@export var y_division: int = 3:
+@export var y_division: int = 6:
 	set(value):
 		if y_division != value:
-			y_division = clamp(value, 3, 6)
+			y_division = clamp(value, 3, 15)
 			_on_resized()
 
 ## 当前角色纵向位置所在区块分割线索引，从0开始，从上到下递增

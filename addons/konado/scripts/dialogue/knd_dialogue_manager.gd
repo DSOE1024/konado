@@ -29,15 +29,19 @@ signal dialogue_line_end(line: int)
 ## 一般来说大部分场景可能需要打开能获得更好的效果
 @export var actor_auto_highlight: bool = true
 
-
-@export var autoplay: bool
+## 自动播放
+@export var autoplay: bool = false
 ## 对话打字播放速度
-@export var dialogspeed: float = 0.04
+@export var _typing_interval: float = 0.04
 ## 自动播放速度
 @export var autoplayspeed: float = 2
 
-## 是否显示错误日志覆盖
-@export var enable_overlay_log: bool = true
+@export_group("界面设置")
+
+## 演员画布横向分块
+@export var horizontal_division: int = 6
+## 演员画布纵向分块
+@export var vertical_division: int = 6
 
 ## 对话界面接口类
 @export var _konado_choice_interface: KND_ChoiceInterface
@@ -88,7 +92,9 @@ var justenter: bool
 ## 音效列表
 @export var soundeffect_list: DialogSoundEffectList
 
-@export_group("Logger")
+@export_group("日志工具")
+## 是否显示错误日志覆盖
+@export var enable_overlay_log: bool = true
 ## 报错提示面板
 @export var error_tooltip_panel: ColorRect
 @export var error_tooltip_label: Label
@@ -274,7 +280,7 @@ func _process(delta) -> void:
 						if chara_id:
 							_acting_interface.highlight_actor(chara_id)
 					# 播放对话
-					_konado_dialogue_box.typing_interval = dialogspeed
+					_konado_dialogue_box.typing_interval = _typing_interval
 					_konado_dialogue_box.dialogue_text = content
 					_konado_dialogue_box.character_name = chara_id
 					# 如果有配音播放配音
@@ -313,8 +319,6 @@ func _process(delta) -> void:
 					var s = _acting_interface.character_moved
 					s.connect(_process_next.bind(s))
 					_acting_interface.move_actor(actor, pos)
-					
-					pass
 				# 如果是删除演员
 				elif dialog_type == Dialogue.Type.Exit_Actor:
 					# 删除演员
@@ -322,8 +326,6 @@ func _process(delta) -> void:
 					var s = _acting_interface.character_deleted
 					s.connect(_process_next.bind(s))
 					_exit_actor(actor)
-					
-					pass
 				# 如果是选项
 				elif dialog_type == Dialogue.Type.Show_Choice:
 					var dialog_choices = dialog.choices
@@ -566,7 +568,7 @@ func _display_character(dialogue: Dialogue) -> void:
 	# 角色立绘镜像翻转
 	var mirror = dialogue.actor_mirror
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, pos.x, pos.y, target_state_name, target_state_tex, a_scale, mirror)
+	_acting_interface.create_new_character(target_chara_name, horizontal_division, vertical_division, pos.x, pos.y, target_state_name, target_state_tex, a_scale, mirror)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:
