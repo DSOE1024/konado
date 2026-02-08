@@ -16,10 +16,9 @@ actor exit [角色ID]
 | 角色ID | 是 | `alice` | 角色资源标识符 |
 
 
-
 ## 示例
 
 ```text
 # 角色退出场景
-actor exit bob
+actor exit alice
 ```
