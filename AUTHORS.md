@@ -13,8 +13,11 @@ Please note that the contributor list itself does not represent the copyright ow
 ## Contributors
 
 The following people contributed to this project:
-<picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://contrib.rocks/image?repo=GodotHub/konado&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://contrib.rocks/image?repo=GodotHub/konado" />
-   <img alt="Contributors" src="https://contrib.rocks/image?repo=GodotHub/konado" />
-</picture>
+
+<a href="https://github.com/GodotHub/konado/graphs/contributors" target="_blank">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://contrib.rocks/image?repo=GodotHub/konado&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://contrib.rocks/image?repo=GodotHub/konado" />
+    <img alt="Contributors" src="https://contrib.rocks/image?repo=GodotHub/konado" />
+  </picture>
+</a>
