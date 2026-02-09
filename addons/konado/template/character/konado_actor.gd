@@ -71,18 +71,26 @@ func _on_resized() -> void:
 	if not texture_rect:
 		print("警告：texture_rect未赋值")
 		return
-		
+	
 	var target_x = -size.x / h_division * (h_division - h_character_position) + texture_rect.size.x / 2
 	var target_y = -size.y / v_division * (v_division - v_character_position) + texture_rect.size.y / 2
+	var target_pos = Vector2(target_x, target_y)
 	
+	if texture_rect.position == target_pos:
+		return
+	
+	# 坐标不一致时，才执行tween或直接赋值
 	if use_tween:
 		var tween: Tween = texture_rect.create_tween()
-		tween.tween_callback(func(): actor_moved.emit())
-		tween.tween_property(texture_rect, "position", Vector2(target_x, target_y), animation_time)
+		tween.tween_property(texture_rect, "position", target_pos, animation_time)
+		tween.tween_callback(
+			func(): 
+				texture_rect.position = target_pos
+				actor_moved.emit()
+				)
 		tween.play()
 	else:
-		texture_rect.position.x = target_x
-		texture_rect.position.y = target_y
+		texture_rect.position = target_pos
 		actor_moved.emit()
 
 ## 角色进场动画（透明度从0过渡到1）

@@ -319,6 +319,7 @@ func move_actor(chara_id: String, target_h_division: int, target_v_division: int
 	chara_node.v_character_position = target_v_division
 	
 func _on_character_moved() -> void:
+	print("移动回调")
 	character_moved.emit()
 	pass
 	
