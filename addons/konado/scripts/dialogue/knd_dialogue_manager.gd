@@ -318,7 +318,7 @@ func _process(delta) -> void:
 					var pos = dialog.target_move_pos
 					var s = _acting_interface.character_moved
 					s.connect(_process_next.bind(s))
-					_acting_interface.move_actor(actor, pos)
+					_acting_interface.move_actor(actor, pos.x, pos.y)
 				# 如果是删除演员
 				elif dialog_type == Dialogue.Type.Exit_Actor:
 					# 删除演员
