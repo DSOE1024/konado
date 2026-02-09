@@ -229,10 +229,10 @@ func create_new_character(chara_id: String, h_division: int, v_division: int, po
 	var temp_node : KND_Actor = _konado_actor_template.instantiate() as KND_Actor
 	temp_node.use_tween = false
 	temp_node.name = node_name
-	temp_node.division = h_division
-	temp_node.y_division = v_division
-	temp_node.character_position = pos_h
-	temp_node.character_y_position = pos_v
+	temp_node.h_division = h_division
+	temp_node.v_division = v_division
+	temp_node.h_character_position = pos_h
+	temp_node.v_character_position = pos_v
 	temp_node.set_character_texture(tex)
 	temp_node.set_texture_scale(actor_scale)
 	temp_node.mirror = mirror
@@ -245,6 +245,8 @@ func create_new_character(chara_id: String, h_division: int, v_division: int, po
 			character_created.emit()
 			print(" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
 			)
+	# 移动信号
+	temp_node.actor_moved.connect(_on_character_moved)
 
 
 ## 切换演员的状态
@@ -308,13 +310,15 @@ func delete_all_actor() -> void:
 	print("删除所有演员")
 
 ## 移动演员的方法
-func move_actor(chara_id: String, target_pos: Vector2):
+func move_actor(chara_id: String, target_h_division: int, target_v_division: int):
 	print("移动演员")
-	var chara_node = get_chara_node(chara_id)
-	var move_tween = chara_node.create_tween()
-	move_tween.tween_property(chara_node, "position", Vector2(target_pos), 0.7)
-	move_tween.play()
-	await move_tween.finished
-	move_tween.kill()
+	print(target_h_division)
+	print(target_v_division)
+	var chara_node: KND_Actor = get_chara_node(chara_id) as KND_Actor
+	chara_node.h_character_position = target_h_division
+	chara_node.v_character_position = target_v_division
+	
+func _on_character_moved() -> void:
 	character_moved.emit()
 	pass
+	

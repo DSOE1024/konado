@@ -8,11 +8,13 @@ actor show 可娜 正常 at 2 5 scale 1.3
 
 "Kona" "Hello! Welcome to our cafe."
 
+actor move 可娜 4 5
+
 actor change 可娜 害羞
 
 "Kona" "What would you like today?"
 
-actor exit 可娜
+#actor exit 可娜
 
 actor change 可娜 正常
 

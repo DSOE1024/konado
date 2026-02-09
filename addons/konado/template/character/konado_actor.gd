@@ -3,10 +3,12 @@ class_name KND_Actor
 
 ## Konado对话角色类，用于在对话中显示角色
 
-## 角色进场动画完成信号
+## 演员进场动画完成信号
 signal actor_entered
-## 角色退场动画完成信号
+## 演员退场动画完成信号
 signal actor_exited
+## 演员移动动画完成信号
+signal actor_moved
 
 ## 是否使用补间动画，将会在角色移动时显示动画效果
 @export var use_tween: bool = true
@@ -20,32 +22,32 @@ signal actor_exited
 @export var texture_rect: TextureRect
 
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
-@export var division: int = 6:
+@export var h_division: int = 6:
 	set(value):
-		if division != value:
-			division = clamp(value, 2, 15)
+		if h_division != value:
+			h_division = clamp(value, 2, 15)
 			_on_resized()
 
 ## 当前角色横向位置所在区块分割线索引，从0开始，从左到右递增
-@export var character_position: int = 3:
+@export var h_character_position: int = 3:
 	set(value):
-		if character_position != value:
-			character_position = clamp(value, 1, division - 1)
+		if h_character_position != value:
+			h_character_position = clamp(value, 1, h_division - 1)
 			_on_resized()
 
 ## 屏幕纵向分块数，不得小于3，将屏幕高度分为从上到下递增的块，每个块大小相同
-@export var y_division: int = 6:
+@export var v_division: int = 6:
 	set(value):
-		if y_division != value:
-			y_division = clamp(value, 3, 15)
+		if v_division != value:
+			v_division = clamp(value, 3, 15)
 			_on_resized()
 
 ## 当前角色纵向位置所在区块分割线索引，从0开始，从上到下递增
 ## 数值越小越偏上，数值越大越偏下
-@export var character_y_position: int = 2:
+@export var v_character_position: int = 2:
 	set(value):
-		if character_y_position != value:
-			character_y_position = clamp(value, 1, y_division - 1)
+		if v_character_position != value:
+			v_character_position = clamp(value, 1, v_division - 1)
 			_on_resized()
 		
 ## 设置镜像	
@@ -70,16 +72,18 @@ func _on_resized() -> void:
 		print("警告：texture_rect未赋值")
 		return
 		
-	var target_x = -size.x / division * (division - character_position) + texture_rect.size.x / 2
-	var target_y = -size.y / y_division * (y_division - character_y_position) + texture_rect.size.y / 2
+	var target_x = -size.x / h_division * (h_division - h_character_position) + texture_rect.size.x / 2
+	var target_y = -size.y / v_division * (v_division - v_character_position) + texture_rect.size.y / 2
 	
 	if use_tween:
 		var tween: Tween = texture_rect.create_tween()
+		tween.tween_callback(func(): actor_moved.emit())
 		tween.tween_property(texture_rect, "position", Vector2(target_x, target_y), animation_time)
 		tween.play()
 	else:
 		texture_rect.position.x = target_x
 		texture_rect.position.y = target_y
+		actor_moved.emit()
 
 ## 角色进场动画（透明度从0过渡到1）
 func enter_actor(play_anim: bool = true) -> void:
@@ -102,8 +106,8 @@ func enter_actor(play_anim: bool = true) -> void:
 	
 	# 如果需要同时播放位置动画，先计算目标位置并添加到动画
 	if play_anim:
-		var target_x = -size.x / division * (division - character_position) + texture_rect.size.x / 2
-		var target_y = -size.y / y_division * (y_division - character_y_position) + texture_rect.size.y / 2
+		var target_x = -size.x / h_division * (h_division - h_character_position) + texture_rect.size.x / 2
+		var target_y = -size.y / v_division * (v_division - v_character_position) + texture_rect.size.y / 2
 		tween.tween_property(texture_rect, "position", Vector2(target_x, target_y), animation_time)
 	
 	# 动画完成后触发信号
