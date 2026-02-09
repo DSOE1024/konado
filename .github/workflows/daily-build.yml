@@ -140,7 +140,9 @@ jobs:
       run: |
         mkdir -v -p build/plugins
         cd addons || exit 1
+        cp -v ../LICENSE konado/
         zip -r "../build/plugins/${{ steps.version.outputs.plugin_zip }}" konado
+        cp -v ../LICENSE konadotnet/
         zip -r "../build/plugins/${{ steps.version.outputs.plugin_dotnet_zip }}" konadotnet
         cd - || exit 1
         ls -l build/plugins
