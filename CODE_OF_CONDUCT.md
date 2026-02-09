@@ -26,7 +26,7 @@ This project is committed to providing an inclusive, open, and respectful enviro
 
 ## Violation Handling
 
-If any violation is found, please contact the project maintainers via project Issues or designated email. The project team is obligated to keep the identity information of the reporter confidential and strictly prohibit the disclosure of relevant information about the reporter. The core project maintainers have the right to interpret "Our Commitment" and take appropriate and fair corrective measures (including but not limited to warnings, prohibition from participating in project-related activities, etc.) against any behavior deemed inappropriate, threatening, offensive, or harmful.
+If any violation is found, please contact the project maintainers via project Issues or designated email. The project team is obligated to keep the identity information of the reporter confidential and strictly prohibit the disclosure of relevant information about the reporter. The core project maintainers have the right to interpret "Our Commitment" and take appropriate and fair corrective measures (including warnings, prohibition from participating in project-related activities, etc.) against any behavior deemed inappropriate, threatening, offensive, or harmful.
 
 ## Scope of Application
 
