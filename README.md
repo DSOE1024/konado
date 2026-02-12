@@ -40,7 +40,7 @@ For comprehensive guides, API references, and advanced tutorials, visit our offi
 
 Join our community to connect with other Konado users, share ideas, and get support. You can participate through:
 
-- QQ Channel Discussion Group: [Join Now](https://pd.qq.com/g/GodotHub999/text/707799746)
+- QQ Channel Discussion Group: [Join Now](https://pd.qq.com/g/godot)
 - Discord Server Channel: [Join Now](https://discord.com/channels/1378639076747513938/1425084240550166592)
 
 <a href="https://godothub.com">

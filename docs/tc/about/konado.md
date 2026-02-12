@@ -22,7 +22,7 @@ Konado Project 開發組是一個由社群驅動的開源專案團隊，歸屬�
 
 如果您對 Konado 專案感興趣，歡迎加入我們的 QQ 頻道交流群組，與我們共同探討 Konado 專案的未來發展方向：
 
-QQ 頻道交流群組：https://pd.qq.com/g/GodotHub999/text/707799746
+QQ 頻道交流群組：https://pd.qq.com/g/godot
 
 如有問題回饋或功能建議，歡迎前往 Konado 的專案[倉庫提交 Issue](https://github.com/godothub/konado/issues)
 

@@ -16,7 +16,7 @@ We are committed to independently developing a comprehensive visual novel game f
 
 If you are interested in the Konado project, feel free to join our QQ Channel group to discuss the future direction of the Konado project with us:
 
-QQ Channel Group: https://pd.qq.com/g/GodotHub999/text/707799746
+QQ Channel Group: https://pd.qq.com/g/godot
 
 For issue reports or feature suggestions, please submit an issue in the Konado project [repository](https://github.com/godothub/konado/issues).
 

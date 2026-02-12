@@ -18,6 +18,6 @@
 
 * [提交 issue](https://github.com/godothub/konado/issues) （優先考慮，這樣可以方便我們追蹤問題）
 
-* [加群回饋](https://pd.qq.com/g/GodotHub999/text/707799746)
+* [加群回饋](https://pd.qq.com/g/godot)
 
 * [發文求助](https://pd.qq.com/g/GodotHub999)
