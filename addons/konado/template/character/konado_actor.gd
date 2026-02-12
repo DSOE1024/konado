@@ -32,7 +32,7 @@ signal actor_moved
 @export var h_character_position: int = 3:
 	set(value):
 		if h_character_position != value:
-			h_character_position = clamp(value, 1, h_division - 1)
+			h_character_position = clamp(value, 0, h_division - 1)
 			_on_resized()
 
 ## 屏幕纵向分块数，不得小于3，将屏幕高度分为从上到下递增的块，每个块大小相同
@@ -47,7 +47,7 @@ signal actor_moved
 @export var v_character_position: int = 2:
 	set(value):
 		if v_character_position != value:
-			v_character_position = clamp(value, 1, v_division - 1)
+			v_character_position = clamp(value, 0, v_division - 1)
 			_on_resized()
 		
 ## 设置镜像	
@@ -58,40 +58,35 @@ signal actor_moved
 			set_texture_mirror()
 
 func _ready() -> void:
-	if not self.resized.is_connected(_on_resized):
-		self.resized.connect(_on_resized)
-	# 首次正确计算坐标（此时size已由布局系统计算完成）
-	_on_resized()
 	# 初始化透明度为1（确保初始状态正常）
 	if texture_rect:
 		texture_rect.modulate.a = 1.0
 		texture_rect.visible = true
+	# 初始化位置
+	_on_resized()
 
 func _on_resized() -> void:
 	if not texture_rect:
 		print("警告：texture_rect未赋值")
 		return
 	
-	var target_x = -size.x / h_division * (h_division - h_character_position) + texture_rect.size.x / 2
-	var target_y = -size.y / v_division * (v_division - v_character_position) + texture_rect.size.y / 2
-	var target_pos = Vector2(target_x, target_y)
-	
-	if texture_rect.position == target_pos:
-		return
-	
-	# 坐标不一致时，才执行tween或直接赋值
 	if use_tween:
 		var tween: Tween = texture_rect.create_tween()
-		tween.tween_property(texture_rect, "position", target_pos, animation_time)
-		tween.tween_callback(
-			func(): 
-				texture_rect.position = target_pos
-				actor_moved.emit()
-				)
-		tween.play()
-	else:
-		texture_rect.position = target_pos
+		tween.set_parallel(true)
+		tween.tween_property(self, "anchor_top", float(v_character_position) / float(v_division), animation_time)
+		tween.tween_property(self, "anchor_bottom", float(v_character_position + 1) / float(v_division), animation_time)
+		tween.tween_property(self, "anchor_left", float(h_character_position) / float(h_division), animation_time)
+		tween.tween_property(self, "anchor_right", float(h_character_position + 1) / float(h_division), animation_time)
+		await tween.finished
 		actor_moved.emit()
+	else:
+		anchor_top = float(v_character_position) / float(v_division)
+		anchor_bottom = float(v_character_position + 1) / float(v_division)
+		anchor_left = float(h_character_position) / float(h_division)
+		anchor_right = float(h_character_position + 1) / float(h_division)
+	
+		actor_moved.emit()
+
 
 ## 角色进场动画（透明度从0过渡到1）
 func enter_actor(play_anim: bool = true) -> void:
@@ -112,13 +107,6 @@ func enter_actor(play_anim: bool = true) -> void:
 	# 透明度动画（核心进场效果）
 	tween.tween_property(texture_rect, "modulate:a", 1.0, animation_time)
 	
-	# 如果需要同时播放位置动画，先计算目标位置并添加到动画
-	if play_anim:
-		var target_x = -size.x / h_division * (h_division - h_character_position) + texture_rect.size.x / 2
-		var target_y = -size.y / v_division * (v_division - v_character_position) + texture_rect.size.y / 2
-		tween.tween_property(texture_rect, "position", Vector2(target_x, target_y), animation_time)
-	
-	# 动画完成后触发信号
 	tween.finished.connect(_on_enter_animation_finished)
 	tween.play()
 
@@ -148,13 +136,13 @@ func set_character_texture(texture: Texture) -> void:
 	if texture == null:
 		push_error("正在试图设置一个空角色图像")
 	texture_rect.texture = texture
-	_on_resized()
+
 
 func set_texture_scale(scale: float) -> void:
 	if not texture_rect:
 		return
 	texture_rect.scale = Vector2(scale, scale)
-	_on_resized()
+
 	
 func set_texture_mirror() -> void:
 	if not texture_rect:
