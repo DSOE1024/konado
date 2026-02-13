@@ -20,9 +20,7 @@ init_onstart = false
 autostart = false
 actor_auto_highlight = null
 autoplay = null
-dialogspeed = null
 autoplayspeed = null
 enable_overlay_log = null
-debug_mode = null
 
 [editable path="Demo"]

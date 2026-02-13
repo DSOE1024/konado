@@ -8,7 +8,7 @@ namespace Konado.Wrapper;
 public partial class KndData : Resource
 {
     private static GDScript _sourceScript;
-    private const string SourceScriptPath = "res://addons/konado/knd_data/knd_data.gd";
+    private const string SourceScriptPath = "res://addons/konado/scripts/knd_data/knd_data.gd";
     private GodotObject _source;
 
     public KndData(GodotObject source)
