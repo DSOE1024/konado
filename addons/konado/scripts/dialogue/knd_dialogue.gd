@@ -32,9 +32,6 @@ var branch_id: String
 # 对话内容
 var branch_dialogue: Array[KND_Dialogue] = []
 
-# 是否加载完成
-var is_branch_loaded: bool = false
-
 # 对话人物ID
 var character_id: String
 # 对话内容
@@ -279,7 +276,6 @@ func serialize_to_dict() -> Dictionary:
 		Type.BRANCH:
 			dict["branch_id"] = branch_id
 			dict["branch_dialogue"] = serialize_dialogue_array(branch_dialogue)
-			dict["is_branch_loaded"] = is_branch_loaded
 		
 		Type.ORDINARY_DIALOG:
 			dict["character_id"] = character_id
@@ -347,8 +343,7 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 				branch_id = dict["branch_id"]
 			if "branch_dialogue" in dict:
 				branch_dialogue = deserialize_dialogue_array(dict["branch_dialogue"])
-			if "is_branch_loaded" in dict:
-				is_branch_loaded = dict["is_branch_loaded"]
+			
 		
 		Type.ORDINARY_DIALOG:
 			if "character_id" in dict:
