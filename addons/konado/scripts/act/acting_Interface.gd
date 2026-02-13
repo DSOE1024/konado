@@ -159,26 +159,26 @@ func change_background_image(tex: Texture, name: String, effects_type: Backgroun
 		current_texture = tex
 		background_change_finished.emit()
 		return
-	else:
-		_background.material.set("shader", config.shader)
-		print(_background.material.get_shader())
-		_background.material.set_shader_parameter("progress", 0.0)
-		_background.material.set_shader_parameter("current_texture", current_texture)
-		_background.material.set_shader_parameter("target_texture", tex)
 
-		# 创建并配置过渡动画
-		effect_tween = get_tree().create_tween()
-		effect_tween.tween_property(
-			_background.material, 
-			"shader_parameter/progress", 
-			config.progress_target, 
-			config.duration
-		)
-		effect_tween.set_ease(config.tween_trans)
-		
-		# 动画完成回调
-		effect_tween.finished.connect(_on_transition_finished.bind(_background.material, tex))
-		effect_tween.play()
+	_background.material.set("shader", config.shader)
+	print(_background.material.get_shader())
+	_background.material.set_shader_parameter("progress", 0.0)
+	_background.material.set_shader_parameter("current_texture", current_texture)
+	_background.material.set_shader_parameter("target_texture", tex)
+
+	# 创建并配置过渡动画
+	effect_tween = get_tree().create_tween()
+	effect_tween.tween_property(
+		_background.material, 
+		"shader_parameter/progress", 
+		config.progress_target, 
+		config.duration
+	)
+	effect_tween.set_ease(config.tween_trans)
+	
+	# 动画完成回调
+	effect_tween.finished.connect(_on_transition_finished.bind(_background.material, tex))
+	effect_tween.play()
 
 
 ## 过渡动画完成统一处理函数

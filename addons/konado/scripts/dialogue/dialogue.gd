@@ -264,9 +264,9 @@ func from_json(json_string: String) -> bool:
 	var data = json.data
 	if data is Dictionary:
 		return deserialize_from_dict(data)
-	else:
-		push_error("JSON数据格式错误: 根元素不是字典")
-		return false
+
+	push_error("JSON数据格式错误: 根元素不是字典")
+	return false
 
 # 序列化为字典
 func serialize_to_dict() -> Dictionary:
