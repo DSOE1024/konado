@@ -1,5 +1,6 @@
 shot_id HelloWorld
 
+
 play bgm echo
 
 background bg1 none

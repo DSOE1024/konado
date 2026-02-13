@@ -44,7 +44,7 @@ var enable_actor_validation: bool = true
 ## 是否处于choice缩进选项解析中（支持缩进式choice）
 var tmp_in_choice_indent: bool = false
 ## 当前正在解析的choice对话框对象（支持缩进式choice）
-var tmp_current_choice_dialog: Dialogue = null
+var tmp_current_choice_dialog: KND_Dialogue = null
 ## 缩进式choice的起始行号（支持缩进式choice）
 var tmp_choice_start_line: int = 0
 
@@ -188,16 +188,16 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 		# =============================================== #
 
 		# 解析普通行（非choice缩进状态）
-		var dialog: Dialogue = parse_line(line, original_line_number, path, diadata)  # 传入diadata给parse_line
+		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, diadata)  # 传入diadata给parse_line
 		if dialog:
 			# 如果是标签对话，则添加到标签对话字典中
-			if dialog.dialog_type == Dialogue.Type.BRANCH:
+			if dialog.dialog_type == KND_Dialogue.Type.BRANCH:
 				diadata.source_branches.set(dialog.branch_id, dialog.serialize_to_dict())
 			else:
 				# ====================== 修复重复空对话：核心3行修改 ====================== #
 				# 一行式choice：正常添加；缩进式choice（刚解析完choice:）：跳过添加，仅缩进结束后统一提交
 				# 避免解析choice:时添加空dialog，后续缩进结束又加一次造成重复
-				if not (dialog.dialog_type == Dialogue.Type.SHOW_CHOICE and tmp_in_choice_indent):
+				if not (dialog.dialog_type == KND_Dialogue.Type.SHOW_CHOICE and tmp_in_choice_indent):
 					var dialogue_dic: Dictionary = dialog.serialize_to_dict()
 					diadata.dialogues_source_data.append(dialogue_dic)
 				# ========================================================================= #
@@ -237,7 +237,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	# 生成演员快照
 	var cur_actor_dic: Dictionary = {}
 	for dialogue in diadata.get_dialogues():
-		if dialogue.dialog_type == Dialogue.Type.DISPLAY_ACTOR:
+		if dialogue.dialog_type == KND_Dialogue.Type.DISPLAY_ACTOR:
 			pass
 				#var actor: DialogueActor = dialogue.show_actor
 				#var chara_dict := {
@@ -249,13 +249,13 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 					#"mirror": actor.actor_mirror
 					#}
 				#cur_actor_dic[actor.character_name] = chara_dict
-		if dialogue.dialog_type == Dialogue.Type.EXIT_ACTOR:
+		if dialogue.dialog_type == KND_Dialogue.Type.EXIT_ACTOR:
 			if cur_actor_dic.has(dialogue.exit_actor):
 				cur_actor_dic.erase(dialogue.exit_actor)
-		if dialogue.dialog_type == Dialogue.Type.ACTOR_CHANGE_STATE:
+		if dialogue.dialog_type == KND_Dialogue.Type.ACTOR_CHANGE_STATE:
 			if cur_actor_dic.has(dialogue.change_state_actor):
 				cur_actor_dic[dialogue.change_state_actor]["state"] = dialogue.change_state
-		if dialogue.dialog_type == Dialogue.Type.MOVE_ACTOR:
+		if dialogue.dialog_type == KND_Dialogue.Type.MOVE_ACTOR:
 			if cur_actor_dic.has(dialogue.target_move_chara):
 				cur_actor_dic[dialogue.target_move_chara]["x"] = dialogue.target_move_pos.x
 				cur_actor_dic[dialogue.target_move_chara]["y"] = dialogue.target_move_pos.y
@@ -264,12 +264,12 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	return diadata
 
 # 单行解析模式
-func parse_single_line(line: String, line_number: int, path: String) -> Dialogue:
+func parse_single_line(line: String, line_number: int, path: String) -> KND_Dialogue:
 	return parse_line(line.strip_edges(), line_number, path, null)
 
 # 内部解析实现 - 新增diadata参数，给_parse_end用
-func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot) -> Dialogue:
-	var dialog := Dialogue.new()
+func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot) -> KND_Dialogue:
+	var dialog := KND_Dialogue.new()
 	dialog.source_file_line = line_number
 	
 	if _parse_background(line, dialog):
@@ -324,7 +324,7 @@ func _parse_metadata(raw_script_lines: PackedStringArray, path: String) -> Packe
 	
 	
 # 背景切换解析
-func _parse_background(line: String, dialog: Dialogue) -> bool:
+func _parse_background(line: String, dialog: KND_Dialogue) -> bool:
 	if not line.begins_with("background"):
 		return false
 	
@@ -332,7 +332,7 @@ func _parse_background(line: String, dialog: Dialogue) -> bool:
 	if parts.size() < 2:
 		return false
 
-	dialog.dialog_type = Dialogue.Type.SWITCH_BACKGROUND
+	dialog.dialog_type = KND_Dialogue.Type.SWITCH_BACKGROUND
 	dialog.background_image_name = parts[1]
 	
 	if parts.size() >= 3:
@@ -351,7 +351,7 @@ func _parse_background(line: String, dialog: Dialogue) -> bool:
 	return true
 
 # 角色相关解析
-func _parse_actor(line: String, dialog: Dialogue) -> bool:
+func _parse_actor(line: String, dialog: KND_Dialogue) -> bool:
 	if not line.begins_with("actor"):
 		return false
 	
@@ -361,7 +361,7 @@ func _parse_actor(line: String, dialog: Dialogue) -> bool:
 
 	match parts[1]:
 		"show":
-			dialog.dialog_type = Dialogue.Type.DISPLAY_ACTOR
+			dialog.dialog_type = KND_Dialogue.Type.DISPLAY_ACTOR
 			dialog.character_name = parts[2]
 			dialog.character_state = parts[3]
 			dialog.actor_position = Vector2(parts[5].to_float(), parts[6].to_float())
@@ -381,7 +381,7 @@ func _parse_actor(line: String, dialog: Dialogue) -> bool:
 					_scripts_debug(tmp_path, tmp_original_line_number, "角色已存在，请检查角色名称是否重复创建")
 					return false
 		"exit":
-			dialog.dialog_type = Dialogue.Type.EXIT_ACTOR
+			dialog.dialog_type = KND_Dialogue.Type.EXIT_ACTOR
 			dialog.exit_actor = parts[2]
 			# 添加检查功能
 			if enable_actor_validation:
@@ -390,7 +390,7 @@ func _parse_actor(line: String, dialog: Dialogue) -> bool:
 				else:
 					_scripts_debug(tmp_path, tmp_original_line_number, "无法移除不存在的角色，请检查角色名称是否正确")
 		"change":
-			dialog.dialog_type = Dialogue.Type.ACTOR_CHANGE_STATE
+			dialog.dialog_type = KND_Dialogue.Type.ACTOR_CHANGE_STATE
 			dialog.change_state_actor = parts[2]
 
 			# 添加检查功能
@@ -400,7 +400,7 @@ func _parse_actor(line: String, dialog: Dialogue) -> bool:
 				
 			dialog.change_state = parts[3]
 		"move":
-			dialog.dialog_type = Dialogue.Type.MOVE_ACTOR
+			dialog.dialog_type = KND_Dialogue.Type.MOVE_ACTOR
 			dialog.target_move_chara = parts[2]
 
 			# 添加检查功能
@@ -415,27 +415,27 @@ func _parse_actor(line: String, dialog: Dialogue) -> bool:
 
 
 # 音频解析
-func _parse_audio(line: String, dialog: Dialogue) -> bool:
+func _parse_audio(line: String, dialog: KND_Dialogue) -> bool:
 	if not line.begins_with("play") and not line.begins_with("stop"):
 		return false
 	
 	var parts = line.split(" ", false)
 	if parts[0] == "play":
 		if parts[1] == "bgm":
-			dialog.dialog_type = Dialogue.Type.PLAY_BGM 
+			dialog.dialog_type = KND_Dialogue.Type.PLAY_BGM 
 		elif parts[1] == "sfx":
-			dialog.dialog_type = Dialogue.Type.PLAY_SOUND_EFFECT
+			dialog.dialog_type = KND_Dialogue.Type.PLAY_SOUND_EFFECT
 		dialog["bgm_name" if parts[1] == "bgm" else "soundeffect_name"] = parts[2]
 	elif parts[0] == "stop":
-		dialog.dialog_type = Dialogue.Type.STOP_BGM
+		dialog.dialog_type = KND_Dialogue.Type.STOP_BGM
 	
 	return true
 
 # 解析选项（重构：支持一行式choice + 缩进式choice:）
-func _parse_choice(line: String, dialog: Dialogue) -> bool:
+func _parse_choice(line: String, dialog: KND_Dialogue) -> bool:
 	# 匹配原有一行式choice：choice "文本" 标签 "文本2" 标签2
 	if line.begins_with("choice ") and not line.begins_with("choice:"):
-		dialog.dialog_type = Dialogue.Type.SHOW_CHOICE
+		dialog.dialog_type = KND_Dialogue.Type.SHOW_CHOICE
 		dialog.choices.clear()  # 清空现有选项
 		
 		# 移除开头的"choice"关键字
@@ -484,7 +484,7 @@ func _parse_choice(line: String, dialog: Dialogue) -> bool:
 	
 	# 严格匹配choice:（无多余字符），避免误判
 	if line == "choice:":
-		dialog.dialog_type = Dialogue.Type.SHOW_CHOICE
+		dialog.dialog_type = KND_Dialogue.Type.SHOW_CHOICE
 		dialog.choices.clear()  # 清空现有选项
 		# 设置choice缩进解析状态，后续行将作为选项行解析
 		tmp_in_choice_indent = true
@@ -533,7 +533,7 @@ func _parse_choice_indent_line(line: String, line_number: int, path: String) -> 
 	return true
 
 # 分支解析
-func _parse_branch(line: String, dialog: Dialogue) -> bool:
+func _parse_branch(line: String, dialog: KND_Dialogue) -> bool:
 	# 禁止在choice缩进中嵌套branch
 	if tmp_in_choice_indent:
 		_scripts_debug(tmp_path, tmp_original_line_number, "choice缩进中不允许嵌套branch标签")
@@ -547,7 +547,7 @@ func _parse_branch(line: String, dialog: Dialogue) -> bool:
 	if parts.size() < 2:
 		_scripts_debug(tmp_path, tmp_original_line_number, "branch格式错误")
 		return false
-	dialog.dialog_type = Dialogue.Type.BRANCH
+	dialog.dialog_type = KND_Dialogue.Type.BRANCH
 	dialog.branch_id = parts[1]
 
 	var tag_inner_line_number = tmp_line_number + 1
@@ -584,17 +584,17 @@ func _parse_branch(line: String, dialog: Dialogue) -> bool:
 	return true
 
 # 跳转解析
-func _parse_jumpshot(line: String, dialog: Dialogue) -> bool:
+func _parse_jumpshot(line: String, dialog: KND_Dialogue) -> bool:
 	if not line.begins_with("jump"):
 		return false
 	
 	var parts = line.split(" ", false)
-	dialog.dialog_type = Dialogue.Type.JUMP
+	dialog.dialog_type = KND_Dialogue.Type.JUMP
 	dialog.jump_shot_id = parts[1]
 	return true
 
 # 对话解析（使用正则表达式优化）
-func _parse_dialog(line: String, dialog: Dialogue) -> bool:
+func _parse_dialog(line: String, dialog: KND_Dialogue) -> bool:
 	if not line.begins_with("\""):
 		return false
 	
@@ -602,7 +602,7 @@ func _parse_dialog(line: String, dialog: Dialogue) -> bool:
 	if not result:
 		return false
 	
-	dialog.dialog_type = Dialogue.Type.ORDINARY_DIALOG
+	dialog.dialog_type = KND_Dialogue.Type.ORDINARY_DIALOG
 	dialog.character_id = result.get_string(1)
 	dialog.dialog_content = result.get_string(2)
 	if result.get_string(3):
@@ -622,7 +622,7 @@ func _check_tag_and_choice() -> bool:
 
 	
 # 解析结束 - 新增diadata参数，解决end行结束缩进时的参数缺失
-func _parse_end(line: String, dialog: Dialogue, diadata: KND_Shot) -> bool:
+func _parse_end(line: String, dialog: KND_Dialogue, diadata: KND_Shot) -> bool:
 	# 如果是end行，结束当前choice缩进解析并添加dialog
 	if tmp_in_choice_indent and tmp_current_choice_dialog and diadata != null:
 		# 检查是否有解析到选项
@@ -637,7 +637,7 @@ func _parse_end(line: String, dialog: Dialogue, diadata: KND_Shot) -> bool:
 		_reset_choice_indent_state()
 	
 	if line.begins_with("end"):
-		dialog.dialog_type = Dialogue.Type.THE_END
+		dialog.dialog_type = KND_Dialogue.Type.THE_END
 		return true
 	return false
 

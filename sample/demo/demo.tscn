@@ -49,9 +49,18 @@ grow_vertical = 2
 
 [node name="DialogManager" parent="." unique_id=1728771569 instance=ExtResource("1_57pxw")]
 layout_mode = 1
+init_onstart = null
+autostart = null
+actor_auto_highlight = null
+autoplay = null
+_typing_interval = null
+autoplayspeed = null
+horizontal_division = null
+vertical_division = null
 chara_list = ExtResource("2_7wx48")
 background_list = SubResource("Resource_1xv1s")
 shots = Array[ExtResource("6_khogg")]([ExtResource("7_gl4m8")])
 bgm_list = ExtResource("9_gl4m8")
 voice_list = SubResource("Resource_s0ojd")
 soundeffect_list = SubResource("Resource_u7dbn")
+enable_overlay_log = null

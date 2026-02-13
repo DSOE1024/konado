@@ -1,5 +1,5 @@
 extends Resource
-class_name Dialogue
+class_name KND_Dialogue
 
 ## 源对话文件行号
 var source_file_line: int = -1
@@ -17,7 +17,7 @@ enum Type {
 	PLAY_SOUND_EFFECT,   # 播放音效
 	SHOW_CHOICE,         # 显示选项
 	BRANCH,              # 分支
-	JUMP,                # 跳转（修正原JUMP_Shot语义）
+	JUMP,                # 跳转
 	THE_END              # 剧终
 }
 
@@ -26,11 +26,11 @@ enum Type {
 		dialog_type = v
 		notify_property_list_changed()
 
-#  用于标记跳转点		
+# 用于标记跳转点
 var branch_id: String
 
 # 对话内容
-var branch_dialogue: Array[Dialogue] = []
+var branch_dialogue: Array[KND_Dialogue] = []
 
 # 是否加载完成
 var is_branch_loaded: bool = false
@@ -108,7 +108,7 @@ class Tag_Template:
 		return infos
 
 class TagDialogue_Template:
-	@export var branch_dialogue: Array[Dialogue] = []
+	@export var branch_dialogue: Array[KND_Dialogue] = []
 	static func get_property_infos():
 		var infos = {}
 		for info in (TagDialogue_Template as Script).get_script_property_list():
@@ -420,7 +420,7 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 	return true
 
 # 序列化对话数组
-func serialize_dialogue_array(dialogues: Array[Dialogue]) -> Array[Dictionary]:
+func serialize_dialogue_array(dialogues: Array[KND_Dialogue]) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for dialogue in dialogues:
 		if dialogue:
@@ -428,11 +428,11 @@ func serialize_dialogue_array(dialogues: Array[Dialogue]) -> Array[Dictionary]:
 	return result
 
 # 反序列化对话数组
-func deserialize_dialogue_array(data: Array) -> Array[Dialogue]:
-	var result: Array[Dialogue] = []
+func deserialize_dialogue_array(data: Array) -> Array[KND_Dialogue]:
+	var result: Array[KND_Dialogue] = []
 	for item in data:
 		if item is Dictionary:
-			var dialogue = Dialogue.new()
+			var dialogue = KND_Dialogue.new()
 			if dialogue.deserialize_from_dict(item):
 				result.append(dialogue)
 	return result
