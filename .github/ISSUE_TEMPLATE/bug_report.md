@@ -1,33 +1,33 @@
 ---
-name: Bug 报告
-about: 当程序出现错误、崩溃或行为不符合预期时，请使用此模板提交信息，帮助我们更快定位与修复。
+name: Bug Report
+about: When the program has errors, crashes, or behaves unexpectedly, use this template to submit information to help us locate and fix the issue faster.
 title: "[BUG] "
 labels: ["bug"]
 assignees: []
 ---
 
-### 请简要描述你遇到的 Bug
-请用一两句话描述问题所在、实际行为与期望行为。
+### Please briefly describe the bug you encountered
+Please use one or two sentences to describe the problem, actual behavior, and expected behavior.
 
-### 复现步骤
-请按顺序提供最小可复现步骤，例如：
-1. 在什么场景/页面/命令下出现
-2. 执行的具体命令或操作（若是 API，请给出请求示例）
-3. 使用的数据或配置（如有）
+### Reproduction steps
+Please provide the minimum reproducible steps in order, for example:
+1. Under what scenario/page/command it occurs
+2. The specific command or operation performed (if it's an API, please provide a request example)
+3. Data or configuration used (if any)
 
-示例：
-- 环境：操作系统、版本、浏览器（若适用）
-- 命令：`xxx` 或 API 请求示例
+Example:
+- Environment: operating system, version, browser (if applicable)
+- Command: `xxx` or API request example
 
-### 期望行为
-请说明你期望的正确行为是什么。
+### Expected behavior
+Please explain what the correct behavior you expected is.
 
-### 错误日志与堆栈（如有）
-请粘贴相关错误日志、堆栈信息或截图。敏感信息请脱敏。
+### Error logs and stack traces (if any)
+Please paste relevant error logs, stack information, or screenshots. Please redact sensitive information.
 
-### 版本信息（必填）
-- 应用/仓库版本（如 commit sha、release 版本）：
-- 运行环境（操作系统 / 运行时 / 依赖版本）：
+### Version information (required)
+- Application/repository version (e.g., commit sha, release version):
+- Runtime environment (operating system / runtime / dependency version):
 
-### 其它信息（可选）
-任何可能有助于定位问题的补充信息或临时解决办法.
+### Other information (optional)
+Any additional information or temporary solutions that might help locate the problem.
