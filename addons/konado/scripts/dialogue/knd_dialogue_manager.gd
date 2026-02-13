@@ -54,9 +54,6 @@ signal dialogue_line_end(line: int)
 ## 音频接口
 @export var _audio_interface: DialogAudioInterface
 
-## 对话资源
-var dialog_data: KND_Shot = null
-
 ## 对话资源ID
 var _dialog_data_id: int = 0
 
@@ -86,12 +83,12 @@ var cur_dialogue_type: KND_Dialogue.Type
 
 ## 资源列表
 @export_group("对话资源")
+## 对话资源
+@export var start_dialogue_shot: KND_Shot = null
 ## 角色列表
 @export var chara_list: CharacterList
 ## 背景列表
 @export var background_list: BackgroundList
-## 对话列表
-@export var shots: Array[KND_Shot]
 ## BGM列表
 @export var bgm_list: DialogBGMList
 ## 配音资源列表
@@ -159,16 +156,10 @@ func _show_error(msg: String) -> void:
 
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:
-	if shots == null:
-		push_error("对话镜头列表资源为空")
-		return
-	if shots.size() <= 0:
-		push_error("没有任何对话镜头")
-		return
 	# 如果对话数据为空，则默认为第一个对话数据
-	if dialog_data == null:
-		dialog_data = shots[0]
-		dialog_data.get_dialogues()
+	if start_dialogue_shot == null:
+		push_error("未设置对话镜头")
+		return
 	# 将角色表传给acting_interface
 	_acting_interface.chara_list = chara_list
 
@@ -186,8 +177,8 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 ## 设置对话数据的方法
 func set_shot(new_shot: KND_Shot) -> void:
-	self.dialog_data = new_shot
-	dialog_data.get_dialogues()
+	self.start_dialogue_shot = new_shot
+	start_dialogue_shot.get_dialogues()
 	
 ## 设置角色表的方法
 func set_chara_list(chara_list: CharacterList) -> void:
@@ -241,18 +232,18 @@ func _process(delta) -> void:
 			if justenter:
 				justenter = false
 				print_rich("[color=cyan][b]当前状态：[/b][/color][color=orange]播放状态[/color]")
-				if dialog_data == null:
+				if start_dialogue_shot == null:
 					print_rich("[color=red]对话为空[/color]")
 					return
-				if dialog_data.dialogues.size() <= 0:
+				if start_dialogue_shot.dialogues.size() <= 0:
 					print_rich("[color=red]对话为空[/color]")
 					_dialogue_goto_state(DialogState.OFF)
 					return
 
 				# 对话类型
-				cur_dialogue_type = dialog_data.dialogues[curline].dialog_type
+				cur_dialogue_type = start_dialogue_shot.dialogues[curline].dialog_type
 				# 对话当前句
-				var dialog = dialog_data.dialogues[curline]
+				var dialog = start_dialogue_shot.dialogues[curline]
 
 				dialogue_line_start.emit(curline)
 
@@ -372,14 +363,14 @@ func _process(delta) -> void:
 					var insert_position = curline + 1
 					for i in range(tag_dialogues.size()):
 						# 检查是否已经存在
-						if tag_dialogues[i].cur_dialogue_type == KND_Dialogue.Type.BRANCH:
+						if tag_dialogues[i].dialog_type == KND_Dialogue.Type.BRANCH:
 							print_rich("[color=red]标签对话中不能包含标签对话[/color]")
 							continue
-						dialog_data.dialogues.insert(insert_position + i, tag_dialogues[i])
+						start_dialogue_shot.dialogues.insert(insert_position + i, tag_dialogues[i])
 					await get_tree().process_frame
 					
 					print("添加了 %d 个标签对话" % tag_dialogues.size())
-					print("当前对话总数: " + str(dialog_data.dialogues.size()))
+					print("当前对话总数: " + str(start_dialogue_shot.dialogues.size()))
 					_process_next()
 					pass
 				# 如果剧终
@@ -432,7 +423,7 @@ func _process_next(s: Signal = Signal()) -> void:
 		DialogState.PAUSED:
 			print("对话播放完成，开始播放下一个")
 			# 如果列表中所有对话播放完成了
-			if curline + 1 >= dialog_data.dialogues.size():
+			if curline + 1 >= start_dialogue_shot.dialogues.size():
 				# 切换到对话关闭状态
 				_dialogue_goto_state(DialogState.OFF)
 			# 如果列表中还有对话没有播放
@@ -487,7 +478,7 @@ func _continue() -> void:
 			_audio_interface.stop_voice()
 			print("对话播放完成，开始播放下一个")
 			# 如果列表中所有对话播放完成了
-			if curline + 1 >= dialog_data.dialogues.size():
+			if curline + 1 >= start_dialogue_shot.dialogues.size():
 				# 切换到对话关闭状态
 				_dialogue_goto_state(DialogState.OFF)
 			# 如果列表中还有对话没有播放
@@ -627,10 +618,10 @@ func on_option_triggered(choice: DialogueChoice) -> void:
 ## 跳转到对话标签的方法
 func _jump_tag(tag: String) -> void:
 	print_rich("跳转到标签： " + str(tag))
-	if dialog_data.branches == null || dialog_data.branches.size() <= 0:
+	if start_dialogue_shot.branches == null || start_dialogue_shot.branches.size() <= 0:
 		printerr("该对话没有分支")
 		return
-	var target_dialogue: KND_Dialogue = dialog_data.branches[tag]
+	var target_dialogue: KND_Dialogue = start_dialogue_shot.branches[tag]
 	if target_dialogue == null:
 		print("无法完成跳转，没有这个分支")
 		return
@@ -641,8 +632,8 @@ func _jump_tag(tag: String) -> void:
 		如果你想尝试解决这个问题请查看该脚本的_input()函数和is_click_valid()函数，但我不确定问题在哪
 	"""
 	if not target_dialogue.is_branch_loaded:
-		dialog_data.dialogues.insert(curline + 1, target_dialogue)
-		print("插入标签，对话长度" + str(dialog_data.dialogues.size()))
+		start_dialogue_shot.dialogues.insert(curline + 1, target_dialogue)
+		print("插入标签，对话长度" + str(start_dialogue_shot.dialogues.size()))
 		target_dialogue.is_branch_loaded = true
 		_jump_curline(curline + 1)
 		
@@ -650,7 +641,7 @@ func _jump_tag(tag: String) -> void:
 ## 跳转剧情的方法
 func _jump_shot(data_id: String) -> bool:
 	var jumpdata: KND_Shot
-	jumpdata = _get_dialog_data(data_id)
+	#jumpdata = _get_dialog_data(data_id)
 	if jumpdata == null:
 		print("无法完成跳转，没有这个镜头")
 		return false
@@ -659,22 +650,13 @@ func _jump_shot(data_id: String) -> bool:
 	print_rich("跳转到：" + str(jumpdata.shot_id) + " 镜头")
 	return true
 
-## 寻找指定剧情
-func _get_dialog_data(shot_id: String) -> KND_Shot:
-	print(shot_id)
-	var target_data: KND_Shot
-	for data in shots:
-		if data.shot_id == shot_id:
-			target_data = data
-	return target_data
-	
 ## 切换剧情的方法
 func _switch_data(data: KND_Shot) -> bool:
 	if not data and data.dialogs.size() > 0:
 		return false
 	stop_dialogue()
 	print("切换到 " + data.shot_id + " 剧情文件")
-	dialog_data = data
+	start_dialogue_shot = data
 	init_dialogue()
 	await get_tree().process_frame
 	start_dialogue()
@@ -683,7 +665,7 @@ func _switch_data(data: KND_Shot) -> bool:
 	
 func _get_file_data(slot_id: int):
 	#用于获取变量
-	var dialog = dialog_data.dialogs[curline]
+	var dialog = start_dialogue_shot.dialogs[curline]
 	
 	# 停止语音
 	_audio_interface.stop_voice()
@@ -700,7 +682,7 @@ func jump_data_and_curline(data_id: String, _curline: int, bgm_id: String, actor
 ## 跳转到对话
 func _jump_curline(value: int) -> bool:
 	if value >= 0:
-		if not value >= dialog_data.dialogues.size():
+		if not value >= start_dialogue_shot.dialogues.size():
 			_dialogue_goto_state(DialogState.OFF)
 			curline = value
 			print_rich("跳转到：" + str(curline))
