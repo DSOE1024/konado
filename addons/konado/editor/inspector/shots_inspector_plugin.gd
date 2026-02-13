@@ -16,5 +16,4 @@ func _parse_property(object, type, name, hint_type, hint_string, usage_flags, wi
 		# Inform the editor to remove the default property editor for
 		# this property type.
 		return true
-	else:
-		return false
+	return false

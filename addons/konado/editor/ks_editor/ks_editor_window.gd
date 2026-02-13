@@ -260,9 +260,8 @@ func save_file() -> bool:
 		
 		print("文件已保存: %s" % current_file_path)
 		return true
-	else:
-		push_error("无法保存文件: %s" % current_file_path)
-		return false
+	push_error("无法保存文件: %s" % current_file_path)
+	return false
 
 func update_save_button() -> void:
 	save_button.disabled = not is_modified or current_file_path.is_empty()

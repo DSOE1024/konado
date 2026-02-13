@@ -4,23 +4,22 @@ class_name Dialogue
 ## 源对话文件行号
 var source_file_line: int = -1
 
-## 对话类型
+## 对话类型枚举
 enum Type {
-	START, ## 开始
-	Ordinary_Dialog, ## 普通对话
-	Display_Actor, ## 显示演员
-	Actor_Change_State, ## 演员切换状态
-	Move_Actor, ## 移动角色
-	Switch_Background, ## 切换背景
-	Exit_Actor, ## 演员退场
-	Play_BGM, ## 播放BGM
-	Stop_BGM, ## 停止播放BGM
-	Play_SoundEffect, ## 播放音效
-	Show_Choice, ## 显示选项
-	Branch, ## 分支
-	JUMP_Tag, ## 跳转到行
-	JUMP_Shot, ## 跳转
-	THE_END, ## 剧终
+	START,               # 开始
+	ORDINARY_DIALOG,     # 普通对话
+	DISPLAY_ACTOR,       # 显示演员
+	ACTOR_CHANGE_STATE,  # 演员切换状态
+	MOVE_ACTOR,          # 移动角色
+	SWITCH_BACKGROUND,   # 切换背景
+	EXIT_ACTOR,          # 演员退场
+	PLAY_BGM,            # 播放BGM
+	STOP_BGM,            # 停止播放BGM
+	PLAY_SOUND_EFFECT,   # 播放音效
+	SHOW_CHOICE,         # 显示选项
+	BRANCH,              # 分支
+	JUMP,                # 跳转（修正原JUMP_Shot语义）
+	THE_END              # 剧终
 }
 
 @export var dialog_type: Type:
@@ -197,50 +196,50 @@ class ITEM_OP_Template:
 
 func _get_property_list():
 	var list = []
-	if dialog_type == Type.Branch:
+	if dialog_type == Type.BRANCH:
 		var tag_template = Tag_Template.get_property_infos()
 		var tag_dialogue_template = TagDialogue_Template.get_property_infos()
 		list.append(tag_template["branch_id"])
 		list.append(tag_dialogue_template["branch_dialogue"])
-	if dialog_type == Type.Ordinary_Dialog:
+	if dialog_type == Type.ORDINARY_DIALOG:
 		var oridinary_dialog_template = Ordinary_Dialog_Template.get_property_infos()
 		list.append(oridinary_dialog_template["character_id"])
 		list.append(oridinary_dialog_template["dialog_content"])
 		list.append(oridinary_dialog_template["voice_id"])
-	if dialog_type == Type.Display_Actor:
+	if dialog_type == Type.DISPLAY_ACTOR:
 		var actor_template = Actor_Template.get_property_infos()
 		list.append(actor_template["character_name"])
 		list.append(actor_template["character_state"])
 		list.append(actor_template["actor_position"])
 		list.append(actor_template["actor_scale"])
 		list.append(actor_template["actor_mirror"])
-	if dialog_type == Type.Actor_Change_State:
+	if dialog_type == Type.ACTOR_CHANGE_STATE:
 		var actor_template = Actor_Template.get_property_infos()
 		list.append(actor_template["change_state_actor"])
 		list.append(actor_template["change_state"])
-	if dialog_type == Type.Move_Actor:
+	if dialog_type == Type.MOVE_ACTOR:
 		var actor_template = Actor_Template.get_property_infos()
 		list.append(actor_template["target_move_chara"])
 		list.append(actor_template["target_move_pos"])
-	if dialog_type == Type.Switch_Background:
+	if dialog_type == Type.SWITCH_BACKGROUND:
 		var switch_background_template = Switch_Background_Template.get_property_infos()
 		list.append(switch_background_template["background_image_name"])
 		list.append(switch_background_template["background_toggle_effects"])
-	if dialog_type == Type.Exit_Actor:
+	if dialog_type == Type.EXIT_ACTOR:
 		var actor_template = Actor_Template.get_property_infos()
 		list.append(actor_template["exit_actor"])
-	if dialog_type == Type.Play_BGM:
+	if dialog_type == Type.PLAY_BGM:
 		var play_audio_template = Play_Audio_Template.get_property_infos()
 		list.append(play_audio_template["bgm_name"])
-	if dialog_type == Type.Stop_BGM:
+	if dialog_type == Type.STOP_BGM:
 		pass
-	if dialog_type == Type.Play_SoundEffect:
+	if dialog_type == Type.PLAY_SOUND_EFFECT:
 		var play_audio_template = Play_Audio_Template.get_property_infos()
 		list.append(play_audio_template["soundeffect_name"])
-	if dialog_type == Type.Show_Choice:
+	if dialog_type == Type.SHOW_CHOICE:
 		var choice_template = Choice_Template.get_property_infos()
 		list.append(choice_template["choices"])
-	if dialog_type == Type.JUMP_Shot:
+	if dialog_type == Type.JUMP:
 		var jump_template = Jump_Template.get_property_infos()
 		list.append(jump_template["jump_shot_id"])
 	if dialog_type == Type.THE_END:
@@ -264,9 +263,9 @@ func from_json(json_string: String) -> bool:
 	var data = json.data
 	if data is Dictionary:
 		return deserialize_from_dict(data)
-	else:
-		push_error("JSON数据格式错误: 根元素不是字典")
-		return false
+
+	push_error("JSON数据格式错误: 根元素不是字典")
+	return false
 
 # 序列化为字典
 func serialize_to_dict() -> Dictionary:
@@ -278,48 +277,48 @@ func serialize_to_dict() -> Dictionary:
 	
 	# 根据对话类型序列化相关属性
 	match dialog_type:
-		Type.Branch:
+		Type.BRANCH:
 			dict["branch_id"] = branch_id
 			dict["branch_dialogue"] = serialize_dialogue_array(branch_dialogue)
 			dict["is_branch_loaded"] = is_branch_loaded
 		
-		Type.Ordinary_Dialog:
+		Type.ORDINARY_DIALOG:
 			dict["character_id"] = character_id
 			dict["dialog_content"] = dialog_content
 			dict["voice_id"] = voice_id
 		
-		Type.Display_Actor:  # 修复：序列化Display_Actor的正确属性
+		Type.DISPLAY_ACTOR:
 			dict["character_name"] = character_name
 			dict["character_state"] = character_state
 			dict["actor_position"] = {"x": actor_position.x, "y": actor_position.y}
 			dict["actor_scale"] = actor_scale
 			dict["actor_mirror"] = actor_mirror
 		
-		Type.Actor_Change_State:
+		Type.ACTOR_CHANGE_STATE:
 			dict["change_state_actor"] = change_state_actor
 			dict["change_state"] = change_state
 		
-		Type.Move_Actor:
+		Type.MOVE_ACTOR:
 			dict["target_move_chara"] = target_move_chara
 			dict["target_move_pos"] = {"x": target_move_pos.x, "y": target_move_pos.y}
 		
-		Type.Switch_Background:
+		Type.SWITCH_BACKGROUND:
 			dict["background_image_name"] = background_image_name
 			dict["background_toggle_effects"] = background_toggle_effects
 		
-		Type.Exit_Actor:
+		Type.EXIT_ACTOR:
 			dict["exit_actor"] = exit_actor
 		
-		Type.Play_BGM:
+		Type.PLAY_BGM:
 			dict["bgm_name"] = bgm_name
 		
-		Type.Play_SoundEffect:
+		Type.PLAY_SOUND_EFFECT:
 			dict["soundeffect_name"] = soundeffect_name
 		
-		Type.Show_Choice:
+		Type.SHOW_CHOICE:
 			dict["choices"] = serialize_choice_array(choices)
 		
-		Type.JUMP_Shot:
+		Type.JUMP:
 			dict["jump_shot_id"] = jump_shot_id
 		
 	
@@ -344,7 +343,7 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 	
 	# 根据对话类型反序列化相关属性
 	match dialog_type:
-		Type.Branch:
+		Type.BRANCH:
 			if "branch_id" in dict:
 				branch_id = dict["branch_id"]
 			if "branch_dialogue" in dict:
@@ -352,7 +351,7 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 			if "is_branch_loaded" in dict:
 				is_branch_loaded = dict["is_branch_loaded"]
 		
-		Type.Ordinary_Dialog:
+		Type.ORDINARY_DIALOG:
 			if "character_id" in dict:
 				character_id = dict["character_id"]
 			if "dialog_content" in dict:
@@ -360,7 +359,7 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 			if "voice_id" in dict:
 				voice_id = dict["voice_id"]
 		
-		Type.Display_Actor:  # 修复：反序列化Display_Actor的正确属性
+		Type.DISPLAY_ACTOR:
 			if "character_name" in dict:
 				character_name = dict["character_name"]
 			if "character_state" in dict:
@@ -374,13 +373,13 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 			if "actor_mirror" in dict:
 				actor_mirror = dict["actor_mirror"]
 		
-		Type.Actor_Change_State:
+		Type.ACTOR_CHANGE_STATE:
 			if "change_state_actor" in dict:
 				change_state_actor = dict["change_state_actor"]
 			if "change_state" in dict:
 				change_state = dict["change_state"]
 		
-		Type.Move_Actor:
+		Type.MOVE_ACTOR:
 			if "target_move_chara" in dict:
 				target_move_chara = dict["target_move_chara"]
 			if "target_move_pos" in dict:
@@ -388,29 +387,29 @@ func deserialize_from_dict(dict: Dictionary) -> bool:
 				if pos_dict is Dictionary and "x" in pos_dict and "y" in pos_dict:
 					target_move_pos = Vector2(pos_dict["x"], pos_dict["y"])
 		
-		Type.Switch_Background:
+		Type.SWITCH_BACKGROUND:
 			if "background_image_name" in dict:
 				background_image_name = dict["background_image_name"]
 			if "background_toggle_effects" in dict:
 				background_toggle_effects = dict["background_toggle_effects"]
 		
-		Type.Exit_Actor:
+		Type.EXIT_ACTOR:
 			if "exit_actor" in dict:
 				exit_actor = dict["exit_actor"]
 		
-		Type.Play_BGM:
+		Type.PLAY_BGM:
 			if "bgm_name" in dict:
 				bgm_name = dict["bgm_name"]
 		
-		Type.Play_SoundEffect:
+		Type.PLAY_SOUND_EFFECT:
 			if "soundeffect_name" in dict:
 				soundeffect_name = dict["soundeffect_name"]
 		
-		Type.Show_Choice:
+		Type.SHOW_CHOICE:
 			if "choices" in dict:
 				choices = deserialize_choice_array(dict["choices"])
 		
-		Type.JUMP_Shot:
+		Type.JUMP:
 			if "jump_shot_id" in dict:
 				jump_shot_id = dict["jump_shot_id"]
 		

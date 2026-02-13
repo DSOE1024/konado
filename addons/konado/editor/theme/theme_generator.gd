@@ -334,7 +334,7 @@ extends Node
 #
 	#define_variant_style("WindowPanel","Panel",
 		#{panel = stylebox_flat({
-			 #bg_color= bg_color_2
+			#bg_color= bg_color_2
 			#})
 		#})
 	#
@@ -374,7 +374,7 @@ extends Node
 	#define_style("HSeparator",{
 		#separator = def_h_line_style,
 		#})
-  	### 滚动条
+	### 滚动条
 	#define_style("VScrollBar",{
 		#grabber = style_box_empty,
 		#grabber_highlight = stylebox_flat({
