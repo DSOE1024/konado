@@ -625,18 +625,10 @@ func _jump_tag(tag: String) -> void:
 	if target_dialogue == null:
 		print("无法完成跳转，没有这个分支")
 		return
-
-	"""
-	PS：为啥这么写？因为全屏输入传递会导致选项按钮的信号被连续触发两次导致重复添加对话和跳转
-		目前只能用这种很逆天的两次判断的方法来防止重复添加对话，希望以后能找到更好的方法
-		如果你想尝试解决这个问题请查看该脚本的_input()函数和is_click_valid()函数，但我不确定问题在哪
-	"""
-	if not target_dialogue.is_branch_loaded:
-		start_dialogue_shot.dialogues.insert(curline + 1, target_dialogue)
-		print("插入标签，对话长度" + str(start_dialogue_shot.dialogues.size()))
-		target_dialogue.is_branch_loaded = true
-		_jump_curline(curline + 1)
-		
+	
+	start_dialogue_shot.dialogues.insert(curline + 1, target_dialogue)
+	print("插入标签，对话长度" + str(start_dialogue_shot.dialogues.size()))
+	_continue()
 
 ## 跳转剧情的方法
 func _jump_shot(data_id: String) -> bool:
