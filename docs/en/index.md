@@ -6,23 +6,22 @@ hero:
   text: "Visual Novel Framework"
   tagline: "Visual novel framework based on Godot Engine"
   image:
-    src: "https://godothub.atomgit.net/web/icon/konado.png"
+    src: "https://godothub.atomgit.net/web/icon/konado/kona/kona.png"
   actions:
     - theme: brand
-      text: Quickstart
-      link: /quickstart
+      text: Get Started
+      link: /en/tutorial/install
     - theme: alt
-      text: Buy us a coffee
+      text: Sponsor Us❤
       link: "https://afdian.tv/item/52230b2860a011f083ef52540025c377"
 
 features:
-  - title: Open Source and Free
-    details: Licensed under the BSD 3-Clause License
-  - title: Powerful platform
-    details: Built on top of Godot Engine
-  - title: Community-driven
-    details: Long-term development and maintenance driven by the community
-  - title: Easy to use
-    details: Create with ease, just like writing a story
+  - title: Free Distribution
+    details: Licensed under the permissive BSD license
+  - title: Powerful Platform
+    details: Built for the world's most popular open-source engine
+  - title: Trustworthy
+    details: Driven by community for long-term development and maintenance
+  - title: Effortless
+    details: Creating games is as simple as writing a script
 ---
-
