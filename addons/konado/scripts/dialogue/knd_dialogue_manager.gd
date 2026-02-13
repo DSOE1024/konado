@@ -82,6 +82,8 @@ var curline: int
 ## 因此，需要判断是否第一次进入当前行对话
 var justenter: bool
 
+var cur_dialogue_type: KND_Dialogue.Type
+
 ## 资源列表
 @export_group("对话资源")
 ## 角色列表
@@ -248,7 +250,7 @@ func _process(delta) -> void:
 					return
 
 				# 对话类型
-				var dialog_type = dialog_data.dialogues[curline].dialog_type
+				cur_dialogue_type = dialog_data.dialogues[curline].dialog_type
 				# 对话当前句
 				var dialog = dialog_data.dialogues[curline]
 
@@ -259,7 +261,7 @@ func _process(delta) -> void:
 
 				# 判断对话类型
 				# 如果是普通对话
-				if dialog_type == Dialogue.Type.ORDINARY_DIALOG:
+				if cur_dialogue_type == KND_Dialogue.Type.ORDINARY_DIALOG:
 					# 播放对话
 					var chara_id
 					var content
@@ -292,7 +294,7 @@ func _process(delta) -> void:
 					if voice_id:
 						_play_voice(voice_id)
 				# 如果是切换背景
-				elif dialog_type == Dialogue.Type.SWITCH_BACKGROUND:
+				elif cur_dialogue_type == KND_Dialogue.Type.SWITCH_BACKGROUND:
 					# 显示背景
 					var bg_name = dialog.background_image_name
 					var bg_effect = dialog.background_toggle_effects
@@ -302,35 +304,35 @@ func _process(delta) -> void:
 					_display_background(bg_name, bg_effect)
 					pass
 				# 如果是显示演员
-				elif dialog_type == Dialogue.Type.DISPLAY_ACTOR:
+				elif cur_dialogue_type == KND_Dialogue.Type.DISPLAY_ACTOR:
 					# 显示演员
 					var s = _acting_interface.character_created
 					s.connect(_process_next.bind(s))
 					_acting_interface.show()
 					_display_character(dialog)
 				# 如果修改演员状态
-				elif dialog_type == Dialogue.Type.ACTOR_CHANGE_STATE:
+				elif cur_dialogue_type == KND_Dialogue.Type.ACTOR_CHANGE_STATE:
 					var actor = dialog.change_state_actor
 					var target_state = dialog.change_state
 					var s = _acting_interface.character_state_changed
 					s.connect(_process_next.bind(s))
 					_actor_change_state(actor, target_state)
 				# 如果是移动演员
-				elif dialog_type == Dialogue.Type.MOVE_ACTOR:
+				elif cur_dialogue_type == KND_Dialogue.Type.MOVE_ACTOR:
 					var actor = dialog.target_move_chara
 					var pos = dialog.target_move_pos
 					var s = _acting_interface.character_moved
 					s.connect(_process_next.bind(s))
 					_acting_interface.move_actor(actor, pos.x, pos.y)
 				# 如果是删除演员
-				elif dialog_type == Dialogue.Type.EXIT_ACTOR:
+				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
 					# 删除演员
 					var actor = dialog.exit_actor
 					var s = _acting_interface.character_deleted
 					s.connect(_process_next.bind(s))
 					_exit_actor(actor)
 				# 如果是选项
-				elif dialog_type == Dialogue.Type.SHOW_CHOICE:
+				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
 					var dialog_choices = dialog.choices
 					if dialog_choices.size() <= 0:
 						printerr("当前没有任何选项，为不影响运行跳过")
@@ -344,33 +346,33 @@ func _process(delta) -> void:
 						_konado_choice_interface.show()
 						_konado_choice_interface._choice_container.show()
 				# 如果是播放BGM
-				elif dialog_type == Dialogue.Type.PLAY_BGM:
+				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_BGM:
 					var s = _audio_interface.finish_playbgm
 					s.connect(_process_next.bind(s))
 					var bgm_name = dialog.bgm_name
 					_play_bgm(bgm_name)
 				# 如果是停止BGM
-				elif dialog_type == Dialogue.Type.STOP_BGM:
+				elif cur_dialogue_type == KND_Dialogue.Type.STOP_BGM:
 					_audio_interface.stop_bgm()
 					_process_next()
 				# 如果是播放音效
-				elif dialog_type == Dialogue.Type.PLAY_SOUND_EFFECT:
+				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_SOUND_EFFECT:
 					var s = _audio_interface.finish_playsoundeffect
 					s.connect(_process_next.bind(s))
 					var se_name = dialog.soundeffect_name
 					_play_soundeffect(se_name)
 				# 如果是镜头跳转
-				elif dialog_type == Dialogue.Type.JUMP:
+				elif cur_dialogue_type == KND_Dialogue.Type.JUMP:
 					var data_name = dialog.jump_shot_id
 					_jump_shot(data_name)
 				# 如果是分支对话
-				elif dialog_type == Dialogue.Type.BRANCH:
+				elif cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话[/color]")
-					var tag_dialogues: Array[Dialogue] = dialog.branch_dialogue
+					var tag_dialogues: Array[KND_Dialogue] = dialog.branch_dialogue
 					var insert_position = curline + 1
 					for i in range(tag_dialogues.size()):
 						# 检查是否已经存在
-						if tag_dialogues[i].dialog_type == Dialogue.Type.BRANCH:
+						if tag_dialogues[i].cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 							print_rich("[color=red]标签对话中不能包含标签对话[/color]")
 							continue
 						dialog_data.dialogues.insert(insert_position + i, tag_dialogues[i])
@@ -381,7 +383,7 @@ func _process(delta) -> void:
 					_process_next()
 					pass
 				# 如果剧终
-				elif dialog_type == Dialogue.Type.THE_END:
+				elif cur_dialogue_type == KND_Dialogue.Type.THE_END:
 					# 停止对话
 					stop_dialogue()
 					pass
@@ -476,7 +478,10 @@ func _continue() -> void:
 			print("对话关闭状态，无需做任何操作")
 			return
 		DialogState.PLAYING:
-			print("对话播放状态，等待播放完成")
+			if cur_dialogue_type == KND_Dialogue.Type.ORDINARY_DIALOG:
+				_konado_dialogue_box.skip_typing_anim()
+			else:
+				print("对话播放状态，等待播放完成")
 			return
 		DialogState.PAUSED:
 			_audio_interface.stop_voice()
@@ -532,7 +537,7 @@ func _actor_change_state(chara_id: String, state_id: String):
 	_acting_interface.change_actor_state(target_chara.chara_name, state_id, state_tex)
 
 ## 从角色列表创建并显示角色
-func _display_character(dialogue: Dialogue) -> void:
+func _display_character(dialogue: KND_Dialogue) -> void:
 	var target_chara: KND_Character
 	var target_chara_name = dialogue.character_name
 	for chara in chara_list.characters:
@@ -625,7 +630,7 @@ func _jump_tag(tag: String) -> void:
 	if dialog_data.branches == null || dialog_data.branches.size() <= 0:
 		printerr("该对话没有分支")
 		return
-	var target_dialogue: Dialogue = dialog_data.branches[tag]
+	var target_dialogue: KND_Dialogue = dialog_data.branches[tag]
 	if target_dialogue == null:
 		print("无法完成跳转，没有这个分支")
 		return
@@ -704,7 +709,7 @@ func _jump_curline(value: int) -> bool:
 	return false
 
 ## 跳转到对话
-func _jump_cur_dialogue(dialog: Dialogue) -> bool:
+func _jump_cur_dialogue(dialog: KND_Dialogue) -> bool:
 	if dialog != null:
 		_dialogue_goto_state(DialogState.OFF)
 		# 还没有实现

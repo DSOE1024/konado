@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bj8ynu8013j4j"]
 
 [ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd" id="1_buo3n"]
-[ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/acting_interface.gd" id="2_pq6sw"]
+[ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/acting_Interface.gd" id="2_pq6sw"]
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="3_gl7il"]
 [ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/audio_interface.gd" id="4_gd2ll"]
 [ext_resource type="Theme" uid="uid://bb865dga7c5sp" path="res://addons/konado/editor/theme/game_theme.tres" id="4_inqap"]

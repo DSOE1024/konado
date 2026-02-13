@@ -194,6 +194,23 @@ func update_dialogue_content() -> void:
 	# 优化：按**字符数**计算总时长
 	var total_typing_time = dialogue_text.length() * typing_interval
 	typing_tween.tween_property(dialogue_label, "visible_ratio", 1.0, total_typing_time).set_trans(Tween.TRANS_LINEAR)
+	
+
+## 跳过打字机动画
+func skip_typing_anim() -> void:
+	# 如果打字动画正在运行，则中断并跳过
+	if typing_tween != null and typing_tween.is_running():
+		# 停止打字动画
+		typing_tween.kill()
+		# 直接显示完整文本
+		dialogue_label.visible_ratio = 1.0
+		
+		if enable_typing_effect_audio and audio_player.is_playing():
+			audio_player.stop()
+		# 重置音效状态
+		last_audio_play_time = 0.0
+		current_random_interval = randf_range(min_audio_interval, max_audio_interval)
+		typing_completed.emit()
 
 func _process(delta: float) -> void:
 	# 仅当打字动画运行、文本非空时，处理音效逻辑
