@@ -66,7 +66,12 @@ var option_triggered: bool = false
 var can_continue = true
 
 ## 对话状态（0:关闭，1:播放，2:播放完成下一个）
-enum DialogState {OFF, PLAYING, PAUSED}
+enum DialogState 
+{
+	OFF, 
+	PLAYING, 
+	PAUSED
+}
 
 var dialogueState: DialogState
 
@@ -153,10 +158,10 @@ func _show_error(msg: String) -> void:
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:
 	if shots == null:
-		printerr("对话镜头列表资源为空")
+		push_error("对话镜头列表资源为空")
 		return
 	if shots.size() <= 0:
-		printerr("没有任何对话镜头")
+		push_error("没有任何对话镜头")
 		return
 	# 如果对话数据为空，则默认为第一个对话数据
 	if dialog_data == null:
@@ -178,7 +183,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		callback.call()
 
 ## 设置对话数据的方法
-func set_dialogue_data(new_shot: KND_Shot) -> void:
+func set_shot(new_shot: KND_Shot) -> void:
 	self.dialog_data = new_shot
 	dialog_data.get_dialogues()
 	
@@ -303,7 +308,6 @@ func _process(delta) -> void:
 					s.connect(_process_next.bind(s))
 					_acting_interface.show()
 					_display_character(dialog)
-					pass
 				# 如果修改演员状态
 				elif dialog_type == Dialogue.Type.ACTOR_CHANGE_STATE:
 					var actor = dialog.change_state_actor
@@ -311,7 +315,6 @@ func _process(delta) -> void:
 					var s = _acting_interface.character_state_changed
 					s.connect(_process_next.bind(s))
 					_actor_change_state(actor, target_state)
-					pass
 				# 如果是移动演员
 				elif dialog_type == Dialogue.Type.MOVE_ACTOR:
 					var actor = dialog.target_move_chara
@@ -340,31 +343,26 @@ func _process(delta) -> void:
 						_acting_interface.show()
 						_konado_choice_interface.show()
 						_konado_choice_interface._choice_container.show()
-						pass
 				# 如果是播放BGM
 				elif dialog_type == Dialogue.Type.PLAY_BGM:
 					var s = _audio_interface.finish_playbgm
 					s.connect(_process_next.bind(s))
 					var bgm_name = dialog.bgm_name
 					_play_bgm(bgm_name)
-					pass
 				# 如果是停止BGM
 				elif dialog_type == Dialogue.Type.STOP_BGM:
 					_audio_interface.stop_bgm()
 					_process_next()
-					pass
 				# 如果是播放音效
 				elif dialog_type == Dialogue.Type.PLAY_SOUND_EFFECT:
 					var s = _audio_interface.finish_playsoundeffect
 					s.connect(_process_next.bind(s))
 					var se_name = dialog.soundeffect_name
 					_play_soundeffect(se_name)
-					pass
 				# 如果是镜头跳转
 				elif dialog_type == Dialogue.Type.JUMP:
 					var data_name = dialog.jump_shot_id
 					_jump_shot(data_name)
-					pass
 				# 如果是分支对话
 				elif dialog_type == Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话[/color]")
@@ -380,12 +378,6 @@ func _process(delta) -> void:
 					
 					print("添加了 %d 个标签对话" % tag_dialogues.size())
 					print("当前对话总数: " + str(dialog_data.dialogues.size()))
-					_process_next()
-					pass
-				# 如果开始对话
-				elif dialog_type == Dialogue.Type.START:
-					if dialogueState != DialogState.PLAYING:
-						start_dialogue()
 					_process_next()
 					pass
 				# 如果剧终

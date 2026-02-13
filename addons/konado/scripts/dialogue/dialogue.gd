@@ -6,7 +6,6 @@ var source_file_line: int = -1
 
 ## 对话类型枚举
 enum Type {
-	START,               # 开始
 	ORDINARY_DIALOG,     # 普通对话
 	DISPLAY_ACTOR,       # 显示演员
 	ACTOR_CHANGE_STATE,  # 演员切换状态
