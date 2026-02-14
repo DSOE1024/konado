@@ -4,8 +4,8 @@ class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
 ## 插件版本信息
-const VERSION := "2.2"
-const CODENAME := "Yuanxiao"
+const VERSION: String = "2.3"
+const CODENAME: String = "Tieton"
 
 ## 自定义EditorImportPlugin脚本
 const KS_IMPORTER_SCRIPT := preload("res://addons/konado/importer/konado_importer.gd")
@@ -85,7 +85,7 @@ func _exit_tree() -> void:
 		ks_tooltip_plugin = null
 		
 	if ks_editor:
-		remove_control_from_bottom_panel(ks_editor)
+		EditorInterface.get_editor_main_screen().remove_child(ks_editor)
 	
 	if inspector_plugin != null:
 		remove_inspector_plugin(inspector_plugin)
