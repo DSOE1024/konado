@@ -1,4 +1,4 @@
-shot_id HelloWorld
+shot_id HelloWorld11
 
 play bgm echo
 

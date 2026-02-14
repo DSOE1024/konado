@@ -112,18 +112,17 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	
 	_scripts_info(path, 0, "开始解析脚本文件")
 
-	var diadata: KND_Shot = KND_Shot.new()
+	var shot: KND_Shot = KND_Shot.new()
+	
 
 	# 解析元数据
 	var metadata_result = _parse_metadata(raw_script_lines, path)
 	shot_id_metedata_regex = null
-	if not metadata_result:
-		_scripts_debug(path, 0, "元数据解析失败")
-		return null  # 元数据失败直接终止，返回null
-	diadata.shot_id = metadata_result[0]
-
-
-	_scripts_info(path, 1, "Shot id：%s" % [diadata.shot_id])
+	if metadata_result:
+		shot.shot_id = metadata_result[0]
+		_scripts_info(path, 1, "shot id：%s" % [shot.shot_id])
+		
+	_scripts_warning(path, 0, "无元数据信息")
 
 	# 清空演员验证表
 	cur_tmp_actors = []
@@ -168,7 +167,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 				# 提交已解析的choice数据（如果有）
 				if tmp_current_choice_dialog and tmp_current_choice_dialog.choices.size() > 0:
 					var dialogue_dic: Dictionary = tmp_current_choice_dialog.serialize_to_dict()
-					diadata.dialogues_source_data.append(dialogue_dic)
+					shot.dialogues_source_data.append(dialogue_dic)
 					_scripts_info(path, tmp_choice_start_line, "缩进式choice解析完成 选项数量: %d" % tmp_current_choice_dialog.choices.size())
 				# 重置缩进状态
 				_reset_choice_indent_state()
@@ -188,18 +187,18 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 		# =============================================== #
 
 		# 解析普通行（非choice缩进状态）
-		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, diadata)  # 传入diadata给parse_line
+		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, shot)  # 传入diadata给parse_line
 		if dialog:
 			# 如果是标签对话，则添加到标签对话字典中
 			if dialog.dialog_type == KND_Dialogue.Type.BRANCH:
-				diadata.source_branches.set(dialog.branch_id, dialog.serialize_to_dict())
+				shot.source_branches.set(dialog.branch_id, dialog.serialize_to_dict())
 			else:
 				# ====================== 修复重复空对话：核心3行修改 ====================== #
 				# 一行式choice：正常添加；缩进式choice（刚解析完choice:）：跳过添加，仅缩进结束后统一提交
 				# 避免解析choice:时添加空dialog，后续缩进结束又加一次造成重复
 				if not (dialog.dialog_type == KND_Dialogue.Type.SHOW_CHOICE and tmp_in_choice_indent):
 					var dialogue_dic: Dictionary = dialog.serialize_to_dict()
-					diadata.dialogues_source_data.append(dialogue_dic)
+					shot.dialogues_source_data.append(dialogue_dic)
 				# ========================================================================= #
 		else:
 			if allow_skip_error_line:
@@ -214,18 +213,18 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	if tmp_in_choice_indent and tmp_current_choice_dialog:
 		if tmp_current_choice_dialog.choices.size() > 0:
 			var dialogue_dic: Dictionary = tmp_current_choice_dialog.serialize_to_dict()
-			diadata.dialogues_source_data.append(dialogue_dic)
+			shot.dialogues_source_data.append(dialogue_dic)
 			_scripts_info(path, tmp_choice_start_line, "缩进式choice解析完成 选项数量: %d" % tmp_current_choice_dialog.choices.size())
 		else:
 			_scripts_warning(path, tmp_choice_start_line, "choice: 后无有效选项行，忽略该choice")
-			# 无有效选项时，不添加任何空dialog到diadata
+			# 无有效选项时，不添加任何空dialog到shot
 		_reset_choice_indent_state()
 
-	diadata.get_dialogues()
+	shot.get_dialogues()
 	
 
 	_scripts_info(path, 0, "文件：%s 章节ID：%s 对话数量：%d" % 
-		[path, diadata.shot_id, diadata.dialogues.size()])
+		[path, shot.shot_id, shot.dialogues.size()])
 
 	tmp_path = ""
 
@@ -236,7 +235,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 
 	# 生成演员快照
 	var cur_actor_dic: Dictionary = {}
-	for dialogue in diadata.get_dialogues():
+	for dialogue in shot.get_dialogues():
 		if dialogue.dialog_type == KND_Dialogue.Type.DISPLAY_ACTOR:
 			pass
 				#var actor: DialogueActor = dialogue.show_actor
@@ -261,7 +260,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 				cur_actor_dic[dialogue.target_move_chara]["y"] = dialogue.target_move_pos.y
 		dialogue.actor_snapshots = cur_actor_dic
 	
-	return diadata
+	return shot
 
 # 单行解析模式
 func parse_single_line(line: String, line_number: int, path: String) -> KND_Dialogue:
@@ -271,7 +270,9 @@ func parse_single_line(line: String, line_number: int, path: String) -> KND_Dial
 func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot) -> KND_Dialogue:
 	var dialog := KND_Dialogue.new()
 	dialog.source_file_line = line_number
-	
+	if _parse_dialog(line, dialog):
+		print("解析成功：对话相关\n")
+		return dialog
 	if _parse_background(line, dialog):
 		print("解析成功：背景切换\n")
 		return dialog
@@ -287,9 +288,6 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 	if _parse_jumpshot(line, dialog):
 		print("解析成功：跳转镜头相关\n")
 		return dialog
-	if _parse_dialog(line, dialog):
-		print("解析成功：对话相关\n")
-		return dialog
 	if _parse_end(line, dialog, diadata):  # 传入diadata
 		print("解析成功：结束相关\n")
 		return dialog
@@ -300,26 +298,21 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 	dialog = null
 	return null
 
-# 解析元数据（前两行）
+# 解析元数据
 func _parse_metadata(raw_script_lines: PackedStringArray, path: String) -> PackedStringArray:
-	if raw_script_lines.size() < 2:
-		_scripts_debug(path, 1, "文件不完整，至少需要shot id")
-		return []
-
 	var metadata: PackedStringArray = []
-
-	if raw_script_lines[0]:
-		var result = shot_id_metedata_regex.search(raw_script_lines[0])
-		if not result:
-			_scripts_debug(path, 1, "无效的元数据格式: %s" % raw_script_lines[0])
-			return []
-		
-		var key = result.get_string(1)
-		var value = result.get_string(2)
-		
-		match key:
-			"shot_id":
-				metadata.append(value)
+	if raw_script_lines.size() >= 1:
+		if raw_script_lines[0]:
+			var result = shot_id_metedata_regex.search(raw_script_lines[0])
+			if not result:
+				_scripts_debug(path, 1, "无效的元数据格式: %s" % raw_script_lines[0])
+				return []
+			
+			var key = result.get_string(1)
+			var value = result.get_string(2)
+			match key:
+				"shot_id":
+					metadata.append(value)
 	return metadata
 	
 	
