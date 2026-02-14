@@ -1,5 +1,4 @@
-@tool
-extends Resource
+extends KND_Data
 class_name KND_Character
 
 ## 角色姓名

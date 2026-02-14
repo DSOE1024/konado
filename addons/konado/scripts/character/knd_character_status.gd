@@ -1,5 +1,4 @@
-@tool
-extends Resource
+extends KND_Data
 class_name CharacterStatus
 
 # 状态名称

@@ -88,7 +88,7 @@ var cur_dialogue_type: KND_Dialogue.Type
 ## 角色列表
 @export var chara_list: CharacterList
 ## 背景列表
-@export var background_list: BackgroundList
+@export var background_list: KND_BackgroundList
 ## BGM列表
 @export var bgm_list: DialogBGMList
 ## 配音资源列表
@@ -122,7 +122,7 @@ func _ready() -> void:
 			push_warning("未指定 error_skip_btn")
 	
 	if _konado_dialogue_box:
-		_konado_dialogue_box.on_dialogue_click.connect(_continue)
+		_konado_dialogue_box.on_dialogue_click.connect(_process_next)
 	else:
 		push_error("未指定 _konado_dialogue_box")
 	
@@ -188,7 +188,7 @@ func set_chara_list(chara_list: CharacterList) -> void:
 	print(chara_list.to_string())
 	self.chara_list = chara_list
 
-func set_background_list(background_list: BackgroundList) -> void:
+func set_background_list(background_list: KND_BackgroundList) -> void:
 	if background_list == null:
 		printerr("背景列表为空")
 		return
@@ -290,7 +290,7 @@ func _process(delta) -> void:
 					var bg_name = dialog.background_image_name
 					var bg_effect = dialog.background_toggle_effects
 					var s = _acting_interface.background_change_finished
-					s.connect(_process_next.bind(s))
+					s.connect(_auto_process_next.bind(s))
 					_acting_interface.show()
 					_display_background(bg_name, bg_effect)
 					pass
@@ -298,7 +298,7 @@ func _process(delta) -> void:
 				elif cur_dialogue_type == KND_Dialogue.Type.DISPLAY_ACTOR:
 					# 显示演员
 					var s = _acting_interface.character_created
-					s.connect(_process_next.bind(s))
+					s.connect(_auto_process_next.bind(s))
 					_acting_interface.show()
 					_display_character(dialog)
 				# 如果修改演员状态
@@ -306,21 +306,21 @@ func _process(delta) -> void:
 					var actor = dialog.change_state_actor
 					var target_state = dialog.change_state
 					var s = _acting_interface.character_state_changed
-					s.connect(_process_next.bind(s))
+					s.connect(_auto_process_next.bind(s))
 					_actor_change_state(actor, target_state)
 				# 如果是移动演员
 				elif cur_dialogue_type == KND_Dialogue.Type.MOVE_ACTOR:
 					var actor = dialog.target_move_chara
 					var pos = dialog.target_move_pos
 					var s = _acting_interface.character_moved
-					s.connect(_process_next.bind(s))
+					s.connect(_auto_process_next.bind(s))
 					_acting_interface.move_actor(actor, pos.x, pos.y)
 				# 如果是删除演员
 				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
 					# 删除演员
 					var actor = dialog.exit_actor
 					var s = _acting_interface.character_deleted
-					s.connect(_process_next.bind(s))
+					s.connect(_auto_process_next.bind(s))
 					_exit_actor(actor)
 				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
@@ -329,7 +329,7 @@ func _process(delta) -> void:
 						printerr("当前没有任何选项，为不影响运行跳过")
 						_dialogue_goto_state(DialogState.PAUSED)
 						get_tree().process_frame
-						_continue()
+						_process_next()
 					else:
 						# 生成并显示选项
 						_konado_choice_interface.display_options(dialog_choices, self)
@@ -338,10 +338,12 @@ func _process(delta) -> void:
 						_konado_choice_interface._choice_container.show()
 				# 如果是播放BGM
 				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_BGM:
-					var s = _audio_interface.finish_playbgm
-					s.connect(_process_next.bind(s))
+					#var s = _audio_interface.finish_playbgm
+					#s.connect(_auto_process_next.bind(s))
 					var bgm_name = dialog.bgm_name
 					_play_bgm(bgm_name)
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
 				# 如果是停止BGM
 				elif cur_dialogue_type == KND_Dialogue.Type.STOP_BGM:
 					_audio_interface.stop_bgm()
@@ -349,7 +351,7 @@ func _process(delta) -> void:
 				# 如果是播放音效
 				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_SOUND_EFFECT:
 					var s = _audio_interface.finish_playsoundeffect
-					s.connect(_process_next.bind(s))
+					s.connect(_auto_process_next.bind(s))
 					var se_name = dialog.soundeffect_name
 					_play_soundeffect(se_name)
 				# 如果是镜头跳转
@@ -399,39 +401,19 @@ func isfinishtyping(wait_voice: bool) -> void:
 			# 旁白等待两秒
 		else:
 			await get_tree().create_timer(autoplayspeed).timeout
-		_continue()
+		_process_next()
 	
 	
-## 自动下一个
-func _process_next(s: Signal = Signal()) -> void:
-	if not s.is_null() and s.is_connected(_process_next):
-		s.disconnect(_process_next)
-		print("触发自动下一个信号")
+## 自动下一个，添加信号解绑功能保证只被触发一次
+func _auto_process_next(s: Signal) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
-
-	
+	if not s.is_null() and s.is_connected(_auto_process_next):
+		s.disconnect(_auto_process_next)
+		print("触发自动下一个信号")
+		
 	# 暂时先用等待的方法，没找到更好的解决方法
 	await get_tree().process_frame
-	print_rich("[color=yellow]点击继续按钮，判断状态[/color]")
-	match dialogueState:
-		DialogState.OFF:
-			print("对话关闭状态，无需做任何操作")
-			return
-		DialogState.PLAYING:
-			print("对话播放状态，等待播放完成")
-			return
-		DialogState.PAUSED:
-			print("对话播放完成，开始播放下一个")
-			# 如果列表中所有对话播放完成了
-			if curline + 1 >= start_dialogue_shot.dialogues.size():
-				# 切换到对话关闭状态
-				_dialogue_goto_state(DialogState.OFF)
-			# 如果列表中还有对话没有播放
-			else:
-				_nextline()
-				# 切换到播放状态
-				_dialogue_goto_state(DialogState.PLAYING)
-			return
+	_process_next()
 
 	
 ## 关闭对话的方法
@@ -461,9 +443,9 @@ func _nextline() -> void:
 	print("对话下标：" + str(curline))
 
 ## 继续，下一句按钮
-func _continue() -> void:
+func _process_next() -> void:
 	dialogue_line_end.emit(curline)
-	print_rich("[color=yellow]点击继续按钮，判断状态[/color]")
+	print_rich("[color=yellow]判断状态[/color]")
 	match dialogueState:
 		DialogState.OFF:
 			print("对话关闭状态，无需做任何操作")
@@ -495,7 +477,7 @@ func start_autoplay(value: bool):
 		##_autoPlayButton.set_text("停止播放")
 	#else:
 		##_autoPlayButton.set_text("自动播放")
-	_continue()
+	_process_next()
 	pass
 	
 	
@@ -563,18 +545,45 @@ func _exit_actor(actor_name: String) -> void:
 	_acting_interface.delete_character(actor_name)
 
 ## 播放BGM
+# 播放指定名称的背景音乐
 func _play_bgm(bgm_name: String) -> void:
-	if bgm_name == null:
+	if bgm_name.is_empty() || bgm_name == null:
+		push_error("播放BGM失败：传入的bgm_name为空字符串或null，请检查调用参数")
 		return
-	var target_bgm: AudioStream
-	if bgm_list == null or bgm_list.bgms == null:
-		return # 判空
-	for bgm in bgm_list.bgms:
-		if bgm.bgm_name == bgm_name:
-			target_bgm = bgm.bgm
-			break
-	_audio_interface.play_bgm(target_bgm, bgm_name)
+		
+	if bgm_list == null:
+		push_error("播放BGM失败：bgm_list对象未初始化（null），无法查找BGM[%s]" % bgm_name)
+		return
+	
+	if bgm_list.bgms == null:
+		push_error("播放BGM失败：bgm_list中未找到bgms数组或数组为null，无法查找BGM[%s]" % bgm_name)
+		return
+	
+	var target_bgm: AudioStream = null
+	for index in bgm_list.bgms.size():
+		var bgm_data = bgm_list.bgms[index]
 
+		if bgm_data == null:
+			push_error("播放BGM失败：bgm_list.bgms数组中索引[%d]位置的BGM数据为空，当前查找的BGM名称：%s" % [index, bgm_name])
+			return
+			
+		if bgm_data.bgm_name == bgm_name:
+			target_bgm = bgm_data.bgm
+			break
+	
+	if target_bgm:
+		_audio_interface.play_bgm(target_bgm, bgm_name)
+	else:
+		# 收集所有可用的BGM名称，方便调试
+		var available_bgm_names: Array[String] = []
+		for bgm_data in bgm_list.bgms:
+			available_bgm_names.append(bgm_data.bgm_name)
+		
+		push_error(
+            "播放BGM失败：未找到名称为[%s]的BGM。\n"
+			+ "当前bgm_list中可用的BGM列表：%s"
+			% [bgm_name, str(available_bgm_names)]
+		)
 
 ## 播放配音
 func _play_voice(voice_name: String) -> void:
@@ -628,7 +637,7 @@ func _jump_tag(tag: String) -> void:
 	
 	start_dialogue_shot.dialogues.insert(curline + 1, target_dialogue)
 	print("插入标签，对话长度" + str(start_dialogue_shot.dialogues.size()))
-	_continue()
+	_process_next()
 
 ## 跳转剧情的方法
 func _jump_shot(data_id: String) -> bool:

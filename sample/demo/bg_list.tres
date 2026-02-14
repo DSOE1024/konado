@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="KND_BackgroundList" format=3 uid="uid://bf0o7uo4h3ta1"]
+
+[ext_resource type="Script" uid="uid://di66ghc1qq8e5" path="res://addons/konado/scripts/background/knd_background.gd" id="1_84d5u"]
+[ext_resource type="Script" uid="uid://5aqgmxi8gxcw" path="res://addons/konado/scripts/background/knd_background_list.gd" id="2_71yj3"]
+[ext_resource type="Texture2D" uid="uid://bb7nhjioefh8a" path="res://sample/demo/sample_arts/示例-咖啡馆-背景.png" id="2_mfnc7"]
+[ext_resource type="Texture2D" uid="uid://jw3mdmdblgx8" path="res://assets/banner/2.2/konado-2.2-banner.png" id="3_mfnc7"]
+
+[sub_resource type="Resource" id="Resource_84d5u"]
+script = ExtResource("1_84d5u")
+background_name = "bg1"
+background_image = ExtResource("2_mfnc7")
+metadata/_custom_type_script = "uid://di66ghc1qq8e5"
+
+[sub_resource type="Resource" id="Resource_55st1"]
+script = ExtResource("1_84d5u")
+background_name = "bg2"
+background_image = ExtResource("3_mfnc7")
+metadata/_custom_type_script = "uid://di66ghc1qq8e5"
+
+[resource]
+script = ExtResource("2_71yj3")
+background_list = Array[ExtResource("1_84d5u")]([SubResource("Resource_84d5u"), SubResource("Resource_55st1")])
+metadata/_custom_type_script = "uid://5aqgmxi8gxcw"

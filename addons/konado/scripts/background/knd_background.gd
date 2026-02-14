@@ -1,5 +1,5 @@
-extends Resource
-class_name Background
+extends KND_Data
+class_name KND_Background
 
 ## 背景名称
 @export var background_name: String
