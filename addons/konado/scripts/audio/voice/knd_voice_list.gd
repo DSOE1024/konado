@@ -1,4 +1,4 @@
-extends Resource
+extends KND_Data
 class_name DialogVoiceList
 
 # 配音列表

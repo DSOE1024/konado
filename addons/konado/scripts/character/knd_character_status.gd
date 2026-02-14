@@ -1,6 +1,5 @@
-@tool
-extends Resource
-class_name CharacterStatus
+extends KND_Data
+class_name KND_CharacterStatus
 
 # 状态名称
 @export var status_name: String

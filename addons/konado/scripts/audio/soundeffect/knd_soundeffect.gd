@@ -1,5 +1,5 @@
-extends Resource
-class_name DialogSoundEffect
+extends KND_Data
+class_name KND_SoundEffect
 
 # 音效名称
 @export var se_name: String
