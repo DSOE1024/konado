@@ -1,4 +1,4 @@
-extends Resource
+extends KND_Data
 class_name KND_Dialogue
 
 ## 源对话文件行号

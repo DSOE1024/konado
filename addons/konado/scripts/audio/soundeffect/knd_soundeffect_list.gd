@@ -1,5 +1,5 @@
-extends Resource
-class_name DialogSoundEffectList
+extends KND_Data
+class_name KND_SoundEffectList
 
 # BGM列表
-@export var soundeffects: Array[DialogSoundEffect]
+@export var soundeffects: Array[KND_SoundEffect]

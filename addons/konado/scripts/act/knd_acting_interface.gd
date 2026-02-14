@@ -45,7 +45,7 @@ var cyber_glitch_effect_shader: Shader = preload("res://addons/konado/shader/bg_
 ## 演员字典
 var actor_dict = {}
 ## 角色列表
-var chara_list: CharacterList
+var chara_list: KND_CharacterList
 ## 背景图片
 @onready var _background: ColorRect = $BackgroundLayer
 ## 角色容器

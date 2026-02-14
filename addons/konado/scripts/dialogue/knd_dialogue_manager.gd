@@ -52,7 +52,7 @@ signal dialogue_line_end(line: int)
 ## 背景和角色UI界面接口
 @export var _acting_interface: KND_ActingInterface
 ## 音频接口
-@export var _audio_interface: DialogAudioInterface
+@export var _audio_interface: KND_AudioInterface
 
 ## 对话资源ID
 var _dialog_data_id: int = 0
@@ -86,15 +86,15 @@ var cur_dialogue_type: KND_Dialogue.Type
 ## 对话资源
 @export var start_dialogue_shot: KND_Shot = null
 ## 角色列表
-@export var chara_list: CharacterList
+@export var chara_list: KND_CharacterList
 ## 背景列表
 @export var background_list: KND_BackgroundList
 ## BGM列表
-@export var bgm_list: DialogBGMList
+@export var bgm_list: KND_BgmList
 ## 配音资源列表
 @export var voice_list: DialogVoiceList
 ## 音效列表
-@export var soundeffect_list: DialogSoundEffectList
+@export var soundeffect_list: KND_SoundEffectList
 
 @export_group("日志工具")
 ## 是否显示错误日志覆盖
@@ -181,7 +181,7 @@ func set_shot(new_shot: KND_Shot) -> void:
 	start_dialogue_shot.get_dialogues()
 	
 ## 设置角色表的方法
-func set_chara_list(chara_list: CharacterList) -> void:
+func set_chara_list(chara_list: KND_CharacterList) -> void:
 	if chara_list == null:
 		printerr("角色列表为空")
 		return
@@ -195,7 +195,7 @@ func set_background_list(background_list: KND_BackgroundList) -> void:
 	print(background_list.to_string())
 	self.background_list = background_list
 
-func set_bgm_list(bgm_list: DialogBGMList) -> void:
+func set_bgm_list(bgm_list: KND_BgmList) -> void:
 	if bgm_list == null:
 		printerr("BGM列表为空")
 		return

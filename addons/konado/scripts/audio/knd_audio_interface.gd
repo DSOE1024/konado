@@ -1,5 +1,5 @@
 extends Node
-class_name DialogAudioInterface
+class_name KND_AudioInterface
 
 ## 音频接口类，可以控制BGM和角色对话
 
