@@ -85,7 +85,7 @@ func _exit_tree() -> void:
 		ks_tooltip_plugin = null
 		
 	if ks_editor:
-		remove_control_from_bottom_panel(ks_editor)
+		EditorInterface.get_editor_main_screen().remove_child(ks_editor)
 	
 	if inspector_plugin != null:
 		remove_inspector_plugin(inspector_plugin)
