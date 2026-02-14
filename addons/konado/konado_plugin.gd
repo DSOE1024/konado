@@ -47,8 +47,7 @@ func _has_main_screen() -> bool:
 
 func _enter_tree() -> void:
 	_setup_import_plugins()
-	#_setup_internationalization()
-	
+
 	_print_loading_message()
 	
 	filesystem_dock = get_editor_interface().get_file_system_dock()

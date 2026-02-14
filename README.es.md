@@ -26,7 +26,7 @@
 
 ## Descripción General
 
-Konado es un marco ligero de motor de novela visual que proporciona un amplio conjunto de plantillas de diálogo y un robusto administrador de diálogos. Diseñado para flexibilidad, permite a los desarrolladores crear rápidamente juegos impulsados por diálogos o integrar sin problemas sistemas de diálogo en proyectos de juego existentes.
+Konado es un kit de herramientas de creación de diálogos para Godot Engine, con plantillas y un administrador de diálogos para ayudarte a construir rápidamente novelas visuales, juegos gal, RPG y otros proyectos basados en historias.
 
 ## Inicio Rápido
 
