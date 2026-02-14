@@ -26,7 +26,7 @@
 
 ## Aperçu
 
-Konado est un framework léger de moteur de roman visuel qui fournit un riche ensemble de modèles de dialogue et un gestionnaire de dialogue robuste. Conçu pour la flexibilité, il permet aux développeurs de créer rapidement des jeux basés sur des dialogues ou d'intégrer de manière transparente des systèmes de dialogue dans des projets de jeu existants.
+Konado est un kit d'outils de création de dialogues pour Godot Engine, avec des modèles et un gestionnaire de dialogues pour vous aider à construire rapidement des romans visuels, des jeux gal, des RPG et d'autres projets axés sur l'histoire.
 
 ## Démarrage Rapide
 

@@ -26,7 +26,7 @@ English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [�
 
 ## Overview
 
-Konado is a lightweight visual novel engine framework that provides a rich set of dialogue templates and a robust dialogue manager. Designed for flexibility, it enables developers to quickly create dialogue-driven games or seamlessly integrate dialogue systems into existing game projects.
+Konado is a dialogue creation toolkit for the Godot Engine, with templates and a dialogue manager to help you quickly build Visual Novels, Gal Games, RPGs and other story‑driven projects.
 
 ## Quick Start
 
