@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bcl2e6o0kb5dm"]
 
 [ext_resource type="PackedScene" uid="uid://bj8ynu8013j4j" path="res://addons/konado/template/konado_dialogue.tscn" id="1_57pxw"]
+[ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo.ks" id="2_nv4mq"]
 
 [node name="Demo" type="Control" unique_id=1757308143]
 layout_mode = 3
@@ -12,3 +13,4 @@ grow_vertical = 2
 
 [node name="KonadoDialogueManager" parent="." unique_id=1487339260 instance=ExtResource("1_57pxw")]
 layout_mode = 1
+start_dialogue_shot = ExtResource("2_nv4mq")

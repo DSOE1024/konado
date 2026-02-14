@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://bj8ynu8013j4j"]
 
 [ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd" id="1_buo3n"]
-[ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo.ks" id="2_77vgp"]
 [ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/acting_Interface.gd" id="2_pq6sw"]
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="3_gl7il"]
 [ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/audio_interface.gd" id="4_gd2ll"]
@@ -49,7 +48,6 @@ _konado_choice_interface = NodePath("KonadoUI/DialogueInterface")
 _konado_dialogue_box = NodePath("KonadoUI/DialogueInterface/KonadoDialogueBox")
 _acting_interface = NodePath("KonadoUI/ActingInterface")
 _audio_interface = NodePath("KonadoAudioInterface")
-start_dialogue_shot = ExtResource("2_77vgp")
 error_tooltip_panel = NodePath("KonadoErrorToolTip")
 error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
 error_skip_btn = NodePath("KonadoErrorToolTip/Skip")
