@@ -144,7 +144,6 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 
 		tmp_original_line_number = original_line_number
 
-		# ========== 核心缩进行处理逻辑 - 保留原始行判断缩进 ========== #
 		# 非choice缩进解析中：跳过缩进行（保持原有逻辑）
 		# choice缩进解析中：处理缩进行（新增逻辑）
 		if (original_line.begins_with("    ") or original_line.begins_with("\t")) and not tmp_in_choice_indent:
@@ -159,15 +158,13 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 
 		print("第%d行内容：" % original_line_number, line)
 
-		# ========== 核心Choice缩进解析 - 无缩进即终止缩进（关键） ========== #
 		if tmp_in_choice_indent:
 			# 检查当前行是否有缩进：无缩进 → 自动结束Choice缩进，切换回普通行解析
 			if not (original_line.begins_with("    ") or original_line.begins_with("\t")):
 				_scripts_info(path, original_line_number, "检测到无缩进行，自动结束choice缩进解析")
 				# 提交已解析的choice数据（如果有）
 				if tmp_current_choice_dialog and tmp_current_choice_dialog.choices.size() > 0:
-					var dialogue_dic: Dictionary = tmp_current_choice_dialog.serialize_to_dict()
-					shot.dialogues_source_data.append(dialogue_dic)
+					shot.dialogues.append(tmp_current_choice_dialog)
 					_scripts_info(path, tmp_choice_start_line, "缩进式choice解析完成 选项数量: %d" % tmp_current_choice_dialog.choices.size())
 				# 重置缩进状态
 				_reset_choice_indent_state()
@@ -181,25 +178,21 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 					else:
 						_scripts_debug(path, original_line_number, "choice缩进选项行解析失败，终止解析: %s" % line)
 						_reset_choice_indent_state()
-						return null  # 用return null真正终止，替代break
+						return null
 				# 解析成功则跳过后续普通行解析
 				continue
-		# =============================================== #
-
+				
 		# 解析普通行（非choice缩进状态）
-		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, shot)  # 传入diadata给parse_line
+		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, shot)
 		if dialog:
 			# 如果是标签对话，则添加到标签对话字典中
 			if dialog.dialog_type == KND_Dialogue.Type.BRANCH:
-				shot.source_branches.set(dialog.branch_id, dialog.serialize_to_dict())
+				shot.branches.set(dialog.branch_id, dialog)
 			else:
-				# ====================== 修复重复空对话：核心3行修改 ====================== #
 				# 一行式choice：正常添加；缩进式choice（刚解析完choice:）：跳过添加，仅缩进结束后统一提交
 				# 避免解析choice:时添加空dialog，后续缩进结束又加一次造成重复
 				if not (dialog.dialog_type == KND_Dialogue.Type.SHOW_CHOICE and tmp_in_choice_indent):
-					var dialogue_dic: Dictionary = dialog.serialize_to_dict()
-					shot.dialogues_source_data.append(dialogue_dic)
-				# ========================================================================= #
+					shot.dialogues.append(dialog)
 		else:
 			if allow_skip_error_line:
 				_scripts_warning(path, original_line_number, "解析失败：无法识别的语法，请检查语法是否正确或删除该行: %s" % line)
@@ -207,7 +200,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 			else:
 				_scripts_debug(path, original_line_number, "解析失败：无法识别的语法，终止解析: %s" % line)
 				_reset_choice_indent_state()
-				return null  # 用return null真正终止，替代break
+				return null
 			
 	# 解析结束后检查是否有未完成的choice缩进（文件末尾是缩进行的情况）
 	if tmp_in_choice_indent and tmp_current_choice_dialog:
@@ -220,7 +213,6 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 			# 无有效选项时，不添加任何空dialog到shot
 		_reset_choice_indent_state()
 
-	shot.get_dialogues()
 	
 
 	_scripts_info(path, 0, "文件：%s 章节ID：%s 对话数量：%d" % 
@@ -232,33 +224,6 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	if not _check_tag_and_choice():
 		_scripts_debug(path, 0, "标签和选项解析失败，终止所有解析")
 		return null
-
-	# 生成演员快照
-	var cur_actor_dic: Dictionary = {}
-	for dialogue in shot.get_dialogues():
-		if dialogue.dialog_type == KND_Dialogue.Type.DISPLAY_ACTOR:
-			pass
-				#var actor: DialogueActor = dialogue.show_actor
-				#var chara_dict := {
-					#"id": actor.character_name,
-					#"x": actor.actor_position.x,
-					#"y": actor.actor_position.y,
-					#"state": actor.character_state,
-					#"c_scale": actor.actor_scale,
-					#"mirror": actor.actor_mirror
-					#}
-				#cur_actor_dic[actor.character_name] = chara_dict
-		if dialogue.dialog_type == KND_Dialogue.Type.EXIT_ACTOR:
-			if cur_actor_dic.has(dialogue.exit_actor):
-				cur_actor_dic.erase(dialogue.exit_actor)
-		if dialogue.dialog_type == KND_Dialogue.Type.ACTOR_CHANGE_STATE:
-			if cur_actor_dic.has(dialogue.change_state_actor):
-				cur_actor_dic[dialogue.change_state_actor]["state"] = dialogue.change_state
-		if dialogue.dialog_type == KND_Dialogue.Type.MOVE_ACTOR:
-			if cur_actor_dic.has(dialogue.target_move_chara):
-				cur_actor_dic[dialogue.target_move_chara]["x"] = dialogue.target_move_pos.x
-				cur_actor_dic[dialogue.target_move_chara]["y"] = dialogue.target_move_pos.y
-		dialogue.actor_snapshots = cur_actor_dic
 	
 	return shot
 
@@ -456,7 +421,7 @@ func _parse_choice(line: String, dialog: KND_Dialogue) -> bool:
 		
 		# 创建选项对象
 		for i in range(0, parts.size(), 2):
-			var choice = DialogueChoice.new()
+			var choice = KND_DialogueChoice.new()
 			choice.choice_text = parts[i]
 			choice.jump_tag = parts[i + 1]
 			dialog.choices.append(choice)
@@ -512,7 +477,7 @@ func _parse_choice_indent_line(line: String, line_number: int, path: String) -> 
 	var jump_tag = result.get_string(2)
 	
 	# 创建选项对象并添加到当前choice dialog
-	var choice = DialogueChoice.new()
+	var choice = KND_DialogueChoice.new()
 	choice.choice_text = choice_text
 	choice.jump_tag = jump_tag
 	tmp_current_choice_dialog.choices.append(choice)
@@ -643,12 +608,13 @@ func _reset_choice_indent_state() -> void:
 # 错误报告
 func _scripts_debug(path: String, line: int, error_info: String):
 	push_error("错误：%s [行：%d] %s " % [path, line, error_info])
-
-
+	
+	
 # 警告提示
 func _scripts_warning(path: String, line: int, warning_info: String):
 	push_warning("警告：%s [行：%d] %s " % [path, line, warning_info])
-
+	
+	
 # 信息提示
 func _scripts_info(path: String, line: int, info_info: String):
 	print("信息：%s [行：%d] %s " % [path, line, info_info])

@@ -204,14 +204,11 @@ func set_bgm_list(bgm_list: DialogBGMList) -> void:
 
 ## 开始对话的方法
 func start_dialogue() -> void:
-	# 显示
 	if !_konado_choice_interface:
 		_konado_choice_interface.show()
 	if !_acting_interface:
 		_acting_interface.show()
 	
-	# 显示对话框
-	#_konado_dialogue_box.on_dialogue_show_completed.connect()
 	_konado_dialogue_box.show_dialogue_box()
 	_dialogue_goto_state(DialogState.PLAYING)
 	print_rich("[color=yellow]开始对话 [/color]")
@@ -373,6 +370,8 @@ func _process(delta) -> void:
 					
 					print("添加了 %d 个标签对话" % tag_dialogues.size())
 					print("当前对话总数: " + str(start_dialogue_shot.dialogues.size()))
+					
+					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
 					pass
 				# 如果剧终
@@ -403,46 +402,7 @@ func isfinishtyping(wait_voice: bool) -> void:
 			await get_tree().create_timer(autoplayspeed).timeout
 		_process_next()
 	
-	
-## 自动下一个，添加信号解绑功能保证只被触发一次
-func _auto_process_next(s: Signal) -> void:
-	_dialogue_goto_state(DialogState.PAUSED)
-	if not s.is_null() and s.is_connected(_auto_process_next):
-		s.disconnect(_auto_process_next)
-		print("触发自动下一个信号")
-		
-	# 暂时先用等待的方法，没找到更好的解决方法
-	await get_tree().process_frame
-	_process_next()
-
-	
-## 关闭对话的方法
-func stop_dialogue() -> void:
-	print_rich("[color=yellow]关闭对话[/color]")
-	# 切换到关闭状态
-	_dialogue_goto_state(DialogState.OFF)
-	_konado_dialogue_box.hide_dialogue_box()
-
-	shot_end.emit()
-	
-## 对话状态切换的方法
-func _dialogue_goto_state(dialogstate: DialogState) -> void:
-	# 重置justenter状态
-	justenter = true
-	# 切换状态到
-	dialogueState = dialogstate
-	# justenter=true
-	print_rich("[color=yellow]切换状态到: [/color]" + str(dialogueState))
-
-## 增加对话下标，下一句
-func _nextline() -> void:
-	curline += 1
-	print_rich("---------------------------------------------")
-	# 打印时间 日期+时间
-	print("当前时间：" + str(Time.get_time_string_from_system()))
-	print("对话下标：" + str(curline))
-
-## 继续，下一句按钮
+## 处理下一个，绑定到下一个按钮
 func _process_next() -> void:
 	dialogue_line_end.emit(curline)
 	print_rich("[color=yellow]判断状态[/color]")
@@ -469,6 +429,43 @@ func _process_next() -> void:
 				# 切换到播放状态
 				_dialogue_goto_state(DialogState.PLAYING)
 			return
+	
+## 自动下一个，添加信号解绑功能保证只被触发一次
+func _auto_process_next(s: Signal) -> void:
+	_dialogue_goto_state(DialogState.PAUSED)
+	if not s.is_null() and s.is_connected(_auto_process_next):
+		s.disconnect(_auto_process_next)
+		print("触发自动下一个信号")
+		
+	# 暂时先用等待的方法，没找到更好的解决方法
+	await get_tree().process_frame
+	_process_next()
+	
+## 关闭对话的方法
+func stop_dialogue() -> void:
+	print_rich("[color=yellow]关闭对话[/color]")
+	# 切换到关闭状态
+	_dialogue_goto_state(DialogState.OFF)
+	_konado_dialogue_box.hide_dialogue_box()
+
+	shot_end.emit()
+	
+## 对话状态切换的方法
+func _dialogue_goto_state(dialogstate: DialogState) -> void:
+	# 重置justenter状态
+	justenter = true
+	# 切换状态到
+	dialogueState = dialogstate
+	# justenter=true
+	print_rich("[color=yellow]切换状态到: [/color]" + str(dialogueState))
+
+## 增加对话下标，下一句
+func _nextline() -> void:
+	curline += 1
+	print_rich("---------------------------------------------")
+	# 打印时间 日期+时间
+	print("当前时间：" + str(Time.get_time_string_from_system()))
+	print("对话下标：" + str(curline))
 			
 ## 开始自动播放的方法
 func start_autoplay(value: bool):
@@ -615,7 +612,7 @@ func _play_soundeffect(se_name: String) -> void:
 
 
 ## 选项触发方法
-func on_option_triggered(choice: DialogueChoice) -> void:
+func on_option_triggered(choice: KND_DialogueChoice) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
 	_konado_choice_interface._choice_container.hide()
 	
@@ -663,34 +660,6 @@ func _switch_data(data: KND_Shot) -> bool:
 	start_dialogue()
 	return true
 	
-	
-func _get_file_data(slot_id: int):
-	#用于获取变量
-	var dialog = start_dialogue_shot.dialogs[curline]
-	
-	# 停止语音
-	_audio_interface.stop_voice()
-	
-	
-## 读取存档用的跳转
-func jump_data_and_curline(data_id: String, _curline: int, bgm_id: String, actor_dict: Dictionary = {}):
-	print("对话ID" + data_id + "   对话线" + str(_curline) + "   角色表：" + str(actor_dict))
-	if _jump_shot(data_id):
-		_play_bgm(bgm_id)
-		_jump_curline(_curline)
-
-
-## 跳转到对话
-func _jump_curline(value: int) -> bool:
-	if value >= 0:
-		if not value >= start_dialogue_shot.dialogues.size():
-			_dialogue_goto_state(DialogState.OFF)
-			curline = value
-			print_rich("跳转到：" + str(curline))
-			_dialogue_goto_state(DialogState.PLAYING)
-			return true
-	return false
-
 ## 跳转到对话
 func _jump_cur_dialogue(dialog: KND_Dialogue) -> bool:
 	if dialog != null:

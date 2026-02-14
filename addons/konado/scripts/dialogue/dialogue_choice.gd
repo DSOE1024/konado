@@ -1,5 +1,5 @@
-extends Resource
-class_name DialogueChoice
+extends KND_Data
+class_name KND_DialogueChoice
 
 ## 选项文本内容
 @export var choice_text: String
