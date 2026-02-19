@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CharacterList" format=3 uid="uid://gi0knny11y78"]
+[gd_resource type="Resource" script_class="KND_CharacterList" format=3 uid="uid://gi0knny11y78"]
 
 [ext_resource type="Script" uid="uid://5dxx84u6uyy0" path="res://addons/konado/scripts/character/knd_character.gd" id="1_6oy8v"]
 [ext_resource type="Script" uid="uid://dxbtmvyauvfln" path="res://addons/konado/scripts/character/knd_character_status.gd" id="2_7mst4"]

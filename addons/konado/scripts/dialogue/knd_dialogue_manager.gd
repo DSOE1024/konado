@@ -1,7 +1,11 @@
 extends Control
 class_name KND_DialogueManager
 
-## Konado对话管理器
+## KND_DialogueManager
+##
+## Konado对话管理器是对话系统的核心管理类，负责统一调度和管理对话流程的全生命周期，包括对话初始化、播放控制、各类对话指令执行（普通对话、角色显示/隐藏/移动、背景切换、音频播放、选项分支等）、状态管理和错误处理。
+## 将该脚本挂载到场景中的Control节点上，在编辑器面板中配置配置对话资源后即可开始使用
+
 
 ## 镜头开启播放的信号
 signal shot_start
@@ -15,7 +19,7 @@ signal dialogue_line_start(line: int)
 ## 对话结束播放的信号
 signal dialogue_line_end(line: int)
 
-@export_group("播放设置")
+@export_group("Playback Settings")
 
 ## 是否在游戏开始时自动初始化对话，如果为true，则在游戏开始时自动初始化对话，否则需要手动初始化对话
 ## 手动初始化对话的方法为：在游戏开始时，调用`init_dialogue`方法
@@ -36,7 +40,7 @@ signal dialogue_line_end(line: int)
 ## 自动播放速度
 @export var autoplayspeed: float = 2
 
-@export_group("界面设置")
+@export_group("UI Settings")
 
 ## 演员画布横向分块
 @export var horizontal_division: int = 6
@@ -59,9 +63,6 @@ var _dialog_data_id: int = 0
 
 var option_triggered: bool = false
 
-# 添加节流器，防止快速点击
-var can_continue = true
-
 ## 对话状态（0:关闭，1:播放，2:播放完成下一个）
 enum DialogState 
 {
@@ -72,17 +73,18 @@ enum DialogState
 
 var dialogueState: DialogState
 
-## 对话当前行，同时也是用于读取对话列表的下标，在游戏中的初始值应该为0或者任何大于0的整数
-var curline: int
+## 读取对话列表的下标
+var cur_index: int
 
 ## 是否第一进入当前句对话，由于一些方法只需要在首次进入当前行对话时调用一次，而一些方法需要循环调用（如检查打字动画是否完成的方法）
 ## 因此，需要判断是否第一次进入当前行对话
 var justenter: bool
 
+## 当前对话的类型
 var cur_dialogue_type: KND_Dialogue.Type
 
 ## 资源列表
-@export_group("对话资源")
+@export_group("Dialogue Resources")
 ## 对话资源
 @export var start_dialogue_shot: KND_Shot = null
 ## 角色列表
@@ -96,7 +98,7 @@ var cur_dialogue_type: KND_Dialogue.Type
 ## 音效列表
 @export var soundeffect_list: KND_SoundEffectList
 
-@export_group("日志工具")
+@export_group("Log Tool")
 ## 是否显示错误日志覆盖
 @export var enable_overlay_log: bool = true
 ## 报错提示面板
@@ -168,9 +170,9 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 	justenter = true
 	dialogueState == DialogState.OFF
-	curline = 0
+	cur_index = 0
 	print_rich("[color=yellow]初始化对话 [/color]" + "justenter: " + str(justenter) +
-	" 对话下标: " + str(curline) + " 当前状态: " + str(dialogueState))
+	" 对话下标: " + str(cur_index) + " 当前状态: " + str(dialogueState))
 	print("---------------------------------------------")
 	if callback:
 		callback.call()
@@ -238,11 +240,11 @@ func _process(delta) -> void:
 					return
 
 				# 对话类型
-				cur_dialogue_type = start_dialogue_shot.dialogues[curline].dialog_type
+				cur_dialogue_type = start_dialogue_shot.dialogues[cur_index].dialog_type
 				# 对话当前句
-				var dialog = start_dialogue_shot.dialogues[curline]
+				var dialog = start_dialogue_shot.dialogues[cur_index]
 
-				dialogue_line_start.emit(curline)
+				dialogue_line_start.emit(cur_index)
 
 				# 隐藏选项
 				_konado_choice_interface._choice_container.hide()
@@ -359,7 +361,7 @@ func _process(delta) -> void:
 				elif cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话[/color]")
 					var tag_dialogues: Array[KND_Dialogue] = dialog.branch_dialogue
-					var insert_position = curline + 1
+					var insert_position = cur_index + 1
 					for i in range(tag_dialogues.size()):
 						# 检查是否已经存在
 						if tag_dialogues[i].dialog_type == KND_Dialogue.Type.BRANCH:
@@ -404,7 +406,7 @@ func isfinishtyping(wait_voice: bool) -> void:
 	
 ## 处理下一个，绑定到下一个按钮
 func _process_next() -> void:
-	dialogue_line_end.emit(curline)
+	dialogue_line_end.emit(cur_index)
 	print_rich("[color=yellow]判断状态[/color]")
 	match dialogueState:
 		DialogState.OFF:
@@ -420,7 +422,7 @@ func _process_next() -> void:
 			_audio_interface.stop_voice()
 			print("对话播放完成，开始播放下一个")
 			# 如果列表中所有对话播放完成了
-			if curline + 1 >= start_dialogue_shot.dialogues.size():
+			if cur_index + 1 >= start_dialogue_shot.dialogues.size():
 				# 切换到对话关闭状态
 				_dialogue_goto_state(DialogState.OFF)
 			# 如果列表中还有对话没有播放
@@ -461,11 +463,11 @@ func _dialogue_goto_state(dialogstate: DialogState) -> void:
 
 ## 增加对话下标，下一句
 func _nextline() -> void:
-	curline += 1
+	cur_index += 1
 	print_rich("---------------------------------------------")
 	# 打印时间 日期+时间
 	print("当前时间：" + str(Time.get_time_string_from_system()))
-	print("对话下标：" + str(curline))
+	print("对话下标：" + str(cur_index))
 			
 ## 开始自动播放的方法
 func start_autoplay(value: bool):
@@ -632,7 +634,7 @@ func _jump_tag(tag: String) -> void:
 		print("无法完成跳转，没有这个分支")
 		return
 	
-	start_dialogue_shot.dialogues.insert(curline + 1, target_dialogue)
+	start_dialogue_shot.dialogues.insert(cur_index + 1, target_dialogue)
 	print("插入标签，对话长度" + str(start_dialogue_shot.dialogues.size()))
 	_process_next()
 
