@@ -1,37 +1,36 @@
 extends Node
 class_name KND_AudioInterface
 
-## 音频接口类，可以控制BGM和角色对话
+## 音频接口类
 
-# 信号
-# 播放BGM成功
+## Bgm播放成功
 signal finish_playbgm
-# 播放语音成功
+## 语音播放成功
 signal finish_playvoice
-# 播放音效成功
+## 音效播放成功
 signal finish_playsoundeffect
 
 ## 语音播放完成
 signal voice_finish_playing
 
-
-@export var bgm_name: String
-
 ## BGM播放器
-@onready var bgm_player: AudioStreamPlayer = $BGMPlayer
+@export var bgm_player: AudioStreamPlayer
 ## 对话播放器
-@onready var voice_player: AudioStreamPlayer = $VoicePlayer
+@export var voice_player: AudioStreamPlayer
 ## 音效播放器
-@onready var sound_effect_player: AudioStreamPlayer = $SoundEffectPlayer
+@export var sound_effect_player: AudioStreamPlayer
 
 
 ## 播放BGM的方法（循环播放）
 func play_bgm(audio: AudioStream, audio_id: String) -> void:
+	if not bgm_player:
+		push_error("没找到bgm_player")
+		finish_playbgm.emit()
+		return
 	if bgm_player.is_playing():
 		bgm_player.stop()
-	bgm_player.stream=audio
+	bgm_player.stream = audio
 	bgm_player.play()
-	bgm_name = audio_id
 	finish_playbgm.emit()
 	bgm_player.finished.connect(func():
 		bgm_player.play())
@@ -39,12 +38,19 @@ func play_bgm(audio: AudioStream, audio_id: String) -> void:
 	
 ## 停止播放BGM的方法
 func stop_bgm() -> void:
+	if not bgm_player:
+		push_error("没找到bgm_player")
+		return
 	if bgm_player.is_playing():
 		bgm_player.stop()
 
 
 ## 播放语音的方法
 func play_voice(audio: AudioStream) -> void:
+	if not voice_player:
+		push_error("没找到voice_player")
+		finish_playvoice.emit()
+		return
 	if voice_player.is_playing():
 		voice_player.stop()
 	voice_player.stream=audio
@@ -55,11 +61,18 @@ func play_voice(audio: AudioStream) -> void:
 
 ## 停止播放语音的方法
 func stop_voice() -> void:
+	if not voice_player:
+		push_error("没找到voice_player")
+		return
 	voice_player.stop()
 
 ## 播放音效的方法
 func play_sound_effect(audio: AudioStream) -> void:
+	if not sound_effect_player:
+		push_error("没找到sound_effect_player")
+		finish_playsoundeffect.emit()
+		return
 	sound_effect_player.stop()
-	sound_effect_player.stream=audio
+	sound_effect_player.stream = audio
 	sound_effect_player.play()
 	finish_playsoundeffect.emit()

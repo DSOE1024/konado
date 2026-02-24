@@ -277,10 +277,13 @@ size_flags_vertical = 2
 theme_override_constants/separation = 50
 vertical = true
 
-[node name="KonadoAudioInterface" type="Node2D" parent="." unique_id=1896821847]
+[node name="KonadoAudioInterface" type="Node2D" parent="." unique_id=1896821847 node_paths=PackedStringArray("bgm_player", "voice_player", "sound_effect_player")]
 script = ExtResource("4_gd2ll")
+bgm_player = NodePath("BgmPlayer")
+voice_player = NodePath("VoicePlayer")
+sound_effect_player = NodePath("SoundEffectPlayer")
 
-[node name="BGMPlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=1295733151]
+[node name="BgmPlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=1295733151]
 
 [node name="VoicePlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=704065821]
 

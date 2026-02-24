@@ -548,7 +548,7 @@ func _parse_jumpshot(line: String, dialog: KND_Dialogue) -> bool:
 	
 	var parts = line.split(" ", false)
 	dialog.dialog_type = KND_Dialogue.Type.JUMP
-	dialog.jump_shot_id = parts[1]
+	dialog.jump_shot_path = parts[1]
 	return true
 
 # 对话解析（使用正则表达式优化）

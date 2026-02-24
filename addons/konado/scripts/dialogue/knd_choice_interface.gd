@@ -34,7 +34,7 @@ func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueMa
 		# 选项触发
 		choiceButton.button_up.connect(
 			func():
-				await get_tree().create_timer(0.001).timeout
+				await get_tree().process_frame
 				print_rich("[color=green]选项被触发: [/color]"+str(choice))
 				manager.on_option_triggered(choice)
 				choiceButton.set_disabled(true)

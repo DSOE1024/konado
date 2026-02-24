@@ -73,161 +73,161 @@ var background_image_name: String
 var background_toggle_effects: KND_ActingInterface.BackgroundTransitionEffectsType
 
 # 目标跳转的镜头
-var jump_shot_id: String
+var jump_shot_path: String
 
 
 
-#region 自定义显示模板
-class Label_Template:
-	@export var label_notes: String = ""
-	static func get_property_infos():
-		var infos = {}
-		for info in (Label_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-
-class Tag_Template:
-	@export var branch_id: String = ""
-	static func get_property_infos():
-		var infos = {}
-		for info in (Tag_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-
-class TagDialogue_Template:
-	@export var branch_dialogue: Array[KND_Dialogue] = []
-	static func get_property_infos():
-		var infos = {}
-		for info in (TagDialogue_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-
-class Ordinary_Dialog_Template:
-	@export var character_id: String = ""
-	@export_multiline var dialog_content: String = ""
-	@export var voice_id: String = ""
-	static func get_property_infos():
-		var infos = {}
-		for info in (Ordinary_Dialog_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-	
-class Switch_Background_Template:
-	@export var background_image_name: String = ""
-	@export var background_toggle_effects: KND_ActingInterface.BackgroundTransitionEffectsType
-	static func get_property_infos():
-		var infos = {}
-		for info in (Switch_Background_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-		
-class Actor_Template:
-	@export var character_name: String
-	@export var character_state: String
-	@export var actor_position: Vector2
-	@export var actor_scale: float
-	@export var actor_mirror: bool
-	@export var exit_actor: String = ""
-	@export var change_state_actor: String = ""
-	@export var change_state: String = ""
-	@export var target_move_chara: String = ""
-	@export var target_move_pos: Vector2 = Vector2(0, 0)
-	static func get_property_infos():
-		var infos = {}
-		for info in (Actor_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-		
-class Play_Audio_Template:
-	@export var bgm_name: String = ""
-	#@export var voice_name: String = ""
-	@export var soundeffect_name: String = ""
-	static func get_property_infos():
-		var infos = {}
-		for info in (Play_Audio_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-class Choice_Template:
-	@export var choices: Array[KND_DialogueChoice] = []
-	static func get_property_infos():
-		var infos = {}
-		for info in (Choice_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-	
-class Jump_Template:
-	@export var jump_shot_id: String = ""
-	static func get_property_infos():
-		var infos = {}
-		for info in (Jump_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-		
-class Unlock_Achievements_Template:
-	@export var achievement_id: String = ""
-	static func get_property_infos():
-		var infos = {}
-		for info in (Unlock_Achievements_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-
-class ITEM_OP_Template:
-	@export var item_id: String = ""
-	static func get_property_infos():
-		var infos = {}
-		for info in (ITEM_OP_Template as Script).get_script_property_list():
-			infos[info.name] = info
-		return infos
-#endregion
-
-func _get_property_list():
-	var list = []
-	if dialog_type == Type.BRANCH:
-		var tag_template = Tag_Template.get_property_infos()
-		var tag_dialogue_template = TagDialogue_Template.get_property_infos()
-		list.append(tag_template["branch_id"])
-		list.append(tag_dialogue_template["branch_dialogue"])
-	if dialog_type == Type.ORDINARY_DIALOG:
-		var oridinary_dialog_template = Ordinary_Dialog_Template.get_property_infos()
-		list.append(oridinary_dialog_template["character_id"])
-		list.append(oridinary_dialog_template["dialog_content"])
-		list.append(oridinary_dialog_template["voice_id"])
-	if dialog_type == Type.DISPLAY_ACTOR:
-		var actor_template = Actor_Template.get_property_infos()
-		list.append(actor_template["character_name"])
-		list.append(actor_template["character_state"])
-		list.append(actor_template["actor_position"])
-		list.append(actor_template["actor_scale"])
-		list.append(actor_template["actor_mirror"])
-	if dialog_type == Type.ACTOR_CHANGE_STATE:
-		var actor_template = Actor_Template.get_property_infos()
-		list.append(actor_template["change_state_actor"])
-		list.append(actor_template["change_state"])
-	if dialog_type == Type.MOVE_ACTOR:
-		var actor_template = Actor_Template.get_property_infos()
-		list.append(actor_template["target_move_chara"])
-		list.append(actor_template["target_move_pos"])
-	if dialog_type == Type.SWITCH_BACKGROUND:
-		var switch_background_template = Switch_Background_Template.get_property_infos()
-		list.append(switch_background_template["background_image_name"])
-		list.append(switch_background_template["background_toggle_effects"])
-	if dialog_type == Type.EXIT_ACTOR:
-		var actor_template = Actor_Template.get_property_infos()
-		list.append(actor_template["exit_actor"])
-	if dialog_type == Type.PLAY_BGM:
-		var play_audio_template = Play_Audio_Template.get_property_infos()
-		list.append(play_audio_template["bgm_name"])
-	if dialog_type == Type.STOP_BGM:
-		pass
-	if dialog_type == Type.PLAY_SOUND_EFFECT:
-		var play_audio_template = Play_Audio_Template.get_property_infos()
-		list.append(play_audio_template["soundeffect_name"])
-	if dialog_type == Type.SHOW_CHOICE:
-		var choice_template = Choice_Template.get_property_infos()
-		list.append(choice_template["choices"])
-	if dialog_type == Type.JUMP:
-		var jump_template = Jump_Template.get_property_infos()
-		list.append(jump_template["jump_shot_id"])
-	if dialog_type == Type.THE_END:
-		pass
-	return list
+##region 自定义显示模板
+#class Label_Template:
+	#@export var label_notes: String = ""
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Label_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+#
+#class Tag_Template:
+	#@export var branch_id: String = ""
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Tag_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+#
+#class TagDialogue_Template:
+	#@export var branch_dialogue: Array[KND_Dialogue] = []
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (TagDialogue_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+#
+#class Ordinary_Dialog_Template:
+	#@export var character_id: String = ""
+	#@export_multiline var dialog_content: String = ""
+	#@export var voice_id: String = ""
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Ordinary_Dialog_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+	#
+#class Switch_Background_Template:
+	#@export var background_image_name: String = ""
+	#@export var background_toggle_effects: KND_ActingInterface.BackgroundTransitionEffectsType
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Switch_Background_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+		#
+#class Actor_Template:
+	#@export var character_name: String
+	#@export var character_state: String
+	#@export var actor_position: Vector2
+	#@export var actor_scale: float
+	#@export var actor_mirror: bool
+	#@export var exit_actor: String = ""
+	#@export var change_state_actor: String = ""
+	#@export var change_state: String = ""
+	#@export var target_move_chara: String = ""
+	#@export var target_move_pos: Vector2 = Vector2(0, 0)
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Actor_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+		#
+#class Play_Audio_Template:
+	#@export var bgm_name: String = ""
+	##@export var voice_name: String = ""
+	#@export var soundeffect_name: String = ""
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Play_Audio_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+#class Choice_Template:
+	#@export var choices: Array[KND_DialogueChoice] = []
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Choice_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+	#
+#class Jump_Template:
+	#@export var jump_shot_path: String = ""
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Jump_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+		#
+#class Unlock_Achievements_Template:
+	#@export var achievement_id: String = ""
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (Unlock_Achievements_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+#
+#class ITEM_OP_Template:
+	#@export var item_id: String = ""
+	#static func get_property_infos():
+		#var infos = {}
+		#for info in (ITEM_OP_Template as Script).get_script_property_list():
+			#infos[info.name] = info
+		#return infos
+##endregion
+#
+#func _get_property_list():
+	#var list = []
+	#if dialog_type == Type.BRANCH:
+		#var tag_template = Tag_Template.get_property_infos()
+		#var tag_dialogue_template = TagDialogue_Template.get_property_infos()
+		#list.append(tag_template["branch_id"])
+		#list.append(tag_dialogue_template["branch_dialogue"])
+	#if dialog_type == Type.ORDINARY_DIALOG:
+		#var oridinary_dialog_template = Ordinary_Dialog_Template.get_property_infos()
+		#list.append(oridinary_dialog_template["character_id"])
+		#list.append(oridinary_dialog_template["dialog_content"])
+		#list.append(oridinary_dialog_template["voice_id"])
+	#if dialog_type == Type.DISPLAY_ACTOR:
+		#var actor_template = Actor_Template.get_property_infos()
+		#list.append(actor_template["character_name"])
+		#list.append(actor_template["character_state"])
+		#list.append(actor_template["actor_position"])
+		#list.append(actor_template["actor_scale"])
+		#list.append(actor_template["actor_mirror"])
+	#if dialog_type == Type.ACTOR_CHANGE_STATE:
+		#var actor_template = Actor_Template.get_property_infos()
+		#list.append(actor_template["change_state_actor"])
+		#list.append(actor_template["change_state"])
+	#if dialog_type == Type.MOVE_ACTOR:
+		#var actor_template = Actor_Template.get_property_infos()
+		#list.append(actor_template["target_move_chara"])
+		#list.append(actor_template["target_move_pos"])
+	#if dialog_type == Type.SWITCH_BACKGROUND:
+		#var switch_background_template = Switch_Background_Template.get_property_infos()
+		#list.append(switch_background_template["background_image_name"])
+		#list.append(switch_background_template["background_toggle_effects"])
+	#if dialog_type == Type.EXIT_ACTOR:
+		#var actor_template = Actor_Template.get_property_infos()
+		#list.append(actor_template["exit_actor"])
+	#if dialog_type == Type.PLAY_BGM:
+		#var play_audio_template = Play_Audio_Template.get_property_infos()
+		#list.append(play_audio_template["bgm_name"])
+	#if dialog_type == Type.STOP_BGM:
+		#pass
+	#if dialog_type == Type.PLAY_SOUND_EFFECT:
+		#var play_audio_template = Play_Audio_Template.get_property_infos()
+		#list.append(play_audio_template["soundeffect_name"])
+	#if dialog_type == Type.SHOW_CHOICE:
+		#var choice_template = Choice_Template.get_property_infos()
+		#list.append(choice_template["choices"])
+	#if dialog_type == Type.JUMP:
+		#var jump_template = Jump_Template.get_property_infos()
+		#list.append(jump_template["jump_shot_path"])
+	#if dialog_type == Type.THE_END:
+		#pass
+	#return list
