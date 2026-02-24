@@ -99,9 +99,10 @@ func _ready() -> void:
 		# 设置音量，关闭自动播放
 		audio_player.volume_db = linear_to_db(audio_volumn)
 		audio_player.autoplay = false
-
 		# 初始化随机间隔
 		current_random_interval = randf_range(min_audio_interval, max_audio_interval)
+		
+		
 		
 ## 隐藏对话框（带透明度过渡动画）
 func hide_dialogue_box() -> void:
@@ -234,6 +235,11 @@ func _process(delta: float) -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.is_pressed():
+		on_dialogue_click.emit()
+		
+func _input(event: InputEvent) -> void:
+	# 可以根据需要绑定其他
+	if event.is_action_pressed("ui_accept"):
 		on_dialogue_click.emit()
 
 func _on_button_pressed() -> void:
