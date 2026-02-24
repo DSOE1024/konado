@@ -337,8 +337,6 @@ func _process(delta) -> void:
 						_konado_choice_interface._choice_container.show()
 				# 如果是播放BGM
 				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_BGM:
-					#var s = _audio_interface.finish_playbgm
-					#s.connect(_auto_process_next.bind(s))
 					var bgm_name = dialog.bgm_name
 					_play_bgm(bgm_name)
 					_dialogue_goto_state(DialogState.PAUSED)
@@ -464,7 +462,7 @@ func _dialogue_goto_state(dialogstate: DialogState) -> void:
 ## 增加对话下标，下一句
 func _nextline() -> void:
 	cur_index += 1
-	print_rich("---------------------------------------------")
+	print("---------------------------------------------")
 	# 打印时间 日期+时间
 	print("当前时间：" + str(Time.get_time_string_from_system()))
 	print("对话下标：" + str(cur_index))
