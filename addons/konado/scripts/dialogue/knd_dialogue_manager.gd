@@ -542,7 +542,6 @@ func _exit_actor(actor_name: String) -> void:
 	_acting_interface.delete_character(actor_name)
 
 ## 播放BGM
-# 播放指定名称的背景音乐
 func _play_bgm(bgm_name: String) -> void:
 	if bgm_name.is_empty() || bgm_name == null:
 		push_error("播放BGM失败：传入的bgm_name为空字符串或null，请检查调用参数")

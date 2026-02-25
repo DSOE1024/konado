@@ -4,7 +4,7 @@ class_name KND_ChoiceInterface
 ## 对话选项UI接口
 
 ## 对话选项按钮容器
-@onready var _choice_container: Container = $ChoicesContainer
+@export var _choice_container: Container
 
 ## 完成创建选项的信号
 signal finish_display_options
@@ -25,6 +25,9 @@ func distroy_options() -> void:
 ## 显示对话选项的方法
 func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueManager, choices_font_size: int = 40) -> void:
 	distroy_options()
+	
+	var tmp_list: Array[Button] = []
+	
 	# 生成新选项
 	for choice in choices:
 		var choiceButton: Button = Button.new()
@@ -42,5 +45,26 @@ func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueMa
 		# 添加到选项容器
 		_choice_container.add_child(choiceButton)
 		print_rich("[color=cyan]生成选项按钮: [/color]"+str(choiceButton))
+		
+		tmp_list.append(choiceButton)
+		
 	# 显示选项容器
 	_choice_container.show()
+	
+	
+	var list_size = tmp_list.size()
+	
+	for index in range(list_size):
+		var c = tmp_list[index]
+		var tc = tmp_list[index - 1]
+		c.set_focus_neighbor(SIDE_TOP, tc.get_path())
+		if index < list_size - 1:
+			var bc = tmp_list[index + 1]
+			c.set_focus_neighbor(SIDE_BOTTOM, bc.get_path())
+		if index == list_size - 1:
+			var bc = tmp_list[0]
+			c.set_focus_neighbor(SIDE_BOTTOM, bc.get_path())
+	
+	# 自动焦点
+	var first_button: Button = self.get_child(0)
+	first_button.grab_focus.call_deferred()
