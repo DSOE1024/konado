@@ -25,11 +25,11 @@ background bg2 cyberglitch
 
 "Kona" "What would you like today?"
 
-background bg1 windmill
+#background bg1 windmill
 
-background bg2 wave
+#background bg2 wave
 
-background bg1 erase
+#background bg1 erase
 
 choice "Coffee" coffee_choice "Tea" tea_choice
 

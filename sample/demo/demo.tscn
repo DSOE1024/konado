@@ -4,20 +4,7 @@
 [ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo.ks" id="2_nv4mq"]
 [ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/new_resource.tres" id="3_c17kf"]
 [ext_resource type="Resource" uid="uid://bf0o7uo4h3ta1" path="res://sample/demo/bg_list.tres" id="4_qcbmp"]
-[ext_resource type="Script" uid="uid://bdcmjrcgc4uvn" path="res://addons/konado/scripts/audio/bgm/knd_bgm.gd" id="5_gocaf"]
-[ext_resource type="AudioStream" uid="uid://krixni3dsit" path="res://sample/demo/bgm/EchoesOfHome.mp3" id="6_3bwhi"]
-[ext_resource type="Script" uid="uid://cx11453q1ekqa" path="res://addons/konado/scripts/audio/bgm/knd_bgm_list.gd" id="6_qi1ig"]
-
-[sub_resource type="Resource" id="Resource_gocaf"]
-script = ExtResource("5_gocaf")
-bgm_name = "echo"
-bgm = ExtResource("6_3bwhi")
-metadata/_custom_type_script = "uid://bdcmjrcgc4uvn"
-
-[sub_resource type="Resource" id="Resource_3bwhi"]
-script = ExtResource("6_qi1ig")
-bgms = Array[ExtResource("5_gocaf")]([SubResource("Resource_gocaf")])
-metadata/_custom_type_script = "uid://cx11453q1ekqa"
+[ext_resource type="Resource" uid="uid://v3bsw26q8dli" path="res://sample/demo/bgm_list.tres" id="5_qcbmp"]
 
 [node name="Demo" type="Control" unique_id=1757308143]
 layout_mode = 3
@@ -32,4 +19,4 @@ layout_mode = 1
 start_dialogue_shot = ExtResource("2_nv4mq")
 chara_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")
-bgm_list = SubResource("Resource_3bwhi")
+bgm_list = ExtResource("5_qcbmp")

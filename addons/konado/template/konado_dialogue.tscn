@@ -44,7 +44,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_buo3n")
-_konado_choice_interface = NodePath("KonadoUI/DialogueInterface")
+_konado_choice_interface = NodePath("KonadoUI/DialogueInterface/ChoicesContainer")
 _konado_dialogue_box = NodePath("KonadoUI/DialogueInterface/KonadoDialogueBox")
 _acting_interface = NodePath("KonadoUI/ActingInterface")
 _audio_interface = NodePath("KonadoAudioInterface")
@@ -91,14 +91,13 @@ color = Color(0, 0, 0, 0)
 anchors_preset = 0
 offset_right = 1920.0
 offset_bottom = 1080.0
-script = ExtResource("3_gl7il")
 
 [node name="KonadoDialogueBox" parent="KonadoUI/DialogueInterface" unique_id=1215106161 instance=ExtResource("6_r5ho2")]
 layout_mode = 1
 offset_top = 600.0
 offset_bottom = -40.0
 
-[node name="ChoicesContainer" type="VBoxContainer" parent="KonadoUI/DialogueInterface" unique_id=256738057]
+[node name="ChoicesContainer" type="VBoxContainer" parent="KonadoUI/DialogueInterface" unique_id=256738057 node_paths=PackedStringArray("_choice_container")]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 1
 anchors_preset = 13
@@ -112,6 +111,8 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 60
 alignment = 1
+script = ExtResource("3_gl7il")
+_choice_container = NodePath(".")
 
 [node name="ActionButtons" type="Panel" parent="KonadoUI/DialogueInterface" unique_id=787754962]
 custom_minimum_size = Vector2(0, 55)
