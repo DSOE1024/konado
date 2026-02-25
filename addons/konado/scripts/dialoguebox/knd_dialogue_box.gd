@@ -239,7 +239,7 @@ func _gui_input(event: InputEvent) -> void:
 		
 func _input(event: InputEvent) -> void:
 	# 可以根据需要绑定其他
-	if event.is_action_pressed("ui_accept"):
+	if event.is_action_pressed("ui_accept") || event.is_action_pressed("ui_select"):
 		on_dialogue_click.emit()
 
 func _on_button_pressed() -> void:

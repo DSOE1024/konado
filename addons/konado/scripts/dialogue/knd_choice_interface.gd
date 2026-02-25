@@ -35,13 +35,17 @@ func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueMa
 		choiceButton.set_text(choice.choice_text)
 		choiceButton.add_theme_font_size_override("font_size", int(choices_font_size))
 		# 选项触发
-		choiceButton.button_up.connect(
+		choiceButton.pressed.connect(
 			func():
 				await get_tree().process_frame
 				print_rich("[color=green]选项被触发: [/color]"+str(choice))
 				manager.on_option_triggered(choice)
 				choiceButton.set_disabled(true)
 				)
+		choiceButton.gui_input.connect(func(event: InputEvent):
+			if event.is_action_pressed("ui_accept") || event.is_action_pressed("ui_select"):
+				choiceButton.pressed.emit()
+			)
 		# 添加到选项容器
 		_choice_container.add_child(choiceButton)
 		print_rich("[color=cyan]生成选项按钮: [/color]"+str(choiceButton))
@@ -50,7 +54,6 @@ func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueMa
 		
 	# 显示选项容器
 	_choice_container.show()
-	
 	
 	var list_size = tmp_list.size()
 	
@@ -66,5 +69,5 @@ func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueMa
 			c.set_focus_neighbor(SIDE_BOTTOM, bc.get_path())
 	
 	# 自动焦点
-	var first_button: Button = self.get_child(0)
-	first_button.grab_focus.call_deferred()
+	if tmp_list.size() > 0:
+		tmp_list[0].grab_focus.call_deferred()
