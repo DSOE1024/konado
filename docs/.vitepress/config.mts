@@ -397,11 +397,7 @@ export default defineConfig({
                 ]
               },
               {
-                text: 'End',
-                collapsed: true,
-                items: [
-                  { text: 'End the Conversation', link: '/en/script/end-the-conversation' }
-                ]
+                text: 'End the Conversation', link: '/en/script/end-the-conversation'
               }
             ]
           },

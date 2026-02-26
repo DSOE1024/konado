@@ -1,5 +1,8 @@
 # Konado .NET API
 
+> 该功能仍属于实验性功能，可能存在一些问题。
+
+
 ## 简介
 
 Konado.NET 是 Konado 对话系统的 C# API 扩展，通过 Konado.NET，开发者可以在 C# 项目中轻松地创建、管理和执行对话内容。
