@@ -50,6 +50,14 @@ Konado 是一个对话创建工具包，提供模板和对话管理器，帮助�
 <img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
 </a>
 
+## 赞助支持
+
+欢迎通过此链接支持我们的工作：[爱发电赞助](https://afdian.com/item/52230b2860a011f083ef52540025c377)，
+您的赞助将帮助我们持续完善 Konado 项目。
+
+<div align="center">
+  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+</div>
 
 ## 参与开发
 

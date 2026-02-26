@@ -47,6 +47,15 @@ Rejoignez notre communauté pour vous connecter avec d'autres utilisateurs de Ko
 <img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
 </a>
 
+## Soutien des Sponsors
+
+N'hésitez pas à soutenir notre travail via ce [lien](https://afdian.com/item/52230b2860a011f083ef52540025c377),
+Votre soutien nous aidera à continuer d'améliorer le projet Konado.
+
+<div align="center">
+  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+</div>
+
 ## Contribuer
 
 Intéressé à contribuer à Konado ? Consultez notre [CONTRIBUTING.md](./CONTRIBUTING.md) pour obtenir des directives détaillées sur la manière de vous impliquer.

@@ -50,6 +50,15 @@ Konado는 Godot Engine용 대화 생성 도구킷으로, 템플릿과 대화 관
 <img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
 </a>
 
+## 스폰서 지원
+
+이 링크를 통해 우리의 작업을 지원해 주시기를 환영합니다：[愛發電 스폰서](https://afdian.com/item/52230b2860a011f083ef52540025c377)、
+귀하의 스폰서는 우리가 Konado 프로젝트를 지속적으로 개선하는 데 도움이 됩니다。
+
+<div align="center">
+  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+</div>
+
 
 ## 기여
 

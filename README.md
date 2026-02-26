@@ -47,6 +47,16 @@ Join our community to connect with other Konado users, share ideas, and get supp
 <img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
 </a>
 
+## Sponsors
+
+If you appreciate our work, please consider supporting us via this [link](https://afdian.com/item/52230b2860a011f083ef52540025c377). Your sponsorship helps us keep improving Konado and providing better support to the community.
+
+
+<div align="center">
+  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+</div>
+
+
 ## Contributing
 
 Interested in contributing to Konado? Check out our [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to get involved.
