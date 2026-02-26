@@ -1,5 +1,3 @@
-shot_id HelloWorld
-
 play bgm echo
 
 background bg1 none
@@ -7,6 +5,8 @@ background bg1 none
 actor show 可娜 正常 at 2 5 scale 0.3
 
 "Kona" "Hello! Welcome to our cafe."
+
+jump res://sample/demo/demo_02.ks
 
 actor move 可娜 4 5
 

@@ -29,28 +29,13 @@ func _get_preset_name(preset_index) -> String:
 	return "Default"
 
 func _get_import_options(path, preset_index) -> Array[Dictionary]:
-	return [
-		{
-			"name": "allow_skip_error_line",
-			"default_value": false
-		},
-		{
-			"name": "enable_actor_validation",
-			"default_value": true
-		}
-		]
+	return []
 
 func _get_option_visibility(path, option_name, options) -> bool:
 	return true
 
 func _import(source_file, save_path, options, platform_variants, gen_files) -> Error:
-	var interpreter = KonadoScriptsInterpreter.new({
-		"allow_custom_suffix": true,
-		"allow_skip_error_line": options["allow_skip_error_line"],
-		"enable_actor_validation": options["enable_actor_validation"]
-	})
-
-	
+	var interpreter = KonadoScriptsInterpreter.new()
 	var diadata: KND_Shot = interpreter.process_scripts_to_data(source_file)
 	if diadata == null:
 		printerr("Failed to process scripts")

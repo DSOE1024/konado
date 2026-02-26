@@ -3,9 +3,6 @@ class_name KonadoScriptsInterpreter
 
 ## Konado脚本解释器
 
-## 是否初始化完成
-var is_init: bool = false
-
 ## 源文件脚本路径
 var tmp_path = ""
 ## 源文件脚本行，显示在编辑器中
@@ -29,18 +26,7 @@ var dep_characters: Array[String] = []
 var cur_tmp_option_lines = {}
 var tmp_tags = []
 
-# ====================== 编译选项 ====================== #
 
-## 是否允许自定义后缀脚本，开启后将不强制要求使用ks作为脚本文件后缀
-var allow_custom_suffix: bool = false
-
-## 是否允许跳过错误语法行，开启后将跳过错误语法行，继续解析后续语法，只打印警告信息
-var allow_skip_error_line: bool = false
-
-## 是否开启演员验证，开启后将针对所有演员语法进行验证，判断是否存在
-var enable_actor_validation: bool = true
-
-# ====================== choice缩进解析临时变量 ====================== #
 ## 是否处于choice缩进选项解析中（支持缩进式choice）
 var tmp_in_choice_indent: bool = false
 ## 当前正在解析的choice对话框对象（支持缩进式choice）
@@ -48,57 +34,18 @@ var tmp_current_choice_dialog: KND_Dialogue = null
 ## 缩进式choice的起始行号（支持缩进式choice）
 var tmp_choice_start_line: int = 0
 
-# ====================================================== #
-
-
-func _init(flags: Dictionary[String, Variant]) -> void:
-	is_init = false
-	if flags.has("allow_custom_suffix"):
-		if flags["allow_custom_suffix"] is not bool:
-			_scripts_debug(tmp_path, tmp_original_line_number, "allow_custom_suffix选项类型错误，应为bool类型")
-			return
-		allow_custom_suffix = flags["allow_custom_suffix"] as bool
-	if flags.has("allow_skip_error_line"):
-		if flags["allow_skip_error_line"] is not bool:
-			_scripts_debug(tmp_path, tmp_original_line_number, "allow_skip_error_line选项类型错误，应为bool类型")
-			return
-		allow_skip_error_line = flags["allow_skip_error_line"] as bool
-	if flags.has("enable_actor_validation"):
-		if flags["enable_actor_validation"] is not bool:
-			_scripts_debug(tmp_path, tmp_original_line_number, "enable_actor_validation选项类型错误，应为bool类型")
-			return
-		enable_actor_validation = flags["enable_actor_validation"] as bool
-		
+func _init() -> void:
 	# 提前初始化正则表达式，避免重复编译
 	dialogue_content_regex = RegEx.new()
 	dialogue_content_regex.compile("^\"(.*?)\"\\s+\"(.*?)\"(?:\\s+(\\S+))?$")
-
 	shot_id_metedata_regex = RegEx.new()
 	shot_id_metedata_regex.compile("^(shot_id)\\s+(\\S+)")
 	
-	is_init = true
-	print("解释器初始化完成" + " " + "flags: " + str(flags))
-	
 ## 全文解析模式
 func process_scripts_to_data(path: String) -> KND_Shot:
-	if not is_init:
-		_scripts_debug(path, 0, "解释器未初始化，无法解析脚本文件")
-		return null  # 统一返回null，符合返回值类型
-	if not path:
-		_scripts_debug(path, 0, "路径为空，无法打开脚本文件")
-		return null
-
 	if not FileAccess.file_exists(path):
 		_scripts_debug(path, 0, "文件不存在，无法打开脚本文件")
 		return null
-
-	if not path.ends_with(".ks"):
-		if allow_custom_suffix:
-			_scripts_warning(path, 0, "建议使用使用ks作为脚本文件后缀")
-		else:
-			_scripts_debug(path, 0, "编译器要求使用ks作为脚本文件后缀，如果需要使用自定义后缀，请开启allow_custom_suffix选项")
-			return null
-
 	tmp_path = path
 
 	# 读取文件内容
@@ -108,22 +55,10 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 		return null
 	var raw_script_lines = file.get_as_text().split("\n")
 	file.close()
-
 	
 	_scripts_info(path, 0, "开始解析脚本文件")
-
 	var shot: KND_Shot = KND_Shot.new()
 	
-
-	# 解析元数据
-	var metadata_result = _parse_metadata(raw_script_lines, path)
-	shot_id_metedata_regex = null
-	if metadata_result:
-		shot.shot_id = metadata_result[0]
-		_scripts_info(path, 1, "shot id：%s" % [shot.shot_id])
-		
-	_scripts_warning(path, 0, "无元数据信息")
-
 	# 清空演员验证表
 	cur_tmp_actors = []
 
@@ -172,15 +107,9 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 			else:
 				# 有缩进 → 解析为choice选项行
 				if not _parse_choice_indent_line(line, original_line_number, path):
-					if allow_skip_error_line:
-						_scripts_warning(path, original_line_number, "choice缩进选项行解析失败，跳过该行: %s" % line)
-						continue
-					else:
 						_scripts_debug(path, original_line_number, "choice缩进选项行解析失败，终止解析: %s" % line)
 						_reset_choice_indent_state()
 						return null
-				# 解析成功则跳过后续普通行解析
-				continue
 				
 		# 解析普通行（非choice缩进状态）
 		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, shot)
@@ -194,13 +123,9 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 				if not (dialog.dialog_type == KND_Dialogue.Type.SHOW_CHOICE and tmp_in_choice_indent):
 					shot.dialogues.append(dialog)
 		else:
-			if allow_skip_error_line:
-				_scripts_warning(path, original_line_number, "解析失败：无法识别的语法，请检查语法是否正确或删除该行: %s" % line)
-				continue
-			else:
-				_scripts_debug(path, original_line_number, "解析失败：无法识别的语法，终止解析: %s" % line)
-				_reset_choice_indent_state()
-				return null
+			_scripts_debug(path, original_line_number, "解析失败：无法识别的语法，终止解析: %s" % line)
+			_reset_choice_indent_state()
+			return null
 			
 	# 解析结束后检查是否有未完成的choice缩进（文件末尾是缩进行的情况）
 	if tmp_in_choice_indent and tmp_current_choice_dialog:
@@ -231,7 +156,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 func parse_single_line(line: String, line_number: int, path: String) -> KND_Dialogue:
 	return parse_line(line.strip_edges(), line_number, path, null)
 
-# 内部解析实现 - 新增diadata参数，给_parse_end用
+# 内部解析实现
 func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot) -> KND_Dialogue:
 	var dialog := KND_Dialogue.new()
 	dialog.source_file_line = line_number
@@ -262,23 +187,6 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 
 	dialog = null
 	return null
-
-# 解析元数据
-func _parse_metadata(raw_script_lines: PackedStringArray, path: String) -> PackedStringArray:
-	var metadata: PackedStringArray = []
-	if raw_script_lines.size() >= 1:
-		if raw_script_lines[0]:
-			var result = shot_id_metedata_regex.search(raw_script_lines[0])
-			if not result:
-				_scripts_debug(path, 1, "无效的元数据格式: %s" % raw_script_lines[0])
-				return []
-			
-			var key = result.get_string(1)
-			var value = result.get_string(2)
-			match key:
-				"shot_id":
-					metadata.append(value)
-	return metadata
 	
 	
 # 背景切换解析
@@ -332,39 +240,34 @@ func _parse_actor(line: String, dialog: KND_Dialogue) -> bool:
 			if not dep_characters.has(dialog.character_name):
 				dep_characters.append(dialog.character_name)
 			# 添加检查功能
-			if enable_actor_validation:
-				if not cur_tmp_actors.has(dialog.character_name):
-					cur_tmp_actors.append(dialog.character_name)
-				else:
-					_scripts_debug(tmp_path, tmp_original_line_number, "角色已存在，请检查角色名称是否重复创建")
-					return false
+
+			if not cur_tmp_actors.has(dialog.character_name):
+				cur_tmp_actors.append(dialog.character_name)
+			else:
+				_scripts_debug(tmp_path, tmp_original_line_number, "角色已存在，请检查角色名称是否重复创建")
+				return false
 		"exit":
 			dialog.dialog_type = KND_Dialogue.Type.EXIT_ACTOR
 			dialog.exit_actor = parts[2]
 			# 添加检查功能
-			if enable_actor_validation:
-				if cur_tmp_actors.has(parts[2]):
-					cur_tmp_actors.erase(parts[2])
-				else:
-					_scripts_debug(tmp_path, tmp_original_line_number, "无法移除不存在的角色，请检查角色名称是否正确")
+			if cur_tmp_actors.has(parts[2]):
+				cur_tmp_actors.erase(parts[2])
+			else:
+				_scripts_debug(tmp_path, tmp_original_line_number, "无法移除不存在的角色，请检查角色名称是否正确")
 		"change":
 			dialog.dialog_type = KND_Dialogue.Type.ACTOR_CHANGE_STATE
 			dialog.change_state_actor = parts[2]
-
-			# 添加检查功能
-			if enable_actor_validation:
-				if not cur_tmp_actors.has(parts[2]):
-					_scripts_debug(tmp_path, tmp_original_line_number, "无法改变不存在的角色的状态，请检查角色名称是否正确")
+			
+			if not cur_tmp_actors.has(parts[2]):
+				_scripts_debug(tmp_path, tmp_original_line_number, "无法改变不存在的角色的状态，请检查角色名称是否正确")
 				
 			dialog.change_state = parts[3]
 		"move":
 			dialog.dialog_type = KND_Dialogue.Type.MOVE_ACTOR
 			dialog.target_move_chara = parts[2]
-
-			# 添加检查功能
-			if enable_actor_validation:
-				if not cur_tmp_actors.has(parts[2]):
-					_scripts_debug(tmp_path, tmp_original_line_number, "无法移动不存在的角色的位置，请检查角色名称是否正确")
+			
+			if not cur_tmp_actors.has(parts[2]):
+				_scripts_debug(tmp_path, tmp_original_line_number, "无法移动不存在的角色的位置，请检查角色名称是否正确")
 
 			dialog.target_move_pos = Vector2(parts[3].to_float(), parts[4].to_float())
 	
@@ -599,7 +502,7 @@ func _parse_end(line: String, dialog: KND_Dialogue, diadata: KND_Shot) -> bool:
 		return true
 	return false
 
-# 统一重置Choice缩进状态（核心，避免状态残留）
+# 统一重置Choice缩进状态
 func _reset_choice_indent_state() -> void:
 	tmp_in_choice_indent = false
 	tmp_current_choice_dialog = null
