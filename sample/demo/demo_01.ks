@@ -6,7 +6,7 @@ actor show 可娜 正常 at 2 5 scale 0.3
 
 "Kona" "Hello! Welcome to our cafe."
 
-jump res://sample/demo/demo_02.ks
+#jump res://sample/demo/demo_02.ks
 
 actor move 可娜 4 5
 
@@ -25,7 +25,7 @@ background bg2 cyberglitch
 
 "Kona" "What would you like today?"
 
-#background bg1 windmill
+background bg1 windmill
 
 #background bg2 wave
 

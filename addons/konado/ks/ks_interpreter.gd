@@ -34,6 +34,17 @@ var tmp_current_choice_dialog: KND_Dialogue = null
 ## 缩进式choice的起始行号（支持缩进式choice）
 var tmp_choice_start_line: int = 0
 
+const BACKGROUND_EFFECTS_MAP: Dictionary = {
+	"none": KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT,
+	"erase": KND_ActingInterface.BackgroundTransitionEffectsType.EraseEffect,
+	"blinds": KND_ActingInterface.BackgroundTransitionEffectsType.BlindsEffect,
+	"wave": KND_ActingInterface.BackgroundTransitionEffectsType.WaveEffect,
+	"fade": KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT,
+	"vortex": KND_ActingInterface.BackgroundTransitionEffectsType.VORTEX_SWAP_EFFECT,
+	"windmill": KND_ActingInterface.BackgroundTransitionEffectsType.WINDMILL_EFFECT,
+	"cyberglitch": KND_ActingInterface.BackgroundTransitionEffectsType.CYBER_GLITCH_EFFECT
+}
+
 func _init() -> void:
 	# 提前初始化正则表达式，避免重复编译
 	dialogue_content_regex = RegEx.new()
@@ -145,7 +156,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 
 	tmp_path = ""
 
-	# 标签验证失败 → 真正终止解析，返回null
+	# 标签验证失败
 	if not _check_tag_and_choice():
 		_scripts_debug(path, 0, "标签和选项解析失败，终止所有解析")
 		return null
@@ -203,16 +214,7 @@ func _parse_background(line: String, dialog: KND_Dialogue) -> bool:
 	
 	if parts.size() >= 3:
 		var effect = parts[2]
-		dialog.background_toggle_effects = {
-			"none": KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT,
-			"erase": KND_ActingInterface.BackgroundTransitionEffectsType.EraseEffect,
-			"blinds": KND_ActingInterface.BackgroundTransitionEffectsType.BlindsEffect,
-			"wave": KND_ActingInterface.BackgroundTransitionEffectsType.WaveEffect,
-			"fade": KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT,
-			"vortex": KND_ActingInterface.BackgroundTransitionEffectsType.VORTEX_SWAP_EFFECT,
-			"windmill": KND_ActingInterface.BackgroundTransitionEffectsType.WINDMILL_EFFECT,
-			"cyberglitch": KND_ActingInterface.BackgroundTransitionEffectsType.CYBER_GLITCH_EFFECT
-		}.get(effect, KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT)
+		dialog.background_toggle_effects = BACKGROUND_EFFECTS_MAP.get(effect, KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT)
 
 	return true
 
