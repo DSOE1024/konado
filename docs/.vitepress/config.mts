@@ -148,11 +148,7 @@ export default defineConfig({
                 ]
               },
               {
-                text: '结束',
-                collapsed: true,
-                items: [
-                  { text: '结束对话', link: '/script/' }
-                ]
+                text: '结束对话', link: '/script/end-the-conversation.md' 
               }
             ]
           },
@@ -289,11 +285,7 @@ export default defineConfig({
                 ]
               },
               {
-                text: '結束',
-                collapsed: true,
-                items: [
-                  { text: '結束對話', link: '/tc/script/' }
-                ]
+                text: '结束对话', link: '/script/end-the-conversation.md'
               }
             ]
           },
