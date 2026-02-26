@@ -180,7 +180,6 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 ## 设置对话数据的方法
 func set_shot(new_shot: KND_Shot) -> void:
 	self.start_dialogue_shot = new_shot
-	start_dialogue_shot.get_dialogues()
 	
 ## 设置角色表的方法
 func set_chara_list(chara_list: KND_CharacterList) -> void:
@@ -238,7 +237,6 @@ func _process(delta) -> void:
 					print_rich("[color=red]对话为空[/color]")
 					_dialogue_goto_state(DialogState.OFF)
 					return
-
 				# 对话类型
 				cur_dialogue_type = start_dialogue_shot.dialogues[cur_index].dialog_type
 				# 对话当前句
@@ -351,10 +349,6 @@ func _process(delta) -> void:
 					s.connect(_auto_process_next.bind(s))
 					var se_name = dialog.soundeffect_name
 					_play_soundeffect(se_name)
-				# 如果是镜头跳转
-				elif cur_dialogue_type == KND_Dialogue.Type.JUMP:
-					var data_name = dialog.jump_shot_id
-					_jump_shot(data_name)
 				# 如果是分支对话
 				elif cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话[/color]")
@@ -374,6 +368,17 @@ func _process(delta) -> void:
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
 					pass
+				# 如果是镜头跳转
+				elif cur_dialogue_type == KND_Dialogue.Type.JUMP:
+					var load_path = dialog.jump_shot_path
+					if load_path:
+						var res = load(load_path) as KND_Shot
+						print(res.dialogues)
+						_dialogue_goto_state(DialogState.OFF)
+						cur_index = 0
+						set_shot(res)
+						_dialogue_goto_state(DialogState.PLAYING)
+						
 				# 如果剧终
 				elif cur_dialogue_type == KND_Dialogue.Type.THE_END:
 					# 停止对话
@@ -608,17 +613,14 @@ func _play_soundeffect(se_name: String) -> void:
 			break
 	_audio_interface.play_sound_effect(target_soundeffect)
 	pass
-
-
+	
 ## 选项触发方法
 func on_option_triggered(choice: KND_DialogueChoice) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
 	_konado_choice_interface._choice_container.hide()
-	
-	print("玩家选择按钮： " + str(choice.choice_text))
 	_jump_tag(choice.jump_tag)
+	print("玩家选择按钮： " + str(choice.choice_text))
 	
-
 	
 ## 跳转到对话标签的方法
 func _jump_tag(tag: String) -> void:
@@ -634,36 +636,3 @@ func _jump_tag(tag: String) -> void:
 	start_dialogue_shot.dialogues.insert(cur_index + 1, target_dialogue)
 	print("插入标签，对话长度" + str(start_dialogue_shot.dialogues.size()))
 	_process_next()
-
-## 跳转剧情的方法
-func _jump_shot(data_id: String) -> bool:
-	var jumpdata: KND_Shot
-	#jumpdata = _get_dialog_data(data_id)
-	if jumpdata == null:
-		print("无法完成跳转，没有这个镜头")
-		return false
-	# 切换剧情
-	_switch_data(jumpdata)
-	print_rich("跳转到：" + str(jumpdata.shot_id) + " 镜头")
-	return true
-
-## 切换剧情的方法
-func _switch_data(data: KND_Shot) -> bool:
-	if not data and data.dialogs.size() > 0:
-		return false
-	stop_dialogue()
-	print("切换到 " + data.shot_id + " 剧情文件")
-	start_dialogue_shot = data
-	init_dialogue()
-	await get_tree().process_frame
-	start_dialogue()
-	return true
-	
-## 跳转到对话
-func _jump_cur_dialogue(dialog: KND_Dialogue) -> bool:
-	if dialog != null:
-		_dialogue_goto_state(DialogState.OFF)
-		# 还没有实现
-		_dialogue_goto_state(DialogState.PLAYING)
-		return true
-	return false

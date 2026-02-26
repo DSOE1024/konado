@@ -38,9 +38,9 @@ func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueMa
 		choiceButton.pressed.connect(
 			func():
 				await get_tree().process_frame
-				print_rich("[color=green]选项被触发: [/color]"+str(choice))
 				manager.on_option_triggered(choice)
 				choiceButton.set_disabled(true)
+				print_rich("[color=green]选项被触发: [/color]"+str(choice))
 				)
 		choiceButton.gui_input.connect(func(event: InputEvent):
 			if event.is_action_pressed("ui_accept") || event.is_action_pressed("ui_select"):
