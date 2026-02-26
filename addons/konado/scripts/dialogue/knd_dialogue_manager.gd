@@ -241,12 +241,9 @@ func _process(delta) -> void:
 				cur_dialogue_type = start_dialogue_shot.dialogues[cur_index].dialog_type
 				# 对话当前句
 				var dialog = start_dialogue_shot.dialogues[cur_index]
-
 				dialogue_line_start.emit(cur_index)
-
 				# 隐藏选项
 				_konado_choice_interface._choice_container.hide()
-
 				# 判断对话类型
 				# 如果是普通对话
 				if cur_dialogue_type == KND_Dialogue.Type.ORDINARY_DIALOG:
@@ -266,6 +263,11 @@ func _process(delta) -> void:
 						playvoice = true
 					else:
 						playvoice = false
+					
+					# 如果有配音播放配音
+					if voice_id:
+						_play_voice(voice_id)
+					
 					if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
 						_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
 					
@@ -278,9 +280,6 @@ func _process(delta) -> void:
 					_konado_dialogue_box.typing_interval = _typing_interval
 					_konado_dialogue_box.dialogue_text = content
 					_konado_dialogue_box.character_name = chara_id
-					# 如果有配音播放配音
-					if voice_id:
-						_play_voice(voice_id)
 				# 如果是切换背景
 				elif cur_dialogue_type == KND_Dialogue.Type.SWITCH_BACKGROUND:
 					# 显示背景
@@ -290,7 +289,6 @@ func _process(delta) -> void:
 					s.connect(_auto_process_next.bind(s))
 					_acting_interface.show()
 					_display_background(bg_name, bg_effect)
-					pass
 				# 如果是显示演员
 				elif cur_dialogue_type == KND_Dialogue.Type.DISPLAY_ACTOR:
 					# 显示演员
@@ -367,7 +365,6 @@ func _process(delta) -> void:
 					
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-					pass
 				# 如果是镜头跳转
 				elif cur_dialogue_type == KND_Dialogue.Type.JUMP:
 					var load_path = dialog.jump_shot_path
@@ -378,12 +375,10 @@ func _process(delta) -> void:
 						cur_index = 0
 						set_shot(res)
 						_dialogue_goto_state(DialogState.PLAYING)
-						
 				# 如果剧终
 				elif cur_dialogue_type == KND_Dialogue.Type.THE_END:
 					# 停止对话
 					stop_dialogue()
-					pass
 					
 		# 完成下一个状态
 		DialogState.PAUSED:
@@ -395,8 +390,6 @@ func _process(delta) -> void:
 ## 打字完成
 func isfinishtyping(wait_voice: bool) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
-
-	print("触发打字完成信号")
 	# 如果自动播放还要检查配音是否播放完毕
 	if autoplay:
 		# 如果有配音等待配音播放完成
@@ -406,6 +399,7 @@ func isfinishtyping(wait_voice: bool) -> void:
 		else:
 			await get_tree().create_timer(autoplayspeed).timeout
 		_process_next()
+	print("触发打字完成信号")
 	
 ## 处理下一个，绑定到下一个按钮
 func _process_next() -> void:
@@ -441,9 +435,6 @@ func _auto_process_next(s: Signal) -> void:
 	if not s.is_null() and s.is_connected(_auto_process_next):
 		s.disconnect(_auto_process_next)
 		print("触发自动下一个信号")
-		
-	# 暂时先用等待的方法，没找到更好的解决方法
-	await get_tree().process_frame
 	_process_next()
 	
 ## 关闭对话的方法
@@ -452,7 +443,6 @@ func stop_dialogue() -> void:
 	# 切换到关闭状态
 	_dialogue_goto_state(DialogState.OFF)
 	_konado_dialogue_box.hide_dialogue_box()
-
 	shot_end.emit()
 	
 ## 对话状态切换的方法
@@ -461,7 +451,6 @@ func _dialogue_goto_state(dialogstate: DialogState) -> void:
 	justenter = true
 	# 切换状态到
 	dialogueState = dialogstate
-	# justenter=true
 	print_rich("[color=yellow]切换状态到: [/color]" + str(dialogueState))
 
 ## 增加对话下标，下一句

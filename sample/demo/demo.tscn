@@ -5,6 +5,27 @@
 [ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/new_resource.tres" id="3_c17kf"]
 [ext_resource type="Resource" uid="uid://bf0o7uo4h3ta1" path="res://sample/demo/bg_list.tres" id="4_qcbmp"]
 [ext_resource type="Resource" uid="uid://v3bsw26q8dli" path="res://sample/demo/bgm_list.tres" id="5_qcbmp"]
+[ext_resource type="Script" uid="uid://uur73dv6qen8" path="res://addons/konado/scripts/audio/voice/knd_voice_list.gd" id="6_3bwhi"]
+[ext_resource type="Script" uid="uid://i3l661i8g2yy" path="res://addons/konado/scripts/audio/voice/knd_voice.gd" id="7_grqbd"]
+[ext_resource type="AudioStream" uid="uid://d1jj6rcfdvg8h" path="res://sample/demo/voice/你好欢迎来到我们的咖啡馆.wav" id="8_sgljs"]
+[ext_resource type="AudioStream" uid="uid://dvs2tjb1jrhr4" path="res://sample/demo/voice/今天想喝点什么.wav" id="9_grqbd"]
+
+[sub_resource type="Resource" id="Resource_dv03n"]
+script = ExtResource("7_grqbd")
+voice_name = "01"
+voice = ExtResource("8_sgljs")
+metadata/_custom_type_script = "uid://i3l661i8g2yy"
+
+[sub_resource type="Resource" id="Resource_sgljs"]
+script = ExtResource("7_grqbd")
+voice_name = "02"
+voice = ExtResource("9_grqbd")
+metadata/_custom_type_script = "uid://i3l661i8g2yy"
+
+[sub_resource type="Resource" id="Resource_nuu33"]
+script = ExtResource("6_3bwhi")
+voices = Array[ExtResource("7_grqbd")]([SubResource("Resource_dv03n"), SubResource("Resource_sgljs")])
+metadata/_custom_type_script = "uid://uur73dv6qen8"
 
 [node name="Demo" type="Control" unique_id=1757308143]
 layout_mode = 3
@@ -20,3 +41,4 @@ start_dialogue_shot = ExtResource("2_nv4mq")
 chara_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")
 bgm_list = ExtResource("5_qcbmp")
+voice_list = SubResource("Resource_nuu33")

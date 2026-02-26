@@ -96,6 +96,7 @@ offset_bottom = 1080.0
 layout_mode = 1
 offset_top = 600.0
 offset_bottom = -40.0
+typing_interval = 0.5
 
 [node name="ChoicesContainer" type="VBoxContainer" parent="KonadoUI/DialogueInterface" unique_id=256738057 node_paths=PackedStringArray("_choice_container")]
 custom_minimum_size = Vector2(400, 300)
