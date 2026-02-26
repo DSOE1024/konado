@@ -47,6 +47,15 @@ Para guías completas, referencias de API y tutoriales avanzados, visita nuestro
 <img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
 </a>
 
+## Apoyo de Patrocinadores
+
+¡Bienvenido a apoyar nuestro trabajo a través de este [enlace](https://afdian.com/item/52230b2860a011f083ef52540025c377),
+Tu patrocinio nos ayudará a seguir mejorando el proyecto Konado.
+
+<div align="center">
+  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+</div>
+
 ## Contribuir
 
 ¿Interesado en contribuir a Konado? Consulta nuestro [CONTRIBUTING.md](./CONTRIBUTING.md) para obtener guías detalladas sobre cómo participar.
