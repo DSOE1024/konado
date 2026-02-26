@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c2anqfrl1qe27" path="res://addons/konado/editor/ks_editor/ks_editor.gd" id="1_qu5wb"]
 [ext_resource type="Script" uid="uid://d1vqgmq6wa33e" path="res://addons/konado/editor/ks_editor/ks_editor_window.gd" id="1_rnpir"]
 [ext_resource type="Script" uid="uid://byqad5mu76fj5" path="res://addons/konado/editor/ks_editor/konado_code_edit.gd" id="3_43nnm"]
+[ext_resource type="Script" uid="uid://b7qcydfl4hoxc" path="res://addons/konado/editor/ks_editor/ks_syntax_highlighter.gd" id="3_yf0y7"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rnpir"]
 
@@ -12,6 +13,9 @@
 bg_color = Color(0.0846, 0.0873, 0.09, 1)
 corner_radius_top_right = 15
 corner_radius_bottom_right = 15
+
+[sub_resource type="SyntaxHighlighter" id="SyntaxHighlighter_yf0y7"]
+script = ExtResource("3_yf0y7")
 
 [node name="KonadoEditorWindow" type="Panel" unique_id=1539945055]
 anchors_preset = 15
@@ -151,6 +155,7 @@ deselect_on_focus_loss_enabled = false
 wrap_mode = 1
 scroll_smooth = true
 caret_blink = true
+syntax_highlighter = SubResource("SyntaxHighlighter_yf0y7")
 highlight_all_occurrences = true
 highlight_current_line = true
 gutters_draw_line_numbers = true

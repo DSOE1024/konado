@@ -6,14 +6,10 @@
 
 但是请注意，修改模板对话界面后请不要更新Konado插件，否则你的修改会被覆盖。
 
-## 编辑场景文件
+## 编辑模板文件
 
-`res://addons/konado/scenes/konado_dialogue.tscn` 是对话界面场景，你可以通过修改这个文件来自定义对话界面。
+`res://addons/konado/template/` 是对话界面场景，你可以通过修改这个文件来自定义对话界面。
 
 一般情况下请不要修改节点上的脚本，而是通过修改节点上的属性来达到自定义的效果。
-
-## 编辑存档框
-
-`res://addons/konado/template/ui_template/save_commponect/save_componect.tscn` 是存档框场景，你可以通过修改这个文件来自定义存档框。
 
 

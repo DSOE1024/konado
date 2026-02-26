@@ -2,7 +2,7 @@ play bgm echo
 
 background bg1 none
 
-a1ctor show 可娜 正常 at 2 5 scale 0.3
+actor show 可娜 正常 at 2 5 scale 0.3
 
 "Kona" "你好！欢迎来到我们的咖啡馆。" 01
 

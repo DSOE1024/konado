@@ -29,7 +29,11 @@ func _ready():
 	
 	# 连接信号
 	#code_completion_requested.connect(_on_code_completion_requested)
-
+	
+	# 添加高亮
+	set_syntax_highlighter(KND_KsHighlighter.new())
+	
+	
 func _on_text_changed():
 	# print("Text changed")
 	self.request_code_completion()
