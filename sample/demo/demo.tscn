@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bcl2e6o0kb5dm"]
 
 [ext_resource type="PackedScene" uid="uid://bj8ynu8013j4j" path="res://addons/konado/template/konado_dialogue.tscn" id="1_57pxw"]
-[ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo_01.ks" id="2_nv4mq"]
+[ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo_01.ks" id="2_grqbd"]
 [ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/new_resource.tres" id="3_c17kf"]
 [ext_resource type="Resource" uid="uid://bf0o7uo4h3ta1" path="res://sample/demo/bg_list.tres" id="4_qcbmp"]
 [ext_resource type="Resource" uid="uid://v3bsw26q8dli" path="res://sample/demo/bgm_list.tres" id="5_qcbmp"]
@@ -37,7 +37,7 @@ grow_vertical = 2
 
 [node name="KonadoDialogueManager" parent="." unique_id=1487339260 instance=ExtResource("1_57pxw")]
 layout_mode = 1
-start_dialogue_shot = ExtResource("2_nv4mq")
+start_dialogue_shot = ExtResource("2_grqbd")
 chara_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")
 bgm_list = ExtResource("5_qcbmp")
