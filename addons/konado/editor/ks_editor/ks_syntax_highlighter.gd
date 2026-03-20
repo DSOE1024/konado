@@ -4,7 +4,7 @@ class_name KND_KsHighlighter
 
 ## KS语法高亮
 
-var highlight_rules := [
+@export var highlight_rules := [
 	# 根命令（shot_id/background/actor等）
 	{
 		"regex": "\\b(shot_id|background|actor|play|stop|choice|branch|jump|start|end)\\b",
@@ -34,6 +34,11 @@ var highlight_rules := [
 	{
 		"regex": "\\b(x|y|scale)\\b",
 		"color": Color(0.75, 0.75, 0.75)  # 稍暗的灰色
+	},
+	# 流控制语句
+	{
+		"regex": "\\b(if|else|endif)\\b",
+		"color": Color(1.0, 0.725, 0.314, 1.0)
 	},
 	# 注释
 	{

@@ -31,7 +31,7 @@ func _ready():
 	#code_completion_requested.connect(_on_code_completion_requested)
 	
 	# 添加高亮
-	set_syntax_highlighter(KND_KsHighlighter.new())
+	set_syntax_highlighter(load("res://addons/konado/editor/ks_editor/highlighter.tres"))
 	
 	
 func _on_text_changed():
