@@ -20,7 +20,7 @@ signal dialogue_line_start(line: int)
 signal dialogue_line_end(line: int)
 
 ## 自定义信号
-signal dolphin_signal(content: String)
+signal custom_signal(content: String)
 
 @export_category("Playback Settings")
 
@@ -426,9 +426,9 @@ func _process(delta) -> void:
 						set_shot(res)
 						_dialogue_goto_state(DialogState.PLAYING)
 				# 信号触发
-				elif cur_dialogue_type == KND_Dialogue.Type.DOLPHIN_SIGNAL:
-					var content = dialog.dolphin_signal_name
-					dolphin_signal.emit(content)
+				elif cur_dialogue_type == KND_Dialogue.Type.SIGNAL:
+					var content = dialog.custom_signal_name
+					custom_signal.emit(content)
 					await get_tree().process_frame
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()

@@ -19,7 +19,7 @@ enum Type {
 	IFELSE_BRANCH,       # 条件分支
 	BRANCH,              # 分支
 	JUMP,                # 跳转
-	DOLPHIN_SIGNAL,      # 信号
+	SIGNAL,      # 信号
 	THE_END              # 剧终
 }
 
@@ -85,6 +85,6 @@ enum Type {
 # 背景切换特效
 @export var background_toggle_effects: KND_ActingInterface.BackgroundTransitionEffectsType
 # 自定义信号
-@export var dolphin_signal_name: String
+@export var custom_signal_name: String
 # 目标跳转的镜头
 @export var jump_shot_path: String

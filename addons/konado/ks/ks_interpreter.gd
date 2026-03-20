@@ -154,7 +154,7 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 	if _parse_jumpshot(line, dialog):
 		print("解析成功：跳转镜头相关\n")
 		return dialog
-	if _parse_dolphin(line, dialog):
+	if _parse_signal(line, dialog):
 		print("解析成功：自定义信号\n")
 		return dialog
 	if _parse_end(line, dialog, diadata):  # 传入diadata
@@ -172,18 +172,18 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 	return null
 	
 
-## dolphin自定义信号
-func _parse_dolphin(line: String, dialog: KND_Dialogue) -> bool:
-	if not line.begins_with("dolphin"):
+## signal自定义信号
+func _parse_signal(line: String, dialog: KND_Dialogue) -> bool:
+	if not line.begins_with("signal"):
 		return false
 		
 	var content = line.substr(7).strip_edges()
 	if content.is_empty():
-		_scripts_debug(tmp_path, tmp_original_line_number, "dolphin指令内容为空")
+		_scripts_debug(tmp_path, tmp_original_line_number, "信号指令内容为空")
 		return false
 		
-	dialog.dialog_type = KND_Dialogue.Type.DOLPHIN_SIGNAL
-	dialog.dolphin_signal_name = content
+	dialog.dialog_type = KND_Dialogue.Type.SIGNAL
+	dialog.custom_signal_name = content
 	
 	return true
 	
