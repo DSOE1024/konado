@@ -34,6 +34,7 @@ branch start_choice
     # 虽然这句是播放音效的语句，但我这里可以把它用作一个自定义信号
     # 会发射一个参数为"好感度上升"的信号！
     play sfx 好感度上升
+    dolphin 好感度上升
     
     # 回到开始询问玩家是否再来一遍
     jump res://sample/demo/demo_02.ks
