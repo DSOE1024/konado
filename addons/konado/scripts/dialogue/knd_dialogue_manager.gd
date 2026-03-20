@@ -19,6 +19,9 @@ signal dialogue_line_start(line: int)
 ## 对话结束播放的信号
 signal dialogue_line_end(line: int)
 
+## 自定义信号
+signal dolphin_signal(content: String)
+
 @export_category("Playback Settings")
 
 ## 是否在游戏开始时自动初始化对话，如果为true，则在游戏开始时自动初始化对话，否则需要手动初始化对话
@@ -422,6 +425,13 @@ func _process(delta) -> void:
 						cur_index = 0
 						set_shot(res)
 						_dialogue_goto_state(DialogState.PLAYING)
+				# 信号触发
+				elif cur_dialogue_type == KND_Dialogue.Type.DOLPHIN_SIGNAL:
+					var content = dialog.dolphin_signal_name
+					dolphin_signal.emit(content)
+					await get_tree().process_frame
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
 				# 如果剧终
 				elif cur_dialogue_type == KND_Dialogue.Type.THE_END:
 					# 停止对话
@@ -636,13 +646,13 @@ func _play_voice(voice_name: String) -> void:
 	_audio_interface.play_voice(target_voice)
 	pass
 
-signal play_sfx(se_name)
+
 ## 播放音效
 func _play_soundeffect(se_name: String) -> void:
 	if se_name == null:
 		return
 	var target_soundeffect: AudioStream
-	play_sfx.emit(se_name)
+
 	if soundeffect_list == null or soundeffect_list.soundeffects == null:
 		return # 判空
 	for soundeffect in soundeffect_list.soundeffects:

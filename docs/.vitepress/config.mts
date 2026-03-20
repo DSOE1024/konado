@@ -126,6 +126,7 @@ export default defineConfig({
               { text: '普通对话', link: '/script/conversation' },
               { text: '分支', link: '/script/branch' },
               { text: '条件分支', link: '/script/if-else-branch' },
+              { text: '信号', link: '/script/dolphin-signal' },
               { text: '选项', link: '/script/option-to-jump' },
               {
                 text: '背景',
@@ -166,7 +167,7 @@ export default defineConfig({
                   { text: '对话数据', link: '/develop/core/shot-and-dialogue.md' },
                   { text: '背景切换特效', link: '/develop/core/bg-trans-effect.md' },
                   { text: 'Logger', link: '/develop/core/logger.md' },
-                  { text: '语法高亮器', link: '/develop/core/ks-editor-highlighter.md' }
+                  { text: '语法高亮器', link: '/develop/core/ks-editor-highlighter.md' }                  
                 ]
               },
               { text: '版本规划', link: '/develop/roadmap' },

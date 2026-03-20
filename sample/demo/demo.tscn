@@ -28,7 +28,7 @@ script = ExtResource("6_3bwhi")
 voices = Array[ExtResource("7_grqbd")]([SubResource("Resource_dv03n"), SubResource("Resource_sgljs")])
 metadata/_custom_type_script = "uid://uur73dv6qen8"
 
-[node name="Demo" type="Control" unique_id=1757308143]
+[node name="Demo" type="Control" unique_id=1757308143 node_paths=PackedStringArray("dialogue_manager")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -36,6 +36,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_sgljs")
+dialogue_manager = NodePath("KonadoDialogueManager")
 
 [node name="KonadoDialogueManager" parent="." unique_id=1487339260 instance=ExtResource("1_57pxw")]
 layout_mode = 1
@@ -47,5 +48,3 @@ chara_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")
 bgm_list = ExtResource("5_qcbmp")
 voice_list = SubResource("Resource_nuu33")
-
-[connection signal="play_sfx" from="KonadoDialogueManager" to="." method="_on_konado_dialogue_manager_play_sfx"]
