@@ -359,3 +359,9 @@ func reset_editor_state() -> void:
 	is_modified = false
 	
 	call_deferred("update_editor_state")
+	
+func _input(event: InputEvent) -> void:
+	if not Engine.is_editor_hint():
+		return
+	if event is InputEventKey and event.ctrl_pressed and event.keycode == KEY_S and event.pressed:
+		_on_save_button_pressed()
