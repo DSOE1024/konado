@@ -1,5 +1,11 @@
 background 00 fade
 
+if %love == 0:
+    "" "看来你是新手呢"
+else:
+    "" "你应该已经学会了"
+endif
+
 # 逻辑判断 %是获取变量
 # 此处变量在KonadoDialogueManager的Global Variable处设置。
 if %love == 0:
@@ -7,6 +13,7 @@ if %love == 0:
 else:
     "" "要再看一遍吗？"
 endif
+
 
 choice "开始" start_choice "不看了" exit_choice
 
