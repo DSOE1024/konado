@@ -6,9 +6,9 @@ const TYPEWRITER_AUDIO_EFFECT_DIR: String = "res://addons/konado/audioeffect/typ
 const SUPPORTED_FORMATS: Array[String] = ["wav", "ogg", "mp3"]
 
 # 核心变量：下拉控件实例、文件名-资源路径映射、防重复更新标记
-var option_button: OptionButton = OptionButton.new()  # 原生下拉控件
-var name_to_path: Dictionary = {}    # 显示名→实际路径（核心映射）
-var updating: bool = false                           # 防内部/外部值互刷标记
+var option_button: OptionButton = OptionButton.new()
+var name_to_path: Dictionary = {}
+var updating: bool = false
 var audio_effect_dir: String = ""
 
 func _init(type: String) -> void:
@@ -18,7 +18,7 @@ func _init(type: String) -> void:
 		_:
 			audio_effect_dir = ""
 			
-	option_button.size_flags_horizontal = SIZE_EXPAND_FILL  # 占满检查器宽度
+	option_button.size_flags_horizontal = SIZE_EXPAND_FILL
 	option_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	add_child(option_button)
 	add_focusable(option_button)
