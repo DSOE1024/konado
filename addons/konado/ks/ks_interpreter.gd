@@ -70,6 +70,8 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	_scripts_info(path, 0, "开始解析脚本文件")
 	var shot: KND_Shot = KND_Shot.new()
 	
+	shot.ks_path = path
+	
 	# 清空演员验证表
 	cur_tmp_actors = []
 	# 清空角色依赖记录

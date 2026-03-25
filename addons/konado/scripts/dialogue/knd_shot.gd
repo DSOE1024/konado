@@ -1,6 +1,8 @@
 extends KND_Data
 class_name KND_Shot
 
+@export var ks_path: String = "null"
+
 @export var shot_id: String = "新镜头"
 
 ## 对话

@@ -163,11 +163,12 @@ export default defineConfig({
             text: '开发',
             items: [
               {
-                text: '核心功能指南', items: [
+                text: '核心功能', items: [
                   { text: '对话数据', link: '/develop/core/shot-and-dialogue.md' },
+                  { text: '存档系统', link: '/develop/core/save-system.md' },
                   { text: '背景切换特效', link: '/develop/core/bg-trans-effect.md' },
                   { text: 'Logger', link: '/develop/core/logger.md' },
-                  { text: '语法高亮器', link: '/develop/core/ks-editor-highlighter.md' }                  
+                  { text: '语法高亮器', link: '/develop/core/ks-editor-highlighter.md' }                
                 ]
               },
               { text: '版本规划', link: '/develop/roadmap' },

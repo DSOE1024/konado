@@ -364,4 +364,7 @@ func _input(event: InputEvent) -> void:
 	if not Engine.is_editor_hint():
 		return
 	if event is InputEventKey and event.ctrl_pressed and event.keycode == KEY_S and event.pressed:
-		_on_save_button_pressed()
+		if has_unsaved_changes():
+			save_file()
+		if current_file_path.is_empty() == false:
+			save_file()
