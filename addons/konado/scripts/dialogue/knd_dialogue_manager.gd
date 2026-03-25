@@ -117,6 +117,9 @@ var cur_dialogue_type: KND_Dialogue.Type
 @export var error_tooltip_label: Label
 @export var error_skip_btn: Button
 
+## 存档系统
+@export var save_system: KND_SaveSystem
+
 
 
 func _ready() -> void:
@@ -138,6 +141,10 @@ func _ready() -> void:
 		_konado_dialogue_box.on_dialogue_click.connect(_process_next)
 	else:
 		push_error("未指定 _konado_dialogue_box")
+	
+	# 设置存档系统的对话管理器引用
+	if save_system:
+		save_system.set_dialogue_manager(self)
 	
 
 	# 自动初始化和开始对话
@@ -684,3 +691,49 @@ func _jump_tag(tag: String) -> void:
 	cur_dialogue_shot.dialogues.insert(cur_index + 1, target_dialogue)
 	print("插入标签，对话长度" + str(cur_dialogue_shot.dialogues.size()))
 	_process_next()
+
+## 保存游戏
+func save_game(save_id: int) -> bool:
+	if not save_system:
+		printerr("存档系统未设置")
+		return false
+	return save_system.save_game(save_id)
+
+## 加载游戏
+func load_game(save_id: int) -> bool:
+	if not save_system:
+		printerr("存档系统未设置")
+		return false
+	return save_system.load_game(save_id)
+
+## 删除存档
+func delete_save(save_id: int) -> bool:
+	if not save_system:
+		printerr("存档系统未设置")
+		return false
+	return save_system.delete_save(save_id)
+
+## 获取存档信息
+func get_save_info(save_id: int) -> Dictionary:
+	if not save_system:
+		printerr("存档系统未设置")
+		return {}
+	return save_system.get_save_info(save_id)
+
+## 获取所有存档信息
+func get_all_save_info() -> Array[Dictionary]:
+	if not save_system:
+		printerr("存档系统未设置")
+		return []
+	return save_system.get_all_save_info()
+
+## 设置存档策略
+func set_save_strategy(strategy: Dictionary) -> void:
+	if save_system:
+		save_system.save_strategy = strategy
+
+## 获取存档策略
+func get_save_strategy() -> Dictionary:
+	if not save_system:
+		return {}
+	return save_system.save_strategy

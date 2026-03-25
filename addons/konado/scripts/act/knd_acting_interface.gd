@@ -224,7 +224,7 @@ func create_new_character(chara_id: String, h_division: int, v_division: int, po
 		}
 		
 	# 添加到角色字典
-	actor_dict[chara_dict.id] = chara_dict
+	actor_dict[chara_dict["id"]] = chara_dict
 	var node_name : String = str(chara_dict["id"])
 	var temp_node : KND_Actor = _konado_actor_template.instantiate() as KND_Actor
 	temp_node.use_tween = false

@@ -7,8 +7,9 @@
 
 | Codename | Version |  Status   | Release Date      | Download                                         |
 | :--------------- | :-----: | :-------: | :---------------- | :-------------------------------------------------------- |
-| Tieton           |  2.3    |   LTS     | 2026-03-22        | `https://github.com/godothub/konado/releases/tag/v2.3`    |
-| Yuanxiao         |  2.2    |  Release  | 2026-02-10        | `https://github.com/godothub/konado/releases/tag/v2.2`    |
+| Macaron          |  2.4    |  LTS      | 2026-05-03        | `https://github.com/godothub/konado/releases/tag/v2.4`    |
+| Tieton           |  2.3    |  Release  | 2026-03-22        | `https://github.com/godothub/konado/releases/tag/v2.3`    |
+| Yuanxiao         |  2.2    | EOL       | 2026-02-10        | `https://github.com/godothub/konado/releases/tag/v2.2`    |
 | Lebkuchen        |  2.1    | EOL       | 2025-12-24        | `https://github.com/godothub/konado/releases/tag/v2.1`    |
 | Mooncake         |  2.0    | EOL       | 2025-12-03        | `https://github.com/godothub/konado/releases/tag/v2.0`    |
 
