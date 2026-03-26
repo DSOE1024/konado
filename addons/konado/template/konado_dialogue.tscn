@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/knd_acting_interface.gd" id="2_pq6sw"]
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="3_gl7il"]
 [ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/knd_audio_interface.gd" id="4_gd2ll"]
+[ext_resource type="Script" uid="uid://gh6w15d30qe7" path="res://addons/konado/scripts/save_system/save_load_ui.gd" id="5_yqjlw"]
 [ext_resource type="Script" uid="uid://dusoj8pkl7ecg" path="res://addons/konado/scripts/save_system/knd_save_system.gd" id="6_htvgb"]
 [ext_resource type="PackedScene" uid="uid://bgpl5q55u0eby" path="res://addons/konado/template/knd_dialogue_box.tscn" id="6_r5ho2"]
 
@@ -19,6 +20,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_buo3n")
+vertical_division = 10
 _konado_choice_interface = NodePath("KonadoUI/DialogueInterface/ChoicesContainer")
 _konado_dialogue_box = NodePath("KonadoUI/DialogueInterface/KonadoDialogueBox")
 _acting_interface = NodePath("KonadoUI/ActingInterface")
@@ -117,13 +119,56 @@ alignment = 2
 layout_mode = 2
 text = "存档"
 
-[node name="Load" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=1906083701]
-layout_mode = 2
-text = "读档"
-
 [node name="AutoPlay" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=2120412483]
 layout_mode = 2
 text = "自动播放"
+
+[node name="SaveSystemUI" type="Control" parent="KonadoUI" unique_id=14919090 node_paths=PackedStringArray("root_container", "save_system")]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_yqjlw")
+root_container = NodePath("MarginContainer/ScrollContainer/VBoxContainer")
+save_system = NodePath("../../KND_SaveSystem")
+
+[node name="ColorRect" type="ColorRect" parent="KonadoUI/SaveSystemUI" unique_id=1882659114]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7372549)
+
+[node name="MarginContainer" type="MarginContainer" parent="KonadoUI/SaveSystemUI" unique_id=543874251]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 400
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 400
+
+[node name="ScrollContainer" type="ScrollContainer" parent="KonadoUI/SaveSystemUI/MarginContainer" unique_id=687413831]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="KonadoUI/SaveSystemUI/MarginContainer/ScrollContainer" unique_id=637492312]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="Button" type="Button" parent="KonadoUI/SaveSystemUI" unique_id=1190349289]
+layout_mode = 0
+offset_right = 24.0
+offset_bottom = 10.0
+text = "关闭界面"
 
 [node name="KonadoAudioInterface" type="Node2D" parent="." unique_id=1896821847 node_paths=PackedStringArray("bgm_player", "voice_player", "sound_effect_player")]
 script = ExtResource("4_gd2ll")
@@ -182,4 +227,8 @@ text = "Skip this error..."
 
 [node name="KND_SaveSystem" type="Node" parent="." unique_id=8383492]
 script = ExtResource("6_htvgb")
+enable_auto_save = false
 metadata/_custom_type_script = "uid://dusoj8pkl7ecg"
+
+[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Save" to="KonadoUI/SaveSystemUI" method="open_save_ui"]
+[connection signal="pressed" from="KonadoUI/SaveSystemUI/Button" to="KonadoUI/SaveSystemUI" method="close_save_ui"]

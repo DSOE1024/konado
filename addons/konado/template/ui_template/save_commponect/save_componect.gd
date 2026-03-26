@@ -6,6 +6,10 @@ class_name SaveComponent
 @onready var save_time_label : Label = %save_time_label
 @onready var game_time_label : Label = %game_time_label
 @onready var autosave_sign   : Label = $autosave_sign
+@export var save_btn: Button
+@export var load_btn: Button
+@export var del_btn: Button
+
 ## 存档ID
 @export var save_id: int = -1;
 
@@ -35,27 +39,95 @@ class_name SaveComponent
 		auto_save = value
 		if autosave_sign:
 			autosave_sign.visible = value
-			
+
+## 存档系统引用
+var save_system: KND_SaveSystem
+
 func _ready() -> void:
 	name_label.text = save_name
 	save_time_label.text  = save_time
 	game_time_label.text = game_time  # 补充原有遗漏的游戏时长标签初始化
 	autosave_sign.visible = auto_save
+	
+	# 连接按钮信号
+	if save_btn:
+		save_btn.pressed.connect(_on_save_pressed)
+	if load_btn:
+		load_btn.pressed.connect(_on_load_pressed)
+	if del_btn:
+		del_btn.pressed.connect(_on_delete_pressed)
 
-# 新增：初始化空存档位的方法
 func init_empty_save_slot() -> void:
-	# 1. 重置存档ID为默认值（-1标识空存档）
-	save_id = -1
-	
-	# 2. 设置空存档默认名称（占位符）
-	save_name = "空存档"  # 触发save_name的setter，自动更新name_label
-	
-	# 3. 设置存档时间占位符（无实际存档时间）
-	save_time = "--/--/-- --:--"  # 触发save_time的setter，自动更新save_time_label
-	
-	# 4. 设置游戏时长占位符（无游戏时长记录）
-	game_time = "0h 0min"  # 触发game_time的setter，自动更新game_time_label
-	
-	# 5. 隐藏自动存档标记（空存档无自动存档属性）
-	auto_save = false  # 触发auto_save的setter，自动隐藏autosave_sign
+	save_name = "空存档" 
+	save_time = "--/--/-- --:--" 
+	game_time = "0h 0min"
+	auto_save = false
+
+## 设置存档系统
+func set_save_system(system: KND_SaveSystem) -> void:
+	save_system = system
+
+## 更新存档信息
+func update_save_info(info: Dictionary) -> void:
+	if info and info.exists:
+		# 格式化存档时间
+		var save_time_dict = info.get("save_time", {})
+		if save_time_dict:
+			var year = save_time_dict.get("year", "--")
+			var month = str("%02d" % save_time_dict.get("month", 0))
+			var day = str("%02d" % save_time_dict.get("day", 0))
+			var hour = str("%02d" % save_time_dict.get("hour", 0))
+			var minute = str("%02d" % save_time_dict.get("minute", 0))
+			save_time = "%s/%s/%s %s:%s" % [year, month, day, hour, minute]
+		else:
+			save_time = "未知时间"
+		
+		# 设置游戏时长（暂时使用固定值，可根据实际情况修改）
+		game_time = "0h 0min"
+		
+		# 设置存档名称
+		save_name = "存档%02d" % (save_id + 1)
+		
+		# 检查是否为自动存档
+		auto_save = (save_id == 0)
+	else:
+		# 空存档
+		init_empty_save_slot()
+
+## 保存游戏
+func _on_save_pressed() -> void:
+	if save_system and save_id >= 0:
+		print("保存到存档槽 %d" % save_id)
+		var success = save_system.save_game(save_id)
+		if success:
+			# 更新存档信息
+			var info = save_system.get_save_info(save_id)
+			update_save_info(info)
+			print("保存成功")
+		else:
+			print("保存失败")
+	else:
+		print("未设置存档管理器")
+
+## 加载游戏
+func _on_load_pressed() -> void:
+	if save_system and save_id >= 0:
+		print("加载存档槽 %d" % save_id)
+		var success = save_system.load_game(save_id)
+		if success:
+			print("加载成功")
+		else:
+			print("加载失败")
+
+## 删除存档
+func _on_delete_pressed() -> void:
+	if save_system and save_id >= 0:
+		print("删除存档槽 %d" % save_id)
+		var success = save_system.delete_save(save_id)
+		if success:
+			# 重置为空白存档
+			init_empty_save_slot()
+			print("删除成功")
+		else:
+			print("删除失败")
 	

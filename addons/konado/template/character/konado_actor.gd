@@ -36,7 +36,7 @@ signal actor_moved
 			_on_resized()
 
 ## 屏幕纵向分块数，不得小于3，将屏幕高度分为从上到下递增的块，每个块大小相同
-@export var v_division: int = 6:
+@export var v_division: int = 10:
 	set(value):
 		if v_division != value:
 			v_division = clamp(value, 3, 15)
@@ -142,6 +142,7 @@ func set_texture_scale(scale: float) -> void:
 	if not texture_rect:
 		return
 	texture_rect.scale = Vector2(scale, scale)
+	_on_resized()
 
 	
 func set_texture_mirror() -> void:

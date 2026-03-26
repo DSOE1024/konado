@@ -313,36 +313,46 @@ func _process(delta) -> void:
 					var bg_name = dialog.background_image_name
 					var bg_effect = dialog.background_toggle_effects
 					var s = _acting_interface.background_change_finished
-					s.connect(_auto_process_next.bind(s))
+					# 检查信号是否已经连接
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
 					_acting_interface.show()
 					_display_background(bg_name, bg_effect)
 				# 如果是显示演员
 				elif cur_dialogue_type == KND_Dialogue.Type.DISPLAY_ACTOR:
 					# 显示演员
 					var s = _acting_interface.character_created
-					s.connect(_auto_process_next.bind(s))
+					# 检查信号是否已经连接
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
 					_acting_interface.show()
 					_display_character(dialog)
-				# 如果修改演员状态
+				# 如果是改变演员状态
 				elif cur_dialogue_type == KND_Dialogue.Type.ACTOR_CHANGE_STATE:
 					var actor = dialog.change_state_actor
 					var target_state = dialog.change_state
 					var s = _acting_interface.character_state_changed
-					s.connect(_auto_process_next.bind(s))
+					# 检查信号是否已经连接
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
 					_actor_change_state(actor, target_state)
 				# 如果是移动演员
 				elif cur_dialogue_type == KND_Dialogue.Type.MOVE_ACTOR:
 					var actor = dialog.target_move_chara
 					var pos = dialog.target_move_pos
 					var s = _acting_interface.character_moved
-					s.connect(_auto_process_next.bind(s))
+					# 检查信号是否已经连接
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
 					_acting_interface.move_actor(actor, pos.x, pos.y)
 				# 如果是删除演员
 				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
 					# 删除演员
 					var actor = dialog.exit_actor
 					var s = _acting_interface.character_deleted
-					s.connect(_auto_process_next.bind(s))
+					# 检查信号是否已经连接
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
 					_exit_actor(actor)
 				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:

@@ -19,7 +19,7 @@ choice "开始" start_choice "不看了" exit_choice
 
 branch start_choice
     background 01 fade
-    actor show 可娜 介绍正常 at 1 5 scale 0.3
+    actor show 可娜 介绍正常 at 1 9 scale 0.3
     "Kona" "首先将Konado加载进插件列表。"
     background 02 cyberglitch
     actor change 可娜 介绍说话
@@ -45,7 +45,7 @@ branch start_choice
     
 
 branch exit_choice
-    actor show 可娜 正常 at 1 5 scale 0.3
+    actor show 可娜 正常 at 1 9 scale 0.3
     "Kona" "感谢你的使用，再见！"
     actor exit 可娜
     background bg_end fade
