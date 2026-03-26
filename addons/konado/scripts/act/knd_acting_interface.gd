@@ -44,6 +44,8 @@ var cyber_glitch_effect_shader: Shader = preload("res://addons/konado/shader/bg_
 
 ## 演员字典
 var actor_dict = {}
+## 演员节点字典，用于快速访问演员节点
+var actor_nodes = {}
 ## 角色列表
 var chara_list: KND_CharacterList
 ## 背景图片
@@ -70,14 +72,16 @@ func _ready() -> void:
 	
 ## 获取角色节点的方法
 func get_chara_node(actor_id: String) -> Node:
-	# 检查要删除的角色是否在容器和字典中
-	for actor in actor_dict.values():
-		# 如果在容器中
-		if actor["id"] == actor_id:
-			var chara_controler_node = _chara_controler
-			# 获取角色节点
-			var chara_node: Node = chara_controler_node.find_child(actor_id, true, false)
-			return chara_node
+	 # 首先从演员节点字典中获取
+	if actor_nodes.has(actor_id):
+		return actor_nodes[actor_id]
+		
+	# 如果字典中没有，再通过find_child方法查找
+	var chara_node: Node = _chara_controler.find_child(actor_id, true, false)
+	if chara_node:
+		# 将找到的节点添加到字典中
+		actor_nodes[actor_id] = chara_node
+		return chara_node
 	return null
 			
 ## 初始化背景切换配置
@@ -227,8 +231,8 @@ func create_new_character(chara_id: String, h_division: int, v_division: int, po
 	actor_dict[chara_dict["id"]] = chara_dict
 	var node_name : String = str(chara_dict["id"])
 	var temp_node : KND_Actor = _konado_actor_template.instantiate() as KND_Actor
-	temp_node.use_tween = false
 	temp_node.name = node_name
+	temp_node.use_tween = false
 	temp_node.h_division = h_division
 	temp_node.v_division = v_division
 	temp_node.h_character_position = pos_h
@@ -238,13 +242,14 @@ func create_new_character(chara_id: String, h_division: int, v_division: int, po
 	temp_node.mirror = mirror
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
+	# 添加到演员节点字典
+	actor_nodes[chara_id] = temp_node
 	temp_node.use_tween = true
 	temp_node.enter_actor(true)
 	temp_node.actor_entered.connect(
 		func():
 			character_created.emit()
-			print(" 新建了演员："+str(chara_id)+" 演员状态："+str(state))
-			)
+			print("新建了演员："+str(chara_id)+" 演员状态："+str(state)))
 	# 移动信号
 	temp_node.actor_moved.connect(_on_character_moved)
 
@@ -292,8 +297,10 @@ func delete_character(chara_id: String) -> void:
 		if actor["id"] == chara_id:
 			# 删除容器和字典中的角色
 			actor_dict.erase(chara_id)
+			# 从演员节点字典中删除
+			actor_nodes.erase(chara_id)
 			# 通过名称查找索引并删除
-			var chara_node: KND_Actor = _chara_controler.find_child(chara_id, true, false)
+			var chara_node: KND_Actor = get_chara_node(chara_id) as KND_Actor
 			if chara_node:
 				chara_node.tree_exited.connect(func(): character_deleted.emit())
 				chara_node.exit_actor(true)
@@ -305,6 +312,8 @@ func delete_character(chara_id: String) -> void:
 ## 删除所有演员
 func delete_all_actor() -> void:
 	actor_dict.clear()
+	# 清空演员节点字典
+	actor_nodes.clear()
 	for node in _chara_controler.get_children():
 		node.exit_actor(false)
 	print("删除所有演员")

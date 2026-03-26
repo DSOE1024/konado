@@ -201,22 +201,22 @@ func delete_save(save_id: int) -> bool:
 ## 获取存档信息
 func get_save_info(save_id: int) -> Dictionary:
 	if save_id < 0 or save_id >= max_save_slots:
-		return {}
+		return {"exists": false}
 	
 	var save_path = SAVE_DIR + str(save_id) + SAVE_EXT
 	if not FileAccess.file_exists(save_path):
-		return {}
+		return {"exists": false}
 	
 	var file = FileAccess.open(save_path, FileAccess.READ)
 	if not file:
-		return {}
+		return {"exists": false}
 	
-	var json = file.get_as_string()
+	var json = file.get_as_text()
 	file.close()
 	
 	var parse_result = JSON.parse_string(json)
 	if typeof(parse_result) != TYPE_DICTIONARY:
-		return {}
+		return {"exists": false}
 	
 	return {
 		"save_time": parse_result.get("save_time", {}),
@@ -226,7 +226,7 @@ func get_save_info(save_id: int) -> Dictionary:
 
 ## 获取所有存档信息
 func get_all_save_info() -> Array[Dictionary]:
-	var save_infos = []
+	var save_infos: Array[Dictionary] = []
 	for i in range(max_save_slots):
 		save_infos.append(get_save_info(i))
 	return save_infos
@@ -253,6 +253,20 @@ func _capture_dialogue_state() -> Dictionary:
 	# 保存对话状态
 	state["dialogue_state"] = dialogue_manager.dialogueState
 	
+	# 保存当前对话内容（从对话框中获取）
+	if dialogue_manager._konado_dialogue_box:
+		state["current_dialog_content"] = dialogue_manager._konado_dialogue_box.dialogue_text
+		state["current_character_name"] = dialogue_manager._konado_dialogue_box.character_name
+		print("保存对话内容: " + dialogue_manager._konado_dialogue_box.dialogue_text)
+		print("保存角色名称: " + dialogue_manager._konado_dialogue_box.character_name)
+	else:
+		# 如果对话框不存在，尝试从当前镜头的对话列表中获取
+		if dialogue_manager.cur_dialogue_shot and dialogue_manager.cur_index >= 0 and dialogue_manager.cur_index < dialogue_manager.cur_dialogue_shot.dialogues.size():
+			var current_dialog = dialogue_manager.cur_dialogue_shot.dialogues[dialogue_manager.cur_index]
+			if current_dialog:
+				state["current_dialog_content"] = current_dialog.content
+				print("保存对话内容: " + current_dialog.content)
+	
 	return state
 
 ## 恢复对话状态
@@ -277,6 +291,15 @@ func _restore_dialogue_state(state: Dictionary) -> void:
 	# 恢复对话状态
 	if state.has("dialogue_state"):
 		dialogue_manager._dialogue_goto_state(state["dialogue_state"])
+	
+	# 恢复对话框内容
+	if dialogue_manager._konado_dialogue_box:
+		if state.has("current_dialog_content"):
+			dialogue_manager._konado_dialogue_box.dialogue_text = state["current_dialog_content"]
+			print("恢复对话内容: " + state["current_dialog_content"])
+		if state.has("current_character_name"):
+			dialogue_manager._konado_dialogue_box.character_name = state["current_character_name"]
+			print("恢复角色名称: " + state["current_character_name"])
 
 ## 捕获音频状态
 func _capture_audio_state() -> Dictionary:
@@ -433,6 +456,9 @@ func _restore_actor_state(state: Dictionary) -> void:
 	# 先删除所有现有演员
 	acting_interface.delete_all_actor()
 	
+	# 等待一帧，确保所有旧的演员节点都已经被完全删除
+	await get_tree().process_frame
+	
 	# 恢复演员状态
 	if state.has("actors"):
 		for actor_state in state["actors"]:
@@ -468,6 +494,9 @@ func _restore_actor_state(state: Dictionary) -> void:
 							actor_state.get("c_scale", 1.0),
 							actor_state.get("mirror", false)
 						)
+						
+						# 等待一帧，确保演员节点能够正确创建
+						await get_tree().process_frame
 
 ## 捕获背景状态
 func _capture_background_state() -> Dictionary:

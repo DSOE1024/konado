@@ -9,12 +9,15 @@ corner_radius_top_left = 35
 [sub_resource type="LabelSettings" id="LabelSettings_kt3kp"]
 font_size = 35
 
-[node name="SaveComponent" type="Button" unique_id=1551621243]
+[node name="SaveComponent" type="Button" unique_id=1551621243 node_paths=PackedStringArray("save_btn", "load_btn", "del_btn")]
 clip_contents = true
 custom_minimum_size = Vector2(860, 200)
 offset_right = 901.0
 offset_bottom = 200.0
 script = ExtResource("1_4ot8c")
+save_btn = NodePath("VBoxContainer/SaveProgress")
+load_btn = NodePath("VBoxContainer/LoadSaveButton")
+del_btn = NodePath("VBoxContainer/DeleteSaveButton")
 
 [node name="Panel" type="Panel" parent="." unique_id=207353304]
 layout_mode = 1
