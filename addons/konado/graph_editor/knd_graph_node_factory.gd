@@ -300,9 +300,18 @@ static func _condition(d: KND_Dialogue) -> GraphNode:
 	fvar.placeholder_text = "var"
 	fvar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(fvar)
-	var leq := Label.new()
-	leq.text = " == "
-	hbox.add_child(leq)
+	var fop := OptionButton.new()
+	fop.add_item("==")
+	fop.add_item(">")
+	fop.add_item("<")
+	fop.add_item(">=")
+	fop.add_item("<=")
+	if d and d.condition_operator > 0:
+		fop.select(d.condition_operator)
+	else:
+		fop.select(0)
+	fop.custom_minimum_size.x = 50
+	hbox.add_child(fop)
 	var fval := LineEdit.new()
 	fval.text = str(d.target_value) if d else "0"
 	fval.custom_minimum_size.x = 50
@@ -324,7 +333,7 @@ static func _condition(d: KND_Dialogue) -> GraphNode:
 	after_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.9))
 	n.add_child(after_lbl)
 	n.set_slot(3, false, 0, FLOW_COLOR, true, FLOW_PORT, FLOW_COLOR)
-	n.set_meta("fields", {"varname": fvar, "target_value": fval})
+	n.set_meta("fields", {"varname": fvar, "condition_operator": fop, "target_value": fval})
 	return n
 
 

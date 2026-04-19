@@ -38,6 +38,8 @@ enum Type {
 
 ## 条件变量名
 @export var varname: String
+## 条件操作符 (0: ==, 1: >, 2: <, 3: >=, 4: <=)
+@export var condition_operator: int = 0
 ## if else期待的目标值
 @export var target_value: int
 

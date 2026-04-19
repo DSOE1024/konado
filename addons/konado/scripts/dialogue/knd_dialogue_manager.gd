@@ -408,8 +408,20 @@ func _process(delta) -> void:
 					print("ifelse分支对话")
 					var target_value = dialog.target_value
 					var condition_met = false
+					var current_value = 0
 					if get_dialogue_variable(dialog.varname).has("value"):
-						condition_met = (target_value == get_dialogue_variable(dialog.varname).get("value"))
+						current_value = get_dialogue_variable(dialog.varname).get("value")
+						match dialog.condition_operator:
+							0:
+								condition_met = (current_value == target_value)
+							1:
+								condition_met = (current_value > target_value)
+							2:
+								condition_met = (current_value < target_value)
+							3:
+								condition_met = (current_value >= target_value)
+							4:
+								condition_met = (current_value <= target_value)
 					else:
 						printerr("无法获取变量: " + dialog.varname)
 
