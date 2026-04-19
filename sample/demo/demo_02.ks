@@ -8,7 +8,7 @@ endif
 
 # 逻辑判断 %是获取变量
 # 此处变量在KonadoDialogueManager的Global Variable处设置。
-if %love == 0:
+if %love <= 0:
     "" "要开始吗？"
 else:
     "" "要再看一遍吗？"

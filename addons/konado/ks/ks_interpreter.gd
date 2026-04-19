@@ -57,7 +57,7 @@ func _init() -> void:
 
 	# 匹配 if %变量名 == 值（支持数字），结尾冒号可选（:?）
 	condition_regex = RegEx.new()
-	condition_regex.compile("^if\\s+%(\\w+)\\s*==\\s*(\\d+):$")
+	condition_regex.compile("^if\\s+%(\\w+)\\s*(==|>=|<=|>|<)\\s*(\\d+):$")
 	# 匹配 %变量名 格式的变量引用
 	var_ref_regex = RegEx.new()
 	var_ref_regex.compile("%(\\w+)")
@@ -362,13 +362,28 @@ func _parse_condition(line: String, start_index: int, line_number: int, path: St
 	# 解析if条件表达式
 	var cond_match = condition_regex.search(line)
 	if not cond_match:
-		_scripts_debug(path, original_line_num, "条件判断格式错误：%s（正确格式：if %%变量名 == 整数）" % line)
+		_scripts_debug(path, original_line_num, "条件判断格式错误：%s（正确格式：if %%变量名 == 整数，支持操作符：==、>、<、>=、<=）" % line)
 		return null
 
 	var var_name = cond_match.get_string(1)
-	var target_value = cond_match.get_string(2).to_int()
+	var operator_str = cond_match.get_string(2)
+	var target_value = cond_match.get_string(3).to_int()
+
+	var condition_op: int = 0
+	match operator_str:
+		"==":
+			condition_op = 0
+		">":
+			condition_op = 1
+		"<":
+			condition_op = 2
+		">=":
+			condition_op = 3
+		"<=":
+			condition_op = 4
 
 	cur_dialogue.varname = var_name
+	cur_dialogue.condition_operator = condition_op
 	cur_dialogue.target_value = target_value
 
 	# 解析if块内容（直到else或endif）
