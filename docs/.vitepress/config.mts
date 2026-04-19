@@ -115,7 +115,9 @@ export default defineConfig({
               { text: '安装Konado', link: '/tutorial/install' },
               { text: '对话配置文件', link: '/tutorial/profiles' },
               { text: '演员坐标与缩放', link: '/tutorial/actor-coordinate-and-scaling' },
-              { text: '自定义对话框', link: '/tutorial/customize-the-dialogbox' }
+              { text: '自定义对话框', link: '/tutorial/customize-the-dialogbox' },
+              { text: '打字机动效', link: '/tutorial/typewriter-effect' },
+              { text: '打字机音效', link: '/tutorial/typewriter-sound-effect' }
             ]
           },
           {
