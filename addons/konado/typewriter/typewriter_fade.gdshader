@@ -1,41 +1,47 @@
 shader_type canvas_item;
 
-// Reveal progress: 0.0 = nothing visible, 1.0+ = everything visible.
 uniform float progress : hint_range(0.0, 1.2) = 0.0;
-// Fade softness in normalised units (larger = wider gradient band).
 uniform float softness : hint_range(0.001, 0.5) = 0.08;
-// Sweep direction angle in radians (0 = left-to-right).
 uniform float angle_rad : hint_range(-3.14159, 3.14159) = 0.0;
-// Blend between pure character-order (0) and spatial-direction (1).
 uniform float spatial_blend : hint_range(0.0, 1.0) = 0.15;
-// Control rect size in pixels – updated every frame by the script.
 uniform vec2 rect_size = vec2(400.0, 200.0);
+
+// 新增：多行支持参数
+uniform int line_count = 1;
+uniform float line_height = 20.0;
 
 varying float v_reveal_time;
 varying float v_spatial;
 
 void vertex() {
-	// COLOR.a is encoded as the character's normalised reveal-time (index/total).
-	v_reveal_time = COLOR.a;
+    // 从顶点颜色 alpha 读取字符的顺序归一化时间 (index/total)
+    v_reveal_time = COLOR.a;
 
-	// Project the vertex position onto the sweep direction to get a spatial reveal value.
-	vec2 dir = vec2(cos(angle_rad), sin(angle_rad));
-	vec2 norm_pos = VERTEX / max(rect_size, vec2(1.0));
-	float max_proj = abs(dir.x) + abs(dir.y);
-	v_spatial = dot(norm_pos, dir) / max(max_proj, 0.001);
+    // 计算当前顶点所在的行索引（0 起始）
+    // 使用 line_height 划分垂直坐标，并钳位到有效范围
+    float line_index = floor(VERTEX.y / line_height);
+    line_index = clamp(line_index, 0.0, float(line_count - 1));
+
+    // 在行内计算空间方向投影（与原逻辑一致）
+    vec2 dir = vec2(cos(angle_rad), sin(angle_rad));
+    vec2 norm_pos = VERTEX / max(rect_size, vec2(1.0));
+    float proj_in_line = dot(norm_pos, dir) / max(abs(dir.x) + abs(dir.y), 0.001);
+
+    // 将行索引纳入空间值：每行占据 1/line_count 的区间，并连续排列
+    // 例如：第 0 行 → [0, 1/line_count]，第 1 行 → [1/line_count, 2/line_count]
+    v_spatial = (line_index + proj_in_line) / float(line_count);
 }
 
 void fragment() {
-	// Blend character-order reveal with spatial reveal.
-	float reveal_val = mix(v_reveal_time, v_spatial, spatial_blend);
+    // 混合字符顺序和空间方向
+    float reveal_val = mix(v_reveal_time, v_spatial, spatial_blend);
 
-	// Smooth alpha ramp: fully transparent when progress is well below reveal_val,
-	// fully opaque when progress exceeds reveal_val + softness.
-	float a = smoothstep(reveal_val, reveal_val + softness, progress);
+    // 平滑淡入边缘
+    float a = smoothstep(reveal_val, reveal_val + softness, progress);
 
-	// Sample the glyph / primitive texture.
-	vec4 tex = texture(TEXTURE, UV);
+    // 采样字形纹理
+    vec4 tex = texture(TEXTURE, UV);
 
-	// Final output – vertex RGB carries the intended text colour.
-	COLOR = vec4(COLOR.rgb * tex.rgb, tex.a * a);
+    // 最终颜色：顶点 RGB 为文字颜色，alpha 为透明度
+    COLOR = vec4(COLOR.rgb * tex.rgb, tex.a * a);
 }
