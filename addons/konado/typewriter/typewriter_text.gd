@@ -79,6 +79,8 @@ var _sys_font: SystemFont        # 缓存的系统字体，支持 CJK / 多语�
 # 着色器材料（只创建一次）
 var _shader_mat: ShaderMaterial
 
+var _line_count: int = 0
+
 # ── 生命周期 ────────────────────────────────────────────────────────────────
 func _ready() -> void:
 	_init_shader()
@@ -428,6 +430,8 @@ func _compute_layout() -> void:
 			ln_desc = _f_regular.get_descent(font_size)
 		lines.append({"start": ln_start, "end": _total_chars, "width": ln_w,
 				  "ascent": ln_asc, "descent": ln_desc})
+				
+	_line_count = lines.size()
 	# ── 分配位置 ────────────────────────────────────────────────────
 	var y: float = 0.0
 	for ln in lines:
@@ -469,6 +473,11 @@ func _sync_shader() -> void:
 	_shader_mat.set_shader_parameter("angle_rad", deg_to_rad(fade_angle))
 	_shader_mat.set_shader_parameter("spatial_blend", spatial_blend)
 	_shader_mat.set_shader_parameter("rect_size", size)
+
+	# 新增：传递行数和估算行高
+	_shader_mat.set_shader_parameter("line_count", _line_count)
+	if _line_count > 0:
+		_shader_mat.set_shader_parameter("line_height", _text_height / float(_line_count))
 
 # ── 内部函数 ────────────────────────────────────────────────────────────────
 func _mark_dirty() -> void:
