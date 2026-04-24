@@ -195,9 +195,3 @@ func _on_finished():
 3. **编辑器预览** - 在编辑器中运行时，文本会直接全部显示方便预览
 4. **换行符** - 使用 `\n` 进行换行
 
-## 相关文档
-
-- [对话系统基础](./foundation.md)
-- [创建角色](./create-actor.md)
-- [背景切换](./background-switch.md)
-- [条件分支](./if-else-branch.md)

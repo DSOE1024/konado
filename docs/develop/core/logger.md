@@ -20,5 +20,5 @@ KND_Logger 提供了日志回调功能，您可以通过以下方式连接日志
 logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
 
 func _show_error(msg: String) -> void:
-    print(msg)
+	print(msg)
 ```
