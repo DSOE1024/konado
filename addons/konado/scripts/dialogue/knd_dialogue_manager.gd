@@ -126,7 +126,8 @@ func _current_dialogue() -> KND_Dialogue:
 ## 存档系统
 @export var save_system: KND_SaveSystem
 
-
+## 成就系统单例引用
+var achievement_mgr: Node = null
 
 func _ready() -> void:
 	if enable_overlay_log:
@@ -151,6 +152,11 @@ func _ready() -> void:
 	# 设置存档系统的对话管理器引用
 	if save_system:
 		save_system.set_dialogue_manager(self)
+		
+	## 尝试获取成就系统
+	achievement_mgr = get_tree().root.get_node_or_null("KND_AchievementManager")
+	if achievement_mgr == null:
+		print("成就系统不可用")
 	
 
 	# 自动初始化和开始对话
@@ -253,7 +259,7 @@ func start_dialogue() -> void:
 		_konado_choice_interface.show()
 	if _acting_interface:
 		_acting_interface.show()
-	
+		
 	_konado_dialogue_box.show_dialogue_box()
 	_dialogue_goto_state(DialogState.PLAYING)
 	print_rich("[color=yellow]开始对话 [/color]")
@@ -463,6 +469,27 @@ func _process(delta) -> void:
 					custom_signal.emit(content)
 					await get_tree().process_frame
 					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
+				# 解锁成就
+				elif cur_dialogue_type == KND_Dialogue.Type.ACHIEVEMENT_UNLOCK:
+					if achievement_mgr:
+						achievement_mgr.unlock_achievement(dialog.achievement_id)
+					_dialogue_goto_state(DialogState.PAUSED)
+					get_tree().process_frame
+					_process_next()
+				# 更新成就进度
+				elif cur_dialogue_type == KND_Dialogue.Type.ACHIEVEMENT_PROGRESS:
+					if achievement_mgr:
+						achievement_mgr.increment_progress(dialog.achievement_id, dialog.achievement_value)
+					_dialogue_goto_state(DialogState.PAUSED)
+					get_tree().process_frame
+					_process_next()
+				# 设置成就标志位
+				elif cur_dialogue_type == KND_Dialogue.Type.ACHIEVEMENT_FLAG:
+					if achievement_mgr:
+						achievement_mgr.set_flag(dialog.achievement_flag_name, dialog.achievement_flag_value)
+					_dialogue_goto_state(DialogState.PAUSED)
+					get_tree().process_frame
 					_process_next()
 				# 如果剧终
 				elif cur_dialogue_type == KND_Dialogue.Type.THE_END:
@@ -755,3 +782,11 @@ func get_save_strategy() -> Dictionary:
 	if not save_system:
 		return {}
 	return save_system.save_strategy
+
+
+func _on_achievement_pressed() -> void:
+	if achievement_mgr:
+		achievement_mgr.show_panel()
+	else:
+		printerr("无KND_AchievementManager")
+	pass

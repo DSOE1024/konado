@@ -123,6 +123,10 @@ text = "存档"
 layout_mode = 2
 text = "自动播放"
 
+[node name="Achievement" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=972734007]
+layout_mode = 2
+text = "成就"
+
 [node name="SaveSystemUI" type="Control" parent="KonadoUI" unique_id=14919090 node_paths=PackedStringArray("root_container", "save_system")]
 visible = false
 layout_mode = 1
@@ -231,4 +235,5 @@ enable_auto_save = false
 metadata/_custom_type_script = "uid://dusoj8pkl7ecg"
 
 [connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Save" to="KonadoUI/SaveSystemUI" method="open_save_ui"]
+[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Achievement" to="." method="_on_achievement_pressed"]
 [connection signal="pressed" from="KonadoUI/SaveSystemUI/Button" to="KonadoUI/SaveSystemUI" method="close_save_ui"]

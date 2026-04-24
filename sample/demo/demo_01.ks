@@ -9,6 +9,7 @@ play bgm echo
 # 背景名称后面的代号为效果，效果有8种可以自己试试。
 background bg1 none
 
+
 # 演员显示语句：actor show <角色名称> <角色状态> at <x坐标> <y坐标> scale <缩放比例> [mirror]
 # 写mirror会使演员镜像显示（位置不变）
 actor show 可娜 正常 at 3 9 scale 0.3
@@ -16,6 +17,12 @@ actor show 可娜 正常 at 3 9 scale 0.3
 # 对话语句：
 # 第一个""中为名字，第二个""中为对话内容，后面的编号为语音列表中的voice_name
 "Kona" "你好！欢迎来到我们的咖啡馆。" voice_01
+
+achievement unlock "first_blood"
+
+achievement increment "enemies_defeated" 1
+
+achievement set_flag "secret_ending_found" true
 
 # 演员移动指令：actor move 可娜 1 9
 # 参数含义：默认将屏幕划分为 6列×10行 的网格，数字 1 为横向列索引、9 为纵向行索引

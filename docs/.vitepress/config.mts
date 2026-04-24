@@ -66,7 +66,7 @@ export default defineConfig({
       themeConfig: {
         lastUpdatedText: '最后更新于',
         editLink: {
-          pattern: 'https://github.com/godothub/konado/edit/master/docs/:path',
+          pattern: 'https://github.com/godothub/konado/edit/main/docs/:path',
           text: '在线编辑此页'
         },
         outlineTitle: '本页目录',
@@ -186,6 +186,14 @@ export default defineConfig({
               { text: '安装', link: '/konadotnet/install_konadotnet' },
               { text: '使用API', link: '/konadotnet/konadotnet_api' }
             ]
+          },
+          {
+            text: 'Konado成就系统',
+            items: [
+              { text: '安装', link: '/kndachievement/install_kndachievement' },
+              { text: '成就系统', link: '/kndachievement/achievement-system' },
+              { text: '使用API', link: '/kndachievement/achievement-api' }
+            ]
 
           },
           {
@@ -209,7 +217,7 @@ export default defineConfig({
       themeConfig: {
         lastUpdatedText: '最後更新於',
         editLink: {
-          pattern: 'https://github.com/godothub/konado/edit/master/docs/:path',
+          pattern: 'https://github.com/godothub/konado/edit/main/docs/:path',
           text: '在線編輯此頁'
         },
         outlineTitle: '本頁目錄',
@@ -346,7 +354,7 @@ export default defineConfig({
       themeConfig: {
         lastUpdatedText: 'Last updated on',
         editLink: {
-          pattern: 'https://github.com/godothub/konado/edit/master/docs/:path',
+          pattern: 'https://github.com/godothub/konado/edit/main/docs/:path',
           text: 'Edit this page online'
         },
         nav: [

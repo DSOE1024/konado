@@ -295,7 +295,7 @@ func parse_single_line(line: String, line_number: int, path: String) -> KND_Dial
 func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot) -> KND_Dialogue:
 	var dialog := KND_Dialogue.new()
 	dialog.source_file_line = line_number
-
+	
 
 	if _parse_dialog(line, dialog):
 		print("解析成功：对话相关\n")
@@ -317,6 +317,9 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 		return dialog
 	if _parse_signal(line, dialog):
 		print("解析成功：自定义信号\n")
+		return dialog
+	if _parse_achievement(line, dialog):
+		print("解析成功：成就系统\n")
 		return dialog
 	if _parse_end(line, dialog, diadata):
 		print("解析成功：结束相关\n")
@@ -744,6 +747,50 @@ func _check_tag_and_choice() -> bool:
 				return false
 	return true
 
+## 成就系统解析
+func _parse_achievement(line: String, dialog: KND_Dialogue) -> bool:
+	if not line.begins_with("achievement"):
+		return false
+
+	# 使用简单的分割，后续再精细化处理引号
+	var parts = line.split(" ", false)
+	if parts.size() < 3:
+		_scripts_debug(tmp_path, tmp_original_line_number, "achievement 指令格式错误")
+		return false
+
+	var action = parts[1]
+	
+	var raw_id = parts[2]
+	var target_id = ""
+	if raw_id.begins_with("\"") and raw_id.ends_with("\""):
+		target_id = raw_id.substr(1, raw_id.length() - 2)
+
+	match action:
+		"unlock":
+			dialog.dialog_type = KND_Dialogue.Type.ACHIEVEMENT_UNLOCK
+			dialog.achievement_id = target_id # 假设 KND_Dialogue 已新增该字段
+			
+		"increment":
+			if parts.size() < 4:
+				_scripts_debug(tmp_path, tmp_original_line_number, "achievement increment 缺少增量数值")
+				return false
+			dialog.dialog_type = KND_Dialogue.Type.ACHIEVEMENT_PROGRESS
+			dialog.achievement_id = target_id
+			dialog.achievement_value = parts[3].to_int()
+			
+		"set_flag":
+			if parts.size() < 4:
+				_scripts_debug(tmp_path, tmp_original_line_number, "achievement set_flag 缺少布尔值 (true/false)")
+				return false
+			dialog.dialog_type = KND_Dialogue.Type.ACHIEVEMENT_FLAG
+			dialog.achievement_flag_name = target_id # 假设 KND_Dialogue 已新增该字段
+			dialog.achievement_flag_value = (parts[3].to_lower() == "true") # 假设 KND_Dialogue 已新增该字段
+			
+		_:
+			_scripts_debug(tmp_path, tmp_original_line_number, "未知的 achievement 操作: " + action)
+			return false
+
+	return true
 
 # 错误报告
 func _scripts_debug(path: String, line: int, error_info: String):
