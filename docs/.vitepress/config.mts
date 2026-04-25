@@ -197,6 +197,13 @@ export default defineConfig({
 
           },
           {
+            text: 'Konado WebTool',
+            items: [
+              { text: '安装', link: '/konado_webtool/install_konado_webtool' },
+              { text: '使用WebTool', link: '/konado_webtool/konado_webtool' }
+            ]
+          },
+          {
             text: '关于',
             items: [
               { text: '关于Konado', link: '/about/konado' },

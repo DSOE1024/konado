@@ -28,6 +28,7 @@ _audio_interface = NodePath("KonadoAudioInterface")
 error_tooltip_panel = NodePath("KonadoErrorToolTip")
 error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
 error_skip_btn = NodePath("KonadoErrorToolTip/Skip")
+enable_web_devtool = true
 save_system = NodePath("KND_SaveSystem")
 
 [node name="KonadoUI" type="Control" parent="." unique_id=363853147]

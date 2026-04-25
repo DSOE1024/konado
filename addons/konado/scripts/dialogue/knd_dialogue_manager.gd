@@ -122,6 +122,8 @@ func _current_dialogue() -> KND_Dialogue:
 @export var error_tooltip_panel: ColorRect
 @export var error_tooltip_label: Label
 @export var error_skip_btn: Button
+## 浏览器各种快捷键调试功能，Godot默认会拦截，如果需要在web调试请打开
+@export var enable_web_devtool: bool = false
 
 ## 存档系统
 @export var save_system: KND_SaveSystem
@@ -175,7 +177,9 @@ func _ready() -> void:
 				)
 	else:
 		print("请手动初始化对话")
-
+	
+	
+	
 ## 显示报错
 func _show_error(msg: String) -> void:
 	if enable_overlay_log:
