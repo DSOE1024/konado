@@ -461,6 +461,23 @@ export default defineConfig({
 
           },
           {
+            text: 'Konado Achievement System',
+            items: [
+              { text: 'Install', link: '/en/kndachievement/install_kndachievement' },
+              { text: 'Achievement System', link: '/en/kndachievement/achievement-system' },
+              { text: 'API Reference', link: '/en/kndachievement/achievement-api' }
+            ]
+
+          },
+          {
+            text: 'Konado WebTool',
+            items: [
+              { text: 'Install', link: '/en/konado_webtool/install_konado_webtool' },
+              { text: 'Using WebTool', link: '/en/konado_webtool/konado_webtool' }
+            ]
+
+          },
+          {
             text: 'About',
             items: [
               { text: 'About Konado', link: '/en/about/konado' },
