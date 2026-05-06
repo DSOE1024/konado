@@ -23,8 +23,9 @@ config/description="Konado is an open-source framework for creating visual novel
 config/version="2.4"
 run/main_scene="uid://bcl2e6o0kb5dm"
 config/features=PackedStringArray("4.6", "Forward Plus")
-boot_splash/image="uid://dvyc3tb3ra3tf"
+boot_splash/image="uid://db5ph3qcnuvev"
 config/icon="uid://b5olx2vwoscbr"
+boot_splash/minimum_display_time=2000
 
 [autoload]
 

@@ -4,7 +4,7 @@ class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
 ## 插件版本信息
-const VERSION: String = "2.4"
+const VERSION: String = "2.4.0"
 const CODENAME: String = "Macaron"
 
 ## 自定义EditorImportPlugin脚本
