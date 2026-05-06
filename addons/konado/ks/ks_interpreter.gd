@@ -120,6 +120,40 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 			i += 1
 			continue
 
+		if line.begins_with("choice "):
+			var choice_dialog := KND_Dialogue.new()
+			choice_dialog.dialog_type = KND_Dialogue.Type.SHOW_CHOICE
+			choice_dialog.source_file_line = original_line_number
+
+			while i < raw_script_lines.size():
+				var cline = raw_script_lines[i].strip_edges()
+				if cline.is_empty() or cline.begins_with("#"):
+					i += 1
+					continue
+				if not cline.begins_with("choice "):
+					break
+				if not _parse_single_choice_line(cline, choice_dialog):
+					_scripts_debug(path, i + 2, "选项解析失败: %s" % cline)
+					return null
+				i += 1
+
+			if choice_dialog.choices.size() == 0:
+				_scripts_debug(path, original_line_number, "选项行没有有效的选项")
+				return null
+
+			var jump_tags = []
+			for c in choice_dialog.choices:
+				jump_tags.append(c.next_id)
+			cur_tmp_option_lines[original_line_number] = jump_tags
+
+			var choices_strs = ""
+			for c in choice_dialog.choices:
+				choices_strs += "\"" + c.choice_text + "\" -> " + c.next_id + "  "
+			_scripts_info(path, original_line_number, "选项解析完成 选项数量: " + str(choice_dialog.choices.size()) + "  选项: " + choices_strs)
+
+			main_dialogues.append(choice_dialog)
+			continue
+
 		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, shot)
 		if dialog:
 			if dialog.dialog_type == KND_Dialogue.Type.BRANCH:
@@ -612,50 +646,86 @@ func _parse_audio(line: String, dialog: KND_Dialogue) -> bool:
 
 	return true
 
-# 解析选项（仅保留单行式choice：choice "文本" 标签 "文本2" 标签2）
+func _parse_single_choice_line(line: String, dialog: KND_Dialogue) -> bool:
+	var content = line.substr(6).strip_edges()
+
+	var regex = RegEx.new()
+	regex.compile('"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|(\\S+)')
+
+	var matches = regex.search_all(content)
+	var raw_parts = []
+
+	for match in matches:
+		if match.get_string(1) != "":
+			var text = match.get_string(1).replace('\\"', '"')
+			raw_parts.append(text)
+		elif match.get_string(2) != "":
+			raw_parts.append(match.get_string(2))
+
+	var parts = []
+	var j = 0
+	while j < raw_parts.size():
+		if raw_parts[j] == "->":
+			j += 1
+			continue
+		parts.append(raw_parts[j])
+		j += 1
+
+	if parts.size() != 2:
+		return false
+
+	var choice = KND_DialogueChoice.new()
+	choice.choice_text = parts[0]
+	choice.next_id = parts[1]
+	dialog.choices.append(choice)
+	return true
+
+# 解析选项（格式：choice "文本" -> 标签 "文本2" -> 标签2）
 func _parse_choice(line: String, dialog: KND_Dialogue) -> bool:
-	# 仅匹配单行式choice：以choice开头，且不是choice:
 	if not line.begins_with("choice ") or line.begins_with("choice:"):
 		return false
 
 	dialog.dialog_type = KND_Dialogue.Type.SHOW_CHOICE
 	dialog.choices.clear()
 
-	# 移除开头的"choice"关键字
 	var content = line.substr(6).strip_edges()
 
-	# 使用正则表达式来正确解析带引号的字符串
 	var regex = RegEx.new()
 	regex.compile('"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|(\\S+)')
 
 	var matches = regex.search_all(content)
-	var parts = []
+	var raw_parts = []
 
 	for match in matches:
-		if match.get_string(1) != "":  # 带引号的部分
+		if match.get_string(1) != "":
 			var text = match.get_string(1).replace('\\"', '"')
-			parts.append(text)
-		elif match.get_string(2) != "":  # 无引号的部分
-			parts.append(match.get_string(2))
+			raw_parts.append(text)
+		elif match.get_string(2) != "":
+			raw_parts.append(match.get_string(2))
 
-	# 验证parts数量
+	var parts = []
+	var i = 0
+	while i < raw_parts.size():
+		if raw_parts[i] == "->":
+			i += 1
+			continue
+		parts.append(raw_parts[i])
+		i += 1
+
 	if parts.size() % 2 != 0:
-		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签")
+		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签，格式: choice \"文本\" -> 标签")
 		return false
 
-	# 创建选项对象（next_id暂时存放tag名称，后处理时转换为node_id）
-	for i in range(0, parts.size(), 2):
+	for ic in range(0, parts.size(), 2):
 		var choice = KND_DialogueChoice.new()
-		choice.choice_text = parts[i]
-		choice.next_id = parts[i + 1]  # 暂存tag名称
+		choice.choice_text = parts[ic]
+		choice.next_id = parts[ic + 1]
 		dialog.choices.append(choice)
 
-	# 记录日志
 	var choices_strs = ""
 	for choice in dialog.choices:
 		choices_strs += "\"" + choice.choice_text + "\" -> " + choice.next_id + "  "
 
-	# 记录跳转标签用于后续验证
 	var jump_tags = []
 	for choice in dialog.choices:
 		jump_tags.append(choice.next_id)
