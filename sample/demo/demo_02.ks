@@ -15,7 +15,9 @@ else:
 endif
 
 
-choice "开始" start_choice "不看了" exit_choice
+choice "开始" -> start_choice
+
+choice "不看了" -> exit_choice
 
 branch start_choice
     background 01 fade

@@ -96,3 +96,14 @@ enum Type {
 @export var achievement_flag_name: String = ""
 ## 成就标签值
 @export var achievement_flag_value: bool = false
+
+
+func add_choice(text: String, target_id: String) -> void:
+	var c := KND_DialogueChoice.new()
+	c.choice_text = text
+	c.next_id = target_id
+	choices.append(c)
+
+
+func clear_choices() -> void:
+	choices.clear()

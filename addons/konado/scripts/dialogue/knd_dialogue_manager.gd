@@ -389,7 +389,9 @@ func _process(delta) -> void:
 						get_tree().process_frame
 						_process_next()
 					else:
-						# 生成并显示选项
+						print_rich("[color=green]显示选项，共 %d 个选项[/color]" % dialog_choices.size())
+						for c in dialog_choices:
+							print_rich("[color=green]  \"%s\" -> %s[/color]" % [c.choice_text, c.next_id])
 						_konado_choice_interface.display_options(dialog_choices, self)
 						_acting_interface.show()
 						_konado_choice_interface.show()
@@ -450,7 +452,7 @@ func _process(delta) -> void:
 							_dialogue_goto_state(DialogState.PLAYING)
 						else:
 							_dialogue_goto_state(DialogState.OFF)
-				# 如果是分支对话（已弃用，直接跳到下一个节点）
+				# 如果是分支对话
 				elif cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话（已弃用）[/color]")
 					if not dialog.next_id.is_empty():
@@ -731,14 +733,17 @@ func _play_soundeffect(se_name: String) -> void:
 func on_option_triggered(choice: KND_DialogueChoice) -> void:
 	_konado_choice_interface._choice_container.hide()
 	dialogue_line_end.emit(cur_node_id)
-	print("玩家选择按钮: " + str(choice.choice_text))
+	print_rich("[color=green]玩家选择: \"%s\" -> %s[/color]" % [choice.choice_text, choice.next_id])
 	if not choice.next_id.is_empty():
-		# 跳转到选项目标节点并开始播放
+		var target = cur_dialogue_shot.find_node(choice.next_id)
+		if target == null:
+			printerr("选项目标节点不存在: %s，停止对话" % choice.next_id)
+			_dialogue_goto_state(DialogState.OFF)
+			return
 		cur_node_id = choice.next_id
 		_dialogue_goto_state(DialogState.PLAYING)
 	else:
-		# 选项没有跳转目标，停止对话
-		print("选项没有跳转目标")
+		print_rich("[color=yellow]选项没有跳转目标，停止对话[/color]")
 		_dialogue_goto_state(DialogState.OFF)
 
 ## 保存游戏
