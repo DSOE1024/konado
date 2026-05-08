@@ -13,7 +13,7 @@ hero:
       link: /zh/tutorial/install
     - theme: alt
       text: 赞助我们❤
-      link: "https://afdian.tv/item/52230b2860a011f083ef52540025c377"
+      link: "https://ifdian.net/item/52230b2860a011f083ef52540025c377"
 
 features:
   - title: 自由分发
