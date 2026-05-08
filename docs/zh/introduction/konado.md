@@ -9,9 +9,6 @@ order: 1
 
 Konado是一款基于Godot Engine的视觉小说引擎框架，由开源社区驱动。Konado致力于为开发者提供高效、便捷的视觉小说开发体验，助力创作者快速构建高质量的视觉小说作品，为创作赋能。
 
-## Konado Project
-
-Konado Project 开发组是一个由社区驱动的开源项目团队，归属于[Godot Hub](https://godothub.com)社区。我们致力于 Konado 项目的开发、维护与持续发展。欢迎所有对 Konado 项目感兴趣的开发者加入我们，共同推动开源项目的完善与创新，为开源社区贡献力量。
 
 ## 我们的目标
 
@@ -38,10 +35,12 @@ QQ频道交流群组：https://pd.qq.com/g/godot
 </a>
 
 
-## 统计信息
+## 项目荣誉
+
+我们很荣幸能获得[2025 AtomGit百大开源项目](https://atomgit.com/GitCode/G-Star100)荣誉，并被收录在[AtomGit G-Star Landscape 3.0](https://gstar-landscape.gitcode.com/?item=音视频-图形-游戏-3d--游戏引擎-unity-unreal-godot--konado)生态全景图中。
 
 
-### 项目贡献者
+## 项目贡献者
 
 以下图表通过[contrib.rocks](https://contrib.rocks)生成，实时更新项目贡献者信息。
 
@@ -52,7 +51,7 @@ QQ频道交流群组：https://pd.qq.com/g/godot
 </picture>
 
 
-### Github Star History
+## Github Star History
 <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=godothub/konado&type=date&theme=dark&legend=top-left" />
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=godothub/konado&type=date&legend=top-left" />
@@ -60,7 +59,7 @@ QQ频道交流群组：https://pd.qq.com/g/godot
  </picture>
 
 
-### AtomGit Star History
+## AtomGit Star History
 
 ![AtomGit Star History](https://atomgit.com/godothub/konado/starcharts.svg?variant=adaptive)
 
