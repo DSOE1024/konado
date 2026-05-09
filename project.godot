@@ -51,7 +51,7 @@ enabled=PackedStringArray("res://addons/konado/plugin.cfg", "res://addons/konado
 [gui]
 
 theme/custom="uid://cao2ht3baecs8"
-theme/custom_font="uid://bvv7q2l5vr5lg"
+theme/custom_font="uid://dihv3p6n7pp2e"
 
 [internationalization]
 
