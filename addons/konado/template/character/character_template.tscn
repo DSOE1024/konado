@@ -12,7 +12,6 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gnto7")
 texture_rect = NodePath("TextureRect")
-h_division = 5
 h_character_position = 1
 
 [node name="TextureRect" type="TextureRect" parent="." unique_id=1921303695]

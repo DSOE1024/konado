@@ -23,10 +23,10 @@ signal actor_moved
 @export var texture_rect: TextureRect
 
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
-@export var h_division: int = 6:
+@export var h_division: int = 5:
 	set(value):
 		if h_division != value:
-			h_division = clamp(value, 2, 15)
+			h_division = clamp(value, 2, 5)
 			_on_resized()
 
 ## 当前角色横向位置所在区块分割线索引，从0开始，从左到右递增
