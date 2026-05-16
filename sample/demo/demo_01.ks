@@ -12,7 +12,7 @@ background bg1 none
 
 # 演员显示语句：actor show <角色名称> <角色状态> at <x坐标> <y坐标> scale <缩放比例> [mirror]
 # 写mirror会使演员镜像显示（位置不变）
-actor show 可娜 正常 at 3 9 scale 0.3
+actor show 可娜 正常 at 3
 
 # 对话语句：
 # 第一个""中为名字，第二个""中为对话内容，后面的编号为语音列表中的voice_name

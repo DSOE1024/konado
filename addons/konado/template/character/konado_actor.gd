@@ -33,7 +33,7 @@ signal actor_moved
 @export var h_character_position: int = 3:
 	set(value):
 		if h_character_position != value:
-			h_character_position = clamp(value, 0, h_division - 1)
+			h_character_position = clamp(value, 0, h_division)
 			_on_resized()
 
 func _ready() -> void:
@@ -50,15 +50,13 @@ func _on_resized() -> void:
 		return
 	
 	if use_tween:
-		var tween: Tween = texture_rect.create_tween()
+		var tween: Tween = slot.create_tween()
 		tween.set_parallel(true)
-		tween.tween_property(self, "anchor_left", float(h_character_position) / float(h_division), animation_time)
-		tween.tween_property(self, "anchor_right", float(h_character_position + 1) / float(h_division), animation_time)
+		tween.tween_property(slot, "position:x", -size.x / h_division * (h_division - h_character_position ) + slot.size.x/2, animation_time)
 		await tween.finished
 		actor_moved.emit()
 	else:
-		anchor_left = float(h_character_position) / float(h_division)
-		anchor_right = float(h_character_position + 1) / float(h_division)
+		slot.position.x = -size.x / h_division * (h_division - h_character_position ) + slot.size.x/2
 	
 		actor_moved.emit()
 
@@ -111,3 +109,31 @@ func set_character_texture(texture: Texture) -> void:
 	if texture == null:
 		push_error("正在试图设置一个空角色图像")
 	texture_rect.texture = texture
+	
+
+
+@export var slot: Control
+
+
+			
+#@tool
+#extends Control
+#
+#@onready var control: Control = $Slot
+#
+#@export var division:= 3:
+	#set(value):
+		#if division != value:
+			#division = clamp(value,2,15)
+			#_on_resized()
+#
+#@export var character_position := 2:
+	#set(value):
+		#if character_position!= value:
+			#character_position = clamp(value,0,division)
+			#_on_resized()
+			#
+#
+#func _on_resized() -> void:
+	#if control:
+		#control.position.x = -size.x /division * (division - character_position )+ control.size.x/2
