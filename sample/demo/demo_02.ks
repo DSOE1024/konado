@@ -24,7 +24,7 @@ choice "我要看看变量系统" -> goto_ks3
 
 branch start_choice
     background 01 fade
-    actor show 可娜 介绍正常 at 1 9 scale 0.3
+    actor show 可娜 介绍正常 at 1
     "Kona" "首先将Konado加载进插件列表。"
     background 02 cyberglitch
     actor change 可娜 介绍说话
@@ -50,7 +50,7 @@ branch start_choice
     
 
 branch exit_choice
-    actor show 可娜 正常 at 1 9 scale 0.3
+    actor show 可娜 正常 at 1
     "Kona" "感谢你的使用，再见！"
     actor exit 可娜
     background bg_end fade
