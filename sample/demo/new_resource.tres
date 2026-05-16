@@ -48,7 +48,7 @@ metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 
 [sub_resource type="Resource" id="Resource_7mst4"]
 script = ExtResource("1_6oy8v")
-chara_name = "可娜"
+chara_name = "Kona"
 chara_status = Array[ExtResource("2_7mst4")]([SubResource("Resource_vqfl5"), SubResource("Resource_thc2m"), SubResource("Resource_vuu78"), SubResource("Resource_rgsqj"), SubResource("Resource_88rgo"), SubResource("Resource_xc1ds")])
 metadata/_custom_type_script = "uid://5dxx84u6uyy0"
 

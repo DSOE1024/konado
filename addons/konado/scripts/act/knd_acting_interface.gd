@@ -267,21 +267,23 @@ func highlight_actor(actor_id: String) -> void:
 	if actor_dict.size() <= 0:
 		return
 	for actor in actor_dict.keys():
-		var tmp = get_chara_node(actor).find_child(actor, true, false) as CanvasItem
-		if tmp == null :
-			return
-		tmp.set_modulate(Color(0.5, 0.5, 0.5))
+		var tmp = get_chara_node(actor)
+		if actor_id == actor:
+			tmp.set_highlight(true)
+		else:
+			tmp.set_highlight(false)
 
-	var chara_node: KND_Actor = get_chara_node(actor_id)
-	
-	if chara_node != null:
-		#如果剧情角色名字和演员名字不匹配，就pass，防止崩溃
-		var tex_node = chara_node.find_child(actor_id, true, false)
-		if tex_node:
-			# 修改字典中角色的状态
-			tex_node.set_modulate(Color(1.0, 1.0, 1.0))
-		pass
-	
+#
+	#var chara_node: KND_Actor = get_chara_node(actor_id)
+	##
+	#if chara_node != null:
+		##如果剧情角色名字和演员名字不匹配，就pass，防止崩溃
+		#var tex_node = chara_node.find_child(actor_id, true, false)
+		#if tex_node:
+			## 修改字典中角色的状态
+			#tex_node.set_modulate(Color(1.0, 1.0, 1.0))
+		#pass
+	#
 
 # 删除指定角色图片的方法
 func delete_character(chara_id: String) -> void:

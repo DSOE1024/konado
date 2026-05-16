@@ -60,6 +60,13 @@ func _on_resized() -> void:
 	
 		actor_moved.emit()
 
+## 高亮
+func set_highlight(highlight: bool) -> void:
+	if highlight:
+		texture_rect.set_modulate(Color(1.0, 1.0, 1.0))
+	else:
+		texture_rect.set_modulate(Color(0.35, 0.35, 0.35, 1.0))
+	pass
 
 ## 角色进场动画（透明度从0过渡到1）
 func enter_actor(play_anim: bool = true) -> void:
