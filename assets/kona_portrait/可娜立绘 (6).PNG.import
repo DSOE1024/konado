@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dic4tp4l03x08"
-path="res://.godot/imported/Konado_Enjoy.png-eea6f304ad10ff4099b58646127a39cd.ctex"
+uid="uid://bayxwhw3shs2o"
+path="res://.godot/imported/可娜立绘 (6).PNG-def3a2e19fed9be2f59926f9a7bcc080.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/kona/1.0/Konado_Enjoy.png"
-dest_files=["res://.godot/imported/Konado_Enjoy.png-eea6f304ad10ff4099b58646127a39cd.ctex"]
+source_file="res://assets/kona_portrait/可娜立绘 (6).PNG"
+dest_files=["res://.godot/imported/可娜立绘 (6).PNG-def3a2e19fed9be2f59926f9a7bcc080.ctex"]
 
 [params]
 
