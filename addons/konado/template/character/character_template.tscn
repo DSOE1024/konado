@@ -1,17 +1,19 @@
 [gd_scene format=3 uid="uid://dcwk5so2ohcc2"]
 
 [ext_resource type="Script" uid="uid://mksyuojdc6ns" path="res://addons/konado/template/character/konado_actor.gd" id="1_gnto7"]
-[ext_resource type="Texture2D" uid="uid://sax5mdgm71dw" path="res://assets/kona/kona_white.png" id="2_74lmx"]
+[ext_resource type="Texture2D" uid="uid://d86es3yopbu2" path="res://assets/kona_portrait/可娜立绘 (1).PNG" id="2_74lmx"]
 
 [node name="character" type="Control" unique_id=1241920877 node_paths=PackedStringArray("texture_rect")]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
+anchor_left = 0.2
+anchor_right = 0.4
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gnto7")
 texture_rect = NodePath("TextureRect")
+h_division = 5
+h_character_position = 1
 
 [node name="TextureRect" type="TextureRect" parent="." unique_id=1921303695]
 unique_name_in_owner = true

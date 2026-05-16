@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://6j67b0p34faq"
-path="res://.godot/imported/可娜立绘3.png-201527e3a758459fffaffa5c7ca02b79.ctex"
+uid="uid://d86es3yopbu2"
+path="res://.godot/imported/可娜立绘 (1).PNG-e0b0e562a9d72061c894149f9d41e602.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/kona/可娜立绘3.png"
-dest_files=["res://.godot/imported/可娜立绘3.png-201527e3a758459fffaffa5c7ca02b79.ctex"]
+source_file="res://assets/kona_portrait/可娜立绘 (1).PNG"
+dest_files=["res://.godot/imported/可娜立绘 (1).PNG-e0b0e562a9d72061c894149f9d41e602.ctex"]
 
 [params]
 
