@@ -110,7 +110,7 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 		tmp_original_line_number = original_line_number
 
 		# 空行或注释行跳过
-		if line.is_empty() or line.begins_with("#") or line.begins_with("##"):
+		if line.is_empty() or line.begins_with("#"):
 			i += 1
 			continue
 
@@ -638,12 +638,12 @@ func _parse_actor(line: String, dialog: KND_Dialogue) -> bool:
 			dialog.character_state = parts[3]
 			# 修复：增加数组长度检查，避免索引越界
 			if parts.size() >= 6 and parts[4] == "at":
-				dialog.actor_position = Vector2(parts[5].to_float(), parts[6].to_float())
-			if parts.size() >= 9 and parts[7] == "scale":
-				dialog.actor_scale = parts[8].to_float()
-			if parts.size() == 10:
-				if parts[9] == "mirror":
-					dialog.actor_mirror = true
+				dialog.actor_position = Vector2(parts[5].to_float(), 0.0)
+			#if parts.size() >= 9 and parts[7] == "scale":
+				#dialog.actor_scale = parts[8].to_float()
+			#if parts.size() == 10:
+				#if parts[9] == "mirror":
+					#dialog.actor_mirror = true
 
 			if not dep_characters.has(dialog.character_name):
 				dep_characters.append(dialog.character_name)

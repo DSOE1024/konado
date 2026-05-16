@@ -394,7 +394,7 @@ func _process(delta) -> void:
 					# 检查信号是否已经连接
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
-					_acting_interface.move_actor(actor, pos.x, pos.y)
+					_acting_interface.move_actor(actor, pos.x)
 				# 如果是删除演员
 				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
 					# 删除演员
@@ -700,13 +700,8 @@ func _display_character(dialogue: KND_Dialogue) -> void:
 			break
 	# 角色位置
 	var pos = dialogue.actor_position
-	# 角色缩放
-	var a_scale = dialogue.actor_scale
-	
-	# 角色立绘镜像翻转
-	var mirror = dialogue.actor_mirror
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, horizontal_division, vertical_division, pos.x, pos.y, target_state_name, target_state_tex, a_scale, mirror)
+	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_state_tex)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:
