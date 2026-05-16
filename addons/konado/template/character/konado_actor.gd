@@ -35,28 +35,6 @@ signal actor_moved
 			h_character_position = clamp(value, 0, h_division - 1)
 			_on_resized()
 
-## 屏幕纵向分块数，不得小于3，将屏幕高度分为从上到下递增的块，每个块大小相同
-@export var v_division: int = 10:
-	set(value):
-		if v_division != value:
-			v_division = clamp(value, 3, 15)
-			_on_resized()
-
-## 当前角色纵向位置所在区块分割线索引，从0开始，从上到下递增
-## 数值越小越偏上，数值越大越偏下
-@export var v_character_position: int = 2:
-	set(value):
-		if v_character_position != value:
-			v_character_position = clamp(value, 0, v_division - 1)
-			_on_resized()
-		
-## 设置镜像	
-@export var mirror: bool = false:
-	set(value):
-		if mirror != value:
-			mirror = value
-			set_texture_mirror()
-
 func _ready() -> void:
 	# 初始化透明度为1（确保初始状态正常）
 	if texture_rect:
@@ -73,15 +51,11 @@ func _on_resized() -> void:
 	if use_tween:
 		var tween: Tween = texture_rect.create_tween()
 		tween.set_parallel(true)
-		tween.tween_property(self, "anchor_top", float(v_character_position) / float(v_division), animation_time)
-		tween.tween_property(self, "anchor_bottom", float(v_character_position + 1) / float(v_division), animation_time)
 		tween.tween_property(self, "anchor_left", float(h_character_position) / float(h_division), animation_time)
 		tween.tween_property(self, "anchor_right", float(h_character_position + 1) / float(h_division), animation_time)
 		await tween.finished
 		actor_moved.emit()
 	else:
-		anchor_top = float(v_character_position) / float(v_division)
-		anchor_bottom = float(v_character_position + 1) / float(v_division)
 		anchor_left = float(h_character_position) / float(h_division)
 		anchor_right = float(h_character_position + 1) / float(h_division)
 	
@@ -136,16 +110,3 @@ func set_character_texture(texture: Texture) -> void:
 	if texture == null:
 		push_error("正在试图设置一个空角色图像")
 	texture_rect.texture = texture
-
-
-func set_texture_scale(scale: float) -> void:
-	if not texture_rect:
-		return
-	texture_rect.scale = Vector2(scale, scale)
-	_on_resized()
-
-	
-func set_texture_mirror() -> void:
-	if not texture_rect:
-		return
-	texture_rect.flip_h = mirror
