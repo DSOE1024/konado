@@ -155,7 +155,7 @@ static func _actor_show(d: KND_Dialogue) -> GraphNode:
 	var f3 := _add_field(n, "Pos X", str(d.actor_position.x) if d else "3")
 	var f4 := _add_field(n, "Pos Y", str(d.actor_position.y) if d else "9")
 	var f5 := _add_field(n, "Scale", str(d.actor_scale) if d else "0.3")
-	n.add_child(cb)
+
 	n.set_meta("fields", {"character_name": f1, "character_state": f2, "pos_x": f3, "pos_y": f4, "actor_scale": f5})
 	n.set_slot(0, true, FLOW_PORT, FLOW_COLOR, true, FLOW_PORT, FLOW_COLOR)
 	return n
