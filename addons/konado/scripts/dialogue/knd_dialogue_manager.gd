@@ -58,9 +58,7 @@ var _temp_variables: Dictionary = {}
 @export_category("UI Settings")
 
 ## 演员画布横向分块
-@export var horizontal_division: int = 6
-## 演员画布纵向分块
-@export var vertical_division: int = 6
+@export var horizontal_division: int = 5
 
 ## 对话界面接口类
 @export var _konado_choice_interface: KND_ChoiceInterface
@@ -72,6 +70,9 @@ var _temp_variables: Dictionary = {}
 @export var _acting_interface: KND_ActingInterface
 ## 音频接口
 @export var _audio_interface: KND_AudioInterface
+
+## 自动播放按钮
+@export var _autoPlayButton: Button
 
 ## 对话资源ID
 var _dialog_data_id: int = 0
@@ -168,6 +169,11 @@ func _ready() -> void:
 		_konado_dialogue_box.on_dialogue_click.connect(_process_next)
 	else:
 		push_error("未指定 _konado_dialogue_box")
+		
+	if _autoPlayButton:
+		_autoPlayButton.toggled.connect(start_autoplay)
+	else:
+		push_error("未指定 _autoPlayButton")
 	
 	# 设置存档系统的对话管理器引用
 	if save_system:
@@ -562,19 +568,24 @@ func isfinishtyping(wait_voice: bool) -> void:
 		# 如果有配音等待配音播放完成
 		if wait_voice:
 			await _audio_interface.voice_finish_playing
-			# 旁白等待两秒
 		else:
-			await get_tree().create_timer(autoplayspeed).timeout
+			print("触发打字完成信号")
+			var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
+			if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
+				print("选项自动下一个")
+				await get_tree().create_timer(0.05).timeout
+				_process_next()
+			else:
+				await get_tree().create_timer(autoplayspeed).timeout
 		_process_next()
-		
-	# 检查下一句是否是选项，如果是自动下一句
-	var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
-	if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
-		print("选项自动下一个")
-		await get_tree().create_timer(0.1).timeout
-		_process_next()
-		
-	print("触发打字完成信号")
+	else:
+		# 检查下一句是否是选项，如果是自动下一句
+		var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
+		if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
+			print("选项自动下一个")
+			await get_tree().create_timer(0.05).timeout
+			_process_next()
+		print("触发打字完成信号")
 	
 ## 处理下一个，绑定到下一个按钮
 func _process_next() -> void:
@@ -614,6 +625,8 @@ func _auto_process_next(s: Signal) -> void:
 	
 ## 关闭对话的方法
 func stop_dialogue() -> void:
+	_acting_interface.delete_all_actor()
+	_acting_interface.clean_background(KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT)
 	print_rich("[color=yellow]关闭对话[/color]")
 	# 切换到关闭状态
 	_dialogue_goto_state(DialogState.OFF)
@@ -641,12 +654,13 @@ func _goto_next_node() -> void:
 ## 开始自动播放的方法
 func start_autoplay(value: bool):
 	autoplay = value
-	#if value:
-		##_autoPlayButton.set_text("停止播放")
-	#else:
-		##_autoPlayButton.set_text("自动播放")
+	if value:
+		_autoPlayButton.set_text("停止播放")
+	else:
+		_autoPlayButton.set_text("自动播放")
+	await get_tree().process_frame
 	_process_next()
-	pass
+	
 	
 	
 ## 显示背景的方法
