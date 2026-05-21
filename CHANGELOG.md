@@ -1,7 +1,5 @@
 ## 2.4.0 LTS - Macaron
 
-[English](https://github.com/godothub/konado/blob/main/CHANGELOG.md) | [简体中文](https://github.com/godothub/konado/blob/main/CHANGELOG-ZH.md)  
-
 Konado 2.4.0 is a long-term support release. Compared with 2.3, this version focuses on the core dialogue flow, variable and save/load capabilities, reusable plugin ecosystem, templates, assets, and documentation system, bringing a major improvement in both functionality and stability.
 
 ### Highlights
