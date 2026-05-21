@@ -1,7 +1,5 @@
 ## 2.4.0 LTS - Macaron
 
-[English](https://github.com/godothub/konado/blob/main/CHANGELOG.md) | [简体中文](https://github.com/godothub/konado/blob/main/CHANGELOG-ZH.md)  
-
 Konado 2.4.0 是一个长期支持版本。相较 2.3，新版本将重点放在核心对话流程、变量与存档能力、可复用插件生态、模板资源和文档体系上，实现了功能性和稳定性的同步飞跃。
 
 ### 亮点
