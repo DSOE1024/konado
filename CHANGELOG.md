@@ -1,3 +1,40 @@
+## 2.4.1 LTS - Macaron
+
+Konado 2.4.1 is officially released. This version is a Long-Term Support (LTS) release of the 2.4 series and will receive longer maintenance and update support. Compared to version 2.4.0, this update focuses on editor interface experience optimization and core functionality improvements, while comprehensively fixing various issues reported by the community, further enhancing stability and usability.
+
+### Changes
+
+- Added KND_SettingsBridge settings bridge node for dialogue settings access
+- Added settings listener and settings button functionality to the dialogue manager
+- Integrated volume synchronization logic in the audio interface
+
+### Fixes
+
+#### Editor
+
+- Fixed theme and button styles, reset editor position to bottom, allowing it to pop up freely for convenient simultaneous preview of game scenes and dialogue editing
+- Fixed editor panel minimum height to 300px, ensuring the editor panel is visible during initialization
+- Fixed compatibility issues with Godot 4.6 API changes
+
+### Improvements
+
+#### Themes, Samples, and Assets
+
+- Added `NotoSansSC-VF.otf` and `ResourceHanRoundedCN-Medium.ttf` font files and corresponding SIL OFL license documents
+- Fixed font file paths in `left_theme.tres` and `middle_theme.tres` theme resources
+
+#### Documentation
+
+- Added `.gdignore` configuration in the `docs` directory to prevent Godot from abnormally loading unnecessary documentation files
+- Updated documentation and syntax highlighter instructions
+- Optimized multilingual Konado project descriptions
+
+### Compatibility Notes
+
+- 2.4.1 adjusts the editor panel position to the bottom. It is recommended to disable the old version plugin first, exit the project for a complete update, then re-enable it to avoid cache issues
+- Due to Godot 4.6 API changes, older versions of Godot may not work properly and need to be upgraded to Godot 4.6 or higher
+- Since new font files have been imported, if they do not take effect, it is recommended to delete the font resource file cache in the `.godot` directory
+
 ## 2.4.0 LTS - Macaron
 
 Konado 2.4.0 is a long-term support release. Compared with 2.3, this version focuses on the core dialogue flow, variable and save/load capabilities, reusable plugin ecosystem, templates, assets, and documentation system, bringing a major improvement in both functionality and stability.
