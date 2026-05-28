@@ -31,8 +31,8 @@ boot_splash/minimum_display_time=500
 
 KonadoAPI="*uid://ptylvcqylq7j"
 KND_AchievementManager="*uid://dlhxd0ixnuo6i"
-KND_Settings="*uid://crc32ueqs8u1w"
 KND_WebTool="*uid://b4rup11rlc0uk"
+KND_Settings="*uid://crc32ueqs8u1w"
 
 [display]
 
