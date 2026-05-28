@@ -51,7 +51,10 @@ func _enter_tree() -> void:
 	
 	ks_dock = EditorDock.new()
 	ks_dock.title = "KonadoEdit"
-	ks_dock.default_slot = EditorPlugin.DOCK_SLOT_BOTTOM
+	# 4.5改用 EditorPlugin
+	#ks_dock.default_slot = EditorPlugin.DOCK_SLOT_BOTTOM
+	# 4.6以上改用 EditorDock
+	ks_dock.default_slot = EditorDock.DOCK_SLOT_BOTTOM
 	ks_editor = load("res://addons/konado/editor/ks_editor/ks_editor.tscn").instantiate() as KsEditorWindow
 	ks_dock.add_child(ks_editor)
 	add_dock(ks_dock)
