@@ -702,7 +702,7 @@ func start_autoplay(value: bool):
 	else:
 		_autoPlayButton.set_text("自动播放")
 	await get_tree().process_frame
-	if autoplay && dialogueState != DialogState.OFF:
+	if autoplay or dialogueState != DialogState.OFF:
 		_process_next()
 	
 	
