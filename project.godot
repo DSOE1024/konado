@@ -23,7 +23,7 @@ config/description="Konado is a dialogue creation toolkit for the Godot Engine, 
 config/version="2.4.2"
 run/main_scene="uid://bcl2e6o0kb5dm"
 config/features=PackedStringArray("4.6", "C#", "Forward Plus")
-boot_splash/image="uid://bqg62jaajvjx4"
+boot_splash/image="uid://b2w3sylluqgpk"
 config/icon="uid://b5olx2vwoscbr"
 boot_splash/minimum_display_time=500
 
