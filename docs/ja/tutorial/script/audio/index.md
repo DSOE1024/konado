@@ -1,9 +1,9 @@
 ---
-title: 音频
+title: オーディオ
 order: 10
 sidebar_collapsed: true
 ---
 
-# 音频
+# オーディオ
 
-音频管理
+オーディオ管理

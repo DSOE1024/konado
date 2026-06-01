@@ -1,8 +1,7 @@
 ---
-title: 定制化开发
-order: 8
+title: 개발
+order: 7
+sidebar_collapsed: true
 ---
 
-# 开发
-
-Konado 定制化开发
+# 개발

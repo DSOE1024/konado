@@ -1,24 +1,26 @@
+---
+title: Play Background Music
+order: 1
+---
+
 # Play BGM
 
-## Function Description
+## Overview
+Used to play specified background music (BGM) in a particular scene or interaction node. It helps build atmosphere and emotion. Playing BGM is executed immediately and does not block subsequent script execution.
 
-Plays background music.
-
-## Syntax Structure
-
-```text
-play bgm [bgm_name]
+## Syntax
+```
+play bgm <music name>
 ```
 
-## Parameter Description
-
+## Parameters
 | Parameter | Required | Example | Description |
-|------|------|------|------|
-| bgm_name | Yes | `mystery` | BGM name |
+|------------|----------|--------------|--------------------------|
+| Music name | Yes | main_theme | Identifier of the BGM file to play |
 
-## Examples
-
-```text
-# Play BGM
-play bgm mystery
+## Code Examples
+```
+play bgm main_theme
+play bgm peaceful_morning
+play bgm tension_theme
 ```

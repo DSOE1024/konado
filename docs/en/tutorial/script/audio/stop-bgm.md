@@ -1,18 +1,19 @@
+---
+title: Stop Background Music
+order: 2
+---
+
 # Stop BGM
 
-## Function Description
+## Overview
+Used to stop the currently playing background music (BGM), usually during scene transitions, plot turns, or specific interaction nodes.
 
-Stops the currently playing background music.
-
-## Syntax Structure
-
-```text
+## Syntax
+```
 stop bgm
 ```
 
-## Examples
-
-```text
-# Stop BGM
+## Code Example
+```
 stop bgm
 ```

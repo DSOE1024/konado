@@ -1,23 +1,26 @@
+---
+title: Feedback
+order: 6
+---
+
 # Suggestions and Feedback
 
-If you have any suggestions for the documentation, development process, specific code, etc. of the `Konado` project, or if you have found errors in the documentation or code, you are welcome to provide feedback to us.
+If you have any suggestions about the `Konado` documentation, development process, or code, or if you find errors in the documentation or source code, we welcome your feedback.
 
-If you are willing to participate in any way or provide help to us, please [contact us](#suggestion-channels). As a community-collaborative open-source project, your contributions will make `Konado` better.
+If you would like to participate in any way or provide help, please [contact us](#feedback-channels). As a community-driven open-source project, your contributions will make `Konado` better.
 
+## Issue Feedback
 
-## Issue Feedback  
+Submit an [issue](https://github.com/godothub/konado/issues) to the official repository. Issues generally fall into three categories:
 
-Submit issues to the official repository [Submit issue](https://github.com/godothub/konado/issues), which are divided into the following three types:
+- **Bug report**: Describe the problem and include reproduction steps
+- **Feature request**: Describe the background and expected behavior in the Issue area
+- **Documentation improvement**: Describe what needs to be improved in the documentation
 
-- **Bug report**: Describe the problem, including reproduction steps
-- **Feature suggestion**: Describe the demand background and expected effect in the Issue area
-- **Documentation improvement**: Describe the areas that need improvement in the Issue area
+## Feedback Channels
 
+* [Submit an issue](https://github.com/godothub/konado/issues) (preferred, because it helps us track problems)
 
-## Suggestion Channels
-
-* [Submit issue](https://github.com/godothub/konado/issues) (Priority consideration, this makes it easier for us to track issues)
-
-* [Join group feedback](https://pd.qq.com/g/godot)
+* [Join the group for feedback](https://pd.qq.com/g/godot)
 
 * [Post for help](https://pd.qq.com/g/GodotHub999)

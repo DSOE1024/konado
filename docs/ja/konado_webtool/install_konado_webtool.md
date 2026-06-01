@@ -1,16 +1,16 @@
 ---
-title: 安装
+title: インストール
 order: 2
 ---
 
-# 安装 Konado WebTool
+# Konado WebTool のインストール
 
-## 基础依赖
+## 基本依存関係
 
-1. Godot 4.0+ 版本
-2. Web 平台目标
+1. Godot 4.0+ バージョン
+2. Web プラットフォームターゲット
 
-## 安装步骤
+## インストール手順
 
-1. 将 `konado_webtool` 插件复制到 Godot 项目的 `addons` 目录下
-2. 在 Godot 编辑器中，进入 `项目 -> 项目设置 -> 插件`，启用 KonadoWebTool 插件
+1. `konado_webtool` プラグインを Godot プロジェクトの `addons` ディレクトリへコピーします
+2. Godot エディターで `Project -> Project Settings -> Plugins` を開き、KonadoWebTool プラグインを有効にします

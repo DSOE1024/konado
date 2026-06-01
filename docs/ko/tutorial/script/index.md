@@ -5,4 +5,4 @@ order: 5
 
 # Konado Script
 
-Konado 脚本语言参考
+Konado 스크립트 언어 참조

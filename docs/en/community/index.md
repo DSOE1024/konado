@@ -1,7 +1,8 @@
 ---
 title: Community
+order: 11
 ---
 
 # Community
 
-Konado community guide
+Konado Project community resources

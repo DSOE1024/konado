@@ -1,26 +1,26 @@
 ---
-title: 配置文件
+title: 設定ファイル
 order: 1
 ---
 
-# 设置配置指南
+# 設定ファイルガイド
 
-## 配置文件结构
+## 設定ファイルの構造
 
-默认设置配置文件位于 `res://addons/konado_settings/resources/default_settings.json`，使用 JSON 格式定义设置项。
+デフォルト設定ファイルは `res://addons/konado_settings/resources/default_settings.json` にあります。設定項目は JSON 形式で定義します。
 
-### 基本结构
+### 基本構造
 
 ```json
 {
 	"categories": [
 		{
 			"id": "audio",
-			"display_name": "音频",
+			"display_name": "オーディオ",
 			"items": [
 				{
 					"key": "master_volume",
-					"label": "主音量",
+					"label": "マスター音量",
 					"type": 0,
 					"min_value": 0.0,
 					"max_value": 1.0,
@@ -34,50 +34,50 @@ order: 1
 }
 ```
 
-## 配置说明
+## 設定項目の説明
 
-### 顶层结构
+### トップレベル構造
 
-- **categories**：设置分类数组，包含所有设置分类
+- **categories**: すべての設定カテゴリを含む配列です。
 
-### 分类属性
+### カテゴリのプロパティ
 
-- **id**：分类唯一标识符，用于程序中访问
-- **display_name**：分类显示名称，在设置面板中显示
-- **items**：设置项数组，包含该分类下的所有设置项
+- **id**: カテゴリの一意な識別子です。コードから参照するときに使用します。
+- **display_name**: 設定パネルに表示されるカテゴリ名です。
+- **items**: そのカテゴリに含まれる設定項目の配列です。
 
-### 设置项属性
+### 設定項目のプロパティ
 
-- **key**：设置项唯一标识符，在分类内必须唯一
-- **label**：设置项显示标签，在设置面板中显示
-- **type**：设置类型
-  - `0`：滑块（SLIDER）
-  - `1`：开关（TOGGLE）
-  - `2`：选项（OPTION）
+- **key**: 設定項目の一意な識別子です。同じカテゴリ内で重複してはいけません。
+- **label**: 設定パネルに表示されるラベルです。
+- **type**: 設定タイプです。
+  - `0`: スライダー（SLIDER）
+  - `1`: トグル（TOGGLE）
+  - `2`: オプション（OPTION）
 
-#### 滑块类型（SLIDER）特有属性
+#### スライダー型（SLIDER）専用プロパティ
 
-- **min_value**：最小值
-- **max_value**：最大值
-- **step**：步长
-- **default_value**：默认值（float 类型）
+- **min_value**: 最小値
+- **max_value**: 最大値
+- **step**: ステップ幅
+- **default_value**: デフォルト値（float 型）
 
-#### 开关类型（TOGGLE）特有属性
+#### トグル型（TOGGLE）専用プロパティ
 
-- **default_value**：默认值（bool 类型）
+- **default_value**: デフォルト値（bool 型）
 
-#### 选项类型（OPTION）特有属性
+#### オプション型（OPTION）専用プロパティ
 
-- **options**：选项列表（Array[String]）
-- **default_value**：默认值（String 类型，必须在 options 列表中）
+- **options**: 選択肢の一覧（Array[String]）
+- **default_value**: デフォルト値（String 型）。`options` の中に含まれている必要があります。
 
-#### 通用属性
+#### 共通プロパティ
 
-- **platforms**：平台列表，空数组或包含 "all" 表示所有平台
+- **platforms**: 表示対象のプラットフォーム一覧です。空配列、または `"all"` を含む場合はすべてのプラットフォームで表示されます。
 
-## 支持的平台标识
+## 対応プラットフォーム識別子
 
-- `all` - 所有平台
+- `all` - すべてのプラットフォーム
 - `android` - Android
 - `bsd` - BSD
 - `linux` - Linux
@@ -85,33 +85,33 @@ order: 1
 - `ios` - iOS
 - `visionos` - visionOS
 - `windows` - Windows
-- `linuxbsd` - Linux或BSD
-- `debug` - 调试版本
-- `release` - 发布版本
-- `editor` - 编辑器构建
+- `linuxbsd` - Linux または BSD
+- `debug` - デバッグビルド
+- `release` - リリースビルド
+- `editor` - エディタービルド
 
-## 平台过滤规则
+## プラットフォームフィルタのルール
 
-1. **空数组**：表示在所有平台可见
-2. **包含 "all"**：表示在所有平台可见
-3. **特定平台**：只在指定的平台可见
-4. **平台别名**：`linuxbsd` 会匹配 Linux 或 BSD 平台
-5. **构建类型**：`debug` 和 `release` 根据构建类型过滤
+1. **空配列**: すべてのプラットフォームで表示されます。
+2. **"all" を含む**: すべてのプラットフォームで表示されます。
+3. **特定プラットフォーム**: 指定したプラットフォームでのみ表示されます。
+4. **プラットフォーム別名**: `linuxbsd` は Linux または BSD に一致します。
+5. **ビルド種別**: `debug` と `release` はビルド種別に応じてフィルタされます。
 
-## 示例配置
+## 設定例
 
-### 完整配置示例
+### 完全な設定例
 
 ```json
 {
 	"categories": [
 		{
 			"id": "audio",
-			"display_name": "音频",
+			"display_name": "オーディオ",
 			"items": [
 				{
 					"key": "master_volume",
-					"label": "主音量",
+					"label": "マスター音量",
 					"type": 0,
 					"min_value": 0.0,
 					"max_value": 1.0,
@@ -121,7 +121,7 @@ order: 1
 				},
 				{
 					"key": "music_volume",
-					"label": "音乐音量",
+					"label": "音楽音量",
 					"type": 0,
 					"min_value": 0.0,
 					"max_value": 1.0,
@@ -132,31 +132,31 @@ order: 1
 		},
 		{
 			"id": "display",
-			"display_name": "画面",
+			"display_name": "表示",
 			"items": [
 				{
 					"key": "fullscreen",
-					"label": "全屏",
+					"label": "フルスクリーン",
 					"type": 1,
 					"default_value": false
 				},
 				{
 					"key": "language",
-					"label": "语言",
+					"label": "言語",
 					"type": 2,
 					"options": ["zh", "tc", "en", "ja", "ko"],
 					"default_value": "zh"
 				},
 				{
 					"key": "debug_mode",
-					"label": "调试模式",
+					"label": "デバッグモード",
 					"type": 1,
 					"default_value": false,
 					"platforms": ["debug"]
 				},
 				{
 					"key": "windows_only",
-					"label": "Windows专属",
+					"label": "Windows 専用",
 					"type": 1,
 					"default_value": false,
 					"platforms": ["windows"]
@@ -167,9 +167,9 @@ order: 1
 }
 ```
 
-### 不同类型设置项示例
+### 型別の設定項目例
 
-#### 滑块类型
+#### スライダー型
 
 ```json
 {
@@ -183,54 +183,54 @@ order: 1
 }
 ```
 
-#### 开关类型
+#### トグル型
 
 ```json
 {
 	"key": "auto_mode",
-	"label": "自动模式",
+	"label": "自動モード",
 	"type": 1,
 	"default_value": false
 }
 ```
 
-#### 选项类型
+#### オプション型
 
 ```json
 {
 	"key": "quality",
-	"label": "画面质量",
+	"label": "画質",
 	"type": 2,
-	"options": ["低", "中", "高", "极高"],
+	"options": ["低", "中", "高", "最高"],
 	"default_value": "中"
 }
 ```
 
-## 配置最佳实践
+## 設定のベストプラクティス
 
-1. **命名规范**
-   - 使用小写字母和下划线命名 `id` 和 `key`
-   - `display_name` 使用用户友好的名称
+1. **命名規則**
+   - `id` と `key` には小文字とアンダースコアを使用します。
+   - `display_name` にはユーザーに分かりやすい名前を使用します。
 
-2. **平台配置**
-   - 对于通用设置，使用 `"platforms": ["all"]`
-   - 对于平台特定设置，明确指定平台
+2. **プラットフォーム設定**
+   - 汎用設定には `"platforms": ["all"]` を使用します。
+   - プラットフォーム固有の設定では対象プラットフォームを明示します。
 
-3. **默认值**
-   - 为所有设置项提供合理的默认值
-   - 确保默认值类型与设置类型匹配
+3. **デフォルト値**
+   - すべての設定項目に妥当なデフォルト値を用意します。
+   - デフォルト値の型が設定タイプと一致していることを確認します。
 
-4. **组织方式**
-   - 按功能将设置分组到不同分类
-   - 保持分类数量合理，避免过多分类
+4. **整理方法**
+   - 機能ごとに設定をカテゴリへ分けます。
+   - カテゴリ数は適切に保ち、多くなりすぎないようにします。
 
-5. **格式检查**
-   - 使用 JSON 验证工具检查配置文件格式
-   - 确保所有必需属性都已设置
+5. **形式チェック**
+   - JSON 検証ツールで設定ファイルの形式を確認します。
+   - 必須プロパティがすべて設定されていることを確認します。
 
-## 注意事项
+## 注意事項
 
-- 确保设置项的 `key` 在分类内唯一
-- 对于滑块类型，确保 `min_value` < `max_value`
-- 对于选项类型，确保 `options` 数组不为空
-- 配置文件变更后，需要重启游戏或调用 `rebuild()` 方法更新设置面板
+- 設定項目の `key` は同じカテゴリ内で一意にしてください。
+- スライダー型では `min_value` < `max_value` になるようにしてください。
+- オプション型では `options` 配列を空にしないでください。
+- 設定ファイルを変更した後は、ゲームを再起動するか `rebuild()` を呼び出して設定パネルを更新する必要があります。

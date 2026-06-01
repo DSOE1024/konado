@@ -1,8 +1,8 @@
 ---
-title: 项目介绍
+title: プロジェクト紹介
 order: 0
 ---
 
-# 介绍
+# 紹介
 
-关于 Konado
+Konado について

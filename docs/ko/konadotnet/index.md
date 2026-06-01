@@ -5,4 +5,4 @@ order: 4
 
 # Konado .NET API
 
-Konado .NET API 参考
+Konado .NET API 참조

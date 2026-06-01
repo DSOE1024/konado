@@ -7,12 +7,10 @@ order: 5
 
 ## Description
 
-Evaluates a numeric condition to determine which dialogue content to play. If the condition is not met, the dialogue in the `else` block is played instead. If there is no `else` block, no dialogue is played.
-
-`%variable` is a custom variable with an integer value. It can be set in the dialogue manager and referenced via `%variable_name`. `==` is the comparison operator, meaning "equals".
+Choose which dialogue content to play based on a numeric condition. If the condition is not met, the dialogue inside `else` is played. If there is no `else`, no dialogue is played.
+Variables are custom variables whose values are integers. They can be set in dialogue management and referenced with `%variable_name`. `==` is the comparison condition and means equal to.
 
 ## Syntax
-
 ```
 if %variable == value:
     <dialogue>
@@ -28,7 +26,7 @@ endif
 if %love == 0:
     "Kona" "What would you like to drink today?"
 else:
-    "Kona" "Fancy meeting you again!"
+    "Kona" "Nice to see you again!"
     "Kona" "What would you like to drink today?"
 endif
 ```

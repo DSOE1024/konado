@@ -1,37 +1,44 @@
+---
+title: Branch
+order: 4
+---
+
 # Branch
 
-## Function Description
+## Description
 
-Creates a branch point for dialogue choices.
+A branch is a way to organize script content. Branches make it easy to manage and call different parts of a script and are used to implement complex jump logic. This feature is usually used together with choices.
 
-## Syntax Structure
+You can think of a label as a "bookmark" in the script. A label lets you quickly locate a specific position in the script. The content wrapped by the label and its indentation is the label content. This part of the script is added to the dialogue list when the current label dialogue is executed; otherwise, it is only stored in the label dialogue and does not trigger playback.
+
+Branches cannot be nested. The indentation level of a branch must match the indentation level of dialogues, otherwise it will not be recognized correctly. The following is an incorrect example:
 
 ```text
-choice {
-  [option_text] -> [target_label]
-  [option_text] -> [target_label]
-}
+# Incorrect example
+branch drink_water
+    "kona" "I want to drink water"
+        branch eat_cake
+            "kona" "I want to eat cake"
+branch drink_tea
+    "kona" "I want to drink tea"
 ```
 
-## Parameter Description
+## Syntax
+```text
+branch [label ID]
+    [script content]
+```
 
+## Parameters
 | Parameter | Required | Example | Description |
 |------|------|------|------|
-| option_text | Yes | `Go left` | Choice option text |
-| target_label | Yes | `left_path` | Label to jump to when option is selected |
+| Label ID | Yes | `drink_water` | Label identifier |
 
-## Examples
+## Example
 
 ```text
-# Branch with choices
-choice {
-  "Go left" -> left_path
-  "Go right" -> right_path
-}
-
-left_path:
-"narrator" "You chose to go left."
-
-right_path:
-"narrator" "You chose to go right."
+branch drink_water
+    "kona" "I want to drink water"
+branch drink_tea
+    "kona" "I want to drink tea"
 ```

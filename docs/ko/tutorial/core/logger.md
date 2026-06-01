@@ -3,23 +3,23 @@ title: Logger
 order: 4
 ---
 
-# 日志器 KND_Logger
+# 로거 KND_Logger
 
-## 前言
+## 머리말
 
-KND_Logger 是基于Godot Logger实现的日志模块，支持日志级别、日志格式、日志输出、日志文件等功能，用于记录Konado运行时的日志信息。
+KND_Logger는 Godot Logger 구현을 기반으로 한 로그 모듈입니다. 로그 레벨, 로그 형식, 로그 출력, 로그 파일 등의 기능을 지원하며 Konado 실행 중의 로그 정보를 기록하는 데 사용됩니다.
 
-## 日志路径
+## 로그 경로
 
-日志文件默认路径为`C:\Users\{用户名}\AppData\Roaming\Godot\app_userdata\Konado Project\konado_log.log`，可以通过修改`KND_Logger`的`LOG_FILE_PATH`属性来更改日志文件路径。
+로그 파일 기본 경로는 `C:\Users\{사용자 이름}\AppData\Roaming\Godot\app_userdata\Konado Project\konado_log.log`입니다. `KND_Logger`의 `LOG_FILE_PATH` 속성을 수정해 로그 파일 경로를 변경할 수 있습니다.
 
-## 屏幕覆盖日志
+## 화면 오버레이 로그
 
-在报错时，对话场景会在屏幕上覆盖一个日志窗口，用于显示错误信息并中断游戏运行，如果您希望关闭该功能，可以将`KND_DialogueManager`的`enable_overlay_log`属性中设置为`false`。
+오류가 발생하면 대화 장면은 화면 위에 로그 창을 덮어 표시하여 오류 정보를 보여 주고 게임 실행을 중단합니다. 이 기능을 끄고 싶다면 `KND_DialogueManager`의 `enable_overlay_log` 속성을 `false`로 설정하세요.
 
-## 日志回调
+## 로그 콜백
 
-KND_Logger 提供了日志回调功能，您可以通过以下方式连接日志回调：
+KND_Logger는 로그 콜백 기능을 제공합니다. 다음 방식으로 로그 콜백을 연결할 수 있습니다.
 
 ```gdscript
 logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)

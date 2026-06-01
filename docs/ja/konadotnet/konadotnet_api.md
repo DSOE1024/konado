@@ -1,22 +1,21 @@
 ---
-title: 使用API
+title: API の使用
 order: 2
 ---
 
 # Konado .NET API
 
-> 该功能仍属于实验性功能，可能存在一些问题。
+> この機能はまだ実験的な機能であり、いくつかの問題が存在する可能性があります。
 
+## 概要
 
-## 简介
-
-Konado.NET 是 Konado 对话系统的 C# API 扩展，通过 Konado.NET，开发者可以在 C# 项目中轻松地创建、管理和执行对话内容。
+Konado.NET は Konado 会話システムの C# API 拡張です。Konado.NET を使用すると、開発者は C# プロジェクト内で会話内容を簡単に作成、管理、実行できます。
 
 ## 使用方法
 
-### 非.NET 项目
+### 非 .NET プロジェクト
 
-如果在非.NET 项目中使用 Konado .NET API，会遇到如下报错，这是正常现象：
+非 .NET プロジェクトで Konado .NET API を使用すると、以下のエラーが発生します。これは正常な現象です。
 ```
  ERROR: core/io/resource_loader.cpp:568 - Condition "local_path.is_empty()" is true. Returning: Ref<ResourceLoader::LoadToken>()
   ERROR: Failed to create an autoload, can't load from UID or path: uid://ptylvcqylq7j.
@@ -24,238 +23,236 @@ Konado.NET 是 Konado 对话系统的 C# API 扩展，通过 Konado.NET，开发
 
 ```
 
-这个问题不会影响 Konado 基础功能的使用，但无法使用 Konado .NET API。
+この問題は Konado の基本機能の使用には影響しませんが、Konado .NET API は使用できません。
 
-### 启用插件
+### プラグインの有効化
 
+先に Konado プラグインを有効化し、その後 Konado .NET API プラグインを有効化してください。
 
-请先启用Konado插件，然后再启用Konado .NET API插件。
+シーンには DialogueManager ノードが含まれている必要があります。含まれていない場合、Konado .NET API は正常に動作しません。
 
-场景中应包含 DialogueManager 节点，否则 Konado .NET API 将无法正常工作。
-
-首次启用 Konado.NET，会遇到如下报错：
+Konado.NET を初めて有効化すると、以下のエラーが発生する場合があります。
 
 ```
-无法从路径 “res://addons/konadotnet/Konadotnet.cs” 加载附加组件脚本：该脚本可能有代码错误。
-正在禁用位于 “res://addons/konadotnet/plugin.cfg” 的附加组件以阻止其进一步报错。
+パス “res://addons/konadotnet/Konadotnet.cs” からアドオンスクリプトを読み込めません：スクリプトにコードエラーがある可能性があります。
+さらなるエラーを防ぐため “res://addons/konadotnet/plugin.cfg” のアドオンを無効化しています。
 ```
 
 ```
 Unable to load addon script from path: 'res://addons/konadotnet/Konadotnet.cs'.
 ```
 
-这是正常现象，请重新在Godot编译 Konado.NET，然后重新打开项目即可解决。
+これは正常です。Godot で Konado.NET を再ビルドし、プロジェクトを再度開くと解決できます。
 
-如果无法启用插件，并且在MSBuild中没有任何报错，可以尝试关闭项目后，删除项目根目录的 .godot/ 文件夹，然后重新生成项目。
+プラグインを有効化できず、MSBuild にエラーがない場合は、プロジェクトを閉じてプロジェクトルートの `.godot/` フォルダーを削除し、プロジェクトを再生成してみてください。
 
-
-## API 参考
+## API リファレンス
 
 ### KonadoAPI
 
-核心 API 类，提供对 Konado 系统的访问。
+Konado システムへのアクセスを提供するコア API クラスです。
 
-#### 属性
+#### プロパティ
 
-- `bool IsApiReady`: 指示 API 是否已准备就绪
-- `KonadoAPI API`: 静态实例，提供对 Konado API 的访问
-- `DialogueManagerAPI DialogueManagerApi`: 对话管理器 API 实例
+- `bool IsApiReady`: API の準備が完了しているかを示します
+- `KonadoAPI API`: Konado API へのアクセスを提供する静的インスタンス
+- `DialogueManagerAPI DialogueManagerApi`: 会話マネージャー API インスタンス
 
 ### DialogueManagerAPI
 
-对话管理器 API，用于控制对话的执行。
+会話の実行を制御するための会話マネージャー API です。
 
-#### 方法
+#### メソッド
 
-- `InitDialogue()`: 初始化对话
-- `StartDialogue()`: 开始对话
-- `StopDialogue()`: 停止对话
+- `InitDialogue()`: 会話を初期化
+- `StartDialogue()`: 会話を開始
+- `StopDialogue()`: 会話を停止
 
-#### 事件
+#### イベント
 
-- `ShotStart`: 对话场景开始时触发
-- `ShotEnd`: 对话场景结束时触发
-- `DialogueLineStart(int line)`: 对话行开始时触发
-- `DialogueLineEnd(int line)`: 对话行结束时触发
+- `ShotStart`: 会話シーン開始時に発火
+- `ShotEnd`: 会話シーン終了時に発火
+- `DialogueLineStart(int line)`: 会話行開始時に発火
+- `DialogueLineEnd(int line)`: 会話行終了時に発火
 
 ### ActingInterface
 
-表演接口，定义背景过渡效果类型。
+背景トランジション効果タイプを定義する演出インターフェースです。
 
-#### 枚举
+#### enum
 
-- `BackgroundTransitionEffectsType`: 背景过渡效果类型
-  - `NoneEffect`: 无效果
-  - `EraseEffect`: 擦除效果
-  - `BlindsEffect`: 百叶窗效果
-  - `WaveEffect`: 波浪效果
-  - `AlphaFadeEffect`: 透明度渐变效果
-  - `VortexSwapEffect`: 涡流切换效果
-  - `WindmillEffect`: 风车效果
-  - `CyberGlitchEffect`: 赛博故障效果
+- `BackgroundTransitionEffectsType`: 背景トランジション効果タイプ
+  - `NoneEffect`: 効果なし
+  - `EraseEffect`: 消去効果
+  - `BlindsEffect`: ブラインド効果
+  - `WaveEffect`: 波効果
+  - `AlphaFadeEffect`: 透明度フェード効果
+  - `VortexSwapEffect`: 渦切り替え効果
+  - `WindmillEffect`: 風車効果
+  - `CyberGlitchEffect`: サイバーグリッチ効果
 
-### Wrapper 类
+### Wrapper クラス
 
-Wrapper 类提供了对 GDScript 对象的 C# 封装，使开发者可以在 C# 中操作 Konado 的各种数据结构，不过目前这些类并未完全实现，仅提供了部分属性和方法，有待进一步完善。
+Wrapper クラスは GDScript オブジェクトを C# で扱うためのラッパーを提供し、開発者が C# から Konado の各種データ構造を操作できるようにします。ただし、現時点ではこれらのクラスは完全には実装されておらず、一部のプロパティとメソッドのみを提供しています。今後さらに改善される予定です。
 
 #### Dialogue
 
-对话对象包装器，表示单个对话元素。
+単一の会話要素を表す会話オブジェクトラッパーです。
 
-##### 属性
+##### プロパティ
 
-- `Type DialogueType`: 对话类型（枚举）
-- `string BranchId`: 分支 ID
-- `Array<Dialogue> BranchDialogue`: 分支对话
-- `bool IsBranchLoaded`: 分支是否已加载
-- `string CharacterId`: 角色ID
-- `string DialogueContent`: 对话内容
-- `DialogueActor ShowActor`: 显示的角色
-- `string ExitActor`: 退出的角色
-- `string ChangeStateActor`: 状态变更的角色
-- `string TargetMoveChara`: 移动目标角色
-- `Vector2 TargetMovePos`: 移动目标位置
-- `Array<DialogueChoice> Choices`: 对话选项
-- `string BgmName`: 背景音乐名称
-- `string VoiceId`: 语音 ID
-- `string SoundeffectName`: 音效名称
-- `string BackgroundImageName`: 背景图像名称
-- `BackgroundTransitionEffectsType BackgroundToggleEffects`: 背景切换效果
-- `string JumpShotId`: 跳转场景 ID
-- `string LabelNotes`: 标签注释
-- `Dictionary ActorSnapshots`: 角色快照
+- `Type DialogueType`: 会話タイプ（enum）
+- `string BranchId`: 分岐 ID
+- `Array<Dialogue> BranchDialogue`: 分岐会話
+- `bool IsBranchLoaded`: 分岐が読み込まれているか
+- `string CharacterId`: キャラクター ID
+- `string DialogueContent`: 会話内容
+- `DialogueActor ShowActor`: 表示するキャラクター
+- `string ExitActor`: 退場するキャラクター
+- `string ChangeStateActor`: 状態が変更されるキャラクター
+- `string TargetMoveChara`: 移動対象キャラクター
+- `Vector2 TargetMovePos`: 移動先位置
+- `Array<DialogueChoice> Choices`: 会話選択肢
+- `string BgmName`: BGM 名
+- `string VoiceId`: ボイス ID
+- `string SoundeffectName`: 効果音名
+- `string BackgroundImageName`: 背景画像名
+- `BackgroundTransitionEffectsType BackgroundToggleEffects`: 背景切り替え効果
+- `string JumpShotId`: ジャンプ先シーン ID
+- `string LabelNotes`: ラベル注釈
+- `Dictionary ActorSnapshots`: キャラクタースナップショット
 
-##### 对话类型枚举
+##### 会話タイプ enum
 
-- `Start`: 开始
-- `OrdinaryDialog`: 普通对话
-- `DisplayActor`: 显示角色
-- `ActorChangeState`: 角色状态变更
-- `MoveActor`: 移动角色
-- `SwitchBackground`: 切换背景
-- `ExitActor`: 角色退出
-- `PlayBgm`: 播放背景音乐
-- `StopBgm`: 停止背景音乐
-- `PlaySoundEffect`: 播放音效
-- `ShowChoice`: 显示选项
-- `Branch`: 分支
-- `JumpTag`: 跳转标签
-- `JumpShot`: 跳转场景
-- `TheEnd`: 结束
-- `Label`: 标签
+- `Start`: 開始
+- `OrdinaryDialog`: 通常会話
+- `DisplayActor`: キャラクター表示
+- `ActorChangeState`: キャラクター状態変更
+- `MoveActor`: キャラクター移動
+- `SwitchBackground`: 背景切り替え
+- `ExitActor`: キャラクター退場
+- `PlayBgm`: BGM 再生
+- `StopBgm`: BGM 停止
+- `PlaySoundEffect`: 効果音再生
+- `ShowChoice`: 選択肢表示
+- `Branch`: 分岐
+- `JumpTag`: タグへジャンプ
+- `JumpShot`: シーンへジャンプ
+- `TheEnd`: 終了
+- `Label`: ラベル
 
 #### DialogueActor
 
-对话角色包装器，表示对话中的角色对象。
+会話内のキャラクターオブジェクトを表す会話キャラクターラッパーです。
 
-##### 属性
+##### プロパティ
 
-- `string CharacterName`: 角色名称
-- `string CharacterState`: 角色状态
-- `Vector2 ActorPosition`: 角色位置
-- `Vector2 ActorScale`: 角色缩放
-- `bool ActorMirror`: 角色镜像
+- `string CharacterName`: キャラクター名
+- `string CharacterState`: キャラクター状態
+- `Vector2 ActorPosition`: キャラクター位置
+- `Vector2 ActorScale`: キャラクター拡大率
+- `bool ActorMirror`: キャラクターミラー
 
 #### DialogueChoice
 
-对话选项包装器，表示对话中的选项对象。
+会話内の選択肢オブジェクトを表す会話選択肢ラッパーです。
 
-##### 属性
+##### プロパティ
 
-- `string ChoiceText`: 选项文本
-- `string JumpTag`: 跳转标签
+- `string ChoiceText`: 選択肢テキスト
+- `string JumpTag`: ジャンプタグ
 
 #### KndData
 
-Konado KND_Data 数据基类包装器。
+Konado KND_Data データ基底クラスのラッパーです。
 
-##### 属性
+##### プロパティ
 
-- `string Type`: 数据类型
-- `bool Love`: 是否为喜爱内容
-- `string Tip`: 提示信息
+- `string Type`: データタイプ
+- `bool Love`: お気に入り内容かどうか
+- `string Tip`: ヒント情報
 
 #### KndShot
 
-Konado KND_Shot 镜头包装器，继承自 KndData。
+Konado KND_Shot ショットラッパーで、KndData を継承します。
 
-##### 属性
+##### プロパティ
 
-- `string Name`: 场景名称
-- `string ShotId`: 场景 ID
-- `string SourceStory`: 源故事
-- `Array<Dictionary> DialoguesSourceData`: 对话源数据
-- `Dictionary Branches`: 分支
-- `Dictionary<string, Dictionary> SourceBranches`: 源分支
-- `Dictionary<string, int> ActorCharacterMap`: 角色映射
+- `string Name`: シーン名
+- `string ShotId`: シーン ID
+- `string SourceStory`: 元ストーリー
+- `Array<Dictionary> DialoguesSourceData`: 会話元データ
+- `Dictionary Branches`: 分岐
+- `Dictionary<string, Dictionary> SourceBranches`: 元分岐
+- `Dictionary<string, int> ActorCharacterMap`: キャラクターマッピング
 
 #### KonadoScriptsInterpreter
 
-KonadoScriptsInterpreter 脚本解释器包装器，用于解析 Konado 脚本文件。
+KonadoScriptsInterpreter スクリプトインタープリターラッパーで、Konado スクリプトファイルの解析に使用します。
 
-##### 方法
+##### メソッド
 
-- `KndShot ProcessScriptsToData(string path)`: 处理脚本文件为数据
-- `Dialogue ParseSingleLine(string line, long lineNumber, string path)`: 解析单行脚本
+- `KndShot ProcessScriptsToData(string path)`: スクリプトファイルをデータへ処理
+- `Dialogue ParseSingleLine(string line, long lineNumber, string path)`: 単一行スクリプトを解析
 
-## 示例代码
+## サンプルコード
 
-### 对话管理
+### 会話管理
 
 ```csharp
 using Konado.Runtime.API;
 
-// 获取 Konado API 实例
+// Konado API インスタンスを取得
 var konadoAPI = KonadoAPI.API;
 var dialogueManager = KonadoAPI.DialogueManagerApi;
 
-// 检查 API 是否就绪
+// API が準備完了か確認
 if (dialogueManager.IsReady)
 {
-    // 初始化对话
+    // 会話を初期化
     dialogueManager.InitDialogue();
 
-    // 开始对话
+    // 会話を開始
     dialogueManager.StartDialogue();
 
-    // 停止对话
+    // 会話を停止
     dialogueManager.StopDialogue();
 }
 ```
 
-### 对话事件监听
+### 会話イベントの監視
 
 ```csharp
-// 监听对话开始事件
+// 会話開始イベントを監視
 dialogueManager.ShotStart += () => {
-    GD.Print("对话场景开始");
+    GD.Print("会話シーン開始");
 };
 
-// 监听对话结束事件
+// 会話終了イベントを監視
 dialogueManager.ShotEnd += () => {
-    GD.Print("对话场景结束");
+    GD.Print("会話シーン終了");
 };
 
-// 监听对话行开始事件
+// 会話行開始イベントを監視
 dialogueManager.DialogueLineStart += (int line) => {
-    GD.Print($"对话行 {line} 开始");
+    GD.Print($"会話行 {line} 開始");
 };
 
-// 监听对话行结束事件
+// 会話行終了イベントを監視
 dialogueManager.DialogueLineEnd += (int line) => {
-    GD.Print($"对话行 {line} 结束");
+    GD.Print($"会話行 {line} 終了");
 };
 ```
 
-### 解析 Konado 脚本
+### Konado スクリプトの解析
 
 ```csharp
 using Konado.Wrapper;
 
-// 创建脚本解释器
+// スクリプトインタープリターを作成
 var flags = new Godot.Collections.Dictionary<string, Variant>();
 var interpreter = new KonadoScriptsInterpreter(flags);
 
-// 解析整个脚本文件
+// スクリプトファイル全体を解析
 var shot = interpreter.ProcessScriptsToData("res://dialogues/example.ks");
 ```

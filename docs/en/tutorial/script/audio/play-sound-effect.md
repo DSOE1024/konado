@@ -1,24 +1,26 @@
+---
+title: Play Sound Effect
+order: 3
+---
+
 # Play Sound Effect
 
-## Function Description
+## Overview
+Used to play a specified sound effect file in a particular scene or interaction node, enhancing scene atmosphere and interaction feedback. Playing a sound effect is executed immediately and does not block subsequent script execution.
 
-Plays a sound effect.
-
-## Syntax Structure
-
-```text
-play se [se_name]
+## Syntax
+```
+play sfx <sound effect name>
 ```
 
-## Parameter Description
-
+## Parameters
 | Parameter | Required | Example | Description |
-|------|------|------|------|
-| se_name | Yes | `bell` | Sound effect name |
+|------------|----------|--------------|--------------------------|
+| Sound effect name | Yes | door_open | Identifier of the sound effect file to play |
 
-## Examples
-
-```text
-# Play sound effect
-play se bell
+## Code Examples
+```
+play sfx door_open
+play sfx button_click
+play sfx notification
 ```

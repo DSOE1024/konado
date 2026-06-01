@@ -1,17 +1,17 @@
 ---
-title: 安装
+title: インストール
 order: 1
 ---
 
-# 安装
+# インストール
 
-## 基础依赖
+## 基本依存関係
 
-1. 安装 Konado 插件（必须）
-2. 支持C#的Godot版本（推荐 4.5+）   
+1. Konado プラグインをインストールします（必須）
+2. C# をサポートする Godot バージョン（4.5+ 推奨）
 
-## 安装步骤
+## インストール手順
 
-1. 将 konadotnet 插件解压缩到 Godot 项目的 `addons` 目录下
-2. 构建项目，确保没有错误
-3. 在 Godot 编辑器中，进入 `项目 -> 项目设置 -> 插件`，启用 Konado 和 Konadotnet 插件
+1. konadotnet プラグインを Godot プロジェクトの `addons` ディレクトリへ展開します
+2. プロジェクトをビルドし、エラーがないことを確認します
+3. Godot エディターで `Project -> Project Settings -> Plugins` を開き、Konado と Konadotnet プラグインを有効にします

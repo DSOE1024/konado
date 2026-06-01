@@ -5,54 +5,54 @@ order: 8
 
 # Variable System
 
-## Overview
+## Feature Overview
 
-The variable system lets scripts define, read, modify, and test variables. It can be used for dynamic dialogue text, conditional branches, and state tracking. Variable values can be referenced directly in dialogue text or used as conditions to control the story flow.
+The variable system lets you define, read, modify, and check variables in scripts, enabling dynamic dialogue text, conditional branches, and state tracking. Variable values can be referenced directly in dialogue text, and they can also be used as conditions to control the story flow.
 
-There are two variable types:
+There are two kinds of variables:
 
 | Type | Prefix | Lifetime | Persistence | Initialization |
 |------|--------|----------|-------------|----------------|
-| Persistent variable | `%` | Preserved across shots | Saved with save data | Preset in the Inspector / initialized in code |
-| Temporary variable | `$` | Current shot only | Not saved | Initialized with `set` in scripts |
+| Persistent variable | `%` | Preserved across shots | Saved with save data | Preset in the inspector / initialized in code |
+| Temporary variable | `$` | Valid only in the current shot | Not saved | Initialized with `set` in scripts |
 
 ---
 
 ## Variable Operations
 
-Five basic operations are supported:
+Five basic operations are supported. The syntax is:
 
-```text
+```
 <operation> <variable_name> <value>
 ```
 
-or with an equals sign:
+You can also write it with an equals sign:
 
-```text
+```
 <operation> <variable_name> = <value>
 ```
 
-### Operations
+### Operation List
 
 | Operation | Description | Example |
 |-----------|-------------|---------|
 | `set` | Sets the variable value | `set %love = 10` |
-| `add` | Addition for numbers, concatenation for strings | `add %love 5` |
+| `add` | Addition; numeric addition or string concatenation | `add %love 5` |
 | `sub` | Subtraction | `sub %love 3` |
 | `mul` | Multiplication | `mul %love 2` |
-| `div` | Division, reports an error when dividing by zero | `div %love 4` |
+| `div` | Division; reports an error when dividing by zero | `div %love 4` |
 
 ### Parameters
 
 | Parameter | Required | Example | Description |
 |-----------|----------|---------|-------------|
-| Operation | Yes | `set` | One of the five supported operations |
+| Operation | Yes | `set` | One of the five operations |
 | Variable name | Yes | `%love` | `%` starts a persistent variable, `$` starts a temporary variable |
-| Value | Yes | `10` | Integer, float, boolean (`true`/`false`), or a quoted string |
+| Value | Yes | `10` | Integer, float, boolean (`true`/`false`), or string wrapped in double quotes |
 
-### Example
+### Examples
 
-```text
+```
 set %love = 10
 add %love 5
 sub %love 3
@@ -63,7 +63,7 @@ set $round = 1
 add $round 1
 
 set %player_name "Player"
-set $stage "Beginner Village"
+set $stage "Starter Village"
 set %unlocked true
 ```
 
@@ -71,40 +71,40 @@ set %unlocked true
 
 ## Variable Interpolation
 
-Use `%variable_name` or `$variable_name` directly in dialogue text. At runtime, it is replaced with the actual value.
+Use `%variable_name` or `$variable_name` directly in dialogue text to reference a variable value. At runtime, it is replaced with the actual value.
 
 ### Syntax
 
-```text
-"Character" "Dialogue text containing %variable_name or $variable_name"
+```
+"Character Name" "Dialogue text containing %variable_name or $variable_name"
 ```
 
-### Example
+### Examples
 
-```text
-set %player_name "Ming"
-set $stage "Beginner Village"
+```
+set %player_name "Alex"
+set $stage "Starter Village"
 
 "Kona" "Hello, %player_name! You are now in $stage."
-"Kona" "Your favorability is %love, and this is round $round."
+"Kona" "Your affection is %love, and this is round $round."
 ```
 
 Runtime output:
 
-```text
-Kona: "Hello, Ming! You are now in Beginner Village."
-Kona: "Your favorability is 12, and this is round 2."
+```
+Kona: "Hello, Alex! You are now in Starter Village."
+Kona: "Your affection is 12, and this is round 2."
 ```
 
 ---
 
-## Conditions
+## Conditional Checks
 
-Use `if` / `else` / `endif` to choose which dialogue content to play based on variable values. Six comparison operators are supported.
+Use `if` / `else` / `endif` blocks to decide which dialogue to play based on variable values. Six comparison operators are supported.
 
 ### Syntax
 
-```text
+```
 if <variable_name> <operator> <value>:
     <dialogue content>
 else:
@@ -112,7 +112,7 @@ else:
 endif
 ```
 
-The `else:` block is optional. If it is omitted and the condition is false, the entire `if` block is skipped.
+The `else:` block is optional. If it is omitted and the condition is false, the whole `if` block is skipped.
 
 ### Supported Operators
 
@@ -129,17 +129,17 @@ The `else:` block is optional. If it is omitted and the condition is false, the 
 
 | Parameter | Required | Example | Description |
 |-----------|----------|---------|-------------|
-| Variable name | Yes | `%love` | A persistent `%` variable or temporary `$` variable |
+| Variable name | Yes | `%love` | Persistent variable with `%` or temporary variable with `$` |
 | Operator | Yes | `==` | One of the six comparison operators |
-| Value | Yes | `5` | Integer value to compare |
+| Value | Yes | `5` | Integer comparison value |
 
-### Example
+### Examples
 
-```text
+```
 if %love == 5:
-    "Kona" "Favorability is exactly 5!"
+    "Kona" "Affection is exactly 5!"
 else:
-    "Kona" "Favorability is not 5."
+    "Kona" "Affection is not 5."
 endif
 
 if $score >= 80:
@@ -154,19 +154,19 @@ endif
 ### Notes
 
 1. `if` / `else` / `endif` must use the same indentation level as their surrounding context.
-2. Conditional statements do **not** support nesting. An `if` block cannot contain another `if`.
-3. Use flat `if` / `endif` blocks for multiple independent conditions instead of nesting them.
-4. Conditional statements can be used inside `branch` blocks.
+2. Conditional checks **do not support nesting**. An `if` block cannot contain another `if`.
+3. Multiple independent conditions should use flat `if` / `endif` structures instead of nesting.
+4. Conditional checks can be used inside `branch` blocks.
 
 ---
 
-## Conditions Inside Branches
+## Using Conditions Inside Branches
 
-A `branch` block can contain `if` / `endif` conditions for dynamic branch dialogue.
+A `branch` block can contain `if` / `endif` conditional checks, allowing dynamic dialogue inside a branch.
 
 ### Example
 
-```text
+```
 branch after_choice
     "Kona" "Your choice has been recorded."
 
@@ -179,41 +179,41 @@ branch after_choice
     endif
 
     if $choice_made == 3:
-        "Kona" "You chose to ignore it... Maybe try another option next time."
+        "Kona" "You chose to ignore me... maybe try another option next time."
     endif
 ```
 
 ---
 
-## Choices Linked With Variables
+## Linking Choices With Variables
 
-Combine `choice` and `branch` to modify variable values after the player makes a choice, so choices can affect later story content.
+By combining `choice` and `branch`, you can modify variables after the player makes a choice, letting choices affect later story content.
 
 ### Example
 
-```text
+```
 set $choice_made = 0
 
-choice "Give a gift (+10 favorability)" -> gift_choice
-choice "Chat (+5 favorability)" -> chat_choice
-choice "Ignore (-5 favorability)" -> ignore_choice
+choice "Give a gift (affection +10)" -> gift_choice
+choice "Chat (affection +5)" -> chat_choice
+choice "Ignore (affection -5)" -> ignore_choice
 
 branch gift_choice
     add %love 10
     set $choice_made = 1
-    "Kona" "Thank you! Favorability increased to %love!"
+    "Kona" "Thank you! Affection increased to %love!"
     jump_branch after_choice
 
 branch chat_choice
     add %love 5
     set $choice_made = 2
-    "Kona" "I enjoyed chatting with you. Favorability is now %love."
+    "Kona" "I enjoyed talking with you. Affection is now %love."
     jump_branch after_choice
 
 branch ignore_choice
     sub %love 5
     set $choice_made = 3
-    "Kona" "......Favorability dropped to %love."
+    "Kona" "......Affection dropped to %love."
     jump_branch after_choice
 
 branch after_choice
@@ -224,16 +224,16 @@ branch after_choice
 
 ## Boolean Variables
 
-Variables support boolean values. Use `true` / `false` for assignment. In conditions, `true` is equivalent to `1`, and `false` is equivalent to `0`.
+Variables support boolean values. Use `true` / `false` for assignment. In conditional checks, `true` is equivalent to `1`, and `false` is equivalent to `0`.
 
 ### Example
 
-```text
+```
 set %unlocked true
 set $visited false
 
 if %unlocked == 1:
-    "Kona" "The feature has been unlocked!"
+    "Kona" "Feature unlocked!"
 endif
 
 set $visited true
@@ -252,7 +252,7 @@ Persistent variables must be initialized before the script runs. There are two w
 
 **Method 1: Inspector preset (recommended)**
 
-Create a `KND_VariableStore` resource in the editor, set initial variable values in the Inspector, and assign it to the `variable_store` property of `KND_DialogueManager`.
+Create a `KND_VariableStore` resource in the editor, set the initial variable values in the inspector, and assign it to the `variable_store` property of `KND_DialogueManager`.
 
 **Method 2: Code initialization**
 
@@ -268,15 +268,15 @@ func _ready() -> void:
 
 ### Temporary Variables (`$`)
 
-Temporary variables do not need presets. They are automatically created the first time `set` is used in a script and reset when switching shots.
+Temporary variables do not need presets. They are created automatically the first time `set` is used in a script. They are reset automatically when switching shots.
 
 ---
 
 ## Complete Example
 
-This complete example covers all variable features:
+The following combined demo covers all variable features:
 
-```text
+```
 play bgm echo
 background bg1 fade
 
@@ -284,43 +284,43 @@ actor show Kona Normal at 3 9 scale 0.3
 "Kona" "Welcome to the variable system demo!"
 
 set %love = 10
-"Kona" "Favorability is set to 10. Current value: %love"
+"Kona" "Affection has been set to 10. Current value: %love"
 
 add %love 5
-"Kona" "Favorability after adding 5: %love"
+"Kona" "After adding 5, affection is: %love"
 
 sub %love 3
-"Kona" "Favorability after subtracting 3: %love"
+"Kona" "After subtracting 3, affection is: %love"
 
 mul %love 2
-"Kona" "Favorability after multiplying by 2: %love"
+"Kona" "After multiplying by 2, affection is: %love"
 
 div %love 4
-"Kona" "Favorability after dividing by 4: %love"
+"Kona" "After dividing by 4, affection is: %love"
 
 set $round = 1
 set $bonus = 100
-"Kona" "Round=$round, bonus=$bonus"
+"Kona" "round=$round, bonus=$bonus"
 
 add $round 1
 add $bonus 50
 "Kona" "Round $round, bonus $bonus"
 
 set %player_name "Player"
-"Kona" "Hello, %player_name! Favorability %love, round $round."
+"Kona" "Hello, %player_name! Affection %love, round $round."
 
 if %love == 6:
-    "Kona" "Favorability is exactly 6!"
+    "Kona" "Affection is exactly 6!"
 else:
-    "Kona" "Favorability is not 6."
+    "Kona" "Affection is not 6."
 endif
 
 if %love > 3:
-    "Kona" "Favorability is greater than 3!"
+    "Kona" "Affection is greater than 3!"
 endif
 
 if %love < 10:
-    "Kona" "Favorability is less than 10."
+    "Kona" "Affection is less than 10."
 endif
 
 set $score = 85
@@ -335,20 +335,20 @@ endif
 
 set %unlocked true
 if %unlocked == 1:
-    "Kona" "The feature has been unlocked!"
+    "Kona" "Feature unlocked!"
 endif
 
-choice "Give a gift (+10 favorability)" -> gift
-choice "Ignore (-5 favorability)" -> ignore
+choice "Give a gift (affection +10)" -> gift
+choice "Ignore (affection -5)" -> ignore
 
 branch gift
     add %love 10
-    "Kona" "Thank you! Favorability %love!"
+    "Kona" "Thank you! Affection %love!"
     jump_branch done
 
 branch ignore
     sub %love 5
-    "Kona" "......Favorability %love."
+    "Kona" "......Affection %love."
     jump_branch done
 
 branch done
@@ -361,10 +361,10 @@ branch done
 
 ## Notes
 
-1. **Variable names** can only contain letters, numbers, and underscores, and are case-sensitive.
-2. **Persistent variables** (`%`) are saved with save data and are suitable for favorability, story flags, and other cross-shot state.
-3. **Temporary variables** (`$`) are cleared when switching shots and are suitable for temporary state in the current shot.
-4. **Division** by zero triggers an error and skips the operation.
-5. **Conditional statements** do not support nesting. Use flat `if` / `endif` blocks for multiple conditions.
-6. When using conditions inside a `branch` block, the indentation of `if` / `endif` must match other content in the branch.
-7. Uninitialized variables are treated as false in conditions.
+1. **Variable names** can contain only letters, numbers, and underscores, and are case-sensitive.
+2. **Persistent variables** (`%`) are saved with save data. They are suitable for cross-shot state such as affection values and story flags.
+3. **Temporary variables** (`$`) are cleared automatically when switching shots. They are suitable for temporary state inside the current shot.
+4. A **division operation** with a zero divisor triggers an error and skips that operation.
+5. **Conditional checks** do not support nesting. Use flat `if` / `endif` structures for multiple conditions.
+6. When using conditional checks inside a `branch` block, the indentation of `if` / `endif` must match other content inside the branch.
+7. Uninitialized variables are treated as false in conditional checks.

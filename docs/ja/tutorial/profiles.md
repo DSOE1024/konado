@@ -1,13 +1,13 @@
 ---
-title: 项目配置
+title: プロジェクト設定
 order: 2
 ---
 
-# 基础配置
+# 基本設定
 
-视觉小说对话类型游戏推荐项目配置如下：
+ビジュアルノベル会話型ゲームに推奨されるプロジェクト設定は以下のとおりです。
 
-| 设置项 | 推荐值 |
+| 設定項目 | 推奨値 |
 | :--- | :--- |
 | `Display > Window > Size > Width` | `1920` |
 | `Display > Window > Size > Height` | `1080` |
@@ -18,12 +18,10 @@ order: 2
 | `Display > Window > Stretch > Scale Mode` | `fractional` |
 | `Display > Window > DPI > Allow HiDPI` | `true` |
 
+## シーンへ追加
 
+インストール後、Konado の会話テンプレートをシーンに追加できます。Konado の会話テンプレートをシーンへドラッグするだけです。
 
-## 添加到场景
-
-安装完成后，可以将Konado的对话模板添加到你的场景中，只需要将Konado的对话模板拖放到场景中即可。
-
-## 启动图像
+## 起動画面画像
 
 `application/boot_splash/image`

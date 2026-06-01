@@ -1,7 +1,8 @@
 ---
 title: Konado Script
+order: 5
 ---
 
 # Konado Script
 
-Konado Script reference
+Konado scripting language reference

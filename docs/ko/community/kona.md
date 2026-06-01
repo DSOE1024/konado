@@ -1,25 +1,25 @@
 ---
-title: 看板娘Kona
+title: 마스코트 Kona
 order: 2
 ---
 
-# 周边IP介绍
+# 주변 IP 소개
 
-## Kona 介绍
-Kona是Konado的专属看板娘，以**活泼可爱、充满元气**的少女形象为核心，不仅是品牌视觉的重要符号，更成为用户与Konado之间具亲和力的互动载体。
+## Kona 소개
 
+Kona는 Konado의 전용 마스코트입니다. **발랄하고 사랑스러우며 활기찬** 소녀 이미지를 중심으로 하며, 브랜드 비주얼의 중요한 상징일 뿐 아니라 사용자와 Konado를 친근하게 이어 주는 매개체이기도 합니다.
 
-## Kona 形象
-Kona的身影贯穿于Konado的全场景中，无论是启动界面、官网首页，还是产品文档，都能通过她的形象为品牌注入鲜活感。随着Konado的版本迭代，Kona的形象也会同步进化——既贴合新版本的设计风格，也在细节打磨中变得更精致、更具辨识度。
+## Kona 이미지
 
-通常在Konado的**大版本更新**时，Kona会推出专属的全新形象。每一款形象都有独特的设计巧思，既延续了她的核心气质，也为产品增添了更多趣味与记忆点。
+Kona는 Konado의 다양한 장면에 등장합니다. 시작 화면, 공식 웹사이트 메인 페이지, 제품 문서 어디에서나 Kona의 이미지는 브랜드에 생동감을 더합니다. Konado의 버전이 발전함에 따라 Kona의 모습도 함께 진화하며, 새 버전의 디자인 스타일에 맞추는 동시에 세부 표현을 다듬어 더 세련되고 식별하기 쉬운 이미지가 됩니다.
 
-当然在小版本更新时，Kona也会有一些小变化，比如换上不同季节的服饰，或是增加一些小配件，让形象更加丰富多元。
+일반적으로 Konado의 **주요 버전 업데이트** 때는 Kona의 새로운 전용 이미지가 공개됩니다. 각 이미지는 고유한 디자인 아이디어를 담고 있으며, Kona의 핵심 분위기를 이어 가면서 제품에 더 많은 재미와 기억에 남는 요소를 더합니다.
 
+물론 작은 버전 업데이트에서도 계절 의상으로 바뀌거나 작은 장식이 추가되는 등 Kona에게 작은 변화가 생길 수 있습니다. 이를 통해 이미지가 더 풍부하고 다양해집니다.
 
-> 画师：[ioniccrystal](https://github.com/ioniccrystal)  
-> 发布时间：2025-09-15  
+> 일러스트레이터: [ioniccrystal](https://github.com/ioniccrystal)  
+> 공개일: 2025-09-15
 
 <p align="center">
-<img src="https://godothub.atomgit.net/web/icon/konado/kona/kona.png" alt="Kona 2.0 主形象图" width="300"/>
+<img src="https://godothub.atomgit.net/web/icon/konado/kona/kona.png" alt="Kona 2.0 메인 이미지" width="300"/>
 </p>

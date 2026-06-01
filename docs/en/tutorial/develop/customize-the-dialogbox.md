@@ -1,17 +1,18 @@
-# Customizing the Dialogue Interface
+---
+title: Custom Dialogue Box
+order: 4
+---
+
+# Custom Dialogue Interface
 
 ## Introduction
 
-If your work requires a custom dialogue interface, you can achieve this by modifying the template dialogue interface. At the same time, Godot Engine itself has a powerful theme system, so you can achieve the effect by modifying custom themes.
+If your work requires a custom dialogue interface, you can modify the template dialogue interface to achieve it. Godot Engine itself also has a powerful theme system, so you can achieve the desired result by modifying a custom theme.
 
-However, please note that after modifying the template dialogue interface, do not update the Konado plugin, otherwise your modifications will be overwritten.
+Please note that after modifying the template dialogue interface, you should not update the Konado plugin, otherwise your changes will be overwritten.
 
-## Editing the Scene File
+## Edit Template Files
 
-`res://addons/konado/scenes/konado_dialogue.tscn` is the dialogue interface scene. You can customize the dialogue interface by modifying this file.
+`res://addons/konado/template/` contains the dialogue interface scene. You can customize the dialogue interface by modifying this file.
 
-In general, please do not modify the scripts on the nodes, but achieve custom effects by modifying the properties on the nodes.
-
-## Editing the Save Box
-
-`res://addons/konado/template/ui_template/save_commponect/save_componect.tscn` is the save box scene. You can customize the save box by modifying this file.
+In general, do not modify scripts on nodes. Prefer changing node properties to achieve customization.

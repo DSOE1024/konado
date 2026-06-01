@@ -1,8 +1,8 @@
 ---
-title: 成就系统
+title: 実績システム
 order: 6
 ---
 
-# Konado成就系统
+# Konado 実績システム
 
-Konado 成就系统文档
+Konado 実績システムのドキュメント

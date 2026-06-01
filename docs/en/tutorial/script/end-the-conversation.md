@@ -1,20 +1,21 @@
-# End the Conversation
+---
+title: End Dialogue
+order: 11
+---
 
-## Function Description
+# End Dialogue
 
-Ends the current conversation and closes the dialogue system.
+## Description
 
-## Syntax Structure
+End the dialogue.
 
-```text
+## Syntax
+```
 end
 ```
 
-## Examples
+## Example
 
-```text
-# End the conversation
-"alice" "Goodbye!"
-alice_intro_02
+```
 end
 ```

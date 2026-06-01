@@ -1,30 +1,27 @@
 ---
-title: 成就系统
+title: 実績システム
 order: 2
 ---
 
-# 成就系统 KonadoAchievement
+# 実績システム KonadoAchievement
 
-## 前言
+## はじめに
 
-KonadoAchievement 是一款轻量、数据驱动的成就系统插件，为 Konado 设计，提供解锁、进度跟踪、弹窗通知、成就面板等完整功能。支持与 Konado 联动使用，也可独立运行。
+KonadoAchievement は、Konado 向けに設計された軽量なデータ駆動型の実績システムプラグインです。実績の解除、進捗追跡、ポップアップ通知、実績パネルなどの包括的な機能を提供します。Konado と連携して使用することも、単独で動作させることもできます。
 
+### 設定ファイル
 
-### 配置文件
+実績システムは JSON 設定ファイルで実績を定義します。デフォルトのパスは `res://addons/konado_achievement/data/achievements.json` で、`KND_AchievementManager` から別のパスを設定できます。
 
-成就系统使用 JSON 配置文件定义成就，默认路径为 `res://addons/konado_achievement/data/achievements.json`，可以在 `KND_AchievementManager` 中配置其他路径。
-
-
-
-配置文件结构示例：
+設定ファイル構造の例：
 
 ```json
 {
   "achievements": [
     {
       "id": "first_blood",
-      "name": "初遇篇章",
-      "description": "解锁第一条主线剧情分支。",
+      "name": "初めての章",
+      "description": "最初のメインストーリー分岐を解除する。",
       "icon": "",
       "hidden": false,
       "category": "story",
@@ -39,62 +36,61 @@ KonadoAchievement 是一款轻量、数据驱动的成就系统插件，为 Kona
 }
 ```
 
-### 配置选项（可选）
+### 設定オプション（任意）
 
-在 `KND_AchievementManager` 中，您可以通过以下属性进行配置：
+`KND_AchievementManager` では、以下のプロパティを設定できます。
 
-- `config_path`: 成就配置文件路径
-- `save_path`: 成就进度保存路径
-- `popup_duration`: 成就解锁弹出通知的显示时长
-- `popup_position`: 弹出通知的位置（top_left, top_right, bottom_left, bottom_right）
+- `config_path`: 実績設定ファイルのパス
+- `save_path`: 実績進捗の保存パス
+- `popup_duration`: 実績解除ポップアップ通知の表示時間
+- `popup_position`: ポップアップ通知の位置（top_left, top_right, bottom_left, bottom_right）
 
 ::tip
-这个部分未来可能会重构，以提供更灵活的配置选项。
+この部分は将来、より柔軟な設定オプションを提供するためにリファクタリングされる可能性があります。
 ::
 
-## 核心功能
+## コア機能
 
-### 成就解锁
+### 実績解除
 
-成就系统支持两种解锁方式：
+実績システムは 2 種類の解除方法をサポートします。
 
-1. **直接解锁**：通过 API 直接解锁成就
-2. **条件解锁**：当满足特定条件时自动解锁成就
+1. **直接解除**：API を通じて実績を直接解除します
+2. **条件解除**：特定の条件を満たしたときに実績を自動的に解除します
 
-### 进度跟踪
+### 進捗追跡
 
-系统支持两种类型的进度跟踪：
+システムは 2 種類の進捗追跡をサポートします。
 
-1. **计数器**：累计数值达到目标值时解锁
-2. **标志**：当标志被设置为特定值时解锁
+1. **カウンター**：累計値が目標値に到達したときに解除します
+2. **フラグ**：フラグが特定の値に設定されたときに解除します
 
-### 通知系统
+### 通知システム
 
-当成就解锁时，系统会显示一个弹出通知，包含成就名称、描述和图标。
+実績が解除されると、システムは実績名、説明、アイコンを含むポップアップ通知を表示します。
 
-### 成就面板
+### 実績パネル
 
-提供一个可显示所有成就的面板，包括已解锁和未解锁的成就，以及解锁进度。
+解除済みと未解除の実績、および解除進捗を含む、すべての実績を表示できるパネルを提供します。
 
+## 実績設定の詳細
 
-## 成就配置详解
+### 実績プロパティ
 
-### 成就属性
+各実績には以下のプロパティを含めることができます。
 
-每个成就可以包含以下属性：
+- `id`: 実績の一意な識別子
+- `name`: 実績名
+- `description`: 実績の説明
+- `icon`: 実績アイコンのパス（任意）
+- `hidden`: 非表示にするかどうか（未解除時に名前と説明を表示しない）
+- `category`: 実績カテゴリ（任意）
+- `points`: 実績ポイント（任意）
+- `conditions`: 解除条件
 
-- `id`: 成就唯一标识符
-- `name`: 成就名称
-- `description`: 成就描述
-- `icon`: 成就图标路径（可选）
-- `hidden`: 是否隐藏（未解锁时不显示名称和描述）
-- `category`: 成就分类（可选）
-- `points`: 成就点数（可选）
-- `conditions`: 解锁条件
+### 条件タイプ
 
-### 条件类型
-
-#### 计数器类型
+#### カウンタータイプ
 
 ```json
 {
@@ -104,9 +100,9 @@ KonadoAchievement 是一款轻量、数据驱动的成就系统插件，为 Kona
 }
 ```
 
-当 `counter_key` 的值达到或超过 `target_value` 时解锁。
+`counter_key` の値が `target_value` に到達、またはそれを超えたときに解除されます。
 
-#### 标志类型
+#### フラグタイプ
 
 ```json
 {
@@ -116,60 +112,60 @@ KonadoAchievement 是一款轻量、数据驱动的成就系统插件，为 Kona
 }
 ```
 
-当 `flag_key` 的值等于 `target_value` 时解锁。
+`flag_key` の値が `target_value` と等しいときに解除されます。
 
-## 使用示例
+## 使用例
 
-### 基本使用
+### 基本的な使い方
 
 ```gdscript
-# 增加计数器值
+# カウンター値を増やす
 KND_AchievementManager.increment_progress("story_branch_unlocked", 1)
 
-# 设置标志
+# フラグを設定
 KND_AchievementManager.set_flag("secret_ending_unlocked", true)
 
-# 直接解锁成就
+# 実績を直接解除
 KND_AchievementManager.unlock_achievement("special_achievement")
 
-# 显示成就面板
+# 実績パネルを表示
 KND_AchievementManager.show_panel()
 ```
 
-### 信号监听
+### シグナルの監視
 
 ```gdscript
-# 监听成就解锁事件
+# 実績解除イベントを監視
 KND_AchievementManager.achievement_unlocked.connect(_on_achievement_unlocked)
 
 func _on_achievement_unlocked(achievement_id: String, data: Dictionary) -> void:
-    print("成就解锁: " + data.get("name"))
-    # 可以在这里添加额外的奖励逻辑
+    print("実績解除: " + data.get("name"))
+    # ここに追加の報酬ロジックを記述できます
 ```
 
-### 自定义保存/加载
+### カスタム保存/読み込み
 
 ```gdscript
-# 设置自定义保存处理
+# カスタム保存処理を設定
 KND_AchievementManager.custom_save_handler = Callable(self, "_custom_save")
 KND_AchievementManager.custom_load_handler = Callable(self, "_custom_load")
 
 func _custom_save(data: Dictionary) -> void:
-    # 自定义保存逻辑
+    # カスタム保存ロジック
     pass
 
 func _custom_load() -> Dictionary:
-    # 自定义加载逻辑
+    # カスタム読み込みロジック
     return {"unlocked": {}, "progress": {}}
 ```
 
-### 外部集成
+### 外部連携
 
 ```gdscript
-# 设置外部解锁回调
+# 外部解除コールバックを設定
 KND_AchievementManager.on_external_unlock = Callable(self, "_on_external_unlock")
 
 func _on_external_unlock(achievement_id: String, data: Dictionary) -> void:
-    # 同步到外部后端
+    # 外部バックエンドへ同期
     pass
 ```
