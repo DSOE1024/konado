@@ -1,28 +1,30 @@
+---
+title: Create Actor
+order: 1
+---
+
 # Create Actor
 
-## Function Description
+## Description
 
-Creates a new actor and displays it on the screen.
+Create an actor in the dialogue scene.
 
-## Syntax Structure
+## Syntax
 
 ```text
-actor show [actor_name] [state] at [x] [y] scale [scale]
+actor show [character ID] [state] at [horizontal coordinate]
 ```
 
-## Parameter Description
+## Parameters
 
 | Parameter | Required | Example | Description |
 |------|------|------|------|
-| actor_name | Yes | `bob` | Actor name |
-| state | Yes | `happy` | Actor state (expression) |
-| x | Yes | `400` | X coordinate |
-| y | Yes | `300` | Y coordinate |
-| scale | No | `0.8` | Actor scale (default: 1.0) |
+| Character ID | Yes | `alice` | Character resource identifier |
+| State | Yes | `angry` | Portrait state |
+| Horizontal coordinate | Yes | `2` | Horizontal position, expressed as a division index |
 
-## Examples
-
+## Example
 ```text
-# Create actor
-actor show alice happy at 400 300 scale 0.8
+# Show character
+actor show alice normal at 2
 ```

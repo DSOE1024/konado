@@ -1,9 +1,7 @@
 ---
-title: 核心功能
-order: 1
-sidebar_collapsed: false
+title: コア機能
+order: 6
+sidebar_collapsed: true
 ---
 
-# 核心功能
-
-核心功能指南
+# コア機能

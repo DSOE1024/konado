@@ -1,17 +1,17 @@
 ---
-title: Typewriter Sound Effect
-order: 8
+title: Typing Sound Effect
+order: 6
 ---
 
 # Typing Sound Effect
 
 ## Overview
 
-Konado's dialogue box component supports typewriter sound effects, playing a "click" sound while typing to enhance immersion and feedback.
+The Konado dialogue box component supports typing sound effects. It can play short "click" sounds during typing to enhance immersion and feedback.
 
-## Sound Directory
+## Sound Effect Directory
 
-Typewriter sound effect files are stored in the following directory:
+Typing sound effect files are stored in:
 
 ```
 res://addons/konado/audioeffect/typewriter/
@@ -20,61 +20,77 @@ res://addons/konado/audioeffect/typewriter/
 ## Supported Audio Formats
 
 | Format | Description |
-|--------|-------------|
+|------|------|
 | `.wav` | Uncompressed audio, recommended |
 | `.ogg` | Ogg Vorbis compressed format |
 | `.mp3` | MP3 compressed format |
 
 ## Basic Configuration
 
-In the `KND_DialogueBox` component's Inspector panel, you can find the typewriter sound effect settings:
-
-### Sound Toggle
+In the Inspector panel of `KND_DialogueBox`, you can find typing sound effect settings:
 
 ```gdscript
 @export var enable_typing_effect_audio: bool = true
-```
-
-Set to `true` to enable the typewriter sound effect, `false` to disable it.
-
-### Audio Resource
-
-```gdscript
 @export var typing_effect_audio: AudioStream
 ```
 
-Select a sound effect file from the editor dropdown menu, or load it via code:
+Set `enable_typing_effect_audio` to `true` to enable typing sound effects, or `false` to disable them. Select an audio file from the editor dropdown, or load it from code:
 
 ```gdscript
-# Set sound effect via code
 dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/click.wav")
 ```
 
-## Sound Trigger Configuration
-
-### Trigger Probability
+## Trigger Configuration
 
 ```gdscript
 @export var audio_trigger_chance: float = 0.8
+@export var min_audio_interval: float = 0.02
+@export var max_audio_interval: float = 0.08
+@export var audio_volumn: float = 0.6
 ```
 
-Controls the probability of triggering the sound effect, ranging from 0.0 to 1.0:
+- `audio_trigger_chance`: Trigger probability from 0.0 to 1.0. `1.0` always plays, `0.8` plays 80% of the time, `0.0` never plays.
+- `min_audio_interval` / `max_audio_interval`: Random interval range between sound plays, used to fit different typing rhythms.
+- `audio_volumn`: Sound effect volume from 0.0 to 1.0.
 
-- `1.0` — Always plays
-- `0.8` — 80% chance of playing (default)
-- `0.5` — 50% chance of playing
-- `0.0` — Never plays
+## Usage Example
 
-### Play Interval
+1. Put sound files into `res://addons/konado/audioeffect/typewriter/`
+2. Select the `KND_DialogueBox` node in the scene
+3. Enable `Enable Typing Effect Audio` in the Inspector
+4. Select the sound file from the dropdown
+5. Adjust volume and other parameters
 
 ```gdscript
-@export var min_audio_interval: float = 0.02   # Minimum interval (seconds)
-@export var max_audio_interval: float = 0.08   # Maximum interval (seconds)
+var dialogue_box = $KND_DialogueBox
+dialogue_box.enable_typing_effect_audio = true
+dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/my_click.wav")
+dialogue_box.audio_trigger_chance = 1.0
+dialogue_box.audio_volumn = 0.8
+dialogue_box.min_audio_interval = 0.02
+dialogue_box.max_audio_interval = 0.06
 ```
 
-The random interval range for sound effect playback, used to match different typing rhythms:
+## Recommended Sounds
 
-- **Fast clicking**: Set a smaller interval, e.g. `0.02 – 0.05`
-- **Slow typing**: Set a larger interval, e.g. `0.05 – 0.15`
+- **Typewriter clicks**: use small intervals such as `0.02 - 0.05`, with `audio_trigger_chance: 0.8`
+- **Mechanical keyboard**: use `0.03 - 0.08`, with `audio_trigger_chance: 0.9`
+- **Soft clicks**: use `0.05 - 0.12`, with `audio_trigger_chance: 0.7` and `audio_volumn: 0.5`
 
-After each playback, a new random interval value is generated between the minimum and maximum values.
+## Trigger Timing
+
+Typing sounds trigger when the typing animation is playing, the random interval since the last sound has elapsed, the random probability check passes, and the text has not finished displaying.
+
+## Notes and Optimization
+
+1. Use English file names and avoid special characters.
+2. Sound length is best kept under 0.1 seconds.
+3. Keep typing sound volume balanced so it does not cover background music.
+4. On mobile platforms, compressed formats such as ogg/mp3 are recommended to save space.
+5. Use short sound files, preferably under 100 KB, and disable the feature with `enable_typing_effect_audio = false` when not needed.
+
+## Troubleshooting
+
+- If no sound plays, check `enable_typing_effect_audio`, `typing_effect_audio`, file path, and volume.
+- If sounds are too dense, increase interval values or lower `audio_trigger_chance`.
+- If sounds are too sparse, decrease interval values or increase `audio_trigger_chance`.

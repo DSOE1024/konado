@@ -1,181 +1,101 @@
 ---
-title: 打字机动效
+title: 타자기 동작 효과
 order: 5
 ---
 
-# 打字机效果 (Typewriter Effect)
+# 타자기 효과 (Typewriter Effect)
 
-## 概述
+## 개요
 
-Konado 提供了强大的打字机效果组件，支持 GPU 加速的逐字符淡入效果，让你的游戏对话更加生动有趣。
+Konado는 강력한 타자기 효과 컴포넌트를 제공합니다. GPU 가속 기반의 문자별 페이드 인 효과를 지원해 게임 대화를 더 생동감 있고 흥미롭게 만듭니다.
 
-## 核心特性
+## 핵심 기능
 
-- **GPU 加速渲染** - 使用专用着色器逐字符渲染，性能优异
-- **BBCode 富文本支持** - 支持粗体、斜体、颜色、下划线、删除线等
-- **多种淡入方向** - 可以设置任意角度的淡入效果方向
-- **空间混合** - 可以混合字符顺序和时间空间顺序的淡入效果
-- **CJK 多语言支持** - 完整支持中文、日文、韩文等多字节字符
+- **GPU 가속 렌더링** - 전용 셰이더로 문자별 렌더링을 수행해 성능이 우수합니다
+- **BBCode 리치 텍스트 지원** - 굵게, 기울임, 색상, 밑줄, 취소선 등을 지원합니다
+- **다양한 페이드 방향** - 임의 각도의 페이드 방향을 설정할 수 있습니다
+- **공간 블렌드** - 문자 순서와 공간 위치 순서를 혼합한 페이드 효과를 만들 수 있습니다
+- **CJK 다국어 지원** - 중국어, 일본어, 한국어 등 멀티바이트 문자를 완전 지원합니다
 
-## 基本使用
+## 기본 사용
 
-### 在对话框中使用
+### 대화 상자에서 사용
 
-在 `KND_DialogueBox` 组件中，可以直接选择开启打字机效果：
+`KND_DialogueBox` 컴포넌트에서 타자기 효과를 직접 활성화할 수 있습니다.
 
-1. 选中场景中的 `KND_DialogueBox` 节点
-2. 在 Inspector 面板中找到相应的设置选项
-3. 启用打字机模式
+1. 장면의 `KND_DialogueBox` 노드를 선택합니다
+2. Inspector 패널에서 해당 설정 항목을 찾습니다
+3. 타자기 모드를 활성화합니다
 
-### 编程方式使用
+### 코드로 사용
 
 ```gdscript
-# 获取打字机组件
 var typewriter = $KND_TypewriterText
-
-# 设置要显示的文本（支持 BBCode）
-typewriter.set_bbcode("[color=yellow]你好[/color]，[b]玩家[/b]！")
-
-# 手动开始打字效果
+typewriter.set_bbcode("[color=yellow]안녕[/color], [b]플레이어[/b]!")
 typewriter.start()
-
-# 跳过打字效果，立即显示全部
 typewriter.skip()
-
-# 重置，隐藏所有文本
 typewriter.reset()
 ```
 
-## BBCode 富文本
+## BBCode 리치 텍스트
 
-### 支持的标签
-
-| 标签 | 说明 | 示例 |
+| 태그 | 설명 | 예시 |
 |------|------|------|
-| `[b]` | 粗体 | `[b]粗体文字[/b]` |
-| `[i]` | 斜体 | `[i]斜体文字[/i]` |
-| `[u]` | 下划线 | `[u]下划线文字[/u]` |
-| `[s]` | 删除线 | `[s]删除线文字[/s]` |
-| `[color=颜色]` | 文字颜色 | `[color=red]红色[/color]` |
-| `[font=字体]` | 指定字体 | `[font=my_font]特殊字体[/font]` |
+| `[b]` | 굵게 | `[b]굵은 글자[/b]` |
+| `[i]` | 기울임 | `[i]기울임 글자[/i]` |
+| `[u]` | 밑줄 | `[u]밑줄 글자[/u]` |
+| `[s]` | 취소선 | `[s]취소선 글자[/s]` |
+| `[color=색상]` | 글자 색 | `[color=red]빨간색[/color]` |
+| `[font=글꼴]` | 지정 글꼴 | `[font=my_font]특수 글꼴[/font]` |
 
-### 颜色示例
+## 페이드 설정
 
-```bbcode
-[color=#FF5733]橙色文字[/color]
-[color=green]绿色文字[/color]
-[color=#3498db]蓝色文字[/color]
-[color=yellow]黄色文字[/color]
-```
+- `fade_angle`: 문자 페이드 방향 각도. `0°` 왼쪽에서 오른쪽, `90°` 위에서 아래, `-90°` 아래에서 위, `180°` 오른쪽에서 왼쪽, 임의 각도도 가능.
+- `spatial_blend`: 문자 표시 순서와 공간 위치의 혼합 정도. `0.0`은 문자 순서, `0.5`는 혼합, `1.0`은 공간 위치 순서.
+- `fade_width`: 페이드의 부드러움. 값이 클수록 가장자리가 부드러워집니다.
 
-## 淡入效果配置
+## 시그널
 
-### 淡入方向 (Fade Angle)
-
-设置字符淡入的方向角度：
-
-- `0°` - 从左到右（默认）
-- `90°` - 从上到下
-- `-90°` - 从下到上
-- `180°` - 从右到左
-- 任意角度值 - 自定义方向
-
-### 空间混合 (Spatial Blend)
-
-控制字符显示顺序和空间位置的混合程度：
-
-- `0.0` - 完全按字符顺序显示
-- `0.5` - 混合模式
-- `1.0` - 完全按空间位置显示
-
-### 柔和度 (Softness)
-
-控制淡入效果的柔和程度，值越大边缘越柔和。
-
-## 信号 (Signals)
-
-打字机组件提供以下信号，方便你监听状态变化：
-
-| 信号 | 说明 |
+| 시그널 | 설명 |
 |------|------|
-| `typewriter_started` | 打字机效果开始时触发 |
-| `typewriter_finished` | 打字机效果完成时触发 |
-| `typewriter_skipped` | 跳过打字效果时触发 |
-| `character_revealed(index)` | 每个字符显示时触发，index 为字符索引 |
+| `typewriter_started` | 타자기 효과가 시작될 때 트리거 |
+| `typewriter_finished` | 타자기 효과가 완료될 때 트리거 |
+| `typewriter_skipped` | 타자 효과를 건너뛸 때 트리거 |
+| `character_revealed(index)` | 각 문자가 표시될 때 트리거, index는 문자 인덱스 |
 
-### 信号使用示例
+## API 참조
 
-```gdscript
-func _ready():
-    var typewriter = $KND_TypewriterText
-    typewriter.typewriter_started.connect(_on_typewriter_started)
-    typewriter.typewriter_finished.connect(_on_typewriter_finished)
-    typewriter.character_revealed.connect(_on_character_revealed)
-
-func _on_typewriter_started():
-    print("打字效果开始！")
-
-func _on_typewriter_finished():
-    print("打字效果完成！")
-
-func _on_character_revealed(index: int):
-    print("显示字符: ", index)
-```
-
-## API 参考
-
-### 属性
-
-| 属性 | 类型 | 默认值 | 说明 |
+| 속성 | 유형 | 기본값 | 설명 |
 |------|------|--------|------|
-| `bbcode_text` | String | "" | 要显示的 BBCode 文本 |
-| `font` | Font | null | 自定义字体 |
-| `font_size` | int | 20 | 字体大小 |
-| `font_color` | Color | WHITE | 文字颜色 |
-| `chars_per_second` | float | 25.0 | 每秒显示字符数 |
-| `fade_width` | float | 3.0 | 淡入宽度 |
-| `fade_angle` | float | 0.0 | 淡入角度（度） |
-| `spatial_blend` | float | 0.15 | 空间混合比例 |
-| `auto_start` | bool | true | 是否自动开始 |
+| `bbcode_text` | String | "" | 표시할 BBCode 텍스트 |
+| `font` | Font | null | 사용자 지정 글꼴 |
+| `font_size` | int | 20 | 글꼴 크기 |
+| `font_color` | Color | WHITE | 글자 색 |
+| `chars_per_second` | float | 25.0 | 초당 표시 문자 수 |
+| `fade_width` | float | 3.0 | 페이드 폭 |
+| `fade_angle` | float | 0.0 | 페이드 각도(도) |
+| `spatial_blend` | float | 0.15 | 공간 블렌드 비율 |
+| `auto_start` | bool | true | 자동 시작 여부 |
 
-### 方法
-
-| 方法 | 说明 |
+| 메서드 | 설명 |
 |------|------|
-| `start()` | 开始打字效果 |
-| `skip()` | 跳过，立即显示全部 |
-| `reset()` | 重置，隐藏所有文本 |
-| `set_bbcode(text, autoplay)` | 设置 BBCode 文本 |
-| `is_playing()` | 是否正在播放 |
-| `is_finished()` | 是否已完成 |
-| `get_progress()` | 获取当前进度 |
+| `start()` | 타자기 효과 시작 |
+| `skip()` | 건너뛰고 즉시 전체 표시 |
+| `reset()` | 리셋하고 모든 텍스트 숨김 |
+| `set_bbcode(text, autoplay)` | BBCode 텍스트 설정 |
+| `is_playing()` | 재생 중인지 여부 |
+| `is_finished()` | 완료되었는지 여부 |
+| `get_progress()` | 현재 진행도 가져오기 |
 
-## 高级用法
-
-### 自定义打字速度
+## 고급 사용법
 
 ```gdscript
-# 快速显示
 typewriter.chars_per_second = 100.0
-
-# 慢速打字，营造氛围
 typewriter.chars_per_second = 5.0
-```
-
-### 自定义淡入效果
-
-```gdscript
-# 设置淡入方向（45度角）
 typewriter.fade_angle = 45.0
-
-# 设置柔和度
 typewriter.fade_width = 5.0
-
-# 设置空间混合
 typewriter.spatial_blend = 0.5
 ```
-
-### 监听打字完成事件
 
 ```gdscript
 func _ready():
@@ -183,20 +103,19 @@ func _ready():
     typewriter.typewriter_finished.connect(_on_finished)
 
 func _on_finished():
-    # 打字完成后执行某些操作
+    # 타자 완료 후 작업 실행
     show_continue_button()
 ```
 
-## 性能优化
+## 성능 최적화
 
-- 使用 GPU 着色器渲染，性能优异
-- 支持大量文本而不卡顿
-- 建议在移动平台上适当降低 `chars_per_second` 值
+- GPU 셰이더 렌더링을 사용해 성능이 우수합니다
+- 많은 텍스트도 끊김 없이 지원합니다
+- 모바일 플랫폼에서는 `chars_per_second` 값을 적절히 낮추는 것을 권장합니다
 
-## 注意事项
+## 주의 사항
 
-1. **BBCode 标签必须成对出现** - 确保每个开启标签都有对应的结束标签
-2. **颜色值可以自定义** - 支持十六进制颜色码如 `#FF5733`
-3. **编辑器预览** - 在编辑器中运行时，文本会直接全部显示方便预览
-4. **换行符** - 使用 `\n` 进行换行
-
+1. **BBCode 태그는 반드시 쌍으로 작성해야 합니다**
+2. **색상 값은 사용자 지정 가능** - `#FF5733` 같은 16진수 색상 코드를 지원합니다
+3. **에디터 미리보기** - 에디터에서 실행할 때는 미리보기 편의를 위해 텍스트가 전체 표시됩니다
+4. **줄바꿈** - `\n`을 사용합니다

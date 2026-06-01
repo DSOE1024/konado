@@ -1,34 +1,39 @@
-# Normal Dialogue
+---
+title: Ordinary Dialogue
+order: 3
+---
 
-## Function Description
+# Ordinary Dialogue
+
+## Description
 ```mermaid
 graph LR
     A[Dialogue Box] --> B[Character Name]
     A --> D[Dialogue Text]
 ```
 
-Normal dialogue is a common interaction method in games, used for communication between characters and players, presenting dialogue content through character names and dialogue text.
+Ordinary dialogue is a common interaction method in games. It is used for communication between characters and players, presenting dialogue content through the character name and dialogue text.
 
-## Syntax Structure
+## Syntax
 
 ```text
-[Character] [Dialogue Text] [Voice Tag]
+[character] [dialogue text] [voice tag]
 ```
 
-## Parameter Description
+## Parameters
 
 | Parameter | Required | Example | Description |
 |------|------|------|------|
-| Character | Yes | `alice` | Character name, used to display in the dialogue box |
-| Dialogue Text | Yes | `Hello, my name is Alice!` | What the character says |
-| Voice Tag | No | `alice_intro_01` | Optional tag, used to identify voice files |
+| Character | Yes | `alice` | Character name used for displaying the dialogue box |
+| Dialogue text | Yes | `Hello, my name is Alice!` | What the character says |
+| Voice tag | No | `alice_intro_01` | Optional tag used to identify the voice file |
 
-## Examples
+## Example
 
 ```text
-# Normal dialogue
+# Ordinary dialogue
 "alice" "Hello, my name is Alice!" alice_intro_01
 
-# Narrator (no character)
-"narrator" "The storm is getting more and more intense..."
+# Narration (no character)
+"narrator" "The storm was growing stronger..."
 ```

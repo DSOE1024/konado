@@ -1,25 +1,26 @@
+---
+title: Change Actor State
+order: 4
+---
+
 # Change Actor State
 
-## Function Description
+## Description
+Switch the state of the specified actor.
 
-Changes the state (expression) of an existing actor.
-
-## Syntax Structure
-
+## Syntax
 ```text
-actor change [actor_name] [state]
+actor change <character name> <new state>
 ```
 
-## Parameter Description
-
+## Parameters
 | Parameter | Required | Example | Description |
 |------|------|------|------|
-| actor_name | Yes | `bob` | Actor name |
-| state | Yes | `surprised` | New state (expression) |
+| Character | Yes | kona | Name of the actor whose state should be changed |
+| New state | Yes | happy | New state to switch to |
 
-## Examples
+## Example
 
 ```text
-# Change actor state
-actor change alice happy
+actor change kona happy
 ```

@@ -1,9 +1,9 @@
 ---
-title: 演员
+title: 액터
 order: 9
 sidebar_collapsed: true
 ---
 
-# 演员
+# 액터
 
-演员管理
+액터 관리

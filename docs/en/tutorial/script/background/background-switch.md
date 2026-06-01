@@ -1,28 +1,52 @@
-# Switch Background
+---
+title: Background Switch
+order: 1
+---
 
-## Function Description
+# Background Switch
 
-Switches the background image with optional transition effect.
+## Description
+Switch the background image of the game scene, with support for transition effects.
 
-## Syntax Structure
-
+## Syntax
 ```text
-background [background_name] [transition_effect]
+background [image resource name] <effect type>
 ```
 
-## Parameter Description
-
+## Parameters
 | Parameter | Required | Example | Description |
-|------|------|------|------|
-| background_name | Yes | `sunset` | Background image name |
-| transition_effect | No | `fade` | Optional transition effect (e.g., fade, blinds) |
+|------|------|--------|------|
+| Image resource name | Yes | `morning_forest` | Texture file name without extension |
+| Effect type | No | `fade` | Transition effect (default: instant switch) |
+
+### Supported Effect Types
+
+The following background switching effects are supported. Each effect has its own visual style:
+
+| Effect | Description |
+|------|------|
+| `none` | Instant switch |
+| `fade` | Fade in/out |
+| `erase` | Erase |
+| `blinds` | Blinds |
+| `wave` | Wave |
+| `vortex` | Vortex |
+| `windmill` | Windmill |
+| `cyberglitch` | Cyber glitch |
+
+If no effect type is specified, `none` (instant switch) is used by default.
 
 ## Examples
-
 ```text
-# Switch background with fade effect
-background sunset fade
+# Switch from daytime to night (fade effect)
+background night_street fade
 
-# Switch background instantly
-background night
+# Battle scene switch (instant switch)
+background battle_field none
+
+# Memory scene (erase effect)
+background memory_flash erase
+
+# Dream scene (vortex effect)
+background dream vortex
 ```

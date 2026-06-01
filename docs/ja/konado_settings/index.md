@@ -1,8 +1,8 @@
 ---
-title: 设置系统
+title: 設定システム
 order: 5
 ---
 
-# Konado设置系统
+# Konado 設定システム
 
-Konado 设置系统文档
+Konado 設定システムのドキュメント

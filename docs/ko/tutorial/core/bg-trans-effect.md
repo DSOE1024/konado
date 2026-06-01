@@ -1,62 +1,62 @@
 ---
-title: 背景切换特效
+title: 배경 전환 특수 효과
 order: 3
 ---
 
-# 背景转场特效
+# 배경 트랜지션 특수 효과
 
-## 前言
+## 머리말
 
-背景转场特效，是指在切换场景时，背景图片从当前场景退出，同时新场景的背景图片进入的效果。这种特效可以增加的视觉冲击力，提升用户体验。阅读本章节可以帮助您实现自定义的背景转场特效。
+배경 트랜지션 특수 효과란 장면을 전환할 때 현재 장면의 배경 이미지가 나가고 새 장면의 배경 이미지가 들어오는 효과를 말합니다. 이러한 효과는 시각적 충격을 높이고 사용자 경험을 개선할 수 있습니다. 이 장은 사용자 지정 배경 트랜지션 효과를 구현하는 데 도움이 됩니다.
 
-## 背景切换 Shader 规范
+## 배경 전환 Shader 규격
 
-为了统一管理和播放背景转场特效，我们约定了一个 Shader 规范，具体如下：
+배경 트랜지션 효과를 통일해서 관리하고 재생하기 위해 다음 Shader 규격을 정합니다.
 
-shader类型必须是 `canvas_item`
+shader 유형은 반드시 `canvas_item`이어야 합니다.
 
 ```glsl
 shader_type canvas_item;
 ```
 
-必须实现以下三个参数：
+다음 세 매개변수를 반드시 구현해야 합니다.
 
 ```glsl
-uniform float progress : hint_range(0, 1) = 0.0; // 转场进度 0=仅current 1=仅target
-uniform sampler2D current_texture : hint_default_black; // 当前纹理
-uniform sampler2D target_texture : hint_default_black; // 目标纹理
+uniform float progress : hint_range(0, 1) = 0.0; // 트랜지션 진행도 0=현재만 1=대상만
+uniform sampler2D current_texture : hint_default_black; // 현재 텍스처
+uniform sampler2D target_texture : hint_default_black; // 대상 텍스처
 ```
 
-- progress：转场进度，取值范围 0~1，0 表示仅显示当前纹理，1 表示仅显示目标纹理。
-- current_texture：当前纹理，没切换场景时显示的纹理。
-- target_texture：目标纹理，切换场景后显示的纹理。
+- progress: 트랜지션 진행도. 값 범위는 0~1이며, 0은 현재 텍스처만 표시하고 1은 대상 텍스처만 표시합니다.
+- current_texture: 현재 텍스처. 장면 전환 전 표시되는 텍스처입니다.
+- target_texture: 대상 텍스처. 장면 전환 후 표시되는 텍스처입니다.
 
-## 背景切换特效配置
+## 배경 전환 효과 설정
 
-同时，切换背景是一个动态的过程，因此还需要补充以下：
+배경 전환은 동적인 과정이므로 다음 내용도 추가해야 합니다.
 
-定义BackgroundTransitionEffectsType枚举，用于标识背景切换特效类型。
+BackgroundTransitionEffectsType 열거형을 정의해 배경 전환 효과 유형을 식별합니다.
 ```
 YOUR_EFFECT_SHADER
 ```
 
-定义shader变量，推荐使用 `preload` 函数加载 Shader 文件。
+shader 변수를 정의합니다. `preload` 함수로 Shader 파일을 로드하는 것을 권장합니다.
 ```
 var your_effect_shader: Shader = preload("res://path/to/your_effect_shader.shader")
 ```
 
-接下来需要实现YOUR_EFFECT_SHADER类型的背景切换特效配置。
+다음으로 YOUR_EFFECT_SHADER 유형의 배경 전환 효과 설정을 구현해야 합니다.
 
 ```gdscript
 BackgroundTransitionEffectsType.YOUR_EFFECT_SHADER: {
-	"shader": your_effect_shader,  // 背景切换 Shader，应和上文中变量一致
-	"duration": 1.0,  // 转场时长，默认为1.0s
-	"progress_target": 1.0,  // 目标进度，默认为1.0
-	"tween_trans": Tween.TRANS_LINEAR  // 切换时缓动类型
+	"shader": your_effect_shader,  // 배경 전환 Shader, 위 변수와 일치해야 합니다
+	"duration": 1.0,  // 트랜지션 시간, 기본값 1.0s
+	"progress_target": 1.0,  // 목표 진행도, 기본값 1.0
+	"tween_trans": Tween.TRANS_LINEAR  // 전환 시 이징 유형
 }
 ```
 
-接下来测试一下背景切换特效，在切换场景时，添加以下测试代码，观察背景切换效果是否符合预期。
+이제 배경 전환 효과를 테스트합니다. 장면을 전환할 때 다음 테스트 코드를 추가하고, 배경 전환 효과가 예상과 맞는지 확인합니다.
 
 ```gdscript
 bg.material.set("shader", your_effect_shader)
@@ -65,7 +65,7 @@ bg.material.set_shader_parameter("progress", 0.0)
 bg.material.set_shader_parameter("current_texture", current_texture)
 bg.material.set_shader_parameter("target_texture", tex)
 
-# 创建并配置过渡动画
+# 전환 애니메이션 생성 및 설정
 effect_tween = get_tree().create_tween()
 effect_tween.tween_property(
 	bg.material, 
@@ -76,6 +76,3 @@ effect_tween.tween_property(
 
 effect_tween.play()
 ```
-
-
-

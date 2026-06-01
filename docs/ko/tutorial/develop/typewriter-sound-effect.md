@@ -1,201 +1,90 @@
 ---
-title: 打字机音效
+title: 타자기 효과음
 order: 6
 ---
 
-# 打字机音效 (Typing Sound Effect)
+# 타자기 효과음 (Typing Sound Effect)
 
-## 概述
+## 개요
 
-Konado 对话框组件支持打字机音效功能，在打字过程中播放"滴滴"声，增强游戏的沉浸感和反馈体验。
+Konado 대화 상자 컴포넌트는 타자기 효과음 기능을 지원합니다. 타이핑 중 짧은 "딸깍" 소리를 재생해 게임의 몰입감과 피드백 경험을 높입니다.
 
-## 音效目录
+## 효과음 디렉터리
 
-打字机音效文件存放在以下目录：
+타자기 효과음 파일은 다음 디렉터리에 저장합니다.
 
 ```
 res://addons/konado/audioeffect/typewriter/
 ```
 
-## 支持的音频格式
+## 지원 오디오 형식
 
-| 格式 | 说明 |
+| 형식 | 설명 |
 |------|------|
-| `.wav` | 无压缩音频，推荐使用 |
-| `.ogg` | Ogg Vorbis 压缩格式 |
-| `.mp3` | MP3 压缩格式 |
+| `.wav` | 비압축 오디오, 권장 |
+| `.ogg` | Ogg Vorbis 압축 형식 |
+| `.mp3` | MP3 압축 형식 |
 
-## 基本配置
+## 기본 설정
 
-在 `KND_DialogueBox` 组件的 Inspector 面板中，可以找到打字机音效的相关配置：
-
-### 音效开关
+`KND_DialogueBox` 컴포넌트의 Inspector 패널에서 타자기 효과음 관련 설정을 찾을 수 있습니다.
 
 ```gdscript
 @export var enable_typing_effect_audio: bool = true
-```
-
-设置为 `true` 启用打字机音效，`false` 禁用。
-
-### 音效资源
-
-```gdscript
 @export var typing_effect_audio: AudioStream
 ```
 
-通过编辑器下拉菜单选择音效文件，或通过代码加载：
+`enable_typing_effect_audio`를 `true`로 설정하면 효과음이 활성화되고, `false`로 설정하면 비활성화됩니다. 에디터 드롭다운 메뉴에서 효과음 파일을 선택하거나 코드로 로드할 수 있습니다.
 
 ```gdscript
-# 代码方式设置音效
 dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/click.wav")
 ```
 
-## 音效触发配置
-
-### 触发概率
+## 효과음 트리거 설정
 
 ```gdscript
 @export var audio_trigger_chance: float = 0.8
-```
-
-控制音效触发的概率，范围 0.0-1.0：
-
-- `1.0` - 每次必播
-- `0.8` - 80%概率播放（默认）
-- `0.5` - 50%概率播放
-- `0.0` - 不播放
-
-### 播放间隔
-
-```gdscript
-@export var min_audio_interval: float = 0.02   # 最小间隔（秒）
-@export var max_audio_interval: float = 0.08   # 最大间隔（秒）
-```
-
-音效播放的随机间隔范围，用于适配不同节奏的滴滴声：
-
-- **快速滴滴声**：设置较小的间隔，如 `0.02 - 0.05`
-- **慢速打字声**：设置较大的间隔，如 `0.05 - 0.15`
-
-每次播放后会随机生成一个新的间隔值，介于最小和最大值之间。
-
-### 音量控制
-
-```gdscript
+@export var min_audio_interval: float = 0.02
+@export var max_audio_interval: float = 0.08
 @export var audio_volumn: float = 0.6
 ```
 
-音效音量，范围 0.0-1.0：
+- `audio_trigger_chance`: 효과음 트리거 확률, 범위 0.0-1.0. `1.0`은 항상 재생, `0.8`은 80% 확률, `0.0`은 재생하지 않음.
+- `min_audio_interval` / `max_audio_interval`: 효과음 재생의 랜덤 간격 범위로, 다양한 타이핑 리듬에 맞춥니다.
+- `audio_volumn`: 효과음 음량, 범위 0.0-1.0.
 
-- `1.0` - 最大音量
-- `0.6` - 60%音量（默认）
-- `0.0` - 静音
-
-## 使用示例
-
-### 基础使用
-
-1. 将音效文件放入 `res://addons/konado/audioeffect/typewriter/` 目录
-2. 选中场景中的 `KND_DialogueBox` 节点
-3. 在 Inspector 中启用 `Enable Typing Effect Audio`
-4. 通过下拉菜单选择音效文件
-5. 调整音量和其他参数
-
-### 代码控制
+## 사용 예시
 
 ```gdscript
-# 获取对话框实例
 var dialogue_box = $KND_DialogueBox
-
-# 启用音效
 dialogue_box.enable_typing_effect_audio = true
-
-# 设置音效
 dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/my_click.wav")
-
-# 设置触发概率（每次都播）
 dialogue_box.audio_trigger_chance = 1.0
-
-# 设置音量
 dialogue_box.audio_volumn = 0.8
-
-# 设置播放间隔
 dialogue_box.min_audio_interval = 0.02
 dialogue_box.max_audio_interval = 0.06
 ```
 
-## 推荐音效
+## 추천 효과음
 
-### 打字机滴滴声
+- **타자기 딸깍 소리**: 빠르고 밀도 높은 타이핑 효과에 적합하며 `0.02 - 0.05`, `audio_trigger_chance: 0.8` 권장
+- **기계식 키보드 소리**: 타건감이 강한 게임에 적합하며 `0.03 - 0.08`, `audio_trigger_chance: 0.9` 권장
+- **부드러운 클릭 소리**: 캐주얼하고 편안한 분위기에 적합하며 `0.05 - 0.12`, `audio_trigger_chance: 0.7`, `audio_volumn: 0.5` 권장
 
-适合快速、密集的打字效果，建议间隔设置较小：
+## 효과음 트리거 시점
 
-```
-min_audio_interval: 0.02
-max_audio_interval: 0.05
-audio_trigger_chance: 0.8
-```
+타자기 효과음은 타이핑 애니메이션 재생 중이고, 마지막 재생 이후 랜덤 간격을 넘었으며, 확률 검사에 통과하고, 텍스트 표시가 아직 끝나지 않았을 때 트리거됩니다.
 
-### 机械键盘声
+## 주의 사항과 최적화
 
-适合打字感强的游戏：
+1. 효과음 파일 이름은 영어를 권장하며 특수 문자를 피하세요.
+2. 효과음 길이는 0.1초 이내가 가장 좋습니다.
+3. 타자 효과음이 배경 음악을 덮지 않도록 음량 균형을 맞추세요.
+4. 모바일 플랫폼에서는 공간 절약을 위해 ogg/mp3 같은 압축 형식을 권장합니다.
+5. 짧은 효과음 파일(100 KB 미만 권장)을 사용하고, 필요 없을 때는 `enable_typing_effect_audio = false`로 비활성화하세요.
 
-```
-min_audio_interval: 0.03
-max_audio_interval: 0.08
-audio_trigger_chance: 0.9
-```
+## 문제 해결
 
-### 轻柔点击声
-
-适合休闲、舒缓的游戏氛围：
-
-```
-min_audio_interval: 0.05
-max_audio_interval: 0.12
-audio_trigger_chance: 0.7
-audio_volumn: 0.5
-```
-
-## 音效触发时机
-
-打字机音效在以下情况下触发：
-
-1. **打字动画播放中** - 对话文字正在逐字符显示
-2. **距离上次播放超过随机间隔** - 避免音效过于密集
-3. **通过随机概率检查** - 根据 `audio_trigger_chance` 设置
-4. **文本未显示完成** - 如果已显示完则不触发
-
-## 注意事项
-
-1. **音效文件命名** - 建议使用英文命名，避免特殊字符
-2. **音效长度** - 建议音效时长在 0.1 秒以内效果最佳
-3. **音量平衡** - 确保打字音效不会盖过背景音乐
-4. **移动平台** - 移动设备上建议使用压缩格式（ogg/mp3）以节省空间
-5. **音效同步** - 音效会与打字进度自动同步，无需手动控制
-
-## 性能优化
-
-- 使用短音效文件（< 100KB）
-- 优先使用 `.ogg` 格式（压缩率高）
-- 避免同时播放多个相同音效实例
-- 在不需要音效时可设置 `enable_typing_effect_audio = false` 禁用
-
-## 故障排除
-
-### 音效不播放
-
-1. 检查 `enable_typing_effect_audio` 是否为 `true`
-2. 检查 `typing_effect_audio` 是否已正确设置
-3. 确认音效文件路径是否存在
-4. 检查音量是否设置为 0
-
-### 音效过于密集
-
-1. 增大 `min_audio_interval` 和 `max_audio_interval` 的值
-2. 降低 `audio_trigger_chance` 的值
-
-### 音效过于稀疏
-
-1. 减小 `min_audio_interval` 和 `max_audio_interval` 的值
-2. 增大 `audio_trigger_chance` 的值
+- 효과음이 재생되지 않으면 `enable_typing_effect_audio`, `typing_effect_audio`, 파일 경로, 음량을 확인하세요.
+- 효과음이 너무 촘촘하면 간격 값을 늘리거나 `audio_trigger_chance`를 낮추세요.
+- 효과음이 너무 드물면 간격 값을 줄이거나 `audio_trigger_chance`를 높이세요.

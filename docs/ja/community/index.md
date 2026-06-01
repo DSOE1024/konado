@@ -1,8 +1,8 @@
 ---
-title: 社区
+title: コミュニティ
 order: 11
 ---
 
-# 社区
+# コミュニティ
 
-Konado Project 社区资源
+Konado Project のコミュニティリソース

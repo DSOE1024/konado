@@ -6,4 +6,4 @@ sidebar_collapsed: true
 
 # 背景
 
-背景切换
+背景切り替え

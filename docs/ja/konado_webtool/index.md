@@ -5,4 +5,4 @@ order: 7
 
 # Konado WebTool
 
-Konado WebTool 文档
+Konado WebTool ドキュメント

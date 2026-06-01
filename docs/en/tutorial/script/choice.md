@@ -6,37 +6,35 @@ order: 7
 # Choice Jump
 
 ## Overview
-
-This feature is used together with **branches**. It configures jump logic in interactive choices, so clicking a choice can jump directly to a specific branch node. Each `choice` statement creates one option. Multiple adjacent `choice` lines are merged into one option group and displayed together during interaction.
+This feature must be used together with the **branch feature**. Its core purpose is to configure jump logic inside interactive option tags. After the player clicks the corresponding option, the script can jump directly to the specified branch node. Each `choice` statement creates one option. Multiple adjacent `choice` lines are merged into one option group and shown together during interaction.
 
 ## Syntax
 
-```text
-choice "Choice text" -> branch_name
+```
+choice "option text" -> branch_name
 ```
 
 | Parameter | Required | Example | Description |
-|-----------|----------|---------|-------------|
-| Choice text | Yes | `"Choose coffee"` | The option text shown during interaction |
-| Branch name | Yes | `coffee_choice` | The unique target branch identifier |
+|------------|------|-----------------|--------------------------|
+| Option text | Yes | "Choose coffee" | Option text shown during interaction |
+| Branch name | Yes | coffee_choice | Unique identifier of the target branch |
 
-## Examples
+## Usage Examples
 
-Write each option on its own line:
+Each option can be written on its own line:
 
-```text
+```
 choice "Green tea" -> green_tea
 choice "Black tea" -> black_tea
 ```
 
-You can also write multiple options on one line:
+Multiple options can also be written continuously on one line:
 
-```text
+```
 choice "Green tea" -> green_tea "Black tea" -> black_tea
 ```
 
 ## Notes
-
-1. The branch name must exactly match a branch identifier defined in the project. It is case-sensitive and cannot contain spaces or special symbols.
-2. Choice text must be wrapped in English double quotes and supports normal text characters.
-3. `->` is the separator between the choice and the branch name and cannot be omitted.
+1. The branch name must exactly match the branch identifier defined in the project. It is case-sensitive and cannot contain spaces or special symbols.
+2. Option text must be wrapped in English double quotes and supports regular text characters.
+3. `->` is the separator between the option and the branch name and cannot be omitted.

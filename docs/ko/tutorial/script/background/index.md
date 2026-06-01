@@ -1,9 +1,9 @@
 ---
-title: 背景
+title: 배경
 order: 8
 sidebar_collapsed: true
 ---
 
-# 背景
+# 배경
 
-背景切换
+배경 전환

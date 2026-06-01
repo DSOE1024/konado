@@ -1,8 +1,8 @@
 ---
-title: 成就系统
+title: 업적 시스템
 order: 6
 ---
 
-# Konado成就系统
+# Konado 업적 시스템
 
-Konado 成就系统文档
+Konado 업적 시스템 문서

@@ -7,25 +7,23 @@ order: 6
 
 ## Description
 
-Custom signals in dialogue scenes can be used for almost any operation.
+A custom signal in a dialogue scene. It can be used for almost any operation.
 
 ## Syntax
 
 ```text
-signal <custom signal command>
+signal <custom signal instruction>
 ```
 
 ## Parameters
-
 | Parameter | Required | Example | Description |
-|-----------|----------|---------|-------------|
-| Custom signal command | Yes | FavorabilityUp | The concrete command |
+|------|------|------|------|
+| Custom signal instruction | Yes | affection_up | Specific instruction |
 
 ## Example
-
 ```text
-# Examples
-signal FavorabilityUp
-signal FavorabilityDown
-signal SetFavorability 50
+# Example
+signal affection_up
+signal affection_down
+signal set_affection_gold 50
 ```

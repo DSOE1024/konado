@@ -1,24 +1,26 @@
-# Remove Actor
+---
+title: Actor Exit
+order: 2
+---
 
-## Function Description
+# Actor Exit
 
-Removes an actor from the scene.
+## Description
+Make the specified actor leave the current scene.
 
-## Syntax Structure
-
+## Syntax
 ```text
-actor leave [actor_name]
+actor exit [character ID]
 ```
 
-## Parameter Description
-
+## Parameters
 | Parameter | Required | Example | Description |
 |------|------|------|------|
-| actor_name | Yes | `bob` | Actor name to remove |
+| Character ID | Yes | `alice` | Character resource identifier |
 
-## Examples
+## Example
 
 ```text
-# Remove actor
-actor leave alice
+# Character exits the scene
+actor exit alice
 ```

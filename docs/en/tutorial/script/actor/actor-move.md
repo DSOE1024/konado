@@ -1,26 +1,26 @@
+---
+title: Move Actor
+order: 3
+---
+
 # Move Actor
 
-## Function Description
+## Description
+Move the specified character to the specified position.
 
-Moves an actor to a new position.
-
-## Syntax Structure
-
+## Syntax
 ```text
-actor move [actor_name] [x] [y]
+actor move [character ID] [coordinate]
 ```
 
-## Parameter Description
-
+## Parameters
 | Parameter | Required | Example | Description |
 |------|------|------|------|
-| actor_name | Yes | `bob` | Actor name |
-| x | Yes | `400` | New X coordinate |
-| y | Yes | `300` | New Y coordinate |
+| Character ID | Yes | `alice` | Character resource identifier |
+| Coordinate | Yes | `3` | Coordinate of the target position |
 
-## Examples
+## Example
 
 ```text
-# Move actor
-actor move alice 500 350
+actor move alice 3
 ```

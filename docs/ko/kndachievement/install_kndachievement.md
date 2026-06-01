@@ -1,16 +1,15 @@
 ---
-title: 安装
+title: 설치
 order: 1
 ---
 
-# 安装
+# 설치
 
+## 설치 단계
 
-## 安装步骤
+1. `KonadoAchievement` 플러그인을 Godot 프로젝트의 `addons` 디렉터리에 복사합니다
+2. Godot 에디터에서 `Project -> Project Settings -> Plugins`로 이동해 `KonadoAchievement` 플러그인을 활성화합니다
 
-1. 将 `KonadoAchievement` 插件复制到 Godot 项目的 `addons` 目录下
-2. 在 Godot 编辑器中，进入 `项目 -> 项目设置 -> 插件`，启用 `KonadoAchievement` 插件
+## 자동 로드
 
-## 自动加载
-
-KND_AchievementManager 会将 KND_AchievementManager 添加到项目的 `root` 节点下，无需手动加载。
+KND_AchievementManager는 프로젝트의 `root` 노드 아래에 KND_AchievementManager를 자동으로 추가합니다. 수동으로 로드할 필요가 없습니다.

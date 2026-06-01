@@ -1,5 +1,5 @@
 ---
-title: API Reference
+title: API Usage
 order: 2
 ---
 
@@ -9,67 +9,79 @@ order: 2
 
 ## Introduction
 
-Konado.NET is a C# API extension for the Konado dialogue system. Using Konado.NET, developers can easily create, manage and execute dialogue content in C# projects.
+Konado.NET is a C# API extension for the Konado dialogue system. With Konado.NET, developers can easily create, manage, and execute dialogue content in C# projects.
 
 ## Usage
 
-### Enabling the Plugin
+### Non-.NET Projects
 
-First enable the Konado plugin, then enable the Konado .NET API plugin.
-
-Your scene must contain a DialogueManager node for the Konado .NET API to work correctly.
-
-When first enabling Konado.NET, you may encounter the following error:
+If you use the Konado .NET API in a non-.NET project, you may see the following error. This is normal:
+```
+ ERROR: core/io/resource_loader.cpp:568 - Condition "local_path.is_empty()" is true. Returning: Ref<ResourceLoader::LoadToken>()
+  ERROR: Failed to create an autoload, can't load from UID or path: uid://ptylvcqylq7j.
+  ERROR: editor/settings/editor_autoload_settings.cpp:571 - Condition "!info->node" is true. Continuing.
 
 ```
-Unable to load addon script from path: 'res://addons/konadotnet/Konadotnet.cs': The script may have code errors.
-Disabling addon at 'res://addons/konadotnet/plugin.cfg' to prevent further errors.
+
+This issue does not affect the basic Konado features, but the Konado .NET API cannot be used.
+
+### Enable the Plugin
+
+Enable the Konado plugin first, then enable the Konado .NET API plugin.
+
+The scene should contain a DialogueManager node; otherwise the Konado .NET API will not work correctly.
+
+When enabling Konado.NET for the first time, you may encounter the following error:
+
+```
+Unable to load addon script from path “res://addons/konadotnet/Konadotnet.cs”: the script may contain code errors.
+Disabling addon at “res://addons/konadotnet/plugin.cfg” to prevent further errors.
 ```
 
 ```
 Unable to load addon script from path: 'res://addons/konadotnet/Konadotnet.cs'.
 ```
 
-This is normal. Recompile Konado.NET in Godot, then reopen the project to resolve the issue.
+This is normal. Rebuild Konado.NET in Godot, then reopen the project to resolve it.
 
-If you are unable to enable the plugin and there are no errors in MSBuild, try closing the project, deleting the `.godot/` folder in the project root, then regenerating the project.
+If the plugin cannot be enabled and MSBuild reports no errors, try closing the project, deleting the `.godot/` folder in the project root, and rebuilding the project.
 
 ## API Reference
 
 ### KonadoAPI
 
-Core API class providing access to the Konado system.
+Core API class that provides access to the Konado system.
 
 #### Properties
 
 - `bool IsApiReady`: Indicates whether the API is ready
-- `KonadoAPI API`: Static instance providing access to the Konado API
+- `KonadoAPI API`: Static instance that provides access to the Konado API
 - `DialogueManagerAPI DialogueManagerApi`: Dialogue manager API instance
 
 ### DialogueManagerAPI
 
-Dialogue manager API for controlling dialogue execution.
+Dialogue manager API used to control dialogue execution.
 
 #### Methods
 
-- `InitDialogue()`: Initialise dialogue
+- `InitDialogue()`: Initialize dialogue
 - `StartDialogue()`: Start dialogue
 - `StopDialogue()`: Stop dialogue
 
 #### Events
 
-- `ShotStart`: Emitted when a dialogue scene starts
-- `ShotEnd`: Emitted when a dialogue scene ends
-- `DialogueLineStart(int line)`: Emitted when a dialogue line starts
-- `DialogueLineEnd(int line)`: Emitted when a dialogue line ends
+- `ShotStart`: Triggered when a dialogue scene starts
+- `ShotEnd`: Triggered when a dialogue scene ends
+- `DialogueLineStart(int line)`: Triggered when a dialogue line starts
+- `DialogueLineEnd(int line)`: Triggered when a dialogue line ends
 
 ### ActingInterface
 
-Performance interface defining background transition effect types.
+Acting interface that defines background transition effect types.
 
 #### Enum
 
-- `BackgroundTransitionEffectsType`: Background transition effect types
+- `BackgroundTransitionEffectsType`: Background transition effect type
   - `NoneEffect`: No effect
   - `EraseEffect`: Erase effect
   - `BlindsEffect`: Blinds effect
@@ -81,7 +93,7 @@ Performance interface defining background transition effect types.
 
 ### Wrapper Classes
 
-Wrapper classes provide C# wrappers for GDScript objects, allowing developers to manipulate various Konado data structures in C#. Note that these classes are not yet fully implemented and only provide some properties and methods, pending further development.
+Wrapper classes provide C# wrappers around GDScript objects, allowing developers to operate Konado data structures from C#. These classes are not fully implemented yet and only provide some properties and methods. Further improvements are planned.
 
 #### Dialogue
 
@@ -92,21 +104,21 @@ Dialogue object wrapper representing a single dialogue element.
 - `Type DialogueType`: Dialogue type (enum)
 - `string BranchId`: Branch ID
 - `Array<Dialogue> BranchDialogue`: Branch dialogue
-- `bool IsBranchLoaded`: Whether the branch is loaded
+- `bool IsBranchLoaded`: Whether the branch has been loaded
 - `string CharacterId`: Character ID
 - `string DialogueContent`: Dialogue content
-- `DialogueActor ShowActor`: Actor to show
+- `DialogueActor ShowActor`: Actor to display
 - `string ExitActor`: Actor to exit
-- `string ChangeStateActor`: Actor changing state
-- `string TargetMoveChara`: Target character to move
-- `Vector2 TargetMovePos`: Target move position
+- `string ChangeStateActor`: Actor whose state changes
+- `string TargetMoveChara`: Target actor to move
+- `Vector2 TargetMovePos`: Target movement position
 - `Array<DialogueChoice> Choices`: Dialogue choices
 - `string BgmName`: Background music name
 - `string VoiceId`: Voice ID
 - `string SoundeffectName`: Sound effect name
 - `string BackgroundImageName`: Background image name
-- `BackgroundTransitionEffectsType BackgroundToggleEffects`: Background transition effect
-- `string JumpShotId`: Jump shot ID
+- `BackgroundTransitionEffectsType BackgroundToggleEffects`: Background switching effect
+- `string JumpShotId`: Target scene ID
 - `string LabelNotes`: Label notes
 - `Dictionary ActorSnapshots`: Actor snapshots
 
@@ -118,15 +130,15 @@ Dialogue object wrapper representing a single dialogue element.
 - `ActorChangeState`: Actor state change
 - `MoveActor`: Move actor
 - `SwitchBackground`: Switch background
-- `ExitActor`: Exit actor
+- `ExitActor`: Actor exits
 - `PlayBgm`: Play background music
 - `StopBgm`: Stop background music
 - `PlaySoundEffect`: Play sound effect
-- `ShowChoice`: Show choice
+- `ShowChoice`: Show choices
 - `Branch`: Branch
-- `JumpTag`: Jump tag
-- `JumpShot`: Jump shot
-- `TheEnd`: The end
+- `JumpTag`: Jump to tag
+- `JumpShot`: Jump to scene
+- `TheEnd`: End
 - `Label`: Label
 
 #### DialogueActor
@@ -139,7 +151,7 @@ Dialogue actor wrapper representing an actor object in dialogue.
 - `string CharacterState`: Character state
 - `Vector2 ActorPosition`: Actor position
 - `Vector2 ActorScale`: Actor scale
-- `bool ActorMirror`: Actor mirror
+- `bool ActorMirror`: Actor mirroring
 
 #### DialogueChoice
 
@@ -152,31 +164,31 @@ Dialogue choice wrapper representing a choice object in dialogue.
 
 #### KndData
 
-Konado KND_Data base data class wrapper.
+Wrapper for the Konado KND_Data data base class.
 
 ##### Properties
 
 - `string Type`: Data type
-- `bool Love`: Whether it is a favourite
+- `bool Love`: Whether it is favorite content
 - `string Tip`: Tip information
 
 #### KndShot
 
-Konado KND_Shot shot wrapper, inheriting from KndData.
+Wrapper for Konado KND_Shot scenes, inherited from KndData.
 
 ##### Properties
 
 - `string Name`: Scene name
-- `string ShotId`: Shot ID
+- `string ShotId`: Scene ID
 - `string SourceStory`: Source story
 - `Array<Dictionary> DialoguesSourceData`: Dialogue source data
 - `Dictionary Branches`: Branches
 - `Dictionary<string, Dictionary> SourceBranches`: Source branches
-- `Dictionary<string, int> ActorCharacterMap`: Actor character map
+- `Dictionary<string, int> ActorCharacterMap`: Actor mapping
 
 #### KonadoScriptsInterpreter
 
-KonadoScriptsInterpreter script interpreter wrapper for parsing Konado script files.
+Wrapper for the KonadoScriptsInterpreter script interpreter, used to parse Konado script files.
 
 ##### Methods
 
@@ -190,14 +202,14 @@ KonadoScriptsInterpreter script interpreter wrapper for parsing Konado script fi
 ```csharp
 using Konado.Runtime.API;
 
-// Get the Konado API instance
+// Get Konado API instance
 var konadoAPI = KonadoAPI.API;
 var dialogueManager = KonadoAPI.DialogueManagerApi;
 
-// Check if the API is ready
+// Check whether the API is ready
 if (dialogueManager.IsReady)
 {
-    // Initialise dialogue
+    // Initialize dialogue
     dialogueManager.InitDialogue();
 
     // Start dialogue
@@ -232,12 +244,12 @@ dialogueManager.DialogueLineEnd += (int line) => {
 };
 ```
 
-### Parsing Konado Scripts
+### Parse Konado Script
 
 ```csharp
 using Konado.Wrapper;
 
-// Create a script interpreter
+// Create script interpreter
 var flags = new Godot.Collections.Dictionary<string, Variant>();
 var interpreter = new KonadoScriptsInterpreter(flags);
 

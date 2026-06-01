@@ -1,8 +1,7 @@
 ---
-title: Custom Development
-order: 8
+title: Development
+order: 7
+sidebar_collapsed: true
 ---
 
 # Development
-
-Konado custom development

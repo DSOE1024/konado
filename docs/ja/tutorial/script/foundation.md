@@ -2,4 +2,4 @@
 sidebar_hidden: true
 ---
 
-# 基础
+# 基礎
