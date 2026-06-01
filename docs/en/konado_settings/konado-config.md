@@ -144,7 +144,7 @@ The default settings configuration file is located at `res://addons/konado_setti
                     "key": "language",
                     "label": "Language",
                     "type": 2,
-                    "options": ["zh", "en", "ja"],
+                    "options": ["zh", "tc", "en", "ja", "ko"],
                     "default_value": "zh"
                 },
                 {
