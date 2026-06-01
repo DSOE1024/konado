@@ -12,7 +12,7 @@ Konado is a visual novel engine framework based on Godot Engine, driven by the o
 ## Project Honors
 
 - Our project has been included in the "Plugins and scripts" section of Godot Engine's official [awesome-godot](https://github.com/godotengine/awesome-godot) list as a recommended plugin.
-- We are honored to receive the [2025 AtomGit Top 100 Open Source Project](https://atomgit.com/GitCode/G-Star100) award and have been included in the [AtomGit G-Star Landscape 3.0](https://gstar-landscape.gitcode.com/?item=音视频-图形-游戏-3d--游戏引擎-unity-unreal-godot--konado) ecosystem panorama.
+- We are honored to receive the [2025 AtomGit Top 100 Open Source Project](https://atomgit.com/GitCode/G-Star100) award and have been included in the [AtomGit G-Star Landscape 3.0](https://gstar-landscape.gitcode.com/?item=%E9%9F%B3%E8%A7%86%E9%A2%91-%E5%9B%BE%E5%BD%A2-%E6%B8%B8%E6%88%8F-3d--%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E-unity-unreal-godot--konado) ecosystem panorama.
 
 ## Project Contributors
 
@@ -50,4 +50,8 @@ If you are interested in the Konado project, you are welcome to join our QQ Chan
 
 For bug reports or feature suggestions, please submit an Issue on Konado's [repository](https://github.com/godothub/konado/issues).
 
-For other inquiries, please send an email to: [konadoproject@163.com](mailto:konadoproject@163.com)
+For other inquiries, please send an email to: [konado@godothub.com](mailto:konado@godothub.com)
+
+## Acknowledgments
+
+[![CNGAL](/cngal-background-logo.png)](https://www.cngal.org)
