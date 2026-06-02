@@ -762,26 +762,20 @@ func _parse_choice(line: String, dialog: KND_Dialogue) -> bool:
 		parts.append(raw_parts[i])
 		i += 1
 
-	if parts.size() % 2 != 0:
-		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签，格式: choice \"文本\" -> 标签")
+	if parts.size() != 2:
+		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每行只能有一个选项，格式: choice \"文本\" -> 标签")
 		return false
 
-	for ic in range(0, parts.size(), 2):
-		var choice = KND_DialogueChoice.new()
-		choice.choice_text = parts[ic]
-		choice.next_id = parts[ic + 1]
-		dialog.choices.append(choice)
-
-	var choices_strs = ""
-	for choice in dialog.choices:
-		choices_strs += "\"" + choice.choice_text + "\" -> " + choice.next_id + "  "
+	var choice = KND_DialogueChoice.new()
+	choice.choice_text = parts[0]
+	choice.next_id = parts[1]
+	dialog.choices.append(choice)
 
 	var jump_tags = []
-	for choice in dialog.choices:
-		jump_tags.append(choice.next_id)
+	jump_tags.append(choice.next_id)
 	cur_tmp_option_lines[tmp_original_line_number] = jump_tags
 
-	_scripts_info(tmp_path, tmp_line_number + 1, "选项解析完成 选项数量: " + str(dialog.choices.size()) + "  选项: " + choices_strs)
+	_scripts_info(tmp_path, tmp_line_number + 1, "选项解析完成: \"" + choice.choice_text + "\" -> " + choice.next_id)
 	return true
 
 # 分支解析
