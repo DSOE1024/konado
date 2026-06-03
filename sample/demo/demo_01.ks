@@ -38,7 +38,6 @@ actor change Kona 介绍说话
 # 演员退出
 actor exit Kona
 
-
 # 跳转语句，可以打开demo_02继续看示例文件的分支部分。
 jump res://sample/demo/demo_02.ks
 
