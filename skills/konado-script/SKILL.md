@@ -24,9 +24,8 @@ Konado Script Skill是Konado项目的一部分。
 
 1. 将本目录下各 `.md` 文件中的正则、补全项、诊断规则按目标工具的配置格式转换。
 2. 将 `examples/` 下的 `.ks` 示例脚本放入项目模板目录。
-3. 语法高亮 Token 类型定义见 [syntax-highlighting.md](./syntax-highlighting.md)。
-4. 补全项与代码片段定义见 [completions.md](./completions.md)。
-5. 静态检查规则见 [diagnostics.md](./diagnostics.md)。
+3. 补全项与代码片段定义见 [completions.md](./completions.md)。
+4. 静态检查规则见 [diagnostics.md](./diagnostics.md)。
 
 ## 文件清单
 
