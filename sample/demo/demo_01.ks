@@ -9,7 +9,6 @@ play bgm echo
 # 背景名称后面的代号为效果，效果有8种可以自己试试。
 background bg1 none
 
-
 # 演员显示语句：actor show <角色名称> <角色状态> at <x坐标> <y坐标> scale <缩放比例> [mirror]
 # 写mirror会使演员镜像显示（位置不变）
 actor show Kona 正常 at 3
