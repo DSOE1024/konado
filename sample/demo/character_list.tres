@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://5dxx84u6uyy0" path="res://addons/konado/scripts/character/knd_character.gd" id="1_6oy8v"]
 [ext_resource type="Script" uid="uid://dxbtmvyauvfln" path="res://addons/konado/scripts/character/knd_character_status.gd" id="2_7mst4"]
 [ext_resource type="Script" uid="uid://bl7m0mtuh2jqi" path="res://addons/konado/scripts/character/knd_character_list.gd" id="2_vqfl5"]
+[ext_resource type="PackedScene" uid="uid://yd4k6n3d43g1" path="res://sample/demo/sample_arts/spine/spine_demo.tscn" id="3_gmajq"]
 [ext_resource type="Texture2D" uid="uid://d86es3yopbu2" path="res://assets/kona_portrait/可娜立绘 (1).PNG" id="3_xc1ds"]
 [ext_resource type="Texture2D" uid="uid://0388u2vtxu8" path="res://assets/kona_portrait/可娜立绘 (2).PNG" id="4_88rgo"]
 [ext_resource type="Texture2D" uid="uid://dadand7snjrvn" path="res://assets/kona_portrait/可娜立绘 (3).PNG" id="5_wqkwt"]
@@ -13,6 +14,7 @@
 [sub_resource type="Resource" id="Resource_vqfl5"]
 script = ExtResource("2_7mst4")
 status_name = "正常"
+status_scene = ExtResource("3_gmajq")
 status_texture = ExtResource("3_xc1ds")
 metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 

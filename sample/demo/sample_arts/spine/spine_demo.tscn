@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://yd4k6n3d43g1"]
+
+[ext_resource type="SpineAtlasResource" uid="uid://de2o0ojp18w37" path="res://sample/demo/sample_arts/spine/CH0335_spr.atlas" id="1_ihy3r"]
+[ext_resource type="SpineSkeletonFileResource" uid="uid://djn0m3wc6155o" path="res://sample/demo/sample_arts/spine/CH0335_spr.skel" id="2_71in6"]
+
+[sub_resource type="SpineSkeletonDataResource" id="SpineSkeletonDataResource_scis3"]
+atlas_res = ExtResource("1_ihy3r")
+skeleton_file_res = ExtResource("2_71in6")
+
+[node name="SpineDemo" type="Node2D" unique_id=554945468]
+position = Vector2(942, 661.99994)
+scale = Vector2(0.414499, 0.414499)
+
+[node name="SpineSprite" type="SpineSprite" parent="." unique_id=212349073]
+skeleton_data_res = SubResource("SpineSkeletonDataResource_scis3")
+preview_skin = "Default"
+preview_animation = "-- Empty --"
+preview_frame = false
+preview_time = 0.0

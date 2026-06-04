@@ -1,0 +1,14 @@
+[remap]
+
+importer="spine.skel"
+type="SpineSkeletonFileResource"
+uid="uid://djn0m3wc6155o"
+path="res://.godot/imported/CH0335_spr.skel-a33854d7bbc01e9830a54e0c44502f53.spskel"
+
+[deps]
+
+source_file="res://sample/demo/sample_arts/spine/CH0335_spr.skel"
+dest_files=["res://.godot/imported/CH0335_spr.skel-a33854d7bbc01e9830a54e0c44502f53.spskel"]
+
+[params]
+

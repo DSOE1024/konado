@@ -456,22 +456,22 @@ func _restore_actor_state(state: Dictionary) -> void:
 							break
 				
 				if target_chara:
-					# 查找对应的状态纹理
+					# 查找对应的状态资源
 					var state_name = actor_state.get("state", "")
-					var state_tex = null
+					var state_data: KND_CharacterStatus = null
 					for chara_state in target_chara.chara_status:
 						if chara_state.status_name == state_name:
-							state_tex = chara_state.status_texture
+							state_data = chara_state
 							break
 					
-					if state_tex:
+					if state_data:
 						# 创建演员
 						acting_interface.create_new_character(
 							actor_id,
 							actor_state.get("h_division", 6),
 							actor_state.get("pos_h", 0),
 							state_name,
-							state_tex
+							state_data
 						)
 						
 						# 等待一帧，确保演员节点能够正确创建
