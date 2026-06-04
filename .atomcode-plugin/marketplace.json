@@ -1,4 +1,5 @@
 {
+    "name": "konado-script-skill",
     "plugins": [
         { 
             "name": "konado-script-skill",
