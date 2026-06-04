@@ -21,6 +21,7 @@ signal actor_moved
 			animation_time = max(value, 0)
 
 @export var texture_rect: TextureRect
+var _status_node: Node = null
 
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
 @export var h_division: int = 5:
@@ -45,8 +46,8 @@ func _ready() -> void:
 	_on_resized()
 
 func _on_resized() -> void:
-	if not texture_rect:
-		print("警告：texture_rect未赋值")
+	if not slot:
+		print("警告：slot未赋值")
 		return
 	
 	if use_tween:
@@ -62,45 +63,53 @@ func _on_resized() -> void:
 
 ## 高亮
 func set_highlight(highlight: bool) -> void:
+	if _status_node and _status_node.has_method("set_highlight"):
+		_status_node.call("set_highlight", highlight)
+		return
+	var visual := _get_status_visual()
+	if visual == null:
+		return
 	if highlight:
-		texture_rect.set_modulate(Color(1.0, 1.0, 1.0))
+		visual.set_modulate(Color(1.0, 1.0, 1.0))
 	else:
-		texture_rect.set_modulate(Color(0.35, 0.35, 0.35, 1.0))
+		visual.set_modulate(Color(0.35, 0.35, 0.35, 1.0))
 	pass
 
 ## 角色进场动画（透明度从0过渡到1）
 func enter_actor(play_anim: bool = true) -> void:
-	if not texture_rect:
-		print("警告：texture_rect未赋值，无法执行进场动画")
+	var visual := _get_status_visual()
+	if visual == null:
+		print("警告：角色状态节点未赋值，无法执行进场动画")
 		emit_signal("actor_entered")
 		return
 	
 	# 重置基础状态
-	texture_rect.visible = true
-	texture_rect.modulate.a = 0.0
+	visual.visible = true
+	visual.modulate.a = 0.0
 	
 	# 创建补间动画
-	var tween: Tween = texture_rect.create_tween()
+	var tween: Tween = visual.create_tween()
 	# 并行执行多个动画轨道
 	tween.set_parallel(true)
 	
 	# 透明度动画（核心进场效果）
-	tween.tween_property(texture_rect, "modulate:a", 1.0, animation_time)
+	tween.tween_property(visual, "modulate:a", 1.0, animation_time)
 	
 	tween.finished.connect(_on_enter_animation_finished)
 	tween.play()
 
 ## 角色退场动画（透明度从1过渡到0）
 func exit_actor(play_anim: bool = true) -> void:
-	if not texture_rect:
-		print("警告：texture_rect未赋值，无法执行退场动画")
+	var visual := _get_status_visual()
+	if visual == null:
+		print("警告：角色状态节点未赋值，无法执行退场动画")
 		emit_signal("actor_exited")
 		return
 	
 	# 创建补间动画
-	var tween: Tween = texture_rect.create_tween()
+	var tween: Tween = visual.create_tween()
 	# 透明度淡出动画
-	tween.tween_property(texture_rect, "modulate:a", 0.0, animation_time)
+	tween.tween_property(visual, "modulate:a", 0.0, animation_time)
 	
 	# 动画完成后删除节点
 	tween.finished.connect(func(): self.queue_free())
@@ -110,14 +119,68 @@ func exit_actor(play_anim: bool = true) -> void:
 func _on_enter_animation_finished() -> void:
 	actor_entered.emit()
 
+func set_character_status(status: KND_CharacterStatus) -> void:
+	if status == null:
+		push_error("正在试图设置一个空角色状态")
+		return
+	if status.status_scene:
+		set_character_scene(status.status_scene)
+	else:
+		set_character_texture(status.status_texture)
+
+func set_character_scene(scene: PackedScene) -> void:
+	_clear_status_node()
+	if not slot:
+		return
+	if scene == null:
+		push_error("正在试图设置一个空角色场景")
+		return
+	if texture_rect:
+		texture_rect.texture = null
+		texture_rect.visible = false
+	var instance := scene.instantiate()
+	_status_node = instance
+	slot.add_child(instance)
+	if instance is Control:
+		instance.set_anchors_preset(Control.PRESET_FULL_RECT)
+		instance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		instance.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if instance is CanvasItem:
+		instance.visible = true
+
 func set_character_texture(texture: Texture) -> void:
+	_clear_status_node()
 	if not texture_rect:
 		return
 	if texture == null:
 		push_error("正在试图设置一个空角色图像")
+	texture_rect.visible = true
 	texture_rect.texture = texture
-	
 
+func _clear_status_node() -> void:
+	if _status_node and is_instance_valid(_status_node):
+		_status_node.queue_free()
+	_status_node = null
+
+func _get_status_visual() -> CanvasItem:
+	if _status_node:
+		if _status_node is CanvasItem:
+			return _status_node as CanvasItem
+		var canvas_item := _find_canvas_item(_status_node)
+		if canvas_item:
+			return canvas_item
+	if texture_rect:
+		return texture_rect
+	return null
+
+func _find_canvas_item(node: Node) -> CanvasItem:
+	for child in node.get_children():
+		if child is CanvasItem:
+			return child as CanvasItem
+		var nested := _find_canvas_item(child)
+		if nested:
+			return nested
+	return null
 
 @export var slot: Control
 

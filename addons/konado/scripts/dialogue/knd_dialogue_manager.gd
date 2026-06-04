@@ -724,16 +724,30 @@ func _display_background(bg_name: String, effect: KND_ActingInterface.Background
 	
 
 ## 演员状态切换的方法
+func _find_character_status(chara: KND_Character, state_id: String) -> KND_CharacterStatus:
+	if chara == null:
+		return null
+	for state in chara.chara_status:
+		if state and state.status_name == state_id:
+			return state
+	return null
+
 func _actor_change_state(chara_id: String, state_id: String):
 	var target_chara: KND_Character
-	var state_tex: Texture
 	for chara in chara_list.characters:
 		if chara.chara_name == chara_id:
 			target_chara = chara
-			for state in chara.chara_status:
-				if state.status_name == state_id:
-					state_tex = state.status_texture
-	_acting_interface.change_actor_state(target_chara.chara_name, state_id, state_tex)
+			break
+	if target_chara == null:
+		push_error("切换角色状态失败：未找到角色[%s]" % chara_id)
+		_acting_interface.character_state_changed.emit()
+		return
+	var target_status := _find_character_status(target_chara, state_id)
+	if target_status == null:
+		push_error("切换角色状态失败：角色[%s]未找到状态[%s]" % [chara_id, state_id])
+		_acting_interface.change_actor_state(target_chara.chara_name, state_id, null)
+		return
+	_acting_interface.change_actor_state(target_chara.chara_name, state_id, target_status)
 
 ## 从角色列表创建并显示角色
 func _display_character(dialogue: KND_Dialogue) -> void:
@@ -745,21 +759,21 @@ func _display_character(dialogue: KND_Dialogue) -> void:
 			break
 	
 	if target_chara == null:
-		print("目标角色为空")
+		push_error("显示角色失败：未找到角色[%s]" % target_chara_name)
+		_acting_interface.character_created.emit()
 		return
 		
-	# 读取对话的角色状态图片ID
-	var target_states = target_chara.chara_status
+	# 读取对话的角色状态ID
 	var target_state_name = dialogue.character_state
-	var target_state_tex
-	for state in target_states:
-		if state.status_name == target_state_name:
-			target_state_tex = state.status_texture
-			break
+	var target_status := _find_character_status(target_chara, target_state_name)
+	if target_status == null:
+		push_error("显示角色失败：角色[%s]未找到状态[%s]" % [target_chara_name, target_state_name])
+		_acting_interface.character_created.emit()
+		return
 	# 角色位置
 	var pos = dialogue.actor_position
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_state_tex)
+	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_status)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:

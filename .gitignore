@@ -2,6 +2,8 @@
 .godot/
 /android/
 /exports/
+bin/
+PROJECT_OVERVIEW.md
 
 # VS Code specific ignores
 .vscode/
