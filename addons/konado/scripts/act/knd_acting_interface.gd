@@ -24,7 +24,8 @@ enum BackgroundTransitionEffectsType {
 	VORTEX_SWAP_EFFECT, ## 极坐标漩涡效果
 	WINDMILL_EFFECT, ## 风车效果
 	CYBER_GLITCH_EFFECT, ## 电子故障效果
-	BlinkEffect ## 眨眼效果
+	BlinkEffect, ## 眨眼效果
+	NULL = -1
 	}
 	
 ## 当前背景
