@@ -1,4 +1,4 @@
-background 00 blinds
+background 00 blink
 
 
 if %love == 0:
