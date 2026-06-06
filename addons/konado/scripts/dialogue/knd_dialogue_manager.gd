@@ -442,6 +442,16 @@ func _process(delta) -> void:
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_acting_interface.move_actor(actor, pos.x)
+				# 如果是播放演员舞台动作
+				elif cur_dialogue_type == KND_Dialogue.Type.ACTOR_MOTION:
+					var actor = dialog.motion_actor
+					var motion_name = dialog.motion_name
+					var s = _acting_interface.character_motion_finished
+					var auto_next := _auto_process_next_from_motion.bind(s)
+					# 检查信号是否已经连接
+					if not s.is_connected(auto_next):
+						s.connect(auto_next)
+					_acting_interface.play_actor_motion(actor, motion_name)
 				# 如果是删除演员
 				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
 					# 删除演员
@@ -665,6 +675,14 @@ func _auto_process_next(s: Signal) -> void:
 		s.disconnect(_auto_process_next)
 		print("触发自动下一个信号")
 	_process_next()
+
+func _auto_process_next_from_motion(_actor_id: String, _motion_name: String, s: Signal) -> void:
+	var auto_next := _auto_process_next_from_motion.bind(s)
+	_dialogue_goto_state(DialogState.PAUSED)
+	if not s.is_null() and s.is_connected(auto_next):
+		s.disconnect(auto_next)
+		print("触发演员动作自动下一个信号")
+	_process_next()
 	
 ## 关闭对话的方法
 func stop_dialogue() -> void:
@@ -724,14 +742,6 @@ func _display_background(bg_name: String, effect: KND_ActingInterface.Background
 	
 
 ## 演员状态切换的方法
-func _find_character_status(chara: KND_Character, state_id: String) -> KND_CharacterStatus:
-	if chara == null:
-		return null
-	for state in chara.chara_status:
-		if state and state.status_name == state_id:
-			return state
-	return null
-
 func _actor_change_state(chara_id: String, state_id: String):
 	var target_chara: KND_Character
 	for chara in chara_list.characters:
@@ -742,12 +752,7 @@ func _actor_change_state(chara_id: String, state_id: String):
 		push_error("切换角色状态失败：未找到角色[%s]" % chara_id)
 		_acting_interface.character_state_changed.emit()
 		return
-	var target_status := _find_character_status(target_chara, state_id)
-	if target_status == null:
-		push_error("切换角色状态失败：角色[%s]未找到状态[%s]" % [chara_id, state_id])
-		_acting_interface.change_actor_state(target_chara.chara_name, state_id, null)
-		return
-	_acting_interface.change_actor_state(target_chara.chara_name, state_id, target_status)
+	_acting_interface.change_actor_state(target_chara.chara_name, state_id)
 
 ## 从角色列表创建并显示角色
 func _display_character(dialogue: KND_Dialogue) -> void:
@@ -765,15 +770,14 @@ func _display_character(dialogue: KND_Dialogue) -> void:
 		
 	# 读取对话的角色状态ID
 	var target_state_name = dialogue.character_state
-	var target_status := _find_character_status(target_chara, target_state_name)
-	if target_status == null:
-		push_error("显示角色失败：角色[%s]未找到状态[%s]" % [target_chara_name, target_state_name])
+	if target_chara.character_scene == null:
+		push_error("显示角色失败：角色[%s]没有配置角色场景" % target_chara_name)
 		_acting_interface.character_created.emit()
 		return
 	# 角色位置
 	var pos = dialogue.actor_position
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_status)
+	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_chara.character_scene, target_chara.actor_motion_layer)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:

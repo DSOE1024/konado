@@ -23,7 +23,8 @@ enum Type {
 	ACHIEVEMENT_PROGRESS,
 	ACHIEVEMENT_FLAG,
 	SET_VARIABLE,
-	THE_END
+	THE_END,
+	ACTOR_MOTION
 }
 
 @export var dialog_type: Type:
@@ -70,6 +71,10 @@ enum Type {
 @export var target_move_chara: String
 ## 角色要移动的位置
 @export var target_move_pos: Vector2
+## 要播放舞台层动作的角色
+@export var motion_actor: String
+## 要播放的舞台层动作名称
+@export var motion_name: String
 ## 选项
 @export var choices: Array[KND_DialogueChoice] = []
 ## BGM

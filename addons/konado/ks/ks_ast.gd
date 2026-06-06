@@ -30,9 +30,10 @@ class BackgroundNode extends ASTNode:
 
 ## 演员操作节点
 class ActorNode extends ASTNode:
-	var action: String = ""         ## "show", "exit", "change", "move"
+	var action: String = ""         ## "show", "exit", "change", "move", "motion"
 	var actor_name: String = ""
 	var state: String = ""
+	var motion_name: String = ""
 	var position: float = 0.0
 	var has_position: bool = false
 

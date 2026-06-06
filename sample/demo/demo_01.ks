@@ -16,7 +16,6 @@ actor show Kona 正常 at 3
 # 对话语句：
 # 第一个""中为名字，第二个""中为对话内容，后面的编号为语音列表中的voice_name
 "Kona" "你好！欢迎来到我们的咖啡馆。" voice_01
-
 achievement unlock "first_blood"
 
 achievement increment "explorer" 1

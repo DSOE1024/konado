@@ -13,6 +13,10 @@ signal character_deleted
 signal character_state_changed
 ## 完成角色移动的信号
 signal character_moved
+## 指定角色舞台动作开始的信号
+signal character_motion_started(actor_id: String, motion_name: String)
+## 指定角色舞台动作完成的信号
+signal character_motion_finished(actor_id: String, motion_name: String)
 
 ## 特效种类
 enum BackgroundTransitionEffectsType {
@@ -247,12 +251,17 @@ func _on_transition_finished(mat: ShaderMaterial, target_tex: Texture) -> void:
 	
 	
 # 新建角色的方法
-func create_new_character(chara_id: String, h_division: int, pos_h: int, state: String, status_data: Variant = null) -> void:
+func create_new_character(chara_id: String, h_division: int, pos_h: int, state: String, character_scene: PackedScene = null, motion_layer_scene: PackedScene = null) -> void:
 	# 检查创建的是否为场景已有角色
 	for chara_dict in actor_dict.values():
 		if chara_dict["id"] == chara_id:
 			print_rich("[color=red]创建新演员：错误，重复的角色[/color]")
 			delete_character(chara_dict["id"])
+
+	if character_scene == null:
+		push_error("创建角色失败：角色[%s]没有配置角色场景" % chara_id)
+		character_created.emit()
+		return
 			
 	# 角色信息字典结构说明:
 	# {
@@ -279,9 +288,12 @@ func create_new_character(chara_id: String, h_division: int, pos_h: int, state: 
 	temp_node.use_tween = false
 	temp_node.h_division = h_division
 	temp_node.h_character_position = pos_h
-	_apply_character_status(temp_node, status_data)
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
+	temp_node.actor_motion_started.connect(_on_character_motion_started.bind(chara_id))
+	temp_node.actor_motion_finished.connect(_on_character_motion_finished.bind(chara_id))
+	temp_node.set_motion_layer_scene(motion_layer_scene)
+	temp_node.set_character_scene(character_scene, state)
 	# 添加到演员节点字典
 	actor_nodes[chara_id] = temp_node
 	temp_node.use_tween = true
@@ -295,46 +307,31 @@ func create_new_character(chara_id: String, h_division: int, pos_h: int, state: 
 
 
 ## 切换演员的状态
-func change_actor_state(actor_id: String, state_id: String, status_data: Variant = null) -> void:
+func change_actor_state(actor_id: String, state_id: String) -> void:
 	var chara_node: KND_Actor = get_chara_node(actor_id)
 	if chara_node == null:
-		var status_info := _describe_character_status(status_data)
-		push_error("切换角色状态失败：角色ID[%s]，目标状态ID[%s]，状态资源[%s]，未找到角色节点" % [actor_id, state_id, status_info])
+		push_error("切换角色状态失败：角色ID[%s]，目标状态ID[%s]，未找到角色节点" % [actor_id, state_id])
 		character_state_changed.emit()
 	else:
 		# 修改字典中角色的状态
 		actor_dict[actor_id]["state"] = state_id
-		_apply_character_status(chara_node, status_data)
+		chara_node.apply_character_status(state_id)
 		character_state_changed.emit()
 		print("切换"+actor_id+"到"+str(state_id)+"状态")
 
-func _apply_character_status(actor: KND_Actor, status_data: Variant) -> void:
-	if actor == null:
+## 播放指定演员的舞台层动作，例如 shake、jump_twice、bounce。
+## 这里不进入角色场景，避免把整体位移和内部表情/媒体播放混在一起。
+func play_actor_motion(actor_id: String, motion_name: String, params: Dictionary = {}) -> void:
+	if motion_name.is_empty():
+		push_error("播放演员动作失败：角色ID[%s]，动作名为空" % actor_id)
+		character_motion_finished.emit(actor_id, motion_name)
 		return
-	if status_data is KND_CharacterStatus:
-		actor.set_character_status(status_data)
-	elif status_data is PackedScene:
-		actor.set_character_scene(status_data)
-	elif status_data is Texture:
-		actor.set_character_texture(status_data)
-	elif status_data == null:
-		push_error("角色状态资源为空")
-	else:
-		push_error("不支持的角色状态资源类型：" + str(typeof(status_data)))
-
-func _describe_character_status(status_data: Variant) -> String:
-	if status_data == null:
-		return "<null>"
-	if status_data is KND_CharacterStatus:
-		var paths := PackedStringArray()
-		if status_data.status_scene:
-			paths.append(status_data.status_scene.resource_path)
-		if status_data.status_texture:
-			paths.append(status_data.status_texture.resource_path)
-		return "KND_CharacterStatus(%s)" % ",".join(paths)
-	if status_data is Resource:
-		return status_data.resource_path
-	return str(status_data)
+	var chara_node: KND_Actor = get_chara_node(actor_id) as KND_Actor
+	if chara_node == null:
+		push_error("播放演员动作失败：角色ID[%s]，动作[%s]，未找到角色节点" % [actor_id, motion_name])
+		character_motion_finished.emit(actor_id, motion_name)
+		return
+	chara_node.play_actor_motion(motion_name, params)
 
 
 # 高亮角色
@@ -400,4 +397,10 @@ func _on_character_moved() -> void:
 	print("移动回调")
 	character_moved.emit()
 	pass
+
+func _on_character_motion_started(motion_name: String, actor_id: String) -> void:
+	character_motion_started.emit(actor_id, motion_name)
+
+func _on_character_motion_finished(motion_name: String, actor_id: String) -> void:
+	character_motion_finished.emit(actor_id, motion_name)
 	

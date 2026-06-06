@@ -163,6 +163,10 @@ func _emit_actor(node: KS_AST.ActorNode) -> KND_Dialogue:
 			d.dialog_type = KND_Dialogue.Type.MOVE_ACTOR
 			d.target_move_chara = node.actor_name
 			d.target_move_pos = Vector2(node.position, 0.0)
+		"motion":
+			d.dialog_type = KND_Dialogue.Type.ACTOR_MOTION
+			d.motion_actor = node.actor_name
+			d.motion_name = node.motion_name
 
 	return d
 
