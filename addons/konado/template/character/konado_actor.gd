@@ -140,13 +140,19 @@ func set_character_scene(scene: PackedScene, initial_status: String = "") -> voi
 	if not initial_status.is_empty():
 		apply_character_status(initial_status)
 
+## 演员节点只负责把剧本里的状态名转发给角色场景。
+## 这里不判断图片、Spine、Live2D 或视频，避免主链路重新绑定到某一种媒体类型。
 func apply_character_status(status_name: String) -> void:
 	if status_name.is_empty():
 		return
 	if _status_node == null:
 		push_error("角色场景节点未创建，无法切换状态：" + status_name)
 		return
-	if _status_node.has_method("apply_status"):
+	# 优先使用正式协议；后面的 has_method 分支用于兼容未继承基类的用户场景。
+	if _status_node is KND_CharacterSceneBase:
+		(_status_node as KND_CharacterSceneBase).apply_status(status_name)
+		return
+	elif _status_node.has_method("apply_status"):
 		_status_node.call("apply_status", status_name)
 		return
 	if _status_node.has_method("change_status"):
@@ -155,12 +161,27 @@ func apply_character_status(status_name: String) -> void:
 	if _status_node.has_method("set_status"):
 		_status_node.call("set_status", status_name)
 		return
-	var animated_sprite := _find_animated_sprite(_status_node)
-	var animation_name := StringName(status_name)
-	if animated_sprite and animated_sprite.sprite_frames and animated_sprite.sprite_frames.has_animation(animation_name):
-		animated_sprite.play(animation_name)
+	push_warning("角色场景未实现 apply_status：" + status_name)
+
+## 动作入口预留给后续“立绘动作”命令，例如震动、挥手、播放一次性动画。
+## 持续状态和一次性动作分开，避免播放动作时破坏当前表情或待机状态。
+func play_character_action(action_name: String) -> void:
+	if action_name.is_empty():
 		return
-	push_warning("角色场景未实现 apply_status，且未找到同名动画：" + status_name)
+	if _status_node == null:
+		push_error("角色场景节点未创建，无法播放动作：" + action_name)
+		return
+	# 仍然保留 apply_action 兼容入口，方便用户用自己的场景脚本先接入。
+	if _status_node is KND_CharacterSceneBase:
+		(_status_node as KND_CharacterSceneBase).play_action(action_name)
+		return
+	elif _status_node.has_method("play_action"):
+		_status_node.call("play_action", action_name)
+		return
+	elif _status_node.has_method("apply_action"):
+		_status_node.call("apply_action", action_name)
+		return
+	push_warning("角色场景未实现 play_action：" + action_name)
 
 func set_character_texture(texture: Texture) -> void:
 	_clear_status_node()
@@ -179,6 +200,8 @@ func _clear_status_node() -> void:
 func _layout_status_node() -> void:
 	if _status_node == null or not slot:
 		return
+	# Control 场景适合铺满角色槽；Node2D 场景适合以槽中心作为立绘锚点。
+	# 具体缩放和内部偏移仍由角色场景自己控制。
 	if _status_node is Control:
 		var control := _status_node as Control
 		control.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -206,15 +229,6 @@ func _find_canvas_item(node: Node) -> CanvasItem:
 		var nested := _find_canvas_item(child)
 		if nested:
 			return nested
-	return null
-
-func _find_animated_sprite(node: Node) -> AnimatedSprite2D:
-	if node is AnimatedSprite2D:
-		return node as AnimatedSprite2D
-	for child in node.get_children():
-		var sprite := _find_animated_sprite(child)
-		if sprite:
-			return sprite
 	return null
 
 @export var slot: Control

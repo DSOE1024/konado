@@ -2,11 +2,18 @@
 
 [ext_resource type="Script" uid="uid://cjs8n7ydq4air" path="res://sample/demo/sample_character.gd" id="1_ggs4o"]
 [ext_resource type="Texture2D" uid="uid://d86es3yopbu2" path="res://assets/kona_portrait/可娜立绘 (1).PNG" id="2_87box"]
+[ext_resource type="Script" uid="uid://bqsv661nala3r" path="res://addons/konado/scripts/character/knd_character_status_alias.gd" id="2_mvmx5"]
 [ext_resource type="Texture2D" uid="uid://k3bandjoiw3r" path="res://assets/kona_portrait/可娜立绘 (5).PNG" id="3_h37b2"]
 [ext_resource type="Texture2D" uid="uid://bayxwhw3shs2o" path="res://assets/kona_portrait/可娜立绘 (6).PNG" id="4_2ps44"]
 [ext_resource type="Texture2D" uid="uid://dadand7snjrvn" path="res://assets/kona_portrait/可娜立绘 (3).PNG" id="5_10uvl"]
 [ext_resource type="Texture2D" uid="uid://0388u2vtxu8" path="res://assets/kona_portrait/可娜立绘 (2).PNG" id="6_0ufxu"]
 [ext_resource type="Texture2D" uid="uid://b206jn8b45oaq" path="res://assets/kona_portrait/可娜立绘 (4).PNG" id="7_b8m3x"]
+
+[sub_resource type="Resource" id="Resource_status_alias_normal"]
+script = ExtResource("2_mvmx5")
+status_name = "正常"
+resolved_status_name = "default"
+metadata/_custom_type_script = "uid://bqsv661nala3r"
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_d5n6n"]
 animations = [{
@@ -61,6 +68,7 @@ animations = [{
 
 [node name="Node2D" type="Node2D" unique_id=1078305816]
 script = ExtResource("1_ggs4o")
+status_aliases = Array[ExtResource("2_mvmx5")]([SubResource("Resource_status_alias_normal")])
 metadata/_edit_vertical_guides_ = [960.0]
 metadata/_edit_horizontal_guides_ = [640.0]
 
@@ -68,4 +76,3 @@ metadata/_edit_horizontal_guides_ = [640.0]
 position = Vector2(-8, 87.999985)
 scale = Vector2(0.30456302, 0.30456296)
 sprite_frames = SubResource("SpriteFrames_d5n6n")
-animation = &"介绍"
