@@ -442,6 +442,16 @@ func _process(delta) -> void:
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_acting_interface.move_actor(actor, pos.x)
+				# 如果是播放演员舞台动作
+				elif cur_dialogue_type == KND_Dialogue.Type.ACTOR_MOTION:
+					var actor = dialog.motion_actor
+					var motion_name = dialog.motion_name
+					var s = _acting_interface.character_motion_finished
+					var auto_next := _auto_process_next_from_motion.bind(s)
+					# 检查信号是否已经连接
+					if not s.is_connected(auto_next):
+						s.connect(auto_next)
+					_acting_interface.play_actor_motion(actor, motion_name)
 				# 如果是删除演员
 				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
 					# 删除演员
@@ -665,6 +675,14 @@ func _auto_process_next(s: Signal) -> void:
 		s.disconnect(_auto_process_next)
 		print("触发自动下一个信号")
 	_process_next()
+
+func _auto_process_next_from_motion(_actor_id: String, _motion_name: String, s: Signal) -> void:
+	var auto_next := _auto_process_next_from_motion.bind(s)
+	_dialogue_goto_state(DialogState.PAUSED)
+	if not s.is_null() and s.is_connected(auto_next):
+		s.disconnect(auto_next)
+		print("触发演员动作自动下一个信号")
+	_process_next()
 	
 ## 关闭对话的方法
 func stop_dialogue() -> void:
@@ -759,7 +777,7 @@ func _display_character(dialogue: KND_Dialogue) -> void:
 	# 角色位置
 	var pos = dialogue.actor_position
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_chara.character_scene)
+	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_chara.character_scene, target_chara.actor_motion_layer)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:

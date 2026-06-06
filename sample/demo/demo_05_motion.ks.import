@@ -1,0 +1,14 @@
+[remap]
+
+importer="konado.scripts"
+type="Resource"
+uid="uid://xgl88461tnam"
+path="res://.godot/imported/demo_05_motion.ks-538ecdd9fedd8d0e6e49986807d5a0dd.res"
+
+[deps]
+
+source_file="res://sample/demo/demo_05_motion.ks"
+dest_files=["res://.godot/imported/demo_05_motion.ks-538ecdd9fedd8d0e6e49986807d5a0dd.res"]
+
+[params]
+

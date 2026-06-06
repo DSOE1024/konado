@@ -463,7 +463,8 @@ func _restore_actor_state(state: Dictionary) -> void:
 							actor_state.get("h_division", 6),
 							actor_state.get("pos_h", 0),
 							state_name,
-							target_chara.character_scene
+							target_chara.character_scene,
+							target_chara.actor_motion_layer
 						)
 						
 						# 等待一帧，确保演员节点能够正确创建

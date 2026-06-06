@@ -114,6 +114,9 @@ func _validate_actor(node: KS_AST.ActorNode, context: String) -> void:
 		"move":
 			if not _active_actors.has(node.actor_name):
 				_warning(node.line, "无法移动不存在的角色 '%s'" % node.actor_name)
+		"motion":
+			if not _active_actors.has(node.actor_name):
+				_warning(node.line, "无法播放不存在角色 '%s' 的舞台动作" % node.actor_name)
 
 
 ## 验证选项跳转目标

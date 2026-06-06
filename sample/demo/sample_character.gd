@@ -27,7 +27,7 @@ func _apply_status(resolved_status_name: String, original_status_name: String) -
 	push_warning("角色场景未找到动画：" + original_status_name)
 
 ## demo 里先把动作当作一次性状态播放。
-## 后续如果接入真正的 actor action，可以在这里做不改变 current_status 的短动画。
+## 后续如果接入角色场景内部动作，可以在这里做不改变 current_status 的短动画。
 func _play_action(action_name: String) -> void:
 	apply_status(action_name)
 	finish_action(action_name)

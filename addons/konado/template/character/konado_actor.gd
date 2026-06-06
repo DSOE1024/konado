@@ -10,6 +10,10 @@ signal actor_entered
 signal actor_exited
 ## 演员移动动画完成信号
 signal actor_moved
+## 演员舞台动作开始信号
+signal actor_motion_started(motion_name: String)
+## 演员舞台动作完成信号
+signal actor_motion_finished(motion_name: String)
 
 ## 是否使用补间动画，将会在角色移动时显示动画效果
 @export var use_tween: bool = true
@@ -21,6 +25,7 @@ signal actor_moved
 			animation_time = max(value, 0)
 
 @export var texture_rect: TextureRect
+@export var motion_layer: KND_ActorMotionLayer
 var _status_node: Node = null
 
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
@@ -42,6 +47,7 @@ func _ready() -> void:
 	if texture_rect:
 		texture_rect.modulate.a = 1.0
 		texture_rect.visible = true
+	_bind_motion_layer_signals()
 	# 初始化位置
 	_on_resized()
 
@@ -123,7 +129,8 @@ func _on_enter_animation_finished() -> void:
 
 func set_character_scene(scene: PackedScene, initial_status: String = "") -> void:
 	_clear_status_node()
-	if not slot:
+	var mount := _get_character_mount()
+	if mount == null:
 		return
 	if scene == null:
 		push_error("正在试图设置一个空角色场景")
@@ -133,7 +140,7 @@ func set_character_scene(scene: PackedScene, initial_status: String = "") -> voi
 		texture_rect.visible = false
 	var instance := scene.instantiate()
 	_status_node = instance
-	slot.add_child(instance)
+	mount.add_child(instance)
 	_layout_status_node()
 	if instance is CanvasItem:
 		instance.visible = true
@@ -163,25 +170,17 @@ func apply_character_status(status_name: String) -> void:
 		return
 	push_warning("角色场景未实现 apply_status：" + status_name)
 
-## 动作入口预留给后续“立绘动作”命令，例如震动、挥手、播放一次性动画。
-## 持续状态和一次性动作分开，避免播放动作时破坏当前表情或待机状态。
-func play_character_action(action_name: String) -> void:
-	if action_name.is_empty():
+## 舞台层动作，例如 shake、jump_twice、bounce。
+## 这些动作作用在 MotionLayer 上，和角色场景内部的表情、Live2D motion、视频切换分开。
+func play_actor_motion(motion_name: String, params: Dictionary = {}) -> void:
+	if motion_name.is_empty():
+		actor_motion_finished.emit(motion_name)
 		return
-	if _status_node == null:
-		push_error("角色场景节点未创建，无法播放动作：" + action_name)
+	if motion_layer == null:
+		push_error("演员动作层未配置，无法播放动作：" + motion_name)
+		actor_motion_finished.emit(motion_name)
 		return
-	# 仍然保留 apply_action 兼容入口，方便用户用自己的场景脚本先接入。
-	if _status_node is KND_CharacterSceneBase:
-		(_status_node as KND_CharacterSceneBase).play_action(action_name)
-		return
-	elif _status_node.has_method("play_action"):
-		_status_node.call("play_action", action_name)
-		return
-	elif _status_node.has_method("apply_action"):
-		_status_node.call("apply_action", action_name)
-		return
-	push_warning("角色场景未实现 play_action：" + action_name)
+	motion_layer.play_motion(motion_name, params)
 
 func set_character_texture(texture: Texture) -> void:
 	_clear_status_node()
@@ -197,8 +196,44 @@ func _clear_status_node() -> void:
 		_status_node.queue_free()
 	_status_node = null
 
+func set_motion_layer_scene(scene: PackedScene) -> void:
+	if scene == null:
+		return
+	if slot == null:
+		push_error("slot未赋值，无法替换演员动作层")
+		return
+	_clear_status_node()
+	if motion_layer and is_instance_valid(motion_layer):
+		motion_layer.queue_free()
+	var instance := scene.instantiate()
+	if not (instance is KND_ActorMotionLayer):
+		push_error("演员动作层场景必须继承 KND_ActorMotionLayer")
+		instance.queue_free()
+		return
+	motion_layer = instance as KND_ActorMotionLayer
+	slot.add_child(motion_layer)
+	if motion_layer is Control:
+		motion_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	texture_rect = _find_texture_rect(motion_layer)
+	_bind_motion_layer_signals()
+
+func _bind_motion_layer_signals() -> void:
+	if motion_layer == null:
+		return
+	if not motion_layer.motion_started.is_connected(_on_motion_layer_started):
+		motion_layer.motion_started.connect(_on_motion_layer_started)
+	if not motion_layer.motion_finished.is_connected(_on_motion_layer_finished):
+		motion_layer.motion_finished.connect(_on_motion_layer_finished)
+
+func _on_motion_layer_started(motion_name: String) -> void:
+	actor_motion_started.emit(motion_name)
+
+func _on_motion_layer_finished(motion_name: String) -> void:
+	actor_motion_finished.emit(motion_name)
+
 func _layout_status_node() -> void:
-	if _status_node == null or not slot:
+	var mount := _get_character_mount()
+	if _status_node == null or mount == null:
 		return
 	# Control 场景适合铺满角色槽；Node2D 场景适合以槽中心作为立绘锚点。
 	# 具体缩放和内部偏移仍由角色场景自己控制。
@@ -209,7 +244,8 @@ func _layout_status_node() -> void:
 		control.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	elif _status_node is Node2D:
 		var node_2d := _status_node as Node2D
-		node_2d.position = slot.size * 0.5
+		if mount is Control:
+			node_2d.position = (mount as Control).size * 0.5
 
 func _get_status_visual() -> CanvasItem:
 	if _status_node:
@@ -222,6 +258,11 @@ func _get_status_visual() -> CanvasItem:
 		return texture_rect
 	return null
 
+func _get_character_mount() -> Node:
+	if motion_layer:
+		return motion_layer.get_mount_node()
+	return slot
+
 func _find_canvas_item(node: Node) -> CanvasItem:
 	for child in node.get_children():
 		if child is CanvasItem:
@@ -229,6 +270,15 @@ func _find_canvas_item(node: Node) -> CanvasItem:
 		var nested := _find_canvas_item(child)
 		if nested:
 			return nested
+	return null
+
+func _find_texture_rect(node: Node) -> TextureRect:
+	if node is TextureRect:
+		return node as TextureRect
+	for child in node.get_children():
+		var texture := _find_texture_rect(child)
+		if texture:
+			return texture
 	return null
 
 @export var slot: Control

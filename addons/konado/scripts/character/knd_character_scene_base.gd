@@ -30,8 +30,8 @@ func apply_status(status_name: String) -> void:
 	_apply_status(resolved_status_name, status_name)
 	status_applied.emit(status_name, resolved_status_name)
 
-## 动作是一次性表现，例如抖动、挥手、眨眼、播放一段 Spine 动画。
-## 它和 status 分离，是为了后续扩展“立绘动作”时不破坏当前表情状态。
+## 角色场景内部动作是一次性表现，例如挥手、眨眼、播放一段 Spine 动画。
+## 它和 status 分离，是为了不破坏当前表情状态；震动、跳跃等整体舞台动作交给 KND_ActorMotionLayer。
 func play_action(action_name: String) -> void:
 	if action_name.is_empty():
 		return

@@ -66,7 +66,8 @@ public partial class Dialogue : Resource
         AchievementProgress,
         AchievementFlag,
         SetVariable,
-        TheEnd
+        TheEnd,
+        ActorMotion
     }
 
     public new static class GDScriptPropertyName
@@ -90,6 +91,8 @@ public partial class Dialogue : Resource
         public new static readonly StringName ChangeState = "change_state";
         public new static readonly StringName TargetMoveChara = "target_move_chara";
         public new static readonly StringName TargetMovePos = "target_move_pos";
+        public new static readonly StringName MotionActor = "motion_actor";
+        public new static readonly StringName MotionName = "motion_name";
         public new static readonly StringName Choices = "choices";
         public new static readonly StringName BgmName = "bgm_name";
         public new static readonly StringName VoiceId = "voice_id";
@@ -221,6 +224,18 @@ public partial class Dialogue : Resource
     {
         get => _source.Get(GDScriptPropertyName.TargetMovePos).As<Vector2>();
         set => _source.Set(GDScriptPropertyName.TargetMovePos, value);
+    }
+
+    public string MotionActor
+    {
+        get => _source.Get(GDScriptPropertyName.MotionActor).As<string>();
+        set => _source.Set(GDScriptPropertyName.MotionActor, value);
+    }
+
+    public string MotionName
+    {
+        get => _source.Get(GDScriptPropertyName.MotionName).As<string>();
+        set => _source.Set(GDScriptPropertyName.MotionName, value);
     }
 
     public Godot.Collections.Array<DialogueChoice> Choices
