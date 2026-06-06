@@ -1,5 +1,5 @@
 # 播放bgm语句，<bgm名称>为背景列表中的bgm_name
-actor show Kona 正常 at 3 1
+actor show Kona 正常 at 3
 # 改变角色的表情
 actor change Kona 介绍说话
 
