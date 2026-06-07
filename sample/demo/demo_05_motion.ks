@@ -5,19 +5,19 @@ actor change Kona 介绍说话
 
 "Kona" "konado内置了一些动作"
 
+# addons/konado/template/character/actor_motion_layer.tscn
+# 可以自行扩展动作，作用于CharcterMount上即可
 "Kona" "内置动作shake"
 actor motion Kona shake
-"Kona" "内置动作shake"
+"Kona" "内置动作jump"
 actor motion Kona jump
 "Kona" "内置动作jump_twice"
 actor motion Kona jump_twice
 "Kona" "内置动作bounce"
 actor motion Kona bounce
 
-# addons/konado/template/character/actor_motion_layer.tscn
-# 可以自行扩展动作，作用于CharcterMount上即可
-"Kona" "扩展动作【倒下】"
-actor motion Kona 倒下
+"Kona" "动作可以自行扩展"
+"Kona" "位置：addons/konado/template/character/actor_motion_layer.tscn"
 
 # 演员退出
 actor exit Kona
