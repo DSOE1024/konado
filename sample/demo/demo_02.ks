@@ -1,18 +1,18 @@
-background 00 blink
+background 00 blinds
 
 
 if %love == 0:
-    "" "看来你是新手呢"
+    "Kona" "看来你是新手呢"
 else:
-    "" "你应该已经学会了"
+    "Kona" "你应该已经学会了"
 endif
 
 # 逻辑判断 %是获取变量
 # 此处变量在KonadoDialogueManager的Global Variable处设置。
 if %love <= 0:
-    "" "要开始吗？"
+    "Kona" "要开始吗？"
 else:
-    "" "要再看一遍吗？"
+    "Kona" "要再看一遍吗？"
 endif
 
 
@@ -23,6 +23,8 @@ choice "不看了" -> exit_choice
 choice "我要看看变量系统" -> goto_ks3
 
 choice "我要看看选项分支系统" -> goto_ks4
+
+choice "我要看看Konado内置效果" -> goto_effects
 
 branch start_choice
     background 01 fade
@@ -63,4 +65,8 @@ branch goto_ks3
 
 branch goto_ks4
     jump res://sample/demo/demo_04_choice_branch.ks
+
+branch goto_effects
+    jump res://sample/demo/built_in_effects_demo.ks
+    
 # 一定要随时点上面红色的保存按钮啊！Ctrl+S不保存脚本的！
