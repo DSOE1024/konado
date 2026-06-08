@@ -9,6 +9,8 @@ order: 3
 
 背景转场特效，是指在切换场景时，当前背景场景退出，同时新背景场景进入的效果。这种特效可以增加的视觉冲击力，提升用户体验。阅读本章节可以帮助您实现自定义的背景转场特效。
 
+如果您只是想制作普通背景场景，或想了解图片、视频、Spine、Live2D 背景如何接入，请先阅读[场景化资源](scene-assets.md)。
+
 ## 背景切换 Shader 规范
 
 为了统一管理和播放背景转场特效，我们约定了一个 Shader 规范，具体如下：
@@ -35,9 +37,9 @@ uniform sampler2D target_texture : hint_default_black; // 目标纹理
 
 同时，切换背景是一个动态的过程，因此还需要补充以下：
 
-定义BackgroundTransitionEffectsType枚举，用于标识背景切换特效类型。
+在 `KND_BackgroundTransitionLayer` 中注册效果名，用于标识背景切换特效类型。
 ```
-YOUR_EFFECT_SHADER
+your_effect
 ```
 
 定义shader变量，推荐使用 `preload` 函数加载 Shader 文件。
@@ -45,15 +47,21 @@ YOUR_EFFECT_SHADER
 var your_effect_shader: Shader = preload("res://path/to/your_effect_shader.shader")
 ```
 
-接下来需要实现YOUR_EFFECT_SHADER类型的背景切换特效配置。
+接下来需要为效果名添加背景切换特效配置。
 
 ```gdscript
-BackgroundTransitionEffectsType.YOUR_EFFECT_SHADER: {
+"your_effect": {
 	"shader": your_effect_shader,  // 背景切换 Shader，应和上文中变量一致
 	"duration": 1.0,  // 转场时长，默认为1.0s
 	"progress_target": 1.0,  // 目标进度，默认为1.0
 	"tween_trans": Tween.TRANS_LINEAR  // 切换时缓动类型
 }
+```
+
+配置完成后，就可以在 KS 中使用：
+
+```text
+background bg1 your_effect
 ```
 
 接下来测试一下背景切换特效，在切换场景时，添加以下测试代码，观察背景切换效果是否符合预期。
@@ -76,5 +84,4 @@ effect_tween.tween_property(
 
 effect_tween.play()
 ```
-
 
