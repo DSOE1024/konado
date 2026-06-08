@@ -45,6 +45,8 @@ var chara_list: KND_CharacterList
 @onready var _background: ColorRect = get_node_or_null("BackgroundLayer") as ColorRect
 ## 背景场景容器
 @onready var _background_container: Control = get_node_or_null("BackgroundLayer/BackgroundContainer") as Control
+## 背景 shader 转场层
+@onready var _background_transition_layer: KND_BackgroundTransitionLayer = get_node_or_null("BackgroundTransitionLayer") as KND_BackgroundTransitionLayer
 ## 角色容器
 @onready var _chara_controler: Control = get_node_or_null("CharaControl") as Control
 ## 效果层
@@ -55,6 +57,7 @@ var background_id: String = ""
 
 var _current_background_scene: KND_BackgroundSceneBase
 var _transition_old_background: KND_BackgroundSceneBase
+var _pending_shader_background: KND_BackgroundSceneBase
 var _background_transition_wait_count: int = 0
 
 const BACKGROUND_EFFECT_NAMES := {
@@ -93,6 +96,16 @@ func _ensure_stage_nodes() -> void:
 			container_parent.remove_child(_background_container)
 		_background.add_child(_background_container)
 
+	if _background_transition_layer == null:
+		_background_transition_layer = KND_BackgroundTransitionLayer.new()
+		_background_transition_layer.name = "BackgroundTransitionLayer"
+		add_child(_background_transition_layer)
+	elif _background_transition_layer.get_parent() != self:
+		var transition_parent := _background_transition_layer.get_parent()
+		if transition_parent:
+			transition_parent.remove_child(_background_transition_layer)
+		add_child(_background_transition_layer)
+
 	if _chara_controler == null:
 		_chara_controler = get_node_or_null("BackgroundLayer/CharaControl") as Control
 	if _chara_controler == null:
@@ -113,14 +126,17 @@ func _ensure_stage_nodes() -> void:
 
 	_set_full_rect(_background)
 	_set_full_rect(_background_container)
+	_set_full_rect(_background_transition_layer)
 	_set_full_rect(_chara_controler)
 	_set_full_rect(_effect_layer)
 
-	## 层级顺序固定为：背景场景 -> 角色 -> 全屏效果。
+	## 层级顺序固定为：背景场景 -> shader 转场 -> 角色 -> 全屏效果。
 	if _background.get_parent() == self:
 		move_child(_background, 0)
+	if _background_transition_layer.get_parent() == self:
+		move_child(_background_transition_layer, min(1, get_child_count() - 1))
 	if _chara_controler.get_parent() == self:
-		move_child(_chara_controler, min(1, get_child_count() - 1))
+		move_child(_chara_controler, min(2, get_child_count() - 1))
 	if _effect_layer.get_parent() == self:
 		move_child(_effect_layer, get_child_count() - 1)
 
@@ -128,7 +144,12 @@ func _set_full_rect(control: Control) -> void:
 	if control == null:
 		return
 	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	control.set_anchors_preset(Control.PRESET_FULL_RECT)
+	control.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+	control.offset_left = 0.0
+	control.offset_top = 0.0
+	control.offset_right = 0.0
+	control.offset_bottom = 0.0
+	control.position = Vector2.ZERO
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	control.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	
@@ -148,6 +169,8 @@ func get_chara_node(actor_id: String) -> Node:
 			
 ## 清空背景
 func clean_background(effects_type: BackgroundTransitionEffectsType) -> void:
+	_ensure_stage_nodes()
+	_clear_pending_background_transition()
 	background_id = ""
 	if _current_background_scene == null:
 		background_change_finished.emit()
@@ -180,14 +203,23 @@ func change_background_scene(scene: PackedScene, name: String, effects_type: Bac
 	background_id = name
 	next_background.name = name
 	_prepare_background_scene(next_background)
-	_background_container.add_child(next_background)
 	next_background.setup_background(name)
 
 	var old_background := _current_background_scene
+	var effect_name := _background_effect_name(effects_type)
+	if _should_use_shader_transition(effect_name):
+		_pending_shader_background = next_background
+		_transition_old_background = old_background
+		if not _background_transition_layer.transition_finished.is_connected(_on_shader_background_transition_finished):
+			_background_transition_layer.transition_finished.connect(_on_shader_background_transition_finished)
+		_background_transition_layer.play_transition(old_background, next_background, effect_name)
+		print_rich("[color=cyan]切换背景为: [/color]"+str(name) +" " + "过渡效果: " + str(effects_type))
+		return
+
+	_background_container.add_child(next_background)
 	_current_background_scene = next_background
 	_transition_old_background = old_background
 	_background_transition_wait_count = 1
-	var effect_name := _background_effect_name(effects_type)
 	next_background.background_enter_finished.connect(
 		_on_background_transition_part_finished.bind(next_background),
 		ConnectFlags.CONNECT_ONE_SHOT
@@ -208,7 +240,14 @@ func _prepare_background_scene(background: KND_BackgroundSceneBase) -> void:
 func _background_effect_name(effects_type: BackgroundTransitionEffectsType) -> String:
 	return BACKGROUND_EFFECT_NAMES.get(effects_type, "none")
 
+func _should_use_shader_transition(effect_name: String) -> bool:
+	return _background_transition_layer != null and _background_transition_layer.supports_effect(effect_name)
+
 func _clear_pending_background_transition() -> void:
+	if _background_transition_layer and _background_transition_layer.is_transitioning():
+		_background_transition_layer.cancel_transition(true)
+		_current_background_scene = null
+		_pending_shader_background = null
 	if _transition_old_background and is_instance_valid(_transition_old_background):
 		_transition_old_background.stop_background_transition()
 		if _transition_old_background != _current_background_scene:
@@ -224,6 +263,25 @@ func _on_background_transition_part_finished(background: KND_BackgroundSceneBase
 		_transition_old_background.queue_free()
 	_transition_old_background = null
 	print("背景场景切换完成")
+	background_change_finished.emit()
+
+func _on_shader_background_transition_finished(old_background: KND_BackgroundSceneBase, new_background: KND_BackgroundSceneBase) -> void:
+	if old_background and is_instance_valid(old_background):
+		old_background.queue_free()
+	if new_background and is_instance_valid(new_background):
+		var parent := new_background.get_parent()
+		if parent:
+			parent.remove_child(new_background)
+		_background_container.add_child(new_background)
+		_prepare_background_scene(new_background)
+		new_background.show()
+		_current_background_scene = new_background
+	else:
+		_current_background_scene = null
+	_pending_shader_background = null
+	_transition_old_background = null
+	_background_transition_wait_count = 0
+	print("背景 shader 转场完成")
 	background_change_finished.emit()
 
 # 新建角色的方法

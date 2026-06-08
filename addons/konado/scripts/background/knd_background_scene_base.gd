@@ -4,6 +4,8 @@ class_name KND_BackgroundSceneBase
 
 ## 背景场景基类。
 ## 背景切换时，系统只调用 enter/exit；具体是图片、视频、Spine、Live2D 或 shader，由场景内部决定。
+## 内置的双纹理背景转场 shader 由 KND_BackgroundTransitionLayer 统一处理；
+## 这里更适合放背景自己的入场、退场、循环表现和自定义 effect 动画。
 
 signal background_enter_finished
 signal background_exit_finished
@@ -27,6 +29,12 @@ func _ready() -> void:
 
 func setup_background(_background_name: String, _params: Dictionary = {}) -> void:
 	pass
+
+## 给系统内置 shader 转场使用的静态纹理。
+## 图片背景默认会递归寻找第一个 TextureRect / Sprite2D；视频、Live2D、Spine 等动态场景可保持为空，
+## 交给 KND_BackgroundTransitionLayer 使用 SubViewport 渲染。
+func get_transition_texture() -> Texture2D:
+	return _find_transition_texture(self)
 
 func play_enter(effect_name: String = "none", params: Dictionary = {}) -> void:
 	_play_transition("enter", effect_name, params)
@@ -88,3 +96,18 @@ func _on_animation_finished(animation_name: StringName) -> void:
 	if animation_name != _active_animation:
 		return
 	_finish_transition(_active_phase)
+
+func _find_transition_texture(node: Node) -> Texture2D:
+	if node is TextureRect:
+		var texture_rect := node as TextureRect
+		if texture_rect.texture:
+			return texture_rect.texture
+	if node is Sprite2D:
+		var sprite := node as Sprite2D
+		if sprite.texture:
+			return sprite.texture
+	for child in node.get_children():
+		var texture := _find_transition_texture(child)
+		if texture:
+			return texture
+	return null
