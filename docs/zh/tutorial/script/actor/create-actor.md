@@ -9,6 +9,8 @@ order: 1
 
 在对话场景中创建一个演员
 
+角色资源现在通过场景配置。关于角色场景、状态切换和动作层的制作方式，请参考[场景化资源](../../core/scene-assets.md)。
+
 ## 语法结构
 
 ```text
@@ -29,4 +31,3 @@ actor show [角色ID] [状态] at [水平坐标]
 # 显示角色
 actor show alice normal at 2
 ```
-
