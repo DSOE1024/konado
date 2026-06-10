@@ -18,7 +18,7 @@ shader_parameter/noise_strength = 0.05
 
 [sub_resource type="CanvasTexture" id="CanvasTexture_40i07"]
 
-[node name="TransitionSample" type="Control"]
+[node name="TransitionSample" type="Control" unique_id=1047471431]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,7 +26,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TextureRect" type="TextureRect" parent="."]
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1918612738]
 material = SubResource("ShaderMaterial_40i07")
 layout_mode = 1
 anchors_preset = 15
