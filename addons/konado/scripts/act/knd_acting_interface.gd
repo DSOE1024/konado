@@ -157,7 +157,10 @@ func _set_full_rect(control: Control) -> void:
 func get_chara_node(actor_id: String) -> Node:
 	 # 首先从演员节点字典中获取
 	if actor_nodes.has(actor_id):
-		return actor_nodes[actor_id]
+		var cached_node = actor_nodes[actor_id]
+		if cached_node and is_instance_valid(cached_node):
+			return cached_node
+		actor_nodes.erase(actor_id)
 		
 	# 如果字典中没有，再通过find_child方法查找
 	var chara_node: Node = _chara_controler.find_child(actor_id, true, false)
@@ -286,11 +289,14 @@ func _on_shader_background_transition_finished(old_background: KND_BackgroundSce
 
 # 新建角色的方法
 func create_new_character(chara_id: String, h_division: int, pos_h: int, state: String, character_scene: PackedScene = null, motion_layer_scene: PackedScene = null) -> void:
-	# 检查创建的是否为场景已有角色
-	for chara_dict in actor_dict.values():
-		if chara_dict["id"] == chara_id:
-			print_rich("[color=red]创建新演员：错误，重复的角色[/color]")
-			delete_character(chara_dict["id"])
+	var existing_actor := get_chara_node(chara_id) as KND_Actor
+	if existing_actor != null:
+		_update_existing_character(existing_actor, chara_id, h_division, pos_h, state)
+		return
+
+	# actor_dict 可能残留旧数据；没有有效节点时按新建处理。
+	if actor_dict.has(chara_id):
+		actor_dict.erase(chara_id)
 
 	if character_scene == null:
 		push_error("创建角色失败：角色[%s]没有配置角色场景" % chara_id)
@@ -339,6 +345,30 @@ func create_new_character(chara_id: String, h_division: int, pos_h: int, state: 
 	# 移动信号
 	temp_node.actor_moved.connect(_on_character_moved)
 
+func _update_existing_character(chara_node: KND_Actor, chara_id: String, h_division: int, pos_h: int, state: String) -> void:
+	var previous_state := ""
+	if actor_dict.has(chara_id):
+		previous_state = str(actor_dict[chara_id].get("state", ""))
+
+	var position_changed := chara_node.h_division != h_division or chara_node.h_character_position != pos_h
+	var state_changed := previous_state != state
+
+	actor_dict[chara_id] = {
+		"id": chara_id,
+		"h_division": h_division,
+		"pos": pos_h,
+		"state": state
+	}
+	actor_nodes[chara_id] = chara_node
+
+	if position_changed:
+		chara_node.h_division = h_division
+		chara_node.h_character_position = pos_h
+	if state_changed:
+		chara_node.apply_character_status(state)
+
+	print("复用已有演员：" + str(chara_id) + " 演员状态：" + str(state))
+	character_created.emit()
 
 ## 切换演员的状态
 func change_actor_state(actor_id: String, state_id: String) -> void:
