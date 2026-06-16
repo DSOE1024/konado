@@ -169,6 +169,12 @@ theme_type_variation = &"FlatButton"
 text = "设置"
 flat = true
 
+[node name="MainMenu" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=283867521]
+layout_mode = 2
+theme_type_variation = &"FlatButton"
+text = "主菜单"
+flat = true
+
 [node name="SaveSystemUI" type="Control" parent="KonadoUI" unique_id=14919090 node_paths=PackedStringArray("root_container", "save_system")]
 visible = false
 layout_mode = 1
@@ -285,4 +291,5 @@ metadata/_custom_type_script = "uid://b3xcpatqnlrg"
 
 [connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Save" to="KonadoUI/SaveSystemUI" method="open_save_ui"]
 [connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Achievement" to="." method="_on_achievement_pressed"]
+[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/MainMenu" to="." method="_on_main_menu_pressed"]
 [connection signal="pressed" from="KonadoUI/SaveSystemUI/Button" to="KonadoUI/SaveSystemUI" method="close_save_ui"]

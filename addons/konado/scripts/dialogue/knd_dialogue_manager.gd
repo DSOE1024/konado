@@ -1015,3 +1015,6 @@ func _on_achievement_pressed() -> void:
 	else:
 		printerr("无KND_AchievementManager")
 	pass
+
+func _on_main_menu_pressed() -> void:
+	get_tree().change_scene_to_file("res://sample/demo/main.tscn")
