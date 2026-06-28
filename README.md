@@ -89,6 +89,17 @@ The following people contributed to this project:
   </picture>
 </a>
 
+toolName: view_files
+            
+status: success
+          
+            
+filePath: c:\Users\compu\Desktop\Konado\README.zh-CN.md
+          
 ## Open Source License
 
-Konado is distributed under the BSD 3-Clause License. See the [LICENSE](./LICENSE) file for full terms and conditions.
+Konado is released under a multi-license model, allowing you to choose the most suitable license for your needs:
+
+- **MIT License**: [LICENSE-MIT](./LICENSE) — The most permissive license, suitable for commercial integration and rapid development, with minimal restrictions
+- **BSD 3-Clause License**: [LICENSE-BSD](./LICENSE-BSD) — Prohibits using the original author's name for product endorsement, suitable for enterprise scenarios requiring brand isolation
+- **Mulan PSL v2 License**: [LICENSE-MULANPSL](./LICENSE-MULANPSL) — A domestic open source license that includes patent licensing terms, provided by the OpenAtom Foundation, suitable for domestic requirements
