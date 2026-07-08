@@ -1,3 +1,124 @@
+## 2.5 - Diguoji
+
+Konado 2.5 版本正式发布。本版本代号为 Diguoji，聚焦于游戏流程完整性与开发体验提升，新增快速存档读档功能、游戏主菜单界面、角色场景化架构、背景过渡效果，并推出 VSCode 语法高亮扩展与编辑器技能包，进一步完善开箱即用的开发体验。这个版本加入了大量的新功能和优化，但并不保证稳定性，建议在开发过程中保持谨慎。
+
+### 新增
+
+#### 存档系统
+
+- 新增快速保存/快速读取功能，在对话框模板中添加 QuickSave 和 QuickLoad 按钮
+- 在存档 UI 组件中添加快速存档标识，槽位 0 标记为快速保存槽
+- 在对话管理器中实现 `_on_quick_save_pressed()` 和 `_on_quick_load_pressed()` 方法
+- 快速读取前弹出确认对话框，防止误操作丢失未保存进度
+- 添加轻量提示（toast）功能，显示保存/读取操作结果
+
+#### 游戏界面
+
+- 新增游戏启动主菜单界面（`main.tscn`），包含开始游戏、读取存档、设置、退出按钮
+- 主菜单背景使用主题背景图，按钮采用统一主题样式
+- Web 平台自动隐藏退出按钮，适配浏览器环境
+
+#### 角色系统
+
+- 新增角色场景作为角色可选的立绘形式，支持任何节点形式的角色场景
+- 新增 `motion` 命令执行舞台动作
+- 在 `ActorMotionLayer` 中支持自定义的动画，并附加一个示例动画
+- 将 motion 集中在 `actor_motion_layer` 中，不再硬编码动画
+
+#### 背景系统
+
+- 背景都转为场景，支持在场景中使用 shader
+- 新增背景过渡视觉效果"眨眼"
+- 新增背景过渡演示场景（`demo_06_bg_effects.ks`）和演示图片
+- 新增背景过渡效果无效时提示
+
+#### 开发工具
+
+- 新增 VSCode Konado 脚本语法高亮扩展，支持 `.ks` 文件的语法着色
+- 新增 VSCode 工作区扩展推荐配置（`.vscode/extensions.json`）
+- 优化 KS 语法插件内部配置结构
+- 新增 Konado DSL 编辑器增强技能包（`skills/konado-script`）
+- 新增 `.marketplace.json` 配置文件，用于注册 konado-script-skill 插件及其技能路径
+
+#### 文档
+
+- 新增场景化后的文档
+- 新增版本化文档结构
+- 更新 README 文档链接，内联贡献者信息
+
+#### 语法变更
+
+- **新增 `actor motion` 命令**：用于执行角色舞台动作
+  ```ks
+  # 执行内置动作
+  actor motion Kona shake
+  actor motion Kona jump
+  actor motion Kona bounce
+  
+  # 动作定义在 actor_motion_layer.tscn 的 AnimationPlayer 中
+  ```
+
+- **`actor show` 命令简化**：移除了多余的 `y` 坐标、`scale` 和 `mirror` 参数
+  ```ks
+  # 2.5 语法（简化）
+  actor show Kona 正常 at 3
+  
+  # 旧语法（已移除）
+  # actor show Kona 正常 at 2 5 scale 0.3 mirror
+  ```
+
+- **`actor change` 命令**：修改角色状态（表情）
+  ```ks
+  actor change Kona 害羞
+  actor change Kona 惊讶
+  ```
+
+- **背景过渡效果扩展**：新增"眨眼"等视觉效果
+  ```ks
+  background bg1 fade    # 淡入淡出
+  background bg1 windmill # 风车效果
+  background bg1 blink    # 眨眼效果（新增）
+  ```
+
+- **重复 `actor show` 兼容**：允许对已显示的角色重复使用 `show` 命令，复用已有节点并切换到新状态
+  ```ks
+  actor show Kona 正常 at 3
+  actor show Kona 害羞 at 2  # 复用节点，切换状态和位置
+  ```
+
+### 修复
+
+- 修复成就关闭异常 bug
+- 修复条件分支 continue 清理问题，修正 if 分支不跳转的问题
+- 修复版本切换器选择稳定性问题
+- 修复 actor show 复用问题，允许重复的 actor show 语句，复用已有节点做新状态
+- 修复等待 actor shown 信号问题
+- 修复批量 actor 舞台位置更新问题
+- 修复变量系统演示场景无法进行的问题
+
+### 改进
+
+- 完善文档细节，补充快速保存、快速读取文档说明
+- 重构插件 README，新增兼容编辑器说明，优化安装步骤描述
+- 优化 KS 语法插件 README 命令描述
+- 更新文档站版本配置，新增 2.5 版本文档分支
+- 删除多余的 y 坐标，简化角色定位参数
+- 优化 Demo 场景：更新脚本、资源和 .gitignore
+- 添加 Tripo 致谢 Logo
+- 更新社区项目列表，添加"雨夜重逢"游戏和 Akonado 派生项目
+
+### 移除
+
+- 删除图片切换表情的兼容，换为只使用场景
+- 删除旧的图片格式不再兼容，转为场景中完成动作切换
+
+### 兼容性提示
+
+- 建议使用 Godot 4.7 或更高版本。
+- 2.5 版本引入了新的主菜单场景，建议在项目中配置正确的启动场景。
+- 背景和角色立绘已转为场景形式，旧的图片格式不再兼容，需要迁移到场景配置。
+- 删除了多余的 y 坐标参数，角色定位仅保留横向网格位置。
+
 ## 2.4.5 LTS - Macaron
 
 Konado 2.4.5 版本正式发布。本版本为 2.4 系列的长期支持（LTS）维护更新，聚焦于 KS 脚本编译管线重构与编辑器体验增强，实现了完整的编译链路并添加了实用的编辑器工具功能。
