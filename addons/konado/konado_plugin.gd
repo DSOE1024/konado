@@ -3,8 +3,8 @@ extends EditorPlugin
 class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
-const VERSION: String = "2.4.0"
-const CODENAME: String = "Cannoli"
+const VERSION: String = "2.5.0"
+const CODENAME: String = "Diguoji"
 
 ## 自定义EditorImportPlugin脚本
 const KS_IMPORTER_SCRIPT := preload("uid://rp35gse7j4sv")
