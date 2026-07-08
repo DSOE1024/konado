@@ -1,3 +1,167 @@
+## 2.5 - Diguoji
+
+Konado 2.5 is officially released. Codenamed "Diguoji", this version focuses on game flow completeness and development experience enhancement. It introduces quick save/load functionality, a game startup main menu, character scene-based architecture, background transition effects, and launches a VSCode syntax highlighting extension along with editor skill packs, further improving the out-of-the-box development experience.
+
+### Added
+
+#### Save System
+
+- Added quick save/quick load functionality with QuickSave and QuickLoad buttons in dialogue templates
+- Added quick save indicator in save UI component, slot 0 marked as quick save slot
+- Implemented `_on_quick_save_pressed()` and `_on_quick_load_pressed()` methods in dialogue manager
+- Added confirmation dialog before quick load to prevent accidental loss of unsaved progress
+- Added lightweight toast notifications to display save/load operation results
+
+#### Game Interface
+
+- Added game startup main menu screen (`main.tscn`) with Start Game, Load Save, Settings, and Quit buttons
+- Main menu uses theme background image with unified button styles
+- Quit button automatically hidden on Web platform for browser compatibility
+
+#### Character System
+
+- Added character scenes as an alternative portrait form, supporting any node type for character scenes
+- Added `motion` command for executing stage actions
+- Added custom animation support in `ActorMotionLayer` with sample animations included
+- Centralized motion logic in `actor_motion_layer`, eliminating hardcoded animations
+
+#### Background System
+
+- Backgrounds converted to scenes, supporting shaders in scene-based backgrounds
+- Added "blink" background transition visual effect
+- Added background transition demo scene (`demo_06_bg_effects.ks`) and demo images
+- Added warnings when background transition effects are invalid
+
+#### Development Tools
+
+- Added VSCode Konado script syntax highlighting extension for `.ks` file coloring
+- Added VSCode workspace extension recommendations configuration (`.vscode/extensions.json`)
+- Optimized KS syntax plugin internal configuration structure
+- Added Konado DSL editor enhancement skill pack (`skills/konado-script`)
+- Added `.marketplace.json` configuration file for registering konado-script-skill plugin and its skill paths
+
+#### Documentation
+
+- Added scene-based documentation
+- Added versioned documentation structure
+- Updated README documentation links with inline contributor information
+
+#### Syntax Changes
+
+- **New `actor motion` command**: Execute character stage actions
+  ```ks
+  # Execute built-in motions
+  actor motion Kona shake
+  actor motion Kona jump
+  actor motion Kona bounce
+  
+  # Motions defined in AnimationPlayer within actor_motion_layer.tscn
+  ```
+
+- **Simplified `actor show` command**: Removed redundant `y` coordinate, `scale`, and `mirror` parameters
+  ```ks
+  # 2.5 syntax (simplified)
+  actor show Kona 正常 at 3
+  
+  # Old syntax (removed)
+  # actor show Kona 正常 at 2 5 scale 0.3 mirror
+  ```
+
+- **`actor change` command**: Change character state (expression)
+  ```ks
+  actor change Kona 害羞
+  actor change Kona 惊讶
+  ```
+
+- **Extended background transition effects**: Added "blink" visual effect
+  ```ks
+  background bg1 fade    # Fade in/out
+  background bg1 windmill # Windmill effect
+  background bg1 blink    # Blink effect (new)
+  ```
+
+- **Repeated `actor show` compatibility**: Allows reusing `show` command on already displayed characters, reusing existing nodes with new state
+  ```ks
+  actor show Kona 正常 at 3
+  actor show Kona 害羞 at 2  # Reuse node, change state and position
+  ```
+
+### Fixed
+
+- Fixed achievement close exception bug
+- Fixed conditional branch continue cleanup issue, correcting if-branch not jumping problem
+- Fixed version switcher selection stability issue
+- Fixed actor show reuse issue, allowing repeated actor show statements that reuse existing nodes with new state
+- Fixed waiting for actor shown signal issue
+- Fixed batch actor stage position updates issue
+- Fixed variable system demo scene not working issue
+
+### Improvements
+
+- Improved documentation details, added quick save/load documentation
+- Refactored plugin README with new compatible editor descriptions and optimized installation steps
+- Optimized KS syntax plugin README command descriptions
+- Updated documentation site version configuration with 2.5 version branch
+- Removed redundant y-coordinate parameter, simplified character positioning
+- Optimized Demo scene: updated scripts, assets, and .gitignore
+- Added Tripo acknowledgement logo
+- Updated community projects list with "雨夜重逢" game and Akonado derived project
+
+### Removed
+
+- Removed image-based expression switching compatibility, now using scenes only
+- Removed old image format compatibility, switching to scene-based state transitions
+
+### Compatibility Notes
+
+- Godot 4.7 or later is recommended.
+- 2.5 introduces a new main menu scene, ensure correct startup scene configuration in projects.
+- Backgrounds and character portraits are now scene-based, old image formats are no longer compatible and need migration to scene configuration.
+- Removed redundant y-coordinate parameter, character positioning uses horizontal grid positions only.
+
+## 2.4.5 LTS - Macaron
+
+Konado 2.4.5 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series, focusing on KS script compiler pipeline refactoring and editor experience enhancement, implementing a complete compilation chain and adding useful editor tool features.
+
+### Added
+
+#### KS Compiler
+
+- Refactored KS compiler with complete compilation pipeline including lexer, parser, analyzer, and emitter
+- Added editor tooltip plugin for KS script files, displaying script line count, dialogue count, and dependency characters
+
+### Removed
+
+- Removed deprecated dialogue scene file `konado_dialogue.tscn`, which was a legacy file from the 2.3 dialogue system and is no longer used
+
+### Compatibility Notes
+
+- Removed deprecated dialogue scenes. Please use the new `knd_dialogue_box_middle.tscn` and `knd_dialogue_box_left.tscn` dialogue scene templates. This may cause issues in projects relying on the old dialogue scene. It is recommended to back up before upgrading or manually add missing dialogue scenes after migration.
+- Godot 4.6.2 or later is recommended.
+
+## 2.4.4 LTS - Macaron
+
+Konado 2.4.4 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series, focusing on option parsing fixes in the KS interpreter, resolving branch option display and jump issues, further improving script parsing stability and accuracy.
+
+### Fixed
+
+#### KS Interpreter
+
+- Fixed legacy option syntax parsing from 2.3, restricting one option per line. Removed the `choice "text1" -> tag1 "text2" -> tag2` format, enforcing the standard `choice "text" -> tag` single-option-per-line format.
+- Fixed branch option jump target parsing, added post-processing step to convert `next_id` from tag names to node IDs within branches, resolving branch option jump failures.
+- Fixed consecutive `choice` line merging logic within branches, allowing multiple `choice` lines in branches to correctly merge into a single option group, resolving single-option display in branches.
+
+### Added
+
+#### Samples and Assets
+
+- Added `demo_choice_test.ks` option system test script demonstrating main-line multi-option, branch multi-option, and nested option jump scenarios for verifying option parsing functionality.
+
+### Compatibility Notes
+
+- 2.4.4 enforces one option per line. Old scripts with multiple options on a single line need to be split into multiple lines. This may cause breaking changes.
+- Godot 4.6.2 or later is recommended.
+
 ## 2.4.3 LTS - Macaron
 
 Konado 2.4.3 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series. It focuses on editor interaction fixes, dialogue playback flow improvements, and sample asset completion, further improving out-of-the-box stability and usability.
