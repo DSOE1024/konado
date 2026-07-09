@@ -205,6 +205,9 @@ func _ready() -> void:
 		_autoPlayButton.toggled.connect(start_autoplay)
 	else:
 		push_error("未指定 _autoPlayButton")
+
+	if _konado_dialogue_box and _audio_interface and _audio_interface.voice_player:
+		_konado_dialogue_box.bind_voice_player(_audio_interface.voice_player)
 		
 	# 如果有设置系统
 	if _settings_bridge:
@@ -391,6 +394,9 @@ func _process(delta) -> void:
 					# 如果有配音播放配音
 					if voice_id:
 						voice_wait_time = _play_voice(voice_id)
+					else:
+						if _konado_dialogue_box:
+							_konado_dialogue_box.clear_voice_progress()
 					
 					if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
 						_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
@@ -842,14 +848,23 @@ func _play_bgm(bgm_name: String) -> void:
 ## 播放配音，返回音频时长
 func _play_voice(voice_name: String) -> float:
 	if voice_name == null:
+		if _konado_dialogue_box:
+			_konado_dialogue_box.clear_voice_progress()
 		return 0.0
 	var target_voice: AudioStream
 	if voice_list == null or voice_list.voices == null:
+		if _konado_dialogue_box:
+			_konado_dialogue_box.clear_voice_progress()
 		return 0.0
 	for voice in voice_list.voices:
 		if voice.voice_name == voice_name:
 			target_voice = voice.voice
 			break
+	if target_voice == null:
+		push_error("播放配音失败：未找到名称为[%s]的语音" % voice_name)
+		if _konado_dialogue_box:
+			_konado_dialogue_box.clear_voice_progress()
+		return 0.0
 	_audio_interface.play_voice(target_voice)
 	return target_voice.get_length()
 
