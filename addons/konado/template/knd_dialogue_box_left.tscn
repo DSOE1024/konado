@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://m3yl5jmfhhep" path="res://addons/konado/template/progress/love_progress.svg" id="5_op0fy"]
 [ext_resource type="Shader" uid="uid://dvxdvdhi0klnr" path="res://addons/konado/typewriter/typewriter_fade.gdshader" id="6_c80q8"]
 [ext_resource type="Script" uid="uid://bpdmh056bgwg7" path="res://addons/konado/typewriter/typewriter_text.gd" id="7_q2m0a"]
+[ext_resource type="PackedScene" uid="uid://d3ukxg25lmwx8" path="res://addons/konado/template/voice_progress_display.tscn" id="8_o5ldw"]
 
 [sub_resource type="Gradient" id="Gradient_7xou3"]
 offsets = PackedFloat32Array(0.2, 1)
@@ -110,6 +111,21 @@ texture_over = ExtResource("4_wp5yd")
 texture_progress = ExtResource("5_op0fy")
 tint_over = Color(0.92347443, 0.82186884, 0.48020518, 1)
 tint_progress = Color(0.68326306, 0.28966337, 0.5552192, 1)
+
+[node name="VoiceProgressDisplay" parent="." instance=ExtResource("8_o5ldw")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -420.0
+offset_top = -112.0
+offset_right = -100.0
+offset_bottom = -104.0
+grow_horizontal = 0
+grow_vertical = 0
 
 [node name="dialogue_label" type="RichTextLabel" parent="dialogue_container/VBoxContainer" unique_id=604101149]
 unique_name_in_owner = true
