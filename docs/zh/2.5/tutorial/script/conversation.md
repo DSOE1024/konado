@@ -28,6 +28,8 @@ graph LR
 | 对话文本 | 是 | `你好，我叫爱丽丝！` | 角色要说的话 |
 | 配音标签 | 否 | `alice_intro_01` | 可选的标签，用于标识配音文件 |
 
+设置了配音标签并成功播放语音时，对话框默认会显示音频进度；没有配音标签或语音播放结束后不会显示进度。如需关闭该功能，可以在对话框节点 `KonadoDialogueBox` 上关闭 `show_voice_progress`。进度显示样式可以在 `res://addons/konado/template/voice_progress_display.tscn` 中自定义。
+
 ## 示例
 
 ```text
