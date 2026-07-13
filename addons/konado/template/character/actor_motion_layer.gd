@@ -33,14 +33,16 @@ func play_motion(motion_name: String, _params: Dictionary = {}) -> void:
 		motion_finished.emit(motion_name)
 		return
 	_active_motion_name = motion_name
-	motion_started.emit(motion_name)
 
 	if animation_player and animation_player.has_animation(motion_name):
 		_reset_motion_target()
 		animation_player.play(motion_name)
+		animation_player.seek(0, true)
+		motion_started.emit(motion_name)
 		return
 
 	push_warning("未找到演员动作：%s，可用 AnimationPlayer 动画：%s" % [motion_name, _get_animation_names_text()])
+	motion_started.emit(motion_name)
 	_finish_motion(motion_name)
 
 func stop_motion() -> void:
@@ -63,6 +65,11 @@ func _reset_motion_target() -> void:
 	target.set("position", Vector2.ZERO)
 	target.set("scale", Vector2.ONE)
 	target.set("rotation", 0.0)
+	if target is CanvasItem:
+		var canvas_item := target as CanvasItem
+		var modulate := canvas_item.modulate
+		modulate.a = 1.0
+		canvas_item.modulate = modulate
 
 func _get_motion_target() -> Node:
 	var target := get_mount_node()
