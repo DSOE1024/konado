@@ -97,4 +97,9 @@ Konado 是一个对话创建工具包，提供模板和对话管理器，帮助�
 
 ## 开源许可证
 
-Konado 项目采用 BSD 3 条款许可证，具体条款详见 [LICENSE](./LICENSE) 文件。
+Konado 项目采用多许可证开源，您可以按需求选择最适合的许可证：
+
+- **MIT 许可证**：[LICENSE-MIT](./LICENSE) — 最宽松的许可证，适合商业集成和快速开发，几乎无使用限制
+- **BSD 3-Clause 许可证**：[LICENSE-BSD](./LICENSE-BSD) — 禁止使用原作者名称进行产品背书，适合需要品牌隔离的企业场景
+- **Mulan PSL v2 许可证**：[LICENSE-MULANPSL](./LICENSE-MULANPSL) — 国产开源许可证，包含专利许可条款，由开放原子开源基金会提供，适合国内需求
+

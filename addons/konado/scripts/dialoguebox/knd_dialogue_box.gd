@@ -57,6 +57,13 @@ signal on_dialogue_hide_completed
 @export var max_audio_interval: float = 0.08   ## 音效最大播放间隔（秒）
 @export var audio_volumn: float = 0.6         ## 音效音量(0-1)
 
+@export_group("语音进度显示")
+@export var show_voice_progress: bool = true:
+	set(value):
+		show_voice_progress = value
+		if not show_voice_progress:
+			clear_voice_progress()
+
 @export_group("对话框设置")
 @export var dialogue_margins: int = 100     ## 对话框到底部距离
 @export var dialogue_bg: StyleBox          ## 对话框背景
@@ -90,6 +97,7 @@ var fade_tween: Tween = null
 @onready var character_name_label: Label = %character_name_label
 @onready var dialogue_label: RichTextLabel = %dialogue_label
 @onready var progress_bar: TextureProgressBar = %ProgressBar
+@onready var voice_progress_display: KND_VoiceProgressDisplay = get_node_or_null("%VoiceProgressDisplay") as KND_VoiceProgressDisplay
 @onready var dialogue_container: MarginContainer = %dialogue_container
 @onready var dialogue_box_bg: Panel = %dialogue_box_bg
 
@@ -97,10 +105,12 @@ var fade_tween: Tween = null
 @export var typewriter_text: KND_TypewriterText
 
 var typing_tween: Tween = null
+var voice_player: AudioStreamPlayer
 
 
 func _ready() -> void:
 	self.modulate.a = 0.0
+	clear_voice_progress()
 	apply_dialogue_text_theme_settings()
 	update_dialogue_box_height()
 	
@@ -125,6 +135,36 @@ func _ready() -> void:
 			typewriter_text.hide()
 		dialogue_label.show()
 
+func bind_voice_player(player: AudioStreamPlayer) -> void:
+	if voice_player and voice_player.finished.is_connected(clear_voice_progress):
+		voice_player.finished.disconnect(clear_voice_progress)
+	voice_player = player
+	clear_voice_progress()
+	if voice_player and not voice_player.finished.is_connected(clear_voice_progress):
+		voice_player.finished.connect(clear_voice_progress)
+
+func clear_voice_progress() -> void:
+	if not is_inside_tree():
+		return
+	if voice_progress_display:
+		voice_progress_display.hide_progress()
+
+func update_voice_progress() -> void:
+	if not show_voice_progress:
+		clear_voice_progress()
+		return
+	if not voice_player or not voice_progress_display:
+		clear_voice_progress()
+		return
+	if not voice_player.stream or not voice_player.is_playing():
+		clear_voice_progress()
+		return
+	var voice_length := voice_player.stream.get_length()
+	if voice_length <= 0.0:
+		clear_voice_progress()
+		return
+	voice_progress_display.set_progress(voice_player.get_playback_position(), voice_length)
+
 ## 应用对话文本的主题设置
 func apply_dialogue_text_theme_settings() -> void:
 	if not is_inside_tree():
@@ -148,6 +188,7 @@ func create_typewriter_text() -> void:
 	
 ## 隐藏对话框（带透明度过渡动画）
 func hide_dialogue_box() -> void:
+	clear_voice_progress()
 	# 停止原有过渡动画，避免动画冲突
 	if fade_tween != null and fade_tween.is_running():
 		fade_tween.kill()
@@ -301,6 +342,8 @@ func skip_typing_anim() -> void:
 			typing_completed.emit()
 
 func _process(delta: float) -> void:
+	update_voice_progress()
+
 	# 仅当打字动画运行、文本非空时，处理音效逻辑
 	var is_typing = false
 	if typewriter_mode == TypewriterMode.FADE_IN_TYPEWRITER:
