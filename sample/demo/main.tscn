@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://obinhywgvblv" path="res://sample/demo/sample_arts/春季.jpg" id="3_2exyp"]
 [ext_resource type="FontFile" uid="uid://dihv3p6n7pp2e" path="res://addons/konado/fonts/ResourceHanRoundedCN-Medium.ttf" id="4_x17dk"]
 
-[node name="MainMenu" type="Control" unique_id=55242011]
+[node name="MainMenu" type="Control" unique_id=55242011 node_paths=PackedStringArray("quit_button")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,6 +14,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_2exyp")
 script = ExtResource("1")
+quit_button = NodePath("VBoxContainer/QuitButton")
 
 [node name="Background" type="TextureRect" parent="." unique_id=1665307284]
 layout_mode = 1
