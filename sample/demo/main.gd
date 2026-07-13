@@ -3,7 +3,7 @@ extends Control
 ## 主菜单脚本
 ## 点击"开始游戏"跳转到 demo 场景，点击"退出游戏"关闭应用
 
-@onready var quit_button: Button = $CenterContainer/VBox/QuitButton
+@export var quit_button: Button
 
 func _ready() -> void:
 	if OS.has_feature("web"):
