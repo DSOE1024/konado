@@ -19,7 +19,7 @@ signal actor_motion_finished(motion_name: String)
 @export var use_tween: bool = true
 
 ## 动画时间，为0时则等于禁用动画效果
-@export var animation_time: float = 0.2:
+@export var animation_time: float = 0.5:
 	set(value):
 		if animation_time != value:
 			animation_time = max(value, 0)
@@ -29,6 +29,7 @@ signal actor_motion_finished(motion_name: String)
 var _status_node: Node = null
 var _move_tween: Tween
 var _suspend_layout_update := false
+var _is_visible := false
 
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
 @export var h_division: int = 5:
@@ -46,14 +47,42 @@ var _suspend_layout_update := false
 			if not _suspend_layout_update:
 				_on_resized()
 
+## 是否使用偏移动画（短距离移动+淡入），否则使用边缘进场动画（从屏幕外飞入）
+@export var use_offset: bool = true
+
+## 判断角色是否在左侧区域（用于确定进场/退场方向）
+func _is_left_side() -> bool:
+	return h_character_position <= h_division / 2
+
+## 获取进场动画名称
+func _get_enter_animation_name() -> String:
+	return "left_enter_offset" if (use_offset and _is_left_side()) else \
+		   "right_enter_offset" if use_offset else \
+		   "left_enter" if _is_left_side() else \
+	       "right_enter"
+
+## 获取退场动画名称
+func _get_exit_animation_name() -> String:
+	return "left_exit_offset" if (use_offset and _is_left_side()) else \
+		   "right_exit_offset" if use_offset else \
+		   "left_exit" if _is_left_side() else \
+	       "right_exit"
+
+## 判断是否为进场动画
+func _is_enter_motion(motion_name: String) -> bool:
+	return motion_name.begins_with("left_enter") or motion_name.begins_with("right_enter")
+
+## 判断是否为退场动画
+func _is_exit_motion(motion_name: String) -> bool:
+	return motion_name.begins_with("left_exit") or motion_name.begins_with("right_exit")
+
 func _ready() -> void:
-	# 初始化透明度为1（确保初始状态正常）
 	if texture_rect:
 		texture_rect.modulate.a = 1.0
 		texture_rect.visible = true
 	_bind_motion_layer_signals()
-	# 初始化位置
 	_on_resized()
+	_is_visible = true
 
 func _on_resized() -> void:
 	if not slot:
@@ -108,45 +137,114 @@ func set_highlight(highlight: bool) -> void:
 		visual.set_modulate(Color(0.35, 0.35, 0.35, 1.0))
 	pass
 
-## 角色进场动画（透明度从0过渡到1）
+## 角色进场动画
+## 根据角色位置自动判断进场方向（左/右），优先使用motion_layer的移动进场动画
 func enter_actor(play_anim: bool = true) -> void:
+	if not play_anim:
+		emit_signal("actor_entered")
+		return
+	
 	var visual := _get_status_visual()
 	if visual == null:
 		print("警告：角色状态节点未赋值，无法执行进场动画")
 		emit_signal("actor_entered")
 		return
 	
-	# 重置基础状态
+	if motion_layer and motion_layer.animation_player:
+		var anim_name := _get_enter_animation_name()
+		if motion_layer.animation_player.has_animation(anim_name):
+			_is_visible = false
+			_set_visibility(false)
+			play_actor_motion(anim_name)
+			return
+	
 	visual.visible = true
 	visual.modulate.a = 0.0
 	
-	# 创建补间动画
 	var tween: Tween = visual.create_tween()
-	# 并行执行多个动画轨道
 	tween.set_parallel(true)
-	
-	# 透明度动画（核心进场效果）
 	tween.tween_property(visual, "modulate:a", 1.0, animation_time)
-	
 	tween.finished.connect(_on_enter_animation_finished)
 	tween.play()
 
-## 角色退场动画（透明度从1过渡到0）
+## 角色退场动画
+## 根据角色位置自动判断退场方向（左/右），优先使用motion_layer的移动退场动画
 func exit_actor(play_anim: bool = true) -> void:
+	if not play_anim:
+		emit_signal("actor_exited")
+		self.queue_free()
+		return
+	
 	var visual := _get_status_visual()
 	if visual == null:
 		print("警告：角色状态节点未赋值，无法执行退场动画")
 		emit_signal("actor_exited")
+		self.queue_free()
 		return
 	
-	# 创建补间动画
-	var tween: Tween = visual.create_tween()
-	# 透明度淡出动画
-	tween.tween_property(visual, "modulate:a", 0.0, animation_time)
+	if motion_layer and motion_layer.animation_player:
+		var anim_name := _get_exit_animation_name()
+		if motion_layer.animation_player.has_animation(anim_name):
+			play_actor_motion(anim_name)
+			return
 	
-	# 动画完成后删除节点
+	var tween: Tween = visual.create_tween()
+	tween.tween_property(visual, "modulate:a", 0.0, animation_time)
 	tween.finished.connect(func(): self.queue_free())
 	tween.play()
+
+## 设置角色可见性（先不显示，等待进场动画开始后再显示）
+func set_visible(deferred: bool = true) -> void:
+	if deferred:
+		_is_visible = false
+		_set_visibility(false)
+	else:
+		_is_visible = true
+		_set_visibility(true)
+
+## 设置可见性
+func _set_visibility(visible: bool) -> void:
+	var visual := _get_status_visual()
+	if visual:
+		visual.visible = visible
+
+## 从左侧进场动画
+func enter_from_left() -> void:
+	_play_enter_motion("left_enter")
+
+## 从右侧进场动画
+func enter_from_right() -> void:
+	_play_enter_motion("right_enter")
+
+## 从左侧偏移进场动画（短距离移动+淡入）
+func enter_from_left_offset() -> void:
+	_play_enter_motion("left_enter_offset")
+
+## 从右侧偏移进场动画（短距离移动+淡入）
+func enter_from_right_offset() -> void:
+	_play_enter_motion("right_enter_offset")
+
+## 退场到左侧动画
+func exit_to_left() -> void:
+	play_actor_motion("left_exit")
+
+## 退场到右侧动画
+func exit_to_right() -> void:
+	play_actor_motion("right_exit")
+
+## 退场到左侧偏移动画（短距离移动+淡出）
+func exit_to_left_offset() -> void:
+	play_actor_motion("left_exit_offset")
+
+## 退场到右侧偏移动画（短距离移动+淡出）
+func exit_to_right_offset() -> void:
+	play_actor_motion("right_exit_offset")
+
+## 播放进场动画的通用方法
+func _play_enter_motion(motion_name: String) -> void:
+	_is_visible = false
+	_set_visibility(false)
+	play_actor_motion(motion_name)
 
 ## 进场动画完成回调
 func _on_enter_animation_finished() -> void:
@@ -252,9 +350,21 @@ func _bind_motion_layer_signals() -> void:
 
 func _on_motion_layer_started(motion_name: String) -> void:
 	actor_motion_started.emit(motion_name)
+	if _is_enter_motion(motion_name):
+		_is_visible = true
+		_set_visibility(true)
 
 func _on_motion_layer_finished(motion_name: String) -> void:
 	actor_motion_finished.emit(motion_name)
+	if _is_enter_motion(motion_name):
+		actor_entered.emit()
+	if _is_exit_motion(motion_name):
+		_is_visible = false
+		_set_visibility(false)
+		if motion_layer:
+			motion_layer.stop_motion()
+		emit_signal("actor_exited")
+		self.queue_free()
 
 func _layout_status_node() -> void:
 	var mount := _get_character_mount()
@@ -307,27 +417,3 @@ func _find_texture_rect(node: Node) -> TextureRect:
 	return null
 
 @export var slot: Control
-
-
-			
-#@tool
-#extends Control
-#
-#@onready var control: Control = $Slot
-#
-#@export var division:= 3:
-	#set(value):
-		#if division != value:
-			#division = clamp(value,2,15)
-			#_on_resized()
-#
-#@export var character_position := 2:
-	#set(value):
-		#if character_position!= value:
-			#character_position = clamp(value,0,division)
-			#_on_resized()
-			#
-#
-#func _on_resized() -> void:
-	#if control:
-		#control.position.x = -size.x /division * (division - character_position )+ control.size.x/2

@@ -4,8 +4,8 @@
 [ext_resource type="Script" uid="uid://b3xcpatqnlrg" path="res://addons/konado/scripts/knd_settings_bridge.gd" id="2_m70cm"]
 [ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd" id="2_tn0i2"]
 [ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/knd_acting_interface.gd" id="3_j3lp8"]
-[ext_resource type="Script" uid="uid://cglr3pnhbntvk" path="res://addons/konado/scripts/background/knd_background_transition_layer.gd" id="4_transition"]
 [ext_resource type="PackedScene" uid="uid://b3wibk1ya0b6j" path="res://addons/konado/template/knd_dialogue_box_left.tscn" id="4_m70cm"]
+[ext_resource type="Script" uid="uid://cglr3pnhbntvk" path="res://addons/konado/scripts/background/knd_background_transition_layer.gd" id="4_transition"]
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="5_k5ucr"]
 [ext_resource type="Script" uid="uid://gh6w15d30qe7" path="res://addons/konado/scripts/save_system/save_load_ui.gd" id="6_5t7mf"]
 [ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/knd_audio_interface.gd" id="7_c8nf7"]
@@ -64,7 +64,7 @@ script = ExtResource("3_j3lp8")
 layout_mode = 2
 color = Color(0, 0, 0, 1)
 
-[node name="BackgroundContainer" type="Control" parent="KonadoUI/ActingInterface/BackgroundLayer"]
+[node name="BackgroundContainer" type="Control" parent="KonadoUI/ActingInterface/BackgroundLayer" unique_id=334104409]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -72,23 +72,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BackgroundTransitionLayer" type="Control" parent="KonadoUI/ActingInterface"]
+[node name="BackgroundTransitionLayer" type="Control" parent="KonadoUI/ActingInterface" unique_id=1924358963]
+visible = false
 layout_mode = 2
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4_transition")
 
 [node name="CharaControl" type="Control" parent="KonadoUI/ActingInterface" unique_id=245679010]
 layout_mode = 2
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="EffectLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1654107269]
 layout_mode = 2
@@ -144,13 +135,13 @@ grow_vertical = 2
 theme_override_constants/separation = 6
 alignment = 2
 
-[node name="QuickSave" type="Button" parent="KonadoUI/ColorRect/HBoxContainer"]
+[node name="QuickSave" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=1633435918]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "快速保存"
 flat = true
 
-[node name="QuickLoad" type="Button" parent="KonadoUI/ColorRect/HBoxContainer"]
+[node name="QuickLoad" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=1938869910]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "快速读取"
