@@ -147,6 +147,10 @@ var achievement_mgr: Node = null
 ## 设置桥接器
 @export var _settings_bridge: KND_SettingsBridge
 
+@export_category("Camera")
+## 相机管理器
+@export var _konado_cam_manager: KonadoCameraManager
+
 
 ## 设置变更处理
 func _on_setting_changed(category: String, key: String, value: Variant) -> void:
@@ -180,7 +184,6 @@ func _ready() -> void:
 				printerr("对话已隐藏，自动停止")
 				stop_dialogue()
 				)
-
 		
 	if enable_overlay_log:
 		print("开启日志记录器")
@@ -469,6 +472,20 @@ func _process(delta) -> void:
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_exit_actor(actor)
+				# 移动镜头
+				elif cur_dialogue_type == KND_Dialogue.Type.MOVE_CAM:
+					var callback = func():
+						print("镜头移动完毕")
+						_dialogue_goto_state(DialogState.PAUSED)
+						_process_next()
+					_konado_cam_manager.move_cam(dialog.target_cam, dialog.cam_tween_time, callback)
+				# 重置镜头
+				elif cur_dialogue_type == KND_Dialogue.Type.RESET_CAM:
+					var callback = func():
+						print("镜头重置完毕")
+						_dialogue_goto_state(DialogState.PAUSED)
+						_process_next()
+					_konado_cam_manager.reset_cam(true, dialog.cam_tween_time, callback)
 				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
 					var dialog_choices = dialog.choices
@@ -678,6 +695,10 @@ func _process_next() -> void:
 	
 ## 自动下一个，添加信号解绑功能保证只被触发一次
 func _auto_process_next(s: Signal) -> void:
+	if _konado_cam_manager:
+		_konado_cam_manager.get_all_konado_cameras()
+	else:
+		printerr("刷新镜头群失败")
 	var auto_next := _auto_process_next.bind(s)
 	_dialogue_goto_state(DialogState.PAUSED)
 	if not s.is_null() and s.is_connected(auto_next):

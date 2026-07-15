@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://cglr3pnhbntvk" path="res://addons/konado/scripts/background/knd_background_transition_layer.gd" id="4_transition"]
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="5_k5ucr"]
 [ext_resource type="Script" uid="uid://gh6w15d30qe7" path="res://addons/konado/scripts/save_system/save_load_ui.gd" id="6_5t7mf"]
+[ext_resource type="Script" uid="uid://caa0f7vr4lmwx" path="res://addons/konado/cam/konado_camera_manager.gd" id="6_k5ucr"]
 [ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/knd_audio_interface.gd" id="7_c8nf7"]
 [ext_resource type="Script" uid="uid://dusoj8pkl7ecg" path="res://addons/konado/scripts/save_system/knd_save_system.gd" id="8_iq8kq"]
 
@@ -21,7 +22,7 @@ metadata/_snap_enabled = true
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
 gradient = SubResource("Gradient_6xj1n")
 
-[node name="KonadoDialogueLeft" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "_autoPlayButton", "_settingsButton", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system", "_settings_bridge")]
+[node name="KonadoDialogueLeft" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "_autoPlayButton", "_settingsButton", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system", "_settings_bridge", "_konado_cam_manager")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -30,28 +31,25 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_m70cm")
 script = ExtResource("2_tn0i2")
-_konado_choice_interface = NodePath("KonadoUI/DialogueInterface/ChoicesContainer")
-_konado_dialogue_box = NodePath("KonadoUI/DialogueInterface/KonadoDialogueBox")
-_acting_interface = NodePath("KonadoUI/ActingInterface")
+_konado_choice_interface = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/ChoicesContainer")
+_konado_dialogue_box = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/KonadoDialogueBox")
+_acting_interface = NodePath("KonadoUI/CanvasLayer/ActingInterface")
 _audio_interface = NodePath("KonadoAudioInterface")
-_autoPlayButton = NodePath("KonadoUI/ColorRect/HBoxContainer/AutoPlay")
-_settingsButton = NodePath("KonadoUI/ColorRect/HBoxContainer/Settings")
+_autoPlayButton = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/AutoPlay")
+_settingsButton = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/Settings")
 error_tooltip_panel = NodePath("KonadoErrorToolTip")
 error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
 error_skip_btn = NodePath("KonadoErrorToolTip/Skip")
 save_system = NodePath("KND_SaveSystem")
 _settings_bridge = NodePath("KND_SettingsBridge")
+_konado_cam_manager = NodePath("KonadoUI/CanvasLayer/ActingInterface/KonadoCameraManager")
 
-[node name="KonadoUI" type="Control" parent="." unique_id=363853147]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="KonadoUI" type="Node" parent="." unique_id=1314482304]
 
-[node name="ActingInterface" type="PanelContainer" parent="KonadoUI" unique_id=580713454]
-layout_mode = 1
+[node name="CanvasLayer" type="CanvasLayer" parent="KonadoUI" unique_id=2059564566]
+follow_viewport_enabled = true
+
+[node name="ActingInterface" type="PanelContainer" parent="KonadoUI/CanvasLayer" unique_id=580713454]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -60,11 +58,11 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_b1osp")
 script = ExtResource("3_j3lp8")
 
-[node name="BackgroundLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1466239429]
+[node name="BackgroundLayer" type="ColorRect" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=1466239429]
 layout_mode = 2
 color = Color(0, 0, 0, 1)
 
-[node name="BackgroundContainer" type="Control" parent="KonadoUI/ActingInterface/BackgroundLayer" unique_id=334104409]
+[node name="BackgroundContainer" type="Control" parent="KonadoUI/CanvasLayer/ActingInterface/BackgroundLayer" unique_id=334104409]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -72,31 +70,43 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BackgroundTransitionLayer" type="Control" parent="KonadoUI/ActingInterface" unique_id=1924358963]
+[node name="Node" type="Node2D" parent="KonadoUI/CanvasLayer/ActingInterface/BackgroundLayer" unique_id=1002488365]
+
+[node name="Camera2D" type="Camera2D" parent="KonadoUI/CanvasLayer/ActingInterface/BackgroundLayer/Node" unique_id=1155153106]
+
+[node name="BackgroundTransitionLayer" type="Control" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=1924358963]
 visible = false
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("4_transition")
 
-[node name="CharaControl" type="Control" parent="KonadoUI/ActingInterface" unique_id=245679010]
+[node name="CharaControl" type="Control" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=245679010]
 layout_mode = 2
 
-[node name="EffectLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1654107269]
+[node name="EffectLayer" type="ColorRect" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=1654107269]
 layout_mode = 2
 color = Color(0, 0, 0, 0)
 
-[node name="DialogueInterface" type="Control" parent="KonadoUI" unique_id=254950114]
-layout_mode = 1
+[node name="KonadoCameraManager" type="Node" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=1180046033 node_paths=PackedStringArray("current", "bg_container")]
+script = ExtResource("6_k5ucr")
+current = NodePath("../BackgroundLayer/Node/Camera2D")
+bg_container = NodePath("../BackgroundLayer/BackgroundContainer")
+metadata/_custom_type_script = "uid://caa0f7vr4lmwx"
+
+[node name="CanvasLayer2" type="CanvasLayer" parent="KonadoUI" unique_id=1650226115]
+
+[node name="DialogueInterface" type="Control" parent="KonadoUI/CanvasLayer2" unique_id=254950114]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="KonadoDialogueBox" parent="KonadoUI/DialogueInterface" unique_id=1215106161 instance=ExtResource("4_m70cm")]
+[node name="KonadoDialogueBox" parent="KonadoUI/CanvasLayer2/DialogueInterface" unique_id=1215106161 instance=ExtResource("4_m70cm")]
 layout_mode = 1
 
-[node name="ChoicesContainer" type="VBoxContainer" parent="KonadoUI/DialogueInterface" unique_id=256738057 node_paths=PackedStringArray("_choice_container")]
+[node name="ChoicesContainer" type="VBoxContainer" parent="KonadoUI/CanvasLayer2/DialogueInterface" unique_id=256738057 node_paths=PackedStringArray("_choice_container")]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 1
 anchors_preset = 8
@@ -115,8 +125,7 @@ alignment = 1
 script = ExtResource("5_k5ucr")
 _choice_container = NodePath(".")
 
-[node name="ColorRect" type="TextureRect" parent="KonadoUI" unique_id=408688081]
-layout_mode = 1
+[node name="ColorRect" type="TextureRect" parent="KonadoUI/CanvasLayer2" unique_id=408688081]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -125,7 +134,7 @@ offset_bottom = 40.0
 grow_horizontal = 0
 texture = SubResource("GradientTexture1D_yt2oi")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="KonadoUI/ColorRect" unique_id=1640410089]
+[node name="HBoxContainer" type="HBoxContainer" parent="KonadoUI/CanvasLayer2/ColorRect" unique_id=1640410089]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -135,52 +144,54 @@ grow_vertical = 2
 theme_override_constants/separation = 6
 alignment = 2
 
-[node name="QuickSave" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=1633435918]
+[node name="QuickSave" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=1633435918]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "快速保存"
 flat = true
 
-[node name="QuickLoad" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=1938869910]
+[node name="QuickLoad" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=1938869910]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "快速读取"
 flat = true
 
-[node name="Save" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=1837329553]
+[node name="Save" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=1837329553]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "存档"
 flat = true
 
-[node name="AutoPlay" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=2120412483]
+[node name="AutoPlay" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=2120412483]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 toggle_mode = true
 text = "自动播放"
 flat = true
 
-[node name="Achievement" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=972734007]
+[node name="Achievement" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=972734007]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "成就"
 flat = true
 
-[node name="Settings" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=160303829]
+[node name="Settings" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=160303829]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "设置"
 flat = true
 
-[node name="MainMenu" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=283867521]
+[node name="MainMenu" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=283867521]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "主菜单"
 flat = true
 
-[node name="SaveSystemUI" type="Control" parent="KonadoUI" unique_id=14919090 node_paths=PackedStringArray("root_container", "save_system")]
+[node name="CanvasLayer3" type="CanvasLayer" parent="KonadoUI" unique_id=557323700]
+
+[node name="SaveSystemUI" type="Control" parent="KonadoUI/CanvasLayer3" unique_id=14919090 node_paths=PackedStringArray("root_container", "save_system")]
 visible = false
-layout_mode = 1
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -188,9 +199,9 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("6_5t7mf")
 root_container = NodePath("MarginContainer/ScrollContainer/VBoxContainer")
-save_system = NodePath("../../KND_SaveSystem")
+save_system = NodePath("../../../KND_SaveSystem")
 
-[node name="ColorRect" type="ColorRect" parent="KonadoUI/SaveSystemUI" unique_id=1882659114]
+[node name="ColorRect" type="ColorRect" parent="KonadoUI/CanvasLayer3/SaveSystemUI" unique_id=1882659114]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -199,7 +210,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.7372549)
 
-[node name="MarginContainer" type="MarginContainer" parent="KonadoUI/SaveSystemUI" unique_id=543874251]
+[node name="MarginContainer" type="MarginContainer" parent="KonadoUI/CanvasLayer3/SaveSystemUI" unique_id=543874251]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -210,16 +221,16 @@ theme_override_constants/margin_left = 400
 theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 400
 
-[node name="ScrollContainer" type="ScrollContainer" parent="KonadoUI/SaveSystemUI/MarginContainer" unique_id=687413831]
+[node name="ScrollContainer" type="ScrollContainer" parent="KonadoUI/CanvasLayer3/SaveSystemUI/MarginContainer" unique_id=687413831]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="KonadoUI/SaveSystemUI/MarginContainer/ScrollContainer" unique_id=637492312]
+[node name="VBoxContainer" type="VBoxContainer" parent="KonadoUI/CanvasLayer3/SaveSystemUI/MarginContainer/ScrollContainer" unique_id=637492312]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 20
 
-[node name="Button" type="Button" parent="KonadoUI/SaveSystemUI" unique_id=1190349289]
+[node name="Button" type="Button" parent="KonadoUI/CanvasLayer3/SaveSystemUI" unique_id=1190349289]
 layout_mode = 0
 offset_right = 24.0
 offset_bottom = 10.0
@@ -291,9 +302,9 @@ metadata/_custom_type_script = "uid://dusoj8pkl7ecg"
 script = ExtResource("2_m70cm")
 metadata/_custom_type_script = "uid://b3xcpatqnlrg"
 
-[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/QuickSave" to="." method="_on_quick_save_pressed"]
-[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/QuickLoad" to="." method="_on_quick_load_pressed"]
-[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Save" to="KonadoUI/SaveSystemUI" method="open_save_ui"]
-[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Achievement" to="." method="_on_achievement_pressed"]
-[connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/MainMenu" to="." method="_on_main_menu_pressed"]
-[connection signal="pressed" from="KonadoUI/SaveSystemUI/Button" to="KonadoUI/SaveSystemUI" method="close_save_ui"]
+[connection signal="pressed" from="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/QuickSave" to="." method="_on_quick_save_pressed"]
+[connection signal="pressed" from="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/QuickLoad" to="." method="_on_quick_load_pressed"]
+[connection signal="pressed" from="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/Save" to="KonadoUI/CanvasLayer3/SaveSystemUI" method="open_save_ui"]
+[connection signal="pressed" from="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/Achievement" to="." method="_on_achievement_pressed"]
+[connection signal="pressed" from="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/MainMenu" to="." method="_on_main_menu_pressed"]
+[connection signal="pressed" from="KonadoUI/CanvasLayer3/SaveSystemUI/Button" to="KonadoUI/CanvasLayer3/SaveSystemUI" method="close_save_ui"]

@@ -1,6 +1,5 @@
 background 00 blinds
 
-
 if %love == 0:
     "Kona" "看来你是新手呢"
 else:
@@ -10,21 +9,21 @@ endif
 # 逻辑判断 %是获取变量
 # 此处变量在KonadoDialogueManager的Global Variable处设置。
 if %love <= 0:
-    "Kona" "要开始吗？"
+    "Kona" "要开始基础教学吗？"
 else:
     "Kona" "要再看一遍吗？"
 endif
 
 
-choice "开始" -> start_choice
-
-choice "不看了" -> exit_choice
+choice "开始基础教学" -> start_choice
 
 choice "我要看看变量系统" -> goto_ks3
 
 choice "我要看看选项分支系统" -> goto_ks4
 
 choice "我要看看Konado内置效果" -> goto_effects
+
+choice "不看了" -> exit_choice
 
 branch start_choice
     background 01 fade

@@ -1,0 +1,60 @@
+@tool
+extends Node
+class_name KonadoCameraManager
+
+## Konado相机管理器
+
+var tween: Tween
+@export var current: Camera2D
+
+@export var bg_container: Node
+
+@export var cameras: Array[KonadoCamera2D] = []
+
+func _ready() -> void:
+	current.position = get_window().size / 2
+
+## 递归获取指定节点下所有 KonadoCamera2D 节点列表
+func get_all_konado_cameras() -> void:
+	cameras = []
+	_traverse(bg_container, cameras)
+
+## 递归遍历辅助函数
+func _traverse(node: Node, out_list: Array[KonadoCamera2D]) -> void:
+	for child in node.get_children():
+		if child is KonadoCamera2D:
+			out_list.append(child)
+		_traverse(child, out_list)
+		
+func move_cam(cam_name: String, time: float, callback: Callable = Callable()) -> void:
+	for cam in cameras:
+		if cam.camera_setup == cam_name:
+			camera_trans(cam, time, callback)
+			
+func camera_trans(next_cam: Camera2D, ft: float = 2.0, callback: Callable = Callable()) -> void:
+	if tween:
+		tween.kill()
+	tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(current, "position", next_cam.position, ft)
+	tween.tween_property(current, "zoom", next_cam.zoom, ft)
+	tween.set_parallel(false)
+	tween.tween_callback(callback)
+	
+	
+func reset_cam(use_tween: bool, ft: float = 2.0, callback: Callable = Callable()) -> void:
+	var pos: Vector2 = (get_window().size / 2)
+	if use_tween:
+		if tween:
+			tween.kill()
+		tween = create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(current, "position", pos, ft)
+		tween.tween_property(current, "zoom", Vector2(1.0, 1.0), ft)
+		tween.set_parallel(false)
+		tween.tween_callback(callback)
+	else:
+		current.position = pos
+		current.zoom = Vector2(1.0, 1.0)
+		if callback.is_valid():
+			callback.call()
