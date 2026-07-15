@@ -15,7 +15,7 @@ enum Type {
 	PLAY_SOUND_EFFECT,
 	SHOW_CHOICE,
 	IFELSE_BRANCH,
-	BRANCH,          # Deprecated - 保留枚举值兼容性
+	BRANCH,
 	JUMP,
 	JUMP_BRANCH,
 	SIGNAL,
@@ -24,7 +24,9 @@ enum Type {
 	ACHIEVEMENT_FLAG,
 	SET_VARIABLE,
 	THE_END,
-	ACTOR_MOTION
+	ACTOR_MOTION,
+	MOVE_CAM,
+	RESET_CAM
 }
 
 @export var dialog_type: Type:
@@ -113,6 +115,10 @@ enum Type {
 ## 是否为持久变量（%前缀=true，$前缀=false）
 @export var is_persistent: bool = true
 
+## 目标镜头
+@export var target_cam: String = ""
+@export var cam_tween_time: float = 0.0
+@export var cam_tween_type: String = ""
 
 func add_choice(text: String, target_id: String) -> void:
 	var c := KND_DialogueChoice.new()

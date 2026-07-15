@@ -151,7 +151,7 @@ func enter_actor(play_anim: bool = true) -> void:
 		return
 	
 	if motion_layer and motion_layer.animation_player:
-		var anim_name := _get_enter_animation_name()
+		var anim_name: StringName = _get_enter_animation_name()
 		if motion_layer.animation_player.has_animation(anim_name):
 			_is_visible = false
 			_set_visibility(false)

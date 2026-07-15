@@ -80,6 +80,8 @@ func _validate_node(node: KS_AST.ASTNode, context: String) -> void:
 		pass
 	elif node is KS_AST.AudioNode:
 		pass
+	elif node is KS_AST.CameraNode:
+		pass
 	elif node is KS_AST.VariableNode:
 		pass
 	elif node is KS_AST.JumpNode:
