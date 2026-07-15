@@ -31,6 +31,7 @@ enum Type {
 	KW_SIGNAL,
 	KW_ACHIEVEMENT,
 	KW_END,
+	KW_CAM,
 
 	# 子关键字
 	KW_SHOW,
@@ -45,6 +46,7 @@ enum Type {
 	KW_INCREMENT,
 	KW_SET_FLAG,
 	KW_SCALE,
+	KW_RESET,
 
 	# 运算符
 	OP_ARROW,          ## ->
@@ -85,6 +87,7 @@ const KEYWORDS: Dictionary = {
 	"signal": Type.KW_SIGNAL,
 	"achievement": Type.KW_ACHIEVEMENT,
 	"end": Type.KW_END,
+	"cam": Type.KW_CAM,
 	"show": Type.KW_SHOW,
 	"exit": Type.KW_EXIT,
 	"change": Type.KW_CHANGE,
@@ -97,6 +100,7 @@ const KEYWORDS: Dictionary = {
 	"increment": Type.KW_INCREMENT,
 	"set_flag": Type.KW_SET_FLAG,
 	"scale": Type.KW_SCALE,
+	"reset": Type.KW_RESET,
 }
 
 var type: Type
