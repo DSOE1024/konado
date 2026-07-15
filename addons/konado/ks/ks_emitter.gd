@@ -91,6 +91,8 @@ func _emit_node(node: KS_AST.ASTNode) -> KND_Dialogue:
 		return _emit_actor(node)
 	if node is KS_AST.AudioNode:
 		return _emit_audio(node)
+	if node is KS_AST.CameraNode:
+		return _emit_camera(node)
 	if node is KS_AST.ChoiceGroupNode:
 		return _emit_choice(node)
 	if node is KS_AST.IfElseNode:
@@ -185,6 +187,41 @@ func _emit_audio(node: KS_AST.AudioNode) -> KND_Dialogue:
 			d.soundeffect_name = node.resource_name
 	elif node.action == "stop":
 		d.dialog_type = KND_Dialogue.Type.STOP_BGM
+
+	return d
+
+
+func _emit_camera(node: KS_AST.CameraNode) -> KND_Dialogue:
+	var d := KND_Dialogue.new()
+	d.source_file_line = node.line
+
+	match node.action:
+		"move":
+			d.dialog_type = KND_Dialogue.Type.MOVE_CAM
+			d.target_cam = node.target_cam
+
+			if node.tween_type.is_empty():
+				d.cam_tween_type = ""
+				d.cam_tween_time = 0.0
+			elif node.tween_type == "none":
+				d.cam_tween_type = "none"
+				d.cam_tween_time = 0.0
+			else:
+				d.cam_tween_type = node.tween_type
+				d.cam_tween_time = node.tween_time if node.tween_time > 0 else 1.0
+
+		"reset":
+			d.dialog_type = KND_Dialogue.Type.RESET_CAM
+
+			if node.tween_type.is_empty():
+				d.cam_tween_type = ""
+				d.cam_tween_time = 0.0
+			elif node.tween_type == "none":
+				d.cam_tween_type = "none"
+				d.cam_tween_time = 0.0
+			else:
+				d.cam_tween_type = node.tween_type
+				d.cam_tween_time = node.tween_time if node.tween_time > 0 else 1.0
 
 	return d
 

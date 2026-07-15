@@ -65,7 +65,7 @@ script = ExtResource("2_6xj1n")
 layout_mode = 2
 color = Color(0, 0, 0, 1)
 
-[node name="BackgroundContainer" type="Control" parent="KonadoUI/ActingInterface/BackgroundLayer"]
+[node name="BackgroundContainer" type="Control" parent="KonadoUI/ActingInterface/BackgroundLayer" unique_id=1619759193]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -73,23 +73,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BackgroundTransitionLayer" type="Control" parent="KonadoUI/ActingInterface"]
+[node name="BackgroundTransitionLayer" type="Control" parent="KonadoUI/ActingInterface" unique_id=1527722470]
+visible = false
 layout_mode = 2
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("2_transition")
 
 [node name="CharaControl" type="Control" parent="KonadoUI/ActingInterface" unique_id=245679010]
 layout_mode = 2
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="EffectLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1654107269]
 layout_mode = 2
@@ -145,13 +136,13 @@ grow_vertical = 2
 theme_override_constants/separation = 6
 alignment = 2
 
-[node name="QuickSave" type="Button" parent="KonadoUI/ColorRect/HBoxContainer"]
+[node name="QuickSave" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=2124887118]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "快速保存"
 flat = true
 
-[node name="QuickLoad" type="Button" parent="KonadoUI/ColorRect/HBoxContainer"]
+[node name="QuickLoad" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=742196619]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "快速读取"
