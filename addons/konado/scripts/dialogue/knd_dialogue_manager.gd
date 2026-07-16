@@ -147,6 +147,9 @@ var achievement_mgr: Node = null
 ## 设置桥接器
 @export var _settings_bridge: KND_SettingsBridge
 
+## 运行时国际化服务
+var _i18n_service: Node
+
 @export_category("Camera")
 ## 相机管理器
 @export var _konado_cam_manager: KonadoCameraManager
@@ -168,6 +171,13 @@ func _on_setting_changed(category: String, key: String, value: Variant) -> void:
 			pass
 
 func _ready() -> void:
+	_i18n_service = get_tree().root.get_node_or_null("KND_I18n")
+	if _i18n_service != null:
+		_i18n_service.call("register_dialogue_manager", self)
+		var localized_start := _load_localized_shot(start_dialogue_shot)
+		if localized_start != null:
+			start_dialogue_shot = localized_start
+
 	# 读取自动播放设置
 	if _settings_bridge:
 		var auto = _settings_bridge.get_auto_mode()
@@ -253,6 +263,11 @@ func _ready() -> void:
 				)
 	else:
 		print("请手动初始化对话")
+
+
+func _exit_tree() -> void:
+	if _i18n_service != null and is_instance_valid(_i18n_service):
+		_i18n_service.call("unregister_dialogue_manager", self)
 	
 	
 	
@@ -299,6 +314,9 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 ## 设置对话数据的方法
 func set_shot(new_shot: KND_Shot) -> void:
+	var localized_shot := _load_localized_shot(new_shot)
+	if localized_shot != null:
+		new_shot = localized_shot
 	cur_dialogue_shot = new_shot.duplicate()
 	_temp_variables.clear()
 	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
@@ -307,6 +325,58 @@ func set_shot(new_shot: KND_Shot) -> void:
 		cur_node_id = cur_dialogue_shot.dialogues[0].node_id
 	else:
 		cur_node_id = ""
+
+
+## 重新加载当前镜头的语言脚本，并尽量保持当前节点。
+func reload_localized_script(locale: String) -> bool:
+	var service := _get_i18n_service()
+	if service == null:
+		return false
+	var source_shot := cur_dialogue_shot if cur_dialogue_shot != null else start_dialogue_shot
+	if source_shot == null or source_shot.ks_path.is_empty() or source_shot.ks_path == "null":
+		return false
+
+	var localized_shot: KND_Shot = service.call(
+		"load_localized_script", source_shot.ks_path, locale
+	) as KND_Shot
+	if localized_shot == null:
+		return false
+
+	var previous_shot := cur_dialogue_shot
+	var previous_node_id := cur_node_id
+	var restore_node_id: String = service.call(
+		"choose_restore_node_id", previous_shot, localized_shot, previous_node_id
+	)
+	start_dialogue_shot = localized_shot
+	cur_dialogue_shot = localized_shot.duplicate()
+	cur_node_id = restore_node_id
+	justenter = true
+	_refresh_current_localized_dialogue()
+	return true
+
+
+func _get_i18n_service() -> Node:
+	if _i18n_service == null and is_inside_tree():
+		_i18n_service = get_tree().root.get_node_or_null("KND_I18n")
+	return _i18n_service
+
+
+func _load_localized_shot(shot: KND_Shot) -> KND_Shot:
+	var service := _get_i18n_service()
+	if service == null or shot == null or shot.ks_path.is_empty() or shot.ks_path == "null":
+		return shot
+	return service.call("load_localized_script", shot.ks_path) as KND_Shot
+
+
+func _refresh_current_localized_dialogue() -> void:
+	var dialogue := _current_dialogue()
+	if dialogue == null:
+		return
+	cur_dialogue_type = dialogue.dialog_type
+	if dialogue.dialog_type != KND_Dialogue.Type.ORDINARY_DIALOG or _konado_dialogue_box == null:
+		return
+	_konado_dialogue_box.character_name = dialogue.character_id
+	_konado_dialogue_box.dialogue_text = _interpolate_variables(dialogue.dialog_content)
 	
 ## 设置角色表的方法
 func set_chara_list(chara_list: KND_CharacterList) -> void:
@@ -746,9 +816,9 @@ func _goto_next_node() -> void:
 func start_autoplay(value: bool):
 	autoplay = value
 	if value:
-		_autoPlayButton.set_text("停止播放")
+		_autoPlayButton.set_text(tr("停止播放"))
 	else:
-		_autoPlayButton.set_text("自动播放")
+		_autoPlayButton.set_text(tr("自动播放"))
 	await get_tree().process_frame
 	if autoplay or dialogueState != DialogState.OFF:
 		_process_next()
@@ -1085,7 +1155,7 @@ func _on_quick_load_pressed() -> void:
 func _show_load_confirm_dialog() -> void:
 	var dialog = ConfirmationDialog.new()
 	dialog.title = ""
-	dialog.dialog_text = "读取会失去未保存的进度。\n\n你确定要这么做吗？"
+	dialog.dialog_text = tr("读取会失去未保存的进度。\n\n你确定要这么做吗？")
 	dialog.confirmed.connect(_on_load_confirmed.bind(dialog))
 	dialog.canceled.connect(func(): dialog.queue_free())
 	add_child(dialog)
@@ -1104,7 +1174,7 @@ func _on_load_confirmed(dialog: ConfirmationDialog) -> void:
 ## 显示轻量提示信息
 func _show_toast(message: String, duration: float = 2.0) -> void:
 	var toast = Label.new()
-	toast.text = message
+	toast.text = tr(message)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.add_theme_font_size_override("font_size", 28)
 	
