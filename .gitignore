@@ -1,5 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
+sample/demo/demo_01.*.ks.import
+tests/i18n/fixtures/*.ks.import
 /android/
 /exports/
 bin/

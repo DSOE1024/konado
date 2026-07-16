@@ -16,12 +16,12 @@ static func create_control(cat_id: String, item: KND_SettingItem, callback: Call
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var lbl := Label.new()
-	lbl.text = item.label
+	lbl.text = TranslationServer.translate(item.label)
 	lbl.custom_minimum_size.x = 160
 	# tooltip
 	if item.tooltip != "":
 		lbl.set_mouse_filter(Control.MOUSE_FILTER_STOP)
-		lbl.tooltip_text = item.tooltip
+		lbl.tooltip_text = TranslationServer.translate(item.tooltip)
 	row.add_child(lbl)
 
 	match item.type:
@@ -83,17 +83,32 @@ static func _add_toggle(row: HBoxContainer, cat_id: String, item: KND_SettingIte
 static func _add_option(row: HBoxContainer, cat_id: String, item: KND_SettingItem, cb: Callable) -> void:
 	var opt := OptionButton.new()
 	var cur_val: String = str(_current(cat_id, item))
-	var selected_idx := 0
+	var selected_idx := -1
 	for i in item.options.size():
-		opt.add_item(item.options[i])
+		opt.add_item(_localized_option_name(item.options[i]))
+		opt.set_item_metadata(i, item.options[i])
 		if item.options[i] == cur_val:
 			selected_idx = i
+	if selected_idx < 0:
+		opt.add_item(cur_val)
+		selected_idx = opt.item_count - 1
+		opt.set_item_metadata(selected_idx, cur_val)
 	opt.selected = selected_idx
 	opt.custom_minimum_size.x = 140
 	opt.item_selected.connect(func(idx: int) -> void:
-		cb.call(cat_id, item.key, item.options[idx])
+		cb.call(cat_id, item.key, str(opt.get_item_metadata(idx)))
 	)
 	row.add_child(opt)
+
+static func _localized_option_name(value: String) -> String:
+	var message_key: String = {
+		"zh_Hans": "简体中文",
+		"zh_Hant": "繁體中文",
+		"en": "英语",
+		"ja": "日语",
+		"ko": "韩语",
+	}.get(value, value)
+	return TranslationServer.translate(message_key)
 
 ## 获取设置项的当前值
 ## @param cat_id: 分类ID

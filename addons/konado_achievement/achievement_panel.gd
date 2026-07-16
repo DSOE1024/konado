@@ -8,6 +8,7 @@ var _title_label: Label
 var _progress_label: Label
 var _scroll: ScrollContainer
 var _item_container: VBoxContainer
+var _reset_btn: Button
 
 func _ready() -> void:
 	anchors_preset = Control.PRESET_FULL_RECT
@@ -31,7 +32,7 @@ func _ready() -> void:
 	root_vbox.add_child(header)
 
 	_title_label = Label.new()
-	_title_label.text = "成就"
+	_title_label.text = tr("成就")
 	_title_label.add_theme_font_size_override("font_size", 24)
 	_title_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.2))
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -51,11 +52,11 @@ func _ready() -> void:
 	_close_btn.pressed.connect(_on_close)
 	header.add_child(_close_btn)
 	
-	var reset_btn: Button = Button.new()
-	reset_btn.text = "重置所有成就"
-	reset_btn.pressed.connect(func():
+	_reset_btn = Button.new()
+	_reset_btn.text = tr("重置所有成就")
+	_reset_btn.pressed.connect(func():
 		KND_AchievementManager.reset_all())
-	header.add_child(reset_btn)
+	header.add_child(_reset_btn)
 
 	# 分隔符
 	var sep := HSeparator.new()
@@ -146,7 +147,7 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 	if is_hidden and not is_unlocked:
 		name_label.text = "???"
 	else:
-		name_label.text = ach.get("name", "未知")
+		name_label.text = tr(str(ach.get("name", "未知")))
 	name_label.add_theme_font_size_override("font_size", 15)
 	if is_unlocked:
 		name_label.add_theme_color_override("font_color", Color.WHITE)
@@ -156,9 +157,9 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 
 	var desc_label := Label.new()
 	if is_hidden and not is_unlocked:
-		desc_label.text = "此成就是隐藏的。"
+		desc_label.text = tr("此成就是隐藏的。")
 	else:
-		desc_label.text = ach.get("description", "")
+		desc_label.text = tr(str(ach.get("description", "")))
 	desc_label.add_theme_font_size_override("font_size", 12)
 	desc_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55) if not is_unlocked else Color(0.75, 0.75, 0.75))
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -168,14 +169,14 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 	var pts := ach.get("points", 0)
 	if pts > 0:
 		var pts_label := Label.new()
-		pts_label.text = "%d 点" % pts
+		pts_label.text = tr("%d 点") % pts
 		pts_label.add_theme_font_size_override("font_size", 13)
 		pts_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.2) if is_unlocked else Color(0.4, 0.4, 0.4))
 		hbox.add_child(pts_label)
 
 	# 状态指示器
 	var status := Label.new()
-	status.text = "已解锁" if is_unlocked else "未解锁"
+	status.text = tr("已解锁") if is_unlocked else tr("未解锁")
 	status.add_theme_font_size_override("font_size", 11)
 	status.add_theme_color_override("font_color", Color(0.4, 0.8, 0.2) if is_unlocked else Color(0.5, 0.5, 0.5))
 	hbox.add_child(status)
@@ -184,3 +185,11 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 
 func _on_close() -> void:
 	KND_AchievementManager.hide_panel()
+
+
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_TRANSLATION_CHANGED or not is_node_ready():
+		return
+	_title_label.text = tr("成就")
+	_reset_btn.text = tr("重置所有成就")
+	refresh()
