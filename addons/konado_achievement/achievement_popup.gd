@@ -5,6 +5,7 @@ extends PanelContainer
 var _title_label: Label
 var _desc_label: Label
 var _icon_rect: TextureRect
+var _header_label: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -41,11 +42,11 @@ func _ready() -> void:
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(vbox)
 
-	var header := Label.new()
-	header.text = "成就解锁"
-	header.add_theme_font_size_override("font_size", 11)
-	header.add_theme_color_override("font_color", Color(0.85, 0.7, 0.2))
-	vbox.add_child(header)
+	_header_label = Label.new()
+	_header_label.text = tr("成就解锁")
+	_header_label.add_theme_font_size_override("font_size", 11)
+	_header_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.2))
+	vbox.add_child(_header_label)
 
 	_title_label = Label.new()
 	_title_label.add_theme_font_size_override("font_size", 16)
@@ -60,9 +61,9 @@ func _ready() -> void:
 
 func setup(title: String, description: String, icon_path: String, pos: String = "top_right") -> void:
 	if _title_label:
-		_title_label.text = title
+		_title_label.text = tr(title)
 	if _desc_label:
-		_desc_label.text = description
+		_desc_label.text = tr(description)
 	if _icon_rect and ResourceLoader.exists(icon_path):
 		_icon_rect.texture = load(icon_path)
 	if get_tree() == null:
@@ -75,6 +76,11 @@ func setup(title: String, description: String, icon_path: String, pos: String = 
 	modulate.a = 0.0
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 1.0, 0.3)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_header_label.text = tr("成就解锁")
 
 func _apply_position(pos: String) -> void:
 	var vp_size := get_viewport_rect().size

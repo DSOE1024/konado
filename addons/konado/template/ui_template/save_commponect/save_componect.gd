@@ -56,9 +56,9 @@ func _ready() -> void:
 
 func init_empty_save_slot() -> void:
 	if save_id == 0:
-		save_name = "快速保存"
+		save_name = tr("快速保存")
 	else:
-		save_name = "空存档"
+		save_name = tr("空存档")
 	save_time = "--/--/-- --:--" 
 	game_time = "0h 0min"
 
@@ -79,16 +79,16 @@ func update_save_info(info: Dictionary) -> void:
 			var minute = str("%02d" % save_time_dict.get("minute", 0))
 			save_time = "%s/%s/%s %s:%s" % [year, month, day, hour, minute]
 		else:
-			save_time = "未知时间"
+			save_time = tr("未知时间")
 		
 		# 设置游戏时长（暂时使用固定值，可根据实际情况修改）
 		game_time = "0h 0min"
 		
 		# 设置存档名称
 		if save_id == 0:
-			save_name = "快速保存"
+			save_name = tr("快速保存")
 		else:
-			save_name = "存档%02d" % (save_id + 1)
+			save_name = tr("存档%02d") % (save_id + 1)
 	else:
 		# 空存档
 		init_empty_save_slot()

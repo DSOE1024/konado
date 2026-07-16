@@ -28,6 +28,7 @@ boot_splash/minimum_display_time=500
 
 [autoload]
 
+KND_I18n="*res://addons/konado/i18n/knd_i18n.gd"
 KND_AchievementManager="*uid://dlhxd0ixnuo6i"
 KND_WebTool="*uid://b4rup11rlc0uk"
 KND_Settings="*uid://crc32ueqs8u1w"

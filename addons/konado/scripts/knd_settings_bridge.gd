@@ -104,7 +104,7 @@ func get_fullscreen() -> bool:
 	return get_setting(CATEGORY_DISPLAY, KEY_FULLSCREEN, false)
 
 func get_language() -> String:
-	return get_setting(CATEGORY_DISPLAY, KEY_LANGUAGE, "zh")
+	return get_setting(CATEGORY_DISPLAY, KEY_LANGUAGE, "zh_Hans")
 
 ## 订阅设置变更
 ## @param category: 设置分类（可选，为 null 时监听所有分类）

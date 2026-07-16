@@ -19,17 +19,20 @@ var _current_tab_cat_id: String = ""
 ## 节点就绪时调用
 func _ready() -> void:
 	# 设置按钮文本和信号连接
-	btn_reset.text = "恢复默认"
+	btn_reset.text = tr("恢复默认")
 	btn_reset.pressed.connect(_on_reset_pressed)
 
-	btn_close.text = "关闭"
+	btn_close.text = tr("关闭")
 	btn_close.pressed.connect(_on_close_pressed)
 
 	# 创建确认对话框
 	_confirm_dialog = ConfirmationDialog.new()
-	_confirm_dialog.dialog_text = "确定要将当前类别恢复为默认设置吗？"
+	_confirm_dialog.dialog_text = tr("确定要将当前类别恢复为默认设置吗？")
 	_confirm_dialog.confirmed.connect(_on_reset_confirmed)
 	add_child(_confirm_dialog)
+	var i18n := get_tree().root.get_node_or_null("KND_I18n")
+	if i18n != null:
+		i18n.locale_changed.connect(_on_locale_changed)
 
 	# 从注册的分类构建标签页
 	_build_tabs()
@@ -43,7 +46,7 @@ func _build_tabs() -> void:
 		var margc: MarginContainer = MarginContainer.new()
 		margc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		margc.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		margc.name = cat.display_name
+		margc.name = tr(cat.display_name)
 		var margin_value = 20
 		margc.add_theme_constant_override("margin_top", margin_value)
 		margc.add_theme_constant_override("margin_left", margin_value)
@@ -52,7 +55,7 @@ func _build_tabs() -> void:
 
 		
 		var scroll := ScrollContainer.new()
-		scroll.name = cat.display_name
+		scroll.name = tr(cat.display_name)
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		
 		margc.add_child(scroll)
@@ -74,6 +77,13 @@ func rebuild() -> void:
 	# 等待一帧让节点被移除
 	await get_tree().create_timer(0.1).timeout
 	_build_tabs()
+
+
+func _on_locale_changed(_locale: String) -> void:
+	btn_reset.text = tr("恢复默认")
+	btn_close.text = tr("关闭")
+	_confirm_dialog.dialog_text = tr("确定要将当前类别恢复为默认设置吗？")
+	rebuild()
 
 
 ## 当设置值改变时调用

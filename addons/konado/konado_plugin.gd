@@ -5,6 +5,8 @@ class_name KonadoEditorPlugin
 
 const VERSION: String = "2.6.0"
 const CODENAME: String = "Ketchup"
+const I18N_AUTOLOAD_NAME := "KND_I18n"
+const I18N_AUTOLOAD_PATH := "res://addons/konado/i18n/knd_i18n.gd"
 
 ## 自定义EditorImportPlugin脚本
 const KS_IMPORTER_SCRIPT := preload("uid://rp35gse7j4sv")
@@ -40,6 +42,8 @@ func _has_main_screen() -> bool:
 	return false
 
 func _enter_tree() -> void:
+	if not ProjectSettings.has_setting("autoload/" + I18N_AUTOLOAD_NAME):
+		add_autoload_singleton(I18N_AUTOLOAD_NAME, I18N_AUTOLOAD_PATH)
 	_setup_import_plugins()
 	_print_loading_message()
 	
@@ -82,6 +86,11 @@ func _exit_tree() -> void:
 		remove_inspector_plugin(inspector_plugin)
 		inspector_plugin = null
 	print("Konado unloaded")
+
+
+func _disable_plugin() -> void:
+	if ProjectSettings.has_setting("autoload/" + I18N_AUTOLOAD_NAME):
+		remove_autoload_singleton(I18N_AUTOLOAD_NAME)
 
 ## 用于处理ks文件和KND_Shot资源
 func _handles(object: Object) -> bool:
