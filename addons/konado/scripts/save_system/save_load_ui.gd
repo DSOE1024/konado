@@ -18,6 +18,9 @@ var save_components: Array[SaveComponent] = []
 func _ready() -> void:
 	_create_save_slot()
 	update_all_save_info()
+	var i18n := get_tree().root.get_node_or_null("KND_I18n")
+	if i18n != null:
+		i18n.locale_changed.connect(_on_locale_changed)
 
 
 
@@ -30,15 +33,13 @@ func _create_save_slot() -> void:
 			root_container.add_child(save_slot)
 			save_slot.save_id = i
 			
-			var format_save_id: String = str("%02d" % (i + 1))
-			
 			# 设置存档名称
 			if i == 0:
-				save_slot.save_name = "快速保存"
+				save_slot.save_name = tr("快速保存")
 				save_slot.quicksave_sign.visible = true
 			else:
-				save_slot.save_name = "存档" + format_save_id
-			save_slot.save_time = "未知时间"
+				save_slot.save_name = tr("存档%02d") % (i + 1)
+			save_slot.save_time = tr("未知时间")
 			
 			save_slot.init_empty_save_slot()
 			
@@ -75,6 +76,14 @@ func open_save_ui() -> void:
 func close_save_ui() -> void:
 	# 隐藏界面
 	visible = false
+
+
+func _on_locale_changed(_locale: String) -> void:
+	if save_system:
+		update_all_save_info()
+	else:
+		for save_component: SaveComponent in save_components:
+			save_component.init_empty_save_slot()
 
 func _process(delta: float) -> void:
 	pass
