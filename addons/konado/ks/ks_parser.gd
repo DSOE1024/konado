@@ -371,8 +371,19 @@ func _parse_camera() -> KS_AST.CameraNode:
 						elif time_tok.type == KS_Token.Type.IDENTIFIER:
 							node.tween_time = float(str(_advance().value))
 
+		KS_Token.Type.KW_SHAKE:
+			node.action = "shake"
+			_advance()
+
+			if not _at_line_end():
+				var time_tok := _peek()
+				if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
+					node.shake_time = float(str(_advance().value))
+				elif time_tok.type == KS_Token.Type.IDENTIFIER:
+					node.shake_time = float(str(_advance().value))
+
 		_:
-			_error("未知的 cam 操作: %s（应为 move 或 reset）" % str(action_tok.value))
+			_error("未知的 cam 操作: %s（应为 move、reset 或 shake）" % str(action_tok.value))
 			return null
 
 	_skip_to_next_line()

@@ -172,7 +172,7 @@ func _on_setting_changed(category: String, key: String, value: Variant) -> void:
 
 func _ready() -> void:
 	_i18n_service = get_tree().root.get_node_or_null("KND_I18n")
-	if _i18n_service != null:
+	if _i18n_service != null and _i18n_service.has_method("is_enabled") and _i18n_service.call("is_enabled"):
 		_i18n_service.call("register_dialogue_manager", self)
 		var localized_start := _load_localized_shot(start_dialogue_shot)
 		if localized_start != null:
@@ -556,6 +556,13 @@ func _process(delta) -> void:
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 					_konado_cam_manager.reset_cam(true, dialog.cam_tween_time, callback)
+				# 镜头晃动
+				elif cur_dialogue_type == KND_Dialogue.Type.CAM_SHAKE:
+					var callback = func():
+						print("镜头晃动完毕")
+						_dialogue_goto_state(DialogState.PAUSED)
+						_process_next()
+					_konado_cam_manager.shake_cam(dialog.cam_shake_time, callback)
 				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
 					var dialog_choices = dialog.choices

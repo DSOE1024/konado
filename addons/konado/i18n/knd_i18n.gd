@@ -26,6 +26,7 @@ var _warned_fallbacks := {}
 var _dialogue_managers: Array[WeakRef] = []
 var _builtin_translations := {}
 var _translations_registered := false
+var _enabled := false
 
 
 func _ready() -> void:
@@ -33,10 +34,15 @@ func _ready() -> void:
 
 
 func initialize(settings_manager: Node = null, system_locale: String = "") -> void:
-	_register_builtin_translations()
 	_settings_manager = settings_manager
 	if _settings_manager == null:
 		_settings_manager = get_tree().root.get_node_or_null("KND_Settings")
+
+	_load_enabled_setting()
+
+	if _enabled:
+		_register_builtin_translations()
+
 	var saved_locale := ""
 	if _settings_manager != null:
 		if _settings_manager.has_method("get_setting"):
@@ -48,11 +54,12 @@ func initialize(settings_manager: Node = null, system_locale: String = "") -> vo
 			if not _settings_manager.is_connected("setting_changed", callback):
 				_settings_manager.connect("setting_changed", callback)
 
-	var detected_locale := system_locale if not system_locale.is_empty() else OS.get_locale()
-	var initial_locale := choose_initial_locale(saved_locale, detected_locale)
-	set_locale(initial_locale, false)
-	if not saved_locale.is_empty() and saved_locale != initial_locale:
-		_persist_locale(initial_locale)
+	if _enabled:
+		var detected_locale := system_locale if not system_locale.is_empty() else OS.get_locale()
+		var initial_locale := choose_initial_locale(saved_locale, detected_locale)
+		set_locale(initial_locale, false)
+		if not saved_locale.is_empty() and saved_locale != initial_locale:
+			_persist_locale(initial_locale)
 
 
 func choose_initial_locale(saved_locale: String, system_locale: String) -> String:
@@ -69,6 +76,8 @@ func choose_initial_locale(saved_locale: String, system_locale: String) -> Strin
 
 
 func set_locale(locale: String, persist: bool = true) -> void:
+	if not _enabled:
+		return
 	var normalized := normalize_locale(locale)
 	var changed := normalized != _locale
 	_locale = normalized
@@ -78,6 +87,18 @@ func set_locale(locale: String, persist: bool = true) -> void:
 	if changed:
 		locale_changed.emit(_locale)
 		_reload_dialogue_managers()
+
+
+func is_enabled() -> bool:
+	return _enabled
+
+
+func _load_enabled_setting() -> void:
+	if _settings_manager != null and _settings_manager.has_method("get_setting"):
+		var value: Variant = _settings_manager.call("get_setting", "display", "enable_i18n")
+		if value != null:
+			_enabled = bool(value)
+		print("KND_I18n: enabled = %s" % str(_enabled))
 
 
 func get_locale() -> String:
@@ -269,9 +290,27 @@ func _persist_locale(locale: String) -> void:
 
 
 func _on_setting_changed(category: String, key: String, value: Variant) -> void:
-	if _is_syncing_setting or category != "display" or key != "language":
+	if _is_syncing_setting or category != "display":
 		return
-	set_locale(str(value), false)
+	match key:
+		"language":
+			set_locale(str(value), false)
+		"enable_i18n":
+			var old_enabled := _enabled
+			_enabled = bool(value)
+			print("KND_I18n: enable_i18n changed to %s" % str(_enabled))
+			if _enabled and not old_enabled:
+				_register_builtin_translations()
+				var saved_locale := ""
+				if _settings_manager.has_method("get_setting"):
+					var saved_value: Variant = _settings_manager.call("get_setting", "display", "language")
+					if saved_value != null:
+						saved_locale = str(saved_value)
+				var initial_locale := choose_initial_locale(saved_locale, OS.get_locale())
+				set_locale(initial_locale, false)
+			elif not _enabled and old_enabled:
+				TranslationServer.set_locale("")
+				_reload_dialogue_managers()
 
 
 func _warn_fallback_once(script_path: String, requested_locale: String, resolved_path: String) -> void:

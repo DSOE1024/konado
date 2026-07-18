@@ -58,3 +58,31 @@ func reset_cam(use_tween: bool, ft: float = 2.0, callback: Callable = Callable()
 		current.zoom = Vector2(1.0, 1.0)
 		if callback.is_valid():
 			callback.call()
+
+func shake_cam(duration: float, callback: Callable = Callable()) -> void:
+	if duration <= 0:
+		if callback.is_valid():
+			callback.call()
+		return
+
+	if tween:
+		tween.kill()
+
+	var original_offset := current.offset
+
+	var shake_tween := create_tween()
+	shake_tween.tween_method(Callable(self, "_apply_shake"), 0.0, 1.0, duration)
+	shake_tween.tween_callback(func():
+		current.offset = original_offset
+		if callback.is_valid():
+			callback.call()
+	)
+
+func _apply_shake(progress: float) -> void:
+	var shake_intensity := (1.0 - progress) * 65.0
+	
+	var time := Time.get_ticks_msec() / 1000.0
+	var offset_x := (sin(time * 20.0) * 0.5 + sin(time * 37.0) * 0.3 + sin(time * 67.0) * 0.2) * shake_intensity
+	var offset_y := (cos(time * 17.0) * 0.5 + cos(time * 31.0) * 0.3 + cos(time * 59.0) * 0.2) * shake_intensity
+	
+	current.offset = Vector2(offset_x, offset_y)
