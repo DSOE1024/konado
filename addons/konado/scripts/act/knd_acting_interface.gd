@@ -35,7 +35,7 @@ enum BackgroundTransitionEffectsType {
 	}
 	
 ## 演员模板
-@onready var _konado_actor_template: PackedScene = preload("res://addons/konado/template/character/character_template.tscn")
+@onready var _konado_actor_template: PackedScene = preload("res://addons/konado/template/default/character/character_template.tscn")
 
 ## 演员字典
 var actor_dict = {}

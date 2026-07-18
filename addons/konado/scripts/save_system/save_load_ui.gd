@@ -3,7 +3,7 @@ class_name SaveLoadUI
 
 ## 存读档界面
 
-@export var save_componect: PackedScene = preload("res://addons/konado/template/ui_template/save_commponect/save_componect.tscn")
+@export var save_componect: PackedScene = preload("res://addons/konado/template/default/ui_template/save_commponect/save_componect.tscn")
 
 @export var root_container: BoxContainer
 
