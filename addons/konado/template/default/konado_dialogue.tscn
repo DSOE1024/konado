@@ -1,16 +1,16 @@
 [gd_scene format=3 uid="uid://buq324t8ugy0q"]
 
-[ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/template/theme/left_theme.tres" id="1_m70cm"]
-[ext_resource type="Script" uid="uid://b3xcpatqnlrg" path="res://addons/konado/scripts/knd_settings_bridge.gd" id="2_m70cm"]
-[ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd" id="2_tn0i2"]
-[ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/knd_acting_interface.gd" id="3_j3lp8"]
-[ext_resource type="PackedScene" uid="uid://b3wibk1ya0b6j" path="res://addons/konado/template/knd_dialogue_box_left.tscn" id="4_m70cm"]
-[ext_resource type="Script" uid="uid://cglr3pnhbntvk" path="res://addons/konado/scripts/background/knd_background_transition_layer.gd" id="4_transition"]
-[ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="5_k5ucr"]
-[ext_resource type="Script" uid="uid://gh6w15d30qe7" path="res://addons/konado/scripts/save_system/save_load_ui.gd" id="6_5t7mf"]
-[ext_resource type="Script" uid="uid://caa0f7vr4lmwx" path="res://addons/konado/cam/konado_camera_manager.gd" id="6_k5ucr"]
-[ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/knd_audio_interface.gd" id="7_c8nf7"]
-[ext_resource type="Script" uid="uid://dusoj8pkl7ecg" path="res://addons/konado/scripts/save_system/knd_save_system.gd" id="8_iq8kq"]
+[ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/template/default/theme/default_theme.tres" id="1_cpdxb"]
+[ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd" id="2_652dd"]
+[ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/knd_acting_interface.gd" id="3_sk6vk"]
+[ext_resource type="Script" uid="uid://cglr3pnhbntvk" path="res://addons/konado/scripts/background/knd_background_transition_layer.gd" id="4_cu3qr"]
+[ext_resource type="Script" uid="uid://caa0f7vr4lmwx" path="res://addons/konado/cam/konado_camera_manager.gd" id="5_8r1t4"]
+[ext_resource type="PackedScene" uid="uid://b3wibk1ya0b6j" path="res://addons/konado/template/default/knd_dialogue_box.tscn" id="6_jo47d"]
+[ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="7_mrif6"]
+[ext_resource type="Script" uid="uid://gh6w15d30qe7" path="res://addons/konado/scripts/save_system/save_load_ui.gd" id="8_6njhp"]
+[ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/knd_audio_interface.gd" id="9_oa1o7"]
+[ext_resource type="Script" uid="uid://dusoj8pkl7ecg" path="res://addons/konado/scripts/save_system/knd_save_system.gd" id="10_ra855"]
+[ext_resource type="Script" uid="uid://b3xcpatqnlrg" path="res://addons/konado/scripts/knd_settings_bridge.gd" id="11_cmq4a"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_b1osp"]
 
@@ -22,15 +22,15 @@ metadata/_snap_enabled = true
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
 gradient = SubResource("Gradient_6xj1n")
 
-[node name="KonadoDialogueLeft" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "_autoPlayButton", "_settingsButton", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system", "_settings_bridge", "_konado_cam_manager")]
+[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "_autoPlayButton", "_settingsButton", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system", "_settings_bridge", "_konado_cam_manager")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_m70cm")
-script = ExtResource("2_tn0i2")
+theme = ExtResource("1_cpdxb")
+script = ExtResource("2_652dd")
 _konado_choice_interface = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/ChoicesContainer")
 _konado_dialogue_box = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/KonadoDialogueBox")
 _acting_interface = NodePath("KonadoUI/CanvasLayer/ActingInterface")
@@ -56,7 +56,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_b1osp")
-script = ExtResource("3_j3lp8")
+script = ExtResource("3_sk6vk")
 
 [node name="BackgroundLayer" type="ColorRect" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=1466239429]
 layout_mode = 2
@@ -73,12 +73,13 @@ grow_vertical = 2
 [node name="Node" type="Node2D" parent="KonadoUI/CanvasLayer/ActingInterface/BackgroundLayer" unique_id=1002488365]
 
 [node name="Camera2D" type="Camera2D" parent="KonadoUI/CanvasLayer/ActingInterface/BackgroundLayer/Node" unique_id=1155153106]
+position = Vector2(1280, 675)
 
 [node name="BackgroundTransitionLayer" type="Control" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=1924358963]
 visible = false
 layout_mode = 2
 mouse_filter = 2
-script = ExtResource("4_transition")
+script = ExtResource("4_cu3qr")
 
 [node name="CharaControl" type="Control" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=245679010]
 layout_mode = 2
@@ -88,7 +89,7 @@ layout_mode = 2
 color = Color(0, 0, 0, 0)
 
 [node name="KonadoCameraManager" type="Node" parent="KonadoUI/CanvasLayer/ActingInterface" unique_id=1180046033 node_paths=PackedStringArray("current", "bg_container")]
-script = ExtResource("6_k5ucr")
+script = ExtResource("5_8r1t4")
 current = NodePath("../BackgroundLayer/Node/Camera2D")
 bg_container = NodePath("../BackgroundLayer/BackgroundContainer")
 metadata/_custom_type_script = "uid://caa0f7vr4lmwx"
@@ -103,7 +104,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="KonadoDialogueBox" parent="KonadoUI/CanvasLayer2/DialogueInterface" unique_id=1215106161 instance=ExtResource("4_m70cm")]
+[node name="KonadoDialogueBox" parent="KonadoUI/CanvasLayer2/DialogueInterface" unique_id=1215106161 instance=ExtResource("6_jo47d")]
 layout_mode = 1
 
 [node name="ChoicesContainer" type="VBoxContainer" parent="KonadoUI/CanvasLayer2/DialogueInterface" unique_id=256738057 node_paths=PackedStringArray("_choice_container")]
@@ -122,7 +123,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
 alignment = 1
-script = ExtResource("5_k5ucr")
+script = ExtResource("7_mrif6")
 _choice_container = NodePath(".")
 
 [node name="ColorRect" type="TextureRect" parent="KonadoUI/CanvasLayer2" unique_id=408688081]
@@ -154,7 +155,6 @@ flat = true
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "快速读取"
-flat = true
 
 [node name="Save" type="Button" parent="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer" unique_id=1837329553]
 layout_mode = 2
@@ -197,7 +197,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("6_5t7mf")
+script = ExtResource("8_6njhp")
 root_container = NodePath("MarginContainer/ScrollContainer/VBoxContainer")
 save_system = NodePath("../../../KND_SaveSystem")
 
@@ -239,7 +239,7 @@ text = "关闭界面"
 flat = true
 
 [node name="KonadoAudioInterface" type="Node2D" parent="." unique_id=1896821847 node_paths=PackedStringArray("bgm_player", "voice_player", "sound_effect_player", "_settings_bridge")]
-script = ExtResource("7_c8nf7")
+script = ExtResource("9_oa1o7")
 bgm_player = NodePath("BgmPlayer")
 voice_player = NodePath("VoicePlayer")
 sound_effect_player = NodePath("SoundEffectPlayer")
@@ -295,11 +295,11 @@ theme_override_font_sizes/font_size = 42
 text = "Skip this error..."
 
 [node name="KND_SaveSystem" type="Node" parent="." unique_id=8383492]
-script = ExtResource("8_iq8kq")
+script = ExtResource("10_ra855")
 metadata/_custom_type_script = "uid://dusoj8pkl7ecg"
 
 [node name="KND_SettingsBridge" type="Node" parent="." unique_id=601812021]
-script = ExtResource("2_m70cm")
+script = ExtResource("11_cmq4a")
 metadata/_custom_type_script = "uid://b3xcpatqnlrg"
 
 [connection signal="pressed" from="KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/QuickSave" to="." method="_on_quick_save_pressed"]

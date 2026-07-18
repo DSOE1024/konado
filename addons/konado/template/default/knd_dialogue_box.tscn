@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://b3wibk1ya0b6j"]
 
-[ext_resource type="Theme" uid="uid://cnfi2f032rdqf" path="res://addons/konado/template/theme/middle_theme.tres" id="1_7xou3"]
-[ext_resource type="Script" uid="uid://di4l2xhmfedcd" path="res://addons/konado/scripts/dialoguebox/knd_dialogue_box.gd" id="2_faqv6"]
-[ext_resource type="AudioStream" uid="uid://fdsf5bv3xln5" path="res://addons/konado/audioeffect/typewriter/typing_01.wav" id="3_vp527"]
-[ext_resource type="Texture2D" uid="uid://cikw85v0iyjij" path="res://addons/konado/template/progress/love_progress_under.svg" id="4_wp5yd"]
-[ext_resource type="Texture2D" uid="uid://m3yl5jmfhhep" path="res://addons/konado/template/progress/love_progress.svg" id="5_op0fy"]
-[ext_resource type="Shader" uid="uid://dvxdvdhi0klnr" path="res://addons/konado/typewriter/typewriter_fade.gdshader" id="6_c80q8"]
-[ext_resource type="Script" uid="uid://bpdmh056bgwg7" path="res://addons/konado/typewriter/typewriter_text.gd" id="7_q2m0a"]
-[ext_resource type="PackedScene" uid="uid://d3ukxg25lmwx8" path="res://addons/konado/template/voice_progress_display.tscn" id="8_o5ldw"]
+[ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/template/default/theme/default_theme.tres" id="1_aofbb"]
+[ext_resource type="Script" uid="uid://di4l2xhmfedcd" path="res://addons/konado/scripts/dialoguebox/knd_dialogue_box.gd" id="2_rxt6g"]
+[ext_resource type="AudioStream" uid="uid://fdsf5bv3xln5" path="res://addons/konado/audioeffect/typewriter/typing_01.wav" id="3_6mp2s"]
+[ext_resource type="Texture2D" uid="uid://cikw85v0iyjij" path="res://addons/konado/template/default/progress/love_progress_under.svg" id="4_hjjup"]
+[ext_resource type="Texture2D" uid="uid://m3yl5jmfhhep" path="res://addons/konado/template/default/progress/love_progress.svg" id="5_yhirf"]
+[ext_resource type="Shader" uid="uid://dvxdvdhi0klnr" path="res://addons/konado/typewriter/typewriter_fade.gdshader" id="6_tcpq4"]
+[ext_resource type="Script" uid="uid://bpdmh056bgwg7" path="res://addons/konado/typewriter/typewriter_text.gd" id="7_qoxgk"]
+[ext_resource type="PackedScene" uid="uid://d3ukxg25lmwx8" path="res://addons/konado/template/default/voice_progress_display.tscn" id="8_r0edl"]
 
 [sub_resource type="Gradient" id="Gradient_7xou3"]
 offsets = PackedFloat32Array(0.2, 1)
@@ -27,8 +27,8 @@ font_size = 42
 shadow_color = Color(0, 0, 0, 0.5647059)
 shadow_offset = Vector2(0, 2)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_7xou3"]
-shader = ExtResource("6_c80q8")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_aofbb"]
+shader = ExtResource("6_tcpq4")
 shader_parameter/progress = 0.0
 shader_parameter/softness = 3.0
 shader_parameter/angle_rad = 0.0
@@ -46,10 +46,10 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-theme = ExtResource("1_7xou3")
-script = ExtResource("2_faqv6")
+theme = ExtResource("1_aofbb")
+script = ExtResource("2_rxt6g")
 name_color = Color(0.9635479, 0.7666049, 0.40395322, 1)
-typing_effect_audio = ExtResource("3_vp527")
+typing_effect_audio = ExtResource("3_6mp2s")
 typewriter_text = NodePath("dialogue_container/VBoxContainer/KND_TypewriterText")
 
 [node name="dialogue_box_bg" type="Panel" parent="." unique_id=2120586323]
@@ -106,40 +106,38 @@ grow_horizontal = 0
 grow_vertical = 2
 max_value = 12.0
 value = 7.0
-texture_under = ExtResource("4_wp5yd")
-texture_over = ExtResource("4_wp5yd")
-texture_progress = ExtResource("5_op0fy")
+texture_under = ExtResource("4_hjjup")
+texture_over = ExtResource("4_hjjup")
+texture_progress = ExtResource("5_yhirf")
 tint_over = Color(0.92347443, 0.82186884, 0.48020518, 1)
 tint_progress = Color(0.68326306, 0.28966337, 0.5552192, 1)
 
-[node name="VoiceProgressDisplay" parent="." instance=ExtResource("8_o5ldw")]
+[node name="dialogue_label" type="RichTextLabel" parent="dialogue_container/VBoxContainer" unique_id=604101149]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+clip_contents = false
+layout_mode = 2
+theme_override_colors/default_color = Color(1, 1, 1, 1)
+
+[node name="KND_TypewriterText" type="Control" parent="dialogue_container/VBoxContainer" unique_id=1544237387]
+material = SubResource("ShaderMaterial_aofbb")
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+script = ExtResource("7_qoxgk")
+metadata/_custom_type_script = "uid://bpdmh056bgwg7"
+
+[node name="VoiceProgressDisplay" parent="." unique_id=487654055 instance=ExtResource("8_r0edl")]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
 offset_left = -420.0
 offset_top = -112.0
 offset_right = -100.0
 offset_bottom = -104.0
 grow_horizontal = 0
 grow_vertical = 0
-
-[node name="dialogue_label" type="RichTextLabel" parent="dialogue_container/VBoxContainer" unique_id=604101149]
-unique_name_in_owner = true
-clip_contents = false
-custom_minimum_size = Vector2(0, 120)
-layout_mode = 2
-theme_override_colors/default_color = Color(1, 1, 1, 1)
-
-[node name="KND_TypewriterText" type="Control" parent="dialogue_container/VBoxContainer" unique_id=1544237387]
-material = SubResource("ShaderMaterial_7xou3")
-custom_minimum_size = Vector2(0, 120)
-layout_mode = 2
-script = ExtResource("7_q2m0a")
-metadata/_custom_type_script = "uid://bpdmh056bgwg7"
 
 [connection signal="gui_input" from="dialogue_container/VBoxContainer/character_name_label" to="." method="_on_character_name_label_gui_input"]
 [connection signal="gui_input" from="dialogue_container/VBoxContainer/dialogue_label" to="." method="_gui_input"]
