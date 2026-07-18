@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://vn8ookpi8m80"]
 
-[ext_resource type="Script" uid="uid://b6h45twralmd1" path="res://addons/konado/template/character/actor_motion_layer.gd" id="1_x4bn7"]
+[ext_resource type="Script" uid="uid://b6h45twralmd1" path="res://addons/konado/template/default/character/actor_motion_layer.gd" id="1_x4bn7"]
 
 [sub_resource type="Animation" id="Animation_e3j0a"]
 length = 0.001
