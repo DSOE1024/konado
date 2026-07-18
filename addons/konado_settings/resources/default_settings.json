@@ -106,6 +106,14 @@
 					"platforms": ["all"]
 				},
 				{
+					"key": "enable_i18n",
+					"label": "启用多语言",
+					"type": 1,
+					"default_value": false,
+					"platforms": ["all"],
+					"tooltip": "启用后支持多语言切换和本地化脚本"
+				},
+				{
 					"key": "language",
 					"label": "语言",
 					"type": 2,
