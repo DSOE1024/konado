@@ -8,7 +8,7 @@ play bgm echo
 # background bg1 cyberglitch
 # 背景名称后面的代号为效果，效果有9种可以自己试试。
 background bg_para none
-
+cam shake 1.0
 # 演员显示语句：actor show <角色名称> <角色状态> at <x坐标>
 # 写mirror会使演员镜像显示（位置不变）
 actor show Kona 正常 at 3

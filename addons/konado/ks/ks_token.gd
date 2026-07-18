@@ -47,6 +47,7 @@ enum Type {
 	KW_SET_FLAG,
 	KW_SCALE,
 	KW_RESET,
+	KW_SHAKE,
 
 	# 运算符
 	OP_ARROW,          ## ->
@@ -101,6 +102,7 @@ const KEYWORDS: Dictionary = {
 	"set_flag": Type.KW_SET_FLAG,
 	"scale": Type.KW_SCALE,
 	"reset": Type.KW_RESET,
+	"shake": Type.KW_SHAKE,
 }
 
 var type: Type
