@@ -26,7 +26,8 @@ enum Type {
 	THE_END,
 	ACTOR_MOTION,
 	MOVE_CAM,
-	RESET_CAM
+	RESET_CAM,
+	CAM_SHAKE
 }
 
 @export var dialog_type: Type:
@@ -119,6 +120,7 @@ enum Type {
 @export var target_cam: String = ""
 @export var cam_tween_time: float = 0.0
 @export var cam_tween_type: String = ""
+@export var cam_shake_time: float = 0.0
 
 func add_choice(text: String, target_id: String) -> void:
 	var c := KND_DialogueChoice.new()

@@ -223,6 +223,10 @@ func _emit_camera(node: KS_AST.CameraNode) -> KND_Dialogue:
 				d.cam_tween_type = node.tween_type
 				d.cam_tween_time = node.tween_time if node.tween_time > 0 else 1.0
 
+		"shake":
+			d.dialog_type = KND_Dialogue.Type.CAM_SHAKE
+			d.cam_shake_time = node.shake_time if node.shake_time > 0 else 1.0
+
 	return d
 
 

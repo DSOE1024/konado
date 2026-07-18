@@ -65,6 +65,10 @@ func _build_tabs() -> void:
 		scroll.add_child(vbox)
 
 		for item: KND_SettingItem in cat.items:
+			if cat.id == "display" and item.key == "language":
+				var i18n := get_tree().root.get_node_or_null("KND_I18n")
+				if i18n != null and i18n.has_method("is_enabled") and not i18n.call("is_enabled"):
+					continue
 			var row: HBoxContainer = KND_SettingsUIFactory.create_control(cat.id, item, _on_value_changed)
 			vbox.add_child(row)
 
@@ -86,6 +90,10 @@ func _on_locale_changed(_locale: String) -> void:
 	rebuild()
 
 
+func _on_i18n_toggle_changed(_enabled: bool) -> void:
+	rebuild()
+
+
 ## 当设置值改变时调用
 ## @param cat_id: 分类ID
 ## @param key: 设置项的键
@@ -94,6 +102,9 @@ func _on_value_changed(cat_id: String, key: String, value: Variant) -> void:
 	var mgr := _get_mgr()
 	if mgr:
 		mgr.set_setting(cat_id, key, value)
+	if cat_id == "display" and key == "enable_i18n":
+		await get_tree().process_frame
+		rebuild()
 
 ## 当点击恢复默认按钮时调用
 func _on_reset_pressed() -> void:

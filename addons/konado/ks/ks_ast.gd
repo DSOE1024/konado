@@ -47,10 +47,11 @@ class AudioNode extends ASTNode:
 
 ## 镜头操作节点
 class CameraNode extends ASTNode:
-	var action: String = ""         ## "move" 或 "reset"
+	var action: String = ""         ## "move"、"reset" 或 "shake"
 	var target_cam: String = ""     ## move 操作的目标镜头名
 	var tween_type: String = ""     ## tween 动画类型，none 表示无动画
 	var tween_time: float = 0.0     ## tween 动画时间
+	var shake_time: float = 0.0     ## shake 晃动持续时间
 
 
 ## 选项条目
