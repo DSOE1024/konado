@@ -1,6 +1,6 @@
-[gd_resource type="Theme" format=3 uid="uid://6o5ku57ox1bu"]
+[gd_resource type="Theme" format=3 uid="uid://cnfi2f032rdqf"]
 
-[ext_resource type="FontFile" uid="uid://dihv3p6n7pp2e" path="res://addons/konado/fonts/ResourceHanRoundedCN-Medium.ttf" id="1_ghhdk"]
+[ext_resource type="FontFile" uid="uid://dihv3p6n7pp2e" path="res://addons/konado/fonts/ResourceHanRoundedCN-Medium.ttf" id="1_ui1a4"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8p1pv"]
 content_margin_left = 10.0
@@ -167,7 +167,7 @@ border_width_bottom = 1
 border_color = Color(0.68006146, 0.50127906, 0.16676095, 1)
 
 [resource]
-default_font = ExtResource("1_ghhdk")
+default_font = ExtResource("1_ui1a4")
 Button/colors/font_color = Color(0, 0, 0, 1)
 Button/colors/font_disabled_color = Color(0.22745098, 0.30980393, 0.16862746, 1)
 Button/colors/font_focus_color = Color(0.68006146, 0.50127906, 0.16676095, 1)
@@ -219,14 +219,16 @@ FlatButton/colors/font_color = Color(1, 1, 1, 1)
 FlatButton/colors/font_disabled_color = Color(0.21568628, 0.25490198, 0.4, 1)
 FlatButton/colors/font_focus_color = Color(0.9635479, 0.7666049, 0.40395322, 1)
 FlatButton/colors/font_hover_color = Color(0.9635479, 0.7666049, 0.40395322, 1)
-FlatButton/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
-FlatButton/colors/font_pressed_color = Color(1, 1, 1, 1)
+FlatButton/colors/font_hover_pressed_color = Color(0.9647059, 0.7647059, 0.40392157, 1)
+FlatButton/colors/font_pressed_color = Color(0.9647059, 0.7647059, 0.40392157, 1)
 HSeparator/styles/separator = SubResource("StyleBoxTexture_n6une")
 OptionButton/icons/arrow = SubResource("DPITexture_cihup")
 Panel/styles/panel = SubResource("StyleBoxFlat_qnxfg")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_qnxfg")
 RichTextLabel/colors/font_shadow_color = Color(0, 0, 0, 0.5647059)
 RichTextLabel/constants/shadow_offset_y = 2
+StartButton/base_type = &"Button"
+StartButton/font_sizes/font_size = 40
 TabContainer/constants/tab_separation = 20
 TabContainer/styles/tab_disabled = SubResource("StyleBoxFlat_ygsqi")
 TabContainer/styles/tab_focus = SubResource("StyleBoxFlat_5h805")

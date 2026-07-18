@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ddoc6v1ti3xay"]
 
 [ext_resource type="Script" uid="uid://cibtpynhgq1kj" path="res://addons/konado_settings/scripts/settings_panel.gd" id="1"]
-[ext_resource type="Theme" uid="uid://cnfi2f032rdqf" path="res://addons/konado/template/theme/middle_theme.tres" id="2_7p3bq"]
+[ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/template/default/theme/default_theme.tres" id="2_7p3bq"]
 
 [node name="SettingsPanel" type="CanvasLayer" unique_id=1104298021 node_paths=PackedStringArray("_tab_container", "btn_reset", "btn_close")]
 script = ExtResource("1")

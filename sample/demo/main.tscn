@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://mainmenu01"]
 
 [ext_resource type="Script" uid="uid://n6hqxnpgkvf7" path="res://sample/demo/main.gd" id="1"]
-[ext_resource type="Theme" uid="uid://cnfi2f032rdqf" path="res://addons/konado/template/theme/middle_theme.tres" id="1_2exyp"]
+[ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/template/default/theme/default_theme.tres" id="1_x17dk"]
 [ext_resource type="Texture2D" uid="uid://obinhywgvblv" path="res://sample/demo/sample_arts/春季.jpg" id="3_2exyp"]
 [ext_resource type="FontFile" uid="uid://dihv3p6n7pp2e" path="res://addons/konado/fonts/ResourceHanRoundedCN-Medium.ttf" id="4_x17dk"]
 
@@ -12,7 +12,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_2exyp")
+theme = ExtResource("1_x17dk")
 script = ExtResource("1")
 quit_button = NodePath("VBoxContainer/QuitButton")
 
@@ -70,28 +70,28 @@ theme_override_constants/separation = 32
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 size_flags_vertical = 0
-theme_type_variation = &"StartButton"
+theme_override_font_sizes/font_size = 32
 text = "开始游戏"
 
 [node name="SaveButton" type="Button" parent="VBoxContainer" unique_id=1307811728]
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 size_flags_vertical = 0
-theme_type_variation = &"StartButton"
+theme_override_font_sizes/font_size = 32
 text = "读取存档"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer" unique_id=1170830643]
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 size_flags_vertical = 0
-theme_type_variation = &"StartButton"
+theme_override_font_sizes/font_size = 32
 text = "设置"
 
 [node name="QuitButton" type="Button" parent="VBoxContainer" unique_id=1923210344]
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 size_flags_vertical = 2
-theme_type_variation = &"StartButton"
+theme_override_font_sizes/font_size = 32
 text = "退出游戏"
 
 [connection signal="pressed" from="VBoxContainer/StartButton" to="." method="_on_start_button_pressed"]
