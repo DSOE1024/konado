@@ -179,8 +179,9 @@ function normalizeWork(work) {
 
 	const cardImage =
 		work.icon_image || work.cover_image || work.screenshots?.[0] || "";
-	const backgroundImage =
-		work.cover_image || work.screenshots?.[0] || work.icon_image || "";
+	if (!cardImage) {
+		throw new Error(`GodotHub work "${id}" does not provide an image`);
+	}
 	const heat = Number(work.heat_score ?? work.view_count ?? 0);
 
 	return {
@@ -191,13 +192,18 @@ function normalizeWork(work) {
 			work.short_description ?? work.description ?? "",
 		).trim(),
 		imageUrl: getMediaUrl(work, cardImage),
-		backgroundUrl: getMediaUrl(work, backgroundImage),
 		heat: Number.isFinite(heat) ? Math.max(0, Math.round(heat)) : 0,
 		workUrl: `${WEBSITE_ORIGIN}/asset/${encodeURIComponent(id)}`,
 	};
 }
 
-async function fetchWithRetry(url, options, description, attempts = 3) {
+async function fetchWithRetry(
+	url,
+	options,
+	description,
+	attempts = 3,
+	retryDelayMs,
+) {
 	let lastError;
 
 	for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -221,7 +227,9 @@ async function fetchWithRetry(url, options, description, attempts = 3) {
 		}
 
 		if (attempt < attempts) {
-			await new Promise((resolve) => setTimeout(resolve, attempt * 750));
+			await new Promise((resolve) =>
+				setTimeout(resolve, retryDelayMs ?? attempt * 750),
+			);
 		}
 	}
 
@@ -300,6 +308,8 @@ async function fetchImageDataUrl(sourceUrl, width, height, quality) {
 		optimizedUrl,
 		{ headers: { Accept: "image/avif,image/webp,image/png,image/jpeg" } },
 		"GodotHub media request",
+		5,
+		3_000,
 	);
 	const contentType = response.headers.get("content-type")?.split(";")[0];
 	if (!contentType || !/^image\/(?:avif|webp|png|jpeg)$/.test(contentType)) {
@@ -314,6 +324,88 @@ async function fetchImageDataUrl(sourceUrl, width, height, quality) {
 	}
 
 	return `data:${contentType};base64,${image.toString("base64")}`;
+}
+
+function hasExpectedImageSignature(contentType, image) {
+	if (contentType === "image/png") {
+		return image
+			.subarray(0, 8)
+			.equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+	}
+
+	if (contentType === "image/jpeg") {
+		return (
+			image.length >= 3 &&
+			image[0] === 0xff &&
+			image[1] === 0xd8 &&
+			image[2] === 0xff
+		);
+	}
+
+	if (contentType === "image/webp") {
+		return (
+			image.subarray(0, 4).toString("ascii") === "RIFF" &&
+			image.subarray(8, 12).toString("ascii") === "WEBP"
+		);
+	}
+
+	if (contentType === "image/avif") {
+		const brand = image.subarray(4, 12).toString("ascii");
+		return brand === "ftypavif" || brand === "ftypavis";
+	}
+
+	return false;
+}
+
+function validateEmbeddedImageDataUrl(dataUrl) {
+	const match =
+		/^data:(image\/(?:avif|webp|png|jpeg));base64,([a-zA-Z0-9+/]+={0,2})$/.exec(
+			dataUrl,
+		);
+	if (!match) return "";
+
+	const [, contentType, encodedImage] = match;
+	const image = Buffer.from(encodedImage, "base64");
+	if (
+		image.byteLength === 0 ||
+		image.byteLength > MAX_EMBEDDED_IMAGE_BYTES ||
+		!hasExpectedImageSignature(contentType, image)
+	) {
+		return "";
+	}
+
+	return dataUrl;
+}
+
+async function getPreviousEmbeddedIcon(workId) {
+	for (const locale of LOCALES) {
+		for (const theme of THEMES) {
+			const cardPath = path.join(
+				GENERATED_ASSET_DIRECTORY,
+				locale.directory,
+				theme,
+				`${workId}.svg`,
+			);
+			let card;
+			try {
+				card = await readFile(cardPath, "utf8");
+			} catch (error) {
+				if (error?.code === "ENOENT") continue;
+				throw error;
+			}
+
+			const iconMatch =
+				/<image href="(data:image\/[^"]+)" x="20" y="20" width="80" height="80"/.exec(
+					card,
+				);
+			const iconDataUrl = validateEmbeddedImageDataUrl(
+				iconMatch?.[1] ?? "",
+			);
+			if (iconDataUrl) return iconDataUrl;
+		}
+	}
+
+	return "";
 }
 
 function truncateText(value, maxUnits) {
@@ -344,13 +436,13 @@ function getBadgeWidth(label, minimumWidth) {
 
 function getCardStyles(theme) {
 	if (theme === "dark") {
-		return '.card-base{fill:#020617}.card-overlay{fill:url("#dark-overlay")}.card-border{fill:none;stroke:#263244}.panel{fill:#0f172a;fill-opacity:.9}.badge{fill:#10324a}.badge-text{fill:#75c7f5}.online-badge{fill:#172033}.online-text{fill:#b8c3d4}.title,.heat-text{fill:#f8fafc}.summary,.meta{fill:#9aa7ba}.heat-pill{fill:#111c2e;fill-opacity:.94}.icon-ring{fill:#111827;stroke:#fff;stroke-opacity:.14;stroke-width:2}.icon-placeholder{fill:#17334a}.placeholder-text{fill:#75c7f5}';
+		return '.card-base{fill:#020617}.card-overlay{fill:url("#dark-overlay")}.card-border{fill:none;stroke:#263244}.panel{fill:#0f172a;fill-opacity:.9}.badge{fill:#10324a}.badge-text{fill:#75c7f5}.online-badge{fill:#172033}.online-text{fill:#b8c3d4}.title,.heat-text{fill:#f8fafc}.summary,.meta{fill:#9aa7ba}.heat-pill{fill:#111c2e;fill-opacity:.94}.icon-ring{fill:#111827;stroke:#fff;stroke-opacity:.14;stroke-width:2}';
 	}
 
-	return '.card-base{fill:#fff}.card-overlay{fill:url("#light-overlay")}.card-border{fill:none;stroke:#dbe3ec}.panel{fill:#f1f5f9;fill-opacity:.88}.badge{fill:#e5f2fa}.badge-text{fill:#2475a8}.online-badge{fill:#eef2f7}.online-text{fill:#475569}.title{fill:#0f172a}.summary,.meta{fill:#64748b}.heat-pill{fill:#f1f5f9;fill-opacity:.92}.heat-text{fill:#0f172a}.icon-ring{fill:#fff;stroke:#fff;stroke-width:2}.icon-placeholder{fill:#dceaf4}.placeholder-text{fill:#4794c5}';
+	return '.card-base{fill:#fff}.card-overlay{fill:url("#light-overlay")}.card-border{fill:none;stroke:#dbe3ec}.panel{fill:#f1f5f9;fill-opacity:.88}.badge{fill:#e5f2fa}.badge-text{fill:#2475a8}.online-badge{fill:#eef2f7}.online-text{fill:#475569}.title{fill:#0f172a}.summary,.meta{fill:#64748b}.heat-pill{fill:#f1f5f9;fill-opacity:.92}.heat-text{fill:#0f172a}.icon-ring{fill:#fff;stroke:#fff;stroke-width:2}';
 }
 
-function renderSvgCard(work, iconDataUrl, backgroundDataUrl, theme, locale) {
+function renderSvgCard(work, iconDataUrl, theme, locale) {
 	const title = escapeHtml(truncateText(work.title, 48));
 	const fullTitle = escapeHtml(work.title);
 	const authorValue = work.author || locale.anonymous;
@@ -364,16 +456,7 @@ function renderSvgCard(work, iconDataUrl, backgroundDataUrl, theme, locale) {
 	const gameBadgeWidth = getBadgeWidth(locale.gameLabel, 52);
 	const onlineBadgeWidth = getBadgeWidth(locale.onlineLabel, 64);
 	const onlineBadgeX = 116 + gameBadgeWidth + 8;
-	const embeddedBackground = backgroundDataUrl || iconDataUrl;
-	const background = embeddedBackground
-		? `<image href="${embeddedBackground}" x="-24" y="-24" width="640" height="252" preserveAspectRatio="xMidYMid slice" opacity=".2" filter="url(#artwork-blur)"/>`
-		: "";
-	const icon = iconDataUrl
-		? `<image href="${iconDataUrl}" x="20" y="20" width="80" height="80" preserveAspectRatio="xMidYMid slice" clip-path="url(#icon-clip)"/>`
-		: [
-				'<rect x="20" y="20" width="80" height="80" rx="16" class="icon-placeholder"/>',
-				'<text x="60" y="70" text-anchor="middle" class="placeholder-text" font-size="28" font-weight="700">K</text>',
-			].join("\n");
+	const icon = `<image href="${iconDataUrl}" x="20" y="20" width="80" height="80" preserveAspectRatio="xMidYMid slice" clip-path="url(#icon-clip)"/>`;
 
 	return [
 		'<svg xmlns="http://www.w3.org/2000/svg" width="592" height="204" viewBox="0 0 592 204" role="img" aria-labelledby="card-title card-description">',
@@ -382,7 +465,6 @@ function renderSvgCard(work, iconDataUrl, backgroundDataUrl, theme, locale) {
 		"<defs>",
 		'<clipPath id="card-clip"><rect width="592" height="204" rx="28"/></clipPath>',
 		'<clipPath id="icon-clip"><rect x="20" y="20" width="80" height="80" rx="16"/></clipPath>',
-		'<filter id="artwork-blur" x="-25%" y="-50%" width="150%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>',
 		'<filter id="icon-shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#0f172a" flood-opacity=".16"/></filter>',
 		'<linearGradient id="light-overlay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".76"/><stop offset=".54" stop-color="#ffffff" stop-opacity=".9"/><stop offset="1" stop-color="#f8fafc" stop-opacity=".98"/></linearGradient>',
 		'<linearGradient id="dark-overlay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f172a" stop-opacity=".76"/><stop offset=".54" stop-color="#020617" stop-opacity=".9"/><stop offset="1" stop-color="#020617" stop-opacity=".98"/></linearGradient>',
@@ -392,7 +474,6 @@ function renderSvgCard(work, iconDataUrl, backgroundDataUrl, theme, locale) {
 		"</defs>",
 		'<g clip-path="url(#card-clip)">',
 		'<rect width="592" height="204" class="card-base"/>',
-		background,
 		'<rect width="592" height="204" class="card-overlay"/>',
 		"</g>",
 		'<rect x=".5" y=".5" width="591" height="203" rx="27.5" class="card-border"/>',
@@ -414,29 +495,35 @@ function renderSvgCard(work, iconDataUrl, backgroundDataUrl, theme, locale) {
 }
 
 async function createCardAssets(work) {
-	const [iconDataUrl, backgroundDataUrl] = await Promise.all([
-		fetchImageDataUrl(work.imageUrl, 160, 160, 82).catch((error) => {
-			console.warn(`Icon fallback for "${work.title}": ${error.message}`);
-			return "";
-		}),
-		fetchImageDataUrl(work.backgroundUrl, 768, 264, 55).catch((error) => {
-			console.warn(`Background fallback for "${work.title}": ${error.message}`);
-			return "";
-		}),
-	]);
+	let iconDataUrl;
+	let iconSource = "fresh";
+	try {
+		iconDataUrl = await fetchImageDataUrl(work.imageUrl, 160, 160, 82);
+	} catch (error) {
+		iconDataUrl = await getPreviousEmbeddedIcon(work.id);
+		if (!iconDataUrl) {
+			console.warn(
+				`Skipping new work "${work.title}" after five icon download attempts: ${error.message}`,
+			);
+			return { cards: [], iconSource: "skipped", work };
+		}
 
-	return LOCALES.flatMap((locale) =>
-		THEMES.map((theme) => ({
-			filename: path.join(locale.directory, theme, `${work.id}.svg`),
-			content: renderSvgCard(
-				work,
-				iconDataUrl,
-				backgroundDataUrl,
-				theme,
-				locale,
-			),
-		})),
-	);
+		iconSource = "cached";
+		console.warn(
+			`Reusing the previous embedded icon for "${work.title}" after five download attempts: ${error.message}`,
+		);
+	}
+
+	return {
+		cards: LOCALES.flatMap((locale) =>
+			THEMES.map((theme) => ({
+				filename: path.join(locale.directory, theme, `${work.id}.svg`),
+				content: renderSvgCard(work, iconDataUrl, theme, locale),
+			})),
+		),
+		iconSource,
+		work,
+	};
 }
 
 async function replaceGeneratedAssets(cards) {
@@ -496,7 +583,7 @@ function renderSection(works, locale) {
 				`<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="${darkAsset}" width="1200">`,
 				`<source media="(max-width: 767px)" srcset="${lightAsset}" width="1200">`,
 				`<source media="(prefers-color-scheme: dark)" srcset="${darkAsset}">`,
-				`<img src="${lightAsset}" alt="${alt}" width="49%">`,
+				`<img src="${lightAsset}" alt="${alt}" width="46.5%">`,
 				"</picture>",
 				"</a>",
 			].join("\n");
@@ -569,12 +656,24 @@ async function main() {
 		);
 	}
 
-	const cards = (await Promise.all(works.map(createCardAssets))).flat();
+	const cardResults = await Promise.all(works.map(createCardAssets));
+	const includedResults = cardResults.filter(
+		(result) => result.iconSource !== "skipped",
+	);
+	if (includedResults.length === 0) {
+		console.warn(
+			"No work icon was available; keeping the previous showcase unchanged",
+		);
+		return;
+	}
+
+	const includedWorks = includedResults.map((result) => result.work);
+	const cards = includedResults.flatMap((result) => result.cards);
 	const nextReadmes = readmes.map(({ locale, readmePath, content }) => ({
 		readmePath,
 		content: replaceGeneratedSection(
 			content,
-			renderSection(works, locale),
+			renderSection(includedWorks, locale),
 			locale.licenseHeading,
 		),
 	}));
@@ -588,7 +687,12 @@ async function main() {
 	await access(GENERATED_ASSET_DIRECTORY);
 
 	console.log(
-		`Updated ${readmes.length} README files with ${works.length} Konado work cards each`,
+		[
+			`Updated ${readmes.length} README files with ${includedWorks.length} Konado work cards each`,
+			`(${cardResults.filter((result) => result.iconSource === "fresh").length} fresh icons,`,
+			`${cardResults.filter((result) => result.iconSource === "cached").length} cached icons,`,
+			`${cardResults.filter((result) => result.iconSource === "skipped").length} skipped works)`,
+		].join(" "),
 	);
 }
 

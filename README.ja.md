@@ -107,7 +107,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/m07csjky18z5o6v.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/m07csjky18z5o6v.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/m07csjky18z5o6v.svg">
-<img src="./assets/made-by-konado/ja/light/m07csjky18z5o6v.svg" alt="福尔摩斯：斑点带子案 — 作者：风云杭州 · 人気度：1733" width="49%">
+<img src="./assets/made-by-konado/ja/light/m07csjky18z5o6v.svg" alt="福尔摩斯：斑点带子案 — 作者：风云杭州 · 人気度：1734" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/91gnqrsmv683edj">
@@ -115,7 +115,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/91gnqrsmv683edj.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/91gnqrsmv683edj.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/91gnqrsmv683edj.svg">
-<img src="./assets/made-by-konado/ja/light/91gnqrsmv683edj.svg" alt="逃离精神病院 — 作者：小司 · 人気度：1462" width="49%">
+<img src="./assets/made-by-konado/ja/light/91gnqrsmv683edj.svg" alt="逃离精神病院 — 作者：小司 · 人気度：1462" width="46.5%">
 </picture>
 </a>
 </p>
@@ -125,7 +125,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/lz94hqgxiqm6i38.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/lz94hqgxiqm6i38.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/lz94hqgxiqm6i38.svg">
-<img src="./assets/made-by-konado/ja/light/lz94hqgxiqm6i38.svg" alt="唉，舞萌痴 — 作者：超神的冰凉 · 人気度：1003" width="49%">
+<img src="./assets/made-by-konado/ja/light/lz94hqgxiqm6i38.svg" alt="唉，舞萌痴 — 作者：超神的冰凉 · 人気度：1004" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/7jpmwjsd7t74mtk">
@@ -133,7 +133,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/7jpmwjsd7t74mtk.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/7jpmwjsd7t74mtk.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/7jpmwjsd7t74mtk.svg">
-<img src="./assets/made-by-konado/ja/light/7jpmwjsd7t74mtk.svg" alt="相片 — 作者：月卷云华 · 人気度：821" width="49%">
+<img src="./assets/made-by-konado/ja/light/7jpmwjsd7t74mtk.svg" alt="相片 — 作者：月卷云华 · 人気度：821" width="46.5%">
 </picture>
 </a>
 </p>
@@ -143,7 +143,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/wnktmumcg6cvitt.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/wnktmumcg6cvitt.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/wnktmumcg6cvitt.svg">
-<img src="./assets/made-by-konado/ja/light/wnktmumcg6cvitt.svg" alt="立秋前夜的鸣蝉 — 作者：4042 · 人気度：752" width="49%">
+<img src="./assets/made-by-konado/ja/light/wnktmumcg6cvitt.svg" alt="立秋前夜的鸣蝉 — 作者：4042 · 人気度：755" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/wrz7qs36ntsnxqo">
@@ -151,7 +151,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/wrz7qs36ntsnxqo.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/wrz7qs36ntsnxqo.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/wrz7qs36ntsnxqo.svg">
-<img src="./assets/made-by-konado/ja/light/wrz7qs36ntsnxqo.svg" alt="暮月学院：失窃的信 — 作者：耀光卿 · 人気度：658" width="49%">
+<img src="./assets/made-by-konado/ja/light/wrz7qs36ntsnxqo.svg" alt="暮月学院：失窃的信 — 作者：耀光卿 · 人気度：658" width="46.5%">
 </picture>
 </a>
 </p>
@@ -161,7 +161,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/i5ao33yuq8tr9rz.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/i5ao33yuq8tr9rz.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/i5ao33yuq8tr9rz.svg">
-<img src="./assets/made-by-konado/ja/light/i5ao33yuq8tr9rz.svg" alt="旧世巡航 — 作者：山工程-official · 人気度：408" width="49%">
+<img src="./assets/made-by-konado/ja/light/i5ao33yuq8tr9rz.svg" alt="旧世巡航 — 作者：山工程-official · 人気度：408" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/8xibg3dzqcui7py">
@@ -169,7 +169,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/8xibg3dzqcui7py.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/8xibg3dzqcui7py.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/8xibg3dzqcui7py.svg">
-<img src="./assets/made-by-konado/ja/light/8xibg3dzqcui7py.svg" alt="前天看见了小兔子，昨天是小鹿，今天是你 — 作者：Kyrie · 人気度：347" width="49%">
+<img src="./assets/made-by-konado/ja/light/8xibg3dzqcui7py.svg" alt="前天看见了小兔子，昨天是小鹿，今天是你 — 作者：Kyrie · 人気度：347" width="46.5%">
 </picture>
 </a>
 </p>
@@ -179,7 +179,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/gm1tvpxth4v41ql.svg">
-<img src="./assets/made-by-konado/ja/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 作者：雨落草听 · 人気度：261" width="49%">
+<img src="./assets/made-by-konado/ja/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 作者：雨落草听 · 人気度：261" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/lva4zsfmzcflpjv">
@@ -187,7 +187,7 @@ Konado に貢献したいですか？参加方法の詳細なガイドライン�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/lva4zsfmzcflpjv.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ja/light/lva4zsfmzcflpjv.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ja/dark/lva4zsfmzcflpjv.svg">
-<img src="./assets/made-by-konado/ja/light/lva4zsfmzcflpjv.svg" alt="最后一家奶茶店 — 作者：Mai · 人気度：152" width="49%">
+<img src="./assets/made-by-konado/ja/light/lva4zsfmzcflpjv.svg" alt="最后一家奶茶店 — 作者：Mai · 人気度：152" width="46.5%">
 </picture>
 </a>
 </p>
