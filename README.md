@@ -89,13 +89,7 @@ The following people contributed to this project:
   </picture>
 </a>
 
-toolName: view_files
-            
-status: success
-          
-            
-filePath: c:\Users\compu\Desktop\Konado\README.zh-CN.md
-          
+
 ## Open Source License
 
 Konado is released under a multi-license model, allowing you to choose the most suitable license for your needs:
