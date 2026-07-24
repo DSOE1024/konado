@@ -90,6 +90,104 @@ The following people contributed to this project:
 </a>
 
 
+<!-- BEGIN MADE BY KONADO -->
+## Made by Konado
+
+> A showcase of Konado works from [GodotHub](https://godothub.com/game/visual-novel).
+
+<p align="center">
+<a href="https://godothub.com/asset/m07csjky18z5o6v">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/m07csjky18z5o6v.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/m07csjky18z5o6v.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/m07csjky18z5o6v.svg">
+<img src="./assets/made-by-konado/en/light/m07csjky18z5o6v.svg" alt="福尔摩斯：斑点带子案 — Author: 风云杭州 · Heat: 1733" width="49%">
+</picture>
+</a>
+<a href="https://godothub.com/asset/91gnqrsmv683edj">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/91gnqrsmv683edj.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/91gnqrsmv683edj.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/91gnqrsmv683edj.svg">
+<img src="./assets/made-by-konado/en/light/91gnqrsmv683edj.svg" alt="逃离精神病院 — Author: 小司 · Heat: 1462" width="49%">
+</picture>
+</a>
+</p>
+<p align="center">
+<a href="https://godothub.com/asset/lz94hqgxiqm6i38">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/lz94hqgxiqm6i38.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/lz94hqgxiqm6i38.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/lz94hqgxiqm6i38.svg">
+<img src="./assets/made-by-konado/en/light/lz94hqgxiqm6i38.svg" alt="唉，舞萌痴 — Author: 超神的冰凉 · Heat: 1003" width="49%">
+</picture>
+</a>
+<a href="https://godothub.com/asset/7jpmwjsd7t74mtk">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/7jpmwjsd7t74mtk.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/7jpmwjsd7t74mtk.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/7jpmwjsd7t74mtk.svg">
+<img src="./assets/made-by-konado/en/light/7jpmwjsd7t74mtk.svg" alt="相片 — Author: 月卷云华 · Heat: 821" width="49%">
+</picture>
+</a>
+</p>
+<p align="center">
+<a href="https://godothub.com/asset/wnktmumcg6cvitt">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/wnktmumcg6cvitt.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/wnktmumcg6cvitt.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/wnktmumcg6cvitt.svg">
+<img src="./assets/made-by-konado/en/light/wnktmumcg6cvitt.svg" alt="立秋前夜的鸣蝉 — Author: 4042 · Heat: 752" width="49%">
+</picture>
+</a>
+<a href="https://godothub.com/asset/wrz7qs36ntsnxqo">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/wrz7qs36ntsnxqo.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/wrz7qs36ntsnxqo.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/wrz7qs36ntsnxqo.svg">
+<img src="./assets/made-by-konado/en/light/wrz7qs36ntsnxqo.svg" alt="暮月学院：失窃的信 — Author: 耀光卿 · Heat: 658" width="49%">
+</picture>
+</a>
+</p>
+<p align="center">
+<a href="https://godothub.com/asset/i5ao33yuq8tr9rz">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/i5ao33yuq8tr9rz.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/i5ao33yuq8tr9rz.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/i5ao33yuq8tr9rz.svg">
+<img src="./assets/made-by-konado/en/light/i5ao33yuq8tr9rz.svg" alt="旧世巡航 — Author: 山工程-official · Heat: 408" width="49%">
+</picture>
+</a>
+<a href="https://godothub.com/asset/8xibg3dzqcui7py">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/8xibg3dzqcui7py.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/8xibg3dzqcui7py.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/8xibg3dzqcui7py.svg">
+<img src="./assets/made-by-konado/en/light/8xibg3dzqcui7py.svg" alt="前天看见了小兔子，昨天是小鹿，今天是你 — Author: Kyrie · Heat: 347" width="49%">
+</picture>
+</a>
+</p>
+<p align="center">
+<a href="https://godothub.com/asset/gm1tvpxth4v41ql">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/gm1tvpxth4v41ql.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/gm1tvpxth4v41ql.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/gm1tvpxth4v41ql.svg">
+<img src="./assets/made-by-konado/en/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — Author: 雨落草听 · Heat: 260" width="49%">
+</picture>
+</a>
+<a href="https://godothub.com/asset/lva4zsfmzcflpjv">
+<picture>
+<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/lva4zsfmzcflpjv.svg" width="1200">
+<source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/lva4zsfmzcflpjv.svg" width="1200">
+<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/lva4zsfmzcflpjv.svg">
+<img src="./assets/made-by-konado/en/light/lva4zsfmzcflpjv.svg" alt="最后一家奶茶店 — Author: Mai · Heat: 152" width="49%">
+</picture>
+</a>
+</p>
+<!-- END MADE BY KONADO -->
+
+
 ## Open Source License
 
 Konado is released under a multi-license model, allowing you to choose the most suitable license for your needs:
