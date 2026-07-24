@@ -586,7 +586,7 @@ function renderSection(works, locale) {
 				"</picture></a>",
 			].join("");
 		});
-		rows.push(`<p align="center">\n${cards.join("\n")}\n</p>`);
+		rows.push(`<p align="center">\n${cards.join("&emsp;")}\n</p>`);
 	}
 
 	return [
