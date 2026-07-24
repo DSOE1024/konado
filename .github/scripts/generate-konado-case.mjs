@@ -578,17 +578,15 @@ function renderSection(works, locale) {
 			const darkAsset = `./assets/made-by-konado/${locale.directory}/dark/${work.id}.svg`;
 			const alt = `${title} — ${escapeHtml(locale.authorLabel)}${escapeHtml(locale.authorSeparator)}${author} · ${escapeHtml(locale.heatLabel)}${escapeHtml(locale.authorSeparator)}${work.heat}`;
 			return [
-				`<a href="${workUrl}">`,
-				"<picture>",
+				`<a href="${workUrl}"><picture>`,
 				`<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="${darkAsset}" width="1200">`,
 				`<source media="(max-width: 767px)" srcset="${lightAsset}" width="1200">`,
 				`<source media="(prefers-color-scheme: dark)" srcset="${darkAsset}">`,
 				`<img src="${lightAsset}" alt="${alt}" width="46.5%">`,
-				"</picture>",
-				"</a>",
-			].join("\n");
+				"</picture></a>",
+			].join("");
 		});
-		rows.push(`<p align="center">\n${cards.join("\n")}\n</p>`);
+		rows.push(`<p align="center">\n${cards.join("&emsp;")}\n</p>`);
 	}
 
 	return [

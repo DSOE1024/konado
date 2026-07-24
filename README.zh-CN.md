@@ -101,94 +101,19 @@ Konado 是一个对话创建工具包，提供模板和对话管理器，帮助�
 > 来自 [GodotHub](https://godothub.com/game/visual-novel) 的 Konado 作品展示。
 
 <p align="center">
-<a href="https://godothub.com/asset/m07csjky18z5o6v">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/m07csjky18z5o6v.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/m07csjky18z5o6v.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/m07csjky18z5o6v.svg">
-<img src="./assets/made-by-konado/zh-CN/light/m07csjky18z5o6v.svg" alt="福尔摩斯：斑点带子案 — 作者：风云杭州 · 热度：1734" width="46.5%">
-</picture>
-</a>
-<a href="https://godothub.com/asset/91gnqrsmv683edj">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/91gnqrsmv683edj.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/91gnqrsmv683edj.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/91gnqrsmv683edj.svg">
-<img src="./assets/made-by-konado/zh-CN/light/91gnqrsmv683edj.svg" alt="逃离精神病院 — 作者：小司 · 热度：1462" width="46.5%">
-</picture>
-</a>
+<a href="https://godothub.com/asset/m07csjky18z5o6v"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/m07csjky18z5o6v.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/m07csjky18z5o6v.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/m07csjky18z5o6v.svg"><img src="./assets/made-by-konado/zh-CN/light/m07csjky18z5o6v.svg" alt="福尔摩斯：斑点带子案 — 作者：风云杭州 · 热度：1734" width="46.5%"></picture></a>&emsp;<a href="https://godothub.com/asset/91gnqrsmv683edj"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/91gnqrsmv683edj.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/91gnqrsmv683edj.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/91gnqrsmv683edj.svg"><img src="./assets/made-by-konado/zh-CN/light/91gnqrsmv683edj.svg" alt="逃离精神病院 — 作者：小司 · 热度：1463" width="46.5%"></picture></a>
 </p>
 <p align="center">
-<a href="https://godothub.com/asset/lz94hqgxiqm6i38">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lz94hqgxiqm6i38.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/lz94hqgxiqm6i38.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lz94hqgxiqm6i38.svg">
-<img src="./assets/made-by-konado/zh-CN/light/lz94hqgxiqm6i38.svg" alt="唉，舞萌痴 — 作者：超神的冰凉 · 热度：1004" width="46.5%">
-</picture>
-</a>
-<a href="https://godothub.com/asset/7jpmwjsd7t74mtk">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/7jpmwjsd7t74mtk.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/7jpmwjsd7t74mtk.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/7jpmwjsd7t74mtk.svg">
-<img src="./assets/made-by-konado/zh-CN/light/7jpmwjsd7t74mtk.svg" alt="相片 — 作者：月卷云华 · 热度：821" width="46.5%">
-</picture>
-</a>
+<a href="https://godothub.com/asset/lz94hqgxiqm6i38"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lz94hqgxiqm6i38.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/lz94hqgxiqm6i38.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lz94hqgxiqm6i38.svg"><img src="./assets/made-by-konado/zh-CN/light/lz94hqgxiqm6i38.svg" alt="唉，舞萌痴 — 作者：超神的冰凉 · 热度：1004" width="46.5%"></picture></a>&emsp;<a href="https://godothub.com/asset/7jpmwjsd7t74mtk"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/7jpmwjsd7t74mtk.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/7jpmwjsd7t74mtk.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/7jpmwjsd7t74mtk.svg"><img src="./assets/made-by-konado/zh-CN/light/7jpmwjsd7t74mtk.svg" alt="相片 — 作者：月卷云华 · 热度：823" width="46.5%"></picture></a>
 </p>
 <p align="center">
-<a href="https://godothub.com/asset/wnktmumcg6cvitt">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wnktmumcg6cvitt.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/wnktmumcg6cvitt.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wnktmumcg6cvitt.svg">
-<img src="./assets/made-by-konado/zh-CN/light/wnktmumcg6cvitt.svg" alt="立秋前夜的鸣蝉 — 作者：4042 · 热度：755" width="46.5%">
-</picture>
-</a>
-<a href="https://godothub.com/asset/wrz7qs36ntsnxqo">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wrz7qs36ntsnxqo.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/wrz7qs36ntsnxqo.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wrz7qs36ntsnxqo.svg">
-<img src="./assets/made-by-konado/zh-CN/light/wrz7qs36ntsnxqo.svg" alt="暮月学院：失窃的信 — 作者：耀光卿 · 热度：658" width="46.5%">
-</picture>
-</a>
+<a href="https://godothub.com/asset/wnktmumcg6cvitt"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wnktmumcg6cvitt.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/wnktmumcg6cvitt.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wnktmumcg6cvitt.svg"><img src="./assets/made-by-konado/zh-CN/light/wnktmumcg6cvitt.svg" alt="立秋前夜的鸣蝉 — 作者：4042 · 热度：755" width="46.5%"></picture></a>&emsp;<a href="https://godothub.com/asset/wrz7qs36ntsnxqo"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wrz7qs36ntsnxqo.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/wrz7qs36ntsnxqo.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/wrz7qs36ntsnxqo.svg"><img src="./assets/made-by-konado/zh-CN/light/wrz7qs36ntsnxqo.svg" alt="暮月学院：失窃的信 — 作者：耀光卿 · 热度：658" width="46.5%"></picture></a>
 </p>
 <p align="center">
-<a href="https://godothub.com/asset/i5ao33yuq8tr9rz">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/i5ao33yuq8tr9rz.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/i5ao33yuq8tr9rz.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/i5ao33yuq8tr9rz.svg">
-<img src="./assets/made-by-konado/zh-CN/light/i5ao33yuq8tr9rz.svg" alt="旧世巡航 — 作者：山工程-official · 热度：408" width="46.5%">
-</picture>
-</a>
-<a href="https://godothub.com/asset/8xibg3dzqcui7py">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/8xibg3dzqcui7py.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/8xibg3dzqcui7py.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/8xibg3dzqcui7py.svg">
-<img src="./assets/made-by-konado/zh-CN/light/8xibg3dzqcui7py.svg" alt="前天看见了小兔子，昨天是小鹿，今天是你 — 作者：Kyrie · 热度：347" width="46.5%">
-</picture>
-</a>
+<a href="https://godothub.com/asset/i5ao33yuq8tr9rz"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/i5ao33yuq8tr9rz.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/i5ao33yuq8tr9rz.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/i5ao33yuq8tr9rz.svg"><img src="./assets/made-by-konado/zh-CN/light/i5ao33yuq8tr9rz.svg" alt="旧世巡航 — 作者：山工程-official · 热度：408" width="46.5%"></picture></a>&emsp;<a href="https://godothub.com/asset/8xibg3dzqcui7py"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/8xibg3dzqcui7py.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/8xibg3dzqcui7py.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/8xibg3dzqcui7py.svg"><img src="./assets/made-by-konado/zh-CN/light/8xibg3dzqcui7py.svg" alt="前天看见了小兔子，昨天是小鹿，今天是你 — 作者：Kyrie · 热度：347" width="46.5%"></picture></a>
 </p>
 <p align="center">
-<a href="https://godothub.com/asset/gm1tvpxth4v41ql">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/gm1tvpxth4v41ql.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/gm1tvpxth4v41ql.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/gm1tvpxth4v41ql.svg">
-<img src="./assets/made-by-konado/zh-CN/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 作者：雨落草听 · 热度：261" width="46.5%">
-</picture>
-</a>
-<a href="https://godothub.com/asset/lva4zsfmzcflpjv">
-<picture>
-<source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lva4zsfmzcflpjv.svg" width="1200">
-<source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/lva4zsfmzcflpjv.svg" width="1200">
-<source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lva4zsfmzcflpjv.svg">
-<img src="./assets/made-by-konado/zh-CN/light/lva4zsfmzcflpjv.svg" alt="最后一家奶茶店 — 作者：Mai · 热度：152" width="46.5%">
-</picture>
-</a>
+<a href="https://godothub.com/asset/gm1tvpxth4v41ql"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/gm1tvpxth4v41ql.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/gm1tvpxth4v41ql.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/gm1tvpxth4v41ql.svg"><img src="./assets/made-by-konado/zh-CN/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 作者：雨落草听 · 热度：261" width="46.5%"></picture></a>&emsp;<a href="https://godothub.com/asset/lva4zsfmzcflpjv"><picture><source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lva4zsfmzcflpjv.svg" width="1200"><source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/lva4zsfmzcflpjv.svg" width="1200"><source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/lva4zsfmzcflpjv.svg"><img src="./assets/made-by-konado/zh-CN/light/lva4zsfmzcflpjv.svg" alt="最后一家奶茶店 — 作者：Mai · 热度：152" width="46.5%"></picture></a>
 </p>
 <!-- END MADE BY KONADO -->
 
