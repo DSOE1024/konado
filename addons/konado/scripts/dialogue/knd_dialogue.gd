@@ -27,7 +27,8 @@ enum Type {
 	ACTOR_MOTION,
 	MOVE_CAM,
 	RESET_CAM,
-	CAM_SHAKE
+	CAM_SHAKE,
+	SCREEN_TEXT
 }
 
 @export var dialog_type: Type:
@@ -121,6 +122,9 @@ enum Type {
 @export var cam_tween_time: float = 0.0
 @export var cam_tween_type: String = ""
 @export var cam_shake_time: float = 0.0
+
+## NVL 屏幕文本内容行列表
+@export var text_content: Array[String] = []
 
 func add_choice(text: String, target_id: String) -> void:
 	var c := KND_DialogueChoice.new()

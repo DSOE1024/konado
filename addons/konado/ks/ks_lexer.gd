@@ -156,6 +156,16 @@ func _tokenize_line(line: String, line_num: int) -> Array[KS_Token]:
 			pos += 1
 			continue
 
+		# 定界符 { }
+		if ch == "{":
+			tokens.append(KS_Token.new(KS_Token.Type.LBRACE, "{", line_num, pos + 1))
+			pos += 1
+			continue
+		if ch == "}":
+			tokens.append(KS_Token.new(KS_Token.Type.RBRACE, "}", line_num, pos + 1))
+			pos += 1
+			continue
+
 		# 变量引用 %name 或 $name
 		if ch == "%" or ch == "$":
 			var ref_tok := _read_variable_ref(line, pos, line_num)

@@ -67,6 +67,9 @@ var _temp_variables: Dictionary = {}
 ## 对话框
 @export var _konado_dialogue_box: KND_DialogueBox
 
+## 屏幕文本（NVL Overlay）
+@export var _screen_text: KND_ScreenText
+
 ## 背景和角色UI界面接口
 @export var _acting_interface: KND_ActingInterface
 ## 音频接口
@@ -563,6 +566,19 @@ func _process(delta) -> void:
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 					_konado_cam_manager.shake_cam(dialog.cam_shake_time, callback)
+				# 屏幕文本（NVL Overlay）
+				elif cur_dialogue_type == KND_Dialogue.Type.SCREEN_TEXT:
+					if _screen_text == null:
+						printerr("未指定 _screen_text 组件，跳过")
+						_dialogue_goto_state(DialogState.PAUSED)
+						_process_next()
+						return
+					
+					var s = _screen_text.display_finished
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
+					
+					_screen_text.display(dialog.text_content)
 				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
 					var dialog_choices = dialog.choices
@@ -758,6 +774,10 @@ func _process_next() -> void:
 			return
 		DialogState.PAUSED:
 			_audio_interface.stop_voice()
+			# 隐藏 NVL 屏幕文本
+			if _screen_text and _screen_text.visible:
+				_screen_text.hide()
+				_screen_text.modulate.a = 0.0
 			print("对话播放完成，开始播放下一个")
 			# 检查是否还有下一个节点
 			var cur: KND_Dialogue = _current_dialogue()
@@ -795,6 +815,10 @@ func _auto_process_next_from_motion(_actor_id: String, _motion_name: String, s: 
 func stop_dialogue() -> void:
 	_acting_interface.delete_all_actor()
 	_acting_interface.clean_background(KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT)
+	# 隐藏 NVL 屏幕文本
+	if _screen_text and _screen_text.visible:
+		_screen_text.hide()
+		_screen_text.modulate.a = 0.0
 	print_rich("[color=yellow]关闭对话[/color]")
 	# 切换到关闭状态
 	_dialogue_goto_state(DialogState.OFF)
