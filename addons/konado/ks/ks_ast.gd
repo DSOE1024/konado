@@ -115,3 +115,8 @@ class AchievementNode extends ASTNode:
 ## 结束节点
 class EndNode extends ASTNode:
 	pass
+
+
+## NVL 屏幕文本节点（Overlay 正文）
+class ScreenTextNode extends ASTNode:
+	var lines: Array[String] = []    ## 文本行列表
