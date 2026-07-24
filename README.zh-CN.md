@@ -178,7 +178,7 @@ Konado 是一个对话创建工具包，提供模板和对话管理器，帮助�
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/zh-CN/light/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/zh-CN/dark/gm1tvpxth4v41ql.svg">
-<img src="./assets/made-by-konado/zh-CN/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 作者：雨落草听 · 热度：260" width="49%">
+<img src="./assets/made-by-konado/zh-CN/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 作者：雨落草听 · 热度：261" width="49%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/lva4zsfmzcflpjv">

@@ -179,7 +179,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/gm1tvpxth4v41ql.svg">
-<img src="./assets/made-by-konado/ko/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 제작자: 雨落草听 · 인기도: 260" width="49%">
+<img src="./assets/made-by-konado/ko/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 제작자: 雨落草听 · 인기도: 261" width="49%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/lva4zsfmzcflpjv">
