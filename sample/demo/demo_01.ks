@@ -1,6 +1,12 @@
 # 播放bgm语句，<bgm名称>为背景列表中的bgm_name
 play bgm echo
 
+screentext {
+    "这是全屏文本"
+    "这是全屏文本"
+    "这是全屏文本"
+}
+
 # 背景语句：
 # background bg1 windmill
 # background bg1 wave

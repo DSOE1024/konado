@@ -93,6 +93,8 @@ func _validate_node(node: KS_AST.ASTNode, context: String) -> void:
 		_validate_achievement(node)
 	elif node is KS_AST.EndNode:
 		pass
+	elif node is KS_AST.ScreenTextNode:
+		pass
 
 
 ## 验证演员操作

@@ -109,6 +109,8 @@ func _emit_node(node: KS_AST.ASTNode) -> KND_Dialogue:
 		return _emit_achievement(node)
 	if node is KS_AST.EndNode:
 		return _emit_end(node)
+	if node is KS_AST.ScreenTextNode:
+		return _emit_screen_text(node)
 
 	return null
 
@@ -387,6 +389,14 @@ func _emit_end(node: KS_AST.EndNode) -> KND_Dialogue:
 	var d := KND_Dialogue.new()
 	d.source_file_line = node.line
 	d.dialog_type = KND_Dialogue.Type.THE_END
+	return d
+
+
+func _emit_screen_text(node: KS_AST.ScreenTextNode) -> KND_Dialogue:
+	var d := KND_Dialogue.new()
+	d.source_file_line = node.line
+	d.dialog_type = KND_Dialogue.Type.SCREEN_TEXT
+	d.text_content = node.lines.duplicate()
 	return d
 
 
