@@ -12,6 +12,7 @@ enum Type {
 	VARIABLE_REF,      ## 变量引用 %name 或 $name
 
 	# 主关键字
+	KW_SCREENTEXT,
 	KW_BACKGROUND,
 	KW_ACTOR,
 	KW_PLAY,
@@ -49,6 +50,10 @@ enum Type {
 	KW_RESET,
 	KW_SHAKE,
 
+	# 定界符
+	LBRACE,            ## {
+	RBRACE,            ## }
+
 	# 运算符
 	OP_ARROW,          ## ->
 	OP_EQ,             ## ==
@@ -68,6 +73,7 @@ enum Type {
 
 ## 关键字查找表
 const KEYWORDS: Dictionary = {
+	"screentext": Type.KW_SCREENTEXT,
 	"background": Type.KW_BACKGROUND,
 	"actor": Type.KW_ACTOR,
 	"play": Type.KW_PLAY,

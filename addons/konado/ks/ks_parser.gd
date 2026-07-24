@@ -77,6 +77,8 @@ func _parse_statement() -> KS_AST.ASTNode:
 		return _parse_dialogue()
 
 	match tok.type:
+		KS_Token.Type.KW_SCREENTEXT:
+			return _parse_screen_text()
 		KS_Token.Type.KW_BACKGROUND:
 			return _parse_background()
 		KS_Token.Type.KW_ACTOR:
@@ -146,6 +148,44 @@ func _parse_dialogue() -> KS_AST.DialogueNode:
 			node.voice_id = str(_advance().value)
 
 	_skip_to_next_line()
+	return node
+
+
+## NVL 屏幕文本解析：screentext { "行1" "行2" ... }
+func _parse_screen_text() -> KS_AST.ScreenTextNode:
+	var node := KS_AST.ScreenTextNode.new()
+	node.line = _peek().line
+	_advance()  # 跳过 screentext
+
+	# 跳过 {
+	if not _check(KS_Token.Type.LBRACE):
+		_error("screentext 缺少 {")
+		return null
+	_advance()
+	_skip_to_next_line()
+
+	# 读取花括号内的文本行
+	while not _at_end():
+		_skip_newlines()
+		if _at_end():
+			break
+
+		# 遇到 } 结束
+		if _check(KS_Token.Type.RBRACE):
+			_advance()
+			_skip_to_next_line()
+			break
+
+		# 跳过可能的缩进
+		if _check(KS_Token.Type.INDENT):
+			_advance()
+
+		# 读取文本行
+		if _check(KS_Token.Type.STRING_LITERAL):
+			var text_tok := _advance()
+			node.lines.append(text_tok.value)
+		_skip_to_next_line()
+
 	return node
 
 
