@@ -9,7 +9,7 @@
 [ext_resource type="Script" uid="uid://b0kbsxqyedoml" path="res://addons/konado/scripts/dialogue/knd_choice_interface.gd" id="7_mrif6"]
 [ext_resource type="Script" uid="uid://gh6w15d30qe7" path="res://addons/konado/scripts/save_system/save_load_ui.gd" id="8_6njhp"]
 [ext_resource type="Script" uid="uid://b5sjg7ccwo37t" path="res://addons/konado/scripts/screentext/knd_screentext.gd" id="8_nudtk"]
-[ext_resource type="Texture2D" uid="uid://bhr7ry4erctor" path="res://assets/kona/kona_love.png" id="9_13fku"]
+[ext_resource type="Texture2D" uid="uid://d3u4s0bc2m7vq" path="res://addons/konado/template/default/assets/next_line_indicator.png" id="9_13fku"]
 [ext_resource type="Script" uid="uid://cfbojxb1pdbrs" path="res://addons/konado/scripts/audio/knd_audio_interface.gd" id="9_oa1o7"]
 [ext_resource type="Script" uid="uid://dusoj8pkl7ecg" path="res://addons/konado/scripts/save_system/knd_save_system.gd" id="10_ra855"]
 [ext_resource type="Script" uid="uid://b3xcpatqnlrg" path="res://addons/konado/scripts/knd_settings_bridge.gd" id="11_cmq4a"]
