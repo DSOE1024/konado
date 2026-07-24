@@ -173,7 +173,7 @@ The following people contributed to this project:
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/en/light/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/en/dark/gm1tvpxth4v41ql.svg">
-<img src="./assets/made-by-konado/en/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — Author: 雨落草听 · Heat: 260" width="49%">
+<img src="./assets/made-by-konado/en/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — Author: 雨落草听 · Heat: 261" width="49%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/lva4zsfmzcflpjv">
