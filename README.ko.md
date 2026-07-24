@@ -107,7 +107,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/m07csjky18z5o6v.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/m07csjky18z5o6v.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/m07csjky18z5o6v.svg">
-<img src="./assets/made-by-konado/ko/light/m07csjky18z5o6v.svg" alt="福尔摩斯：斑点带子案 — 제작자: 风云杭州 · 인기도: 1733" width="49%">
+<img src="./assets/made-by-konado/ko/light/m07csjky18z5o6v.svg" alt="福尔摩斯：斑点带子案 — 제작자: 风云杭州 · 인기도: 1734" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/91gnqrsmv683edj">
@@ -115,7 +115,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/91gnqrsmv683edj.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/91gnqrsmv683edj.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/91gnqrsmv683edj.svg">
-<img src="./assets/made-by-konado/ko/light/91gnqrsmv683edj.svg" alt="逃离精神病院 — 제작자: 小司 · 인기도: 1462" width="49%">
+<img src="./assets/made-by-konado/ko/light/91gnqrsmv683edj.svg" alt="逃离精神病院 — 제작자: 小司 · 인기도: 1462" width="46.5%">
 </picture>
 </a>
 </p>
@@ -125,7 +125,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/lz94hqgxiqm6i38.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/lz94hqgxiqm6i38.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/lz94hqgxiqm6i38.svg">
-<img src="./assets/made-by-konado/ko/light/lz94hqgxiqm6i38.svg" alt="唉，舞萌痴 — 제작자: 超神的冰凉 · 인기도: 1003" width="49%">
+<img src="./assets/made-by-konado/ko/light/lz94hqgxiqm6i38.svg" alt="唉，舞萌痴 — 제작자: 超神的冰凉 · 인기도: 1004" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/7jpmwjsd7t74mtk">
@@ -133,7 +133,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/7jpmwjsd7t74mtk.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/7jpmwjsd7t74mtk.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/7jpmwjsd7t74mtk.svg">
-<img src="./assets/made-by-konado/ko/light/7jpmwjsd7t74mtk.svg" alt="相片 — 제작자: 月卷云华 · 인기도: 821" width="49%">
+<img src="./assets/made-by-konado/ko/light/7jpmwjsd7t74mtk.svg" alt="相片 — 제작자: 月卷云华 · 인기도: 821" width="46.5%">
 </picture>
 </a>
 </p>
@@ -143,7 +143,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/wnktmumcg6cvitt.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/wnktmumcg6cvitt.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/wnktmumcg6cvitt.svg">
-<img src="./assets/made-by-konado/ko/light/wnktmumcg6cvitt.svg" alt="立秋前夜的鸣蝉 — 제작자: 4042 · 인기도: 752" width="49%">
+<img src="./assets/made-by-konado/ko/light/wnktmumcg6cvitt.svg" alt="立秋前夜的鸣蝉 — 제작자: 4042 · 인기도: 755" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/wrz7qs36ntsnxqo">
@@ -151,7 +151,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/wrz7qs36ntsnxqo.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/wrz7qs36ntsnxqo.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/wrz7qs36ntsnxqo.svg">
-<img src="./assets/made-by-konado/ko/light/wrz7qs36ntsnxqo.svg" alt="暮月学院：失窃的信 — 제작자: 耀光卿 · 인기도: 658" width="49%">
+<img src="./assets/made-by-konado/ko/light/wrz7qs36ntsnxqo.svg" alt="暮月学院：失窃的信 — 제작자: 耀光卿 · 인기도: 658" width="46.5%">
 </picture>
 </a>
 </p>
@@ -161,7 +161,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/i5ao33yuq8tr9rz.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/i5ao33yuq8tr9rz.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/i5ao33yuq8tr9rz.svg">
-<img src="./assets/made-by-konado/ko/light/i5ao33yuq8tr9rz.svg" alt="旧世巡航 — 제작자: 山工程-official · 인기도: 408" width="49%">
+<img src="./assets/made-by-konado/ko/light/i5ao33yuq8tr9rz.svg" alt="旧世巡航 — 제작자: 山工程-official · 인기도: 408" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/8xibg3dzqcui7py">
@@ -169,7 +169,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/8xibg3dzqcui7py.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/8xibg3dzqcui7py.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/8xibg3dzqcui7py.svg">
-<img src="./assets/made-by-konado/ko/light/8xibg3dzqcui7py.svg" alt="前天看见了小兔子，昨天是小鹿，今天是你 — 제작자: Kyrie · 인기도: 347" width="49%">
+<img src="./assets/made-by-konado/ko/light/8xibg3dzqcui7py.svg" alt="前天看见了小兔子，昨天是小鹿，今天是你 — 제작자: Kyrie · 인기도: 347" width="46.5%">
 </picture>
 </a>
 </p>
@@ -179,7 +179,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/gm1tvpxth4v41ql.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/gm1tvpxth4v41ql.svg">
-<img src="./assets/made-by-konado/ko/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 제작자: 雨落草听 · 인기도: 261" width="49%">
+<img src="./assets/made-by-konado/ko/light/gm1tvpxth4v41ql.svg" alt="雨落草听的短篇小说 — 제작자: 雨落草听 · 인기도: 261" width="46.5%">
 </picture>
 </a>
 <a href="https://godothub.com/asset/lva4zsfmzcflpjv">
@@ -187,7 +187,7 @@ Konado에 기여하고 싶으신가요? 참여 방법에 대한 자세한 가이
 <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/lva4zsfmzcflpjv.svg" width="1200">
 <source media="(max-width: 767px)" srcset="./assets/made-by-konado/ko/light/lva4zsfmzcflpjv.svg" width="1200">
 <source media="(prefers-color-scheme: dark)" srcset="./assets/made-by-konado/ko/dark/lva4zsfmzcflpjv.svg">
-<img src="./assets/made-by-konado/ko/light/lva4zsfmzcflpjv.svg" alt="最后一家奶茶店 — 제작자: Mai · 인기도: 152" width="49%">
+<img src="./assets/made-by-konado/ko/light/lva4zsfmzcflpjv.svg" alt="最后一家奶茶店 — 제작자: Mai · 인기도: 152" width="46.5%">
 </picture>
 </a>
 </p>
