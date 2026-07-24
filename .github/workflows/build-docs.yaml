@@ -6,12 +6,14 @@ on:
       - main
     paths:
       - "docs/**"
+      - ".github/scripts/generate-konado-case.mjs"
       - ".github/workflows/build-docs.yaml"
   pull_request:
     branches:
       - main
     paths:
       - "docs/**"
+      - ".github/scripts/generate-konado-case.mjs"
       - ".github/workflows/build-docs.yaml"
   workflow_dispatch: {}
 
@@ -37,6 +39,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Refresh Made by Konado showcase
+        run: node .github/scripts/generate-konado-case.mjs
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -50,8 +55,25 @@ jobs:
         working-directory: docs
         run: pnpm docs:build
 
+      - name: Persist refreshed showcase
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A -- \
+            README.md \
+            README.zh-CN.md \
+            README.zh-TW.md \
+            README.ja.md \
+            README.ko.md \
+            assets/made-by-konado
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: refresh Made by Konado showcase [skip ci]"
+            git push origin HEAD:main
+          fi
+
       - name: Deploy to docs branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           DOCS_BRANCH: docs
           DIST_DIR: docs/.vitepress/dist
@@ -71,7 +93,8 @@ jobs:
 
           # 尝试检出 docs 分支；不存在则新建 orphan 分支
           if git ls-remote --exit-code --heads origin "$DOCS_BRANCH" >/dev/null 2>&1; then
-            git worktree add .deploy_docs_branch "$DOCS_BRANCH"
+            git fetch origin "+refs/heads/${DOCS_BRANCH}:refs/remotes/origin/${DOCS_BRANCH}"
+            git worktree add -B "$DOCS_BRANCH" .deploy_docs_branch "origin/$DOCS_BRANCH"
           else
             git worktree add --detach .deploy_docs_branch
             cd .deploy_docs_branch
