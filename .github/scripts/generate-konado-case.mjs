@@ -584,7 +584,7 @@ function renderSection(works, locale) {
 				`<source media="(prefers-color-scheme: dark)" srcset="${darkAsset}">`,
 				`<img src="${lightAsset}" alt="${alt}" width="46.5%">`,
 				"</picture></a>",
-			].join("\n");
+			].join("");
 		});
 		rows.push(`<p align="center">\n${cards.join("\n")}\n</p>`);
 	}
