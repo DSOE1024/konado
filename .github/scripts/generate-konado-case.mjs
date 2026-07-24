@@ -197,7 +197,13 @@ function normalizeWork(work) {
 	};
 }
 
-async function fetchWithRetry(url, options, description, attempts = 3) {
+async function fetchWithRetry(
+	url,
+	options,
+	description,
+	attempts = 3,
+	retryDelayMs,
+) {
 	let lastError;
 
 	for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -221,7 +227,9 @@ async function fetchWithRetry(url, options, description, attempts = 3) {
 		}
 
 		if (attempt < attempts) {
-			await new Promise((resolve) => setTimeout(resolve, attempt * 750));
+			await new Promise((resolve) =>
+				setTimeout(resolve, retryDelayMs ?? attempt * 750),
+			);
 		}
 	}
 
@@ -300,6 +308,8 @@ async function fetchImageDataUrl(sourceUrl, width, height, quality) {
 		optimizedUrl,
 		{ headers: { Accept: "image/avif,image/webp,image/png,image/jpeg" } },
 		"GodotHub media request",
+		5,
+		3_000,
 	);
 	const contentType = response.headers.get("content-type")?.split(";")[0];
 	if (!contentType || !/^image\/(?:avif|webp|png|jpeg)$/.test(contentType)) {
@@ -314,6 +324,88 @@ async function fetchImageDataUrl(sourceUrl, width, height, quality) {
 	}
 
 	return `data:${contentType};base64,${image.toString("base64")}`;
+}
+
+function hasExpectedImageSignature(contentType, image) {
+	if (contentType === "image/png") {
+		return image
+			.subarray(0, 8)
+			.equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+	}
+
+	if (contentType === "image/jpeg") {
+		return (
+			image.length >= 3 &&
+			image[0] === 0xff &&
+			image[1] === 0xd8 &&
+			image[2] === 0xff
+		);
+	}
+
+	if (contentType === "image/webp") {
+		return (
+			image.subarray(0, 4).toString("ascii") === "RIFF" &&
+			image.subarray(8, 12).toString("ascii") === "WEBP"
+		);
+	}
+
+	if (contentType === "image/avif") {
+		const brand = image.subarray(4, 12).toString("ascii");
+		return brand === "ftypavif" || brand === "ftypavis";
+	}
+
+	return false;
+}
+
+function validateEmbeddedImageDataUrl(dataUrl) {
+	const match =
+		/^data:(image\/(?:avif|webp|png|jpeg));base64,([a-zA-Z0-9+/]+={0,2})$/.exec(
+			dataUrl,
+		);
+	if (!match) return "";
+
+	const [, contentType, encodedImage] = match;
+	const image = Buffer.from(encodedImage, "base64");
+	if (
+		image.byteLength === 0 ||
+		image.byteLength > MAX_EMBEDDED_IMAGE_BYTES ||
+		!hasExpectedImageSignature(contentType, image)
+	) {
+		return "";
+	}
+
+	return dataUrl;
+}
+
+async function getPreviousEmbeddedIcon(workId) {
+	for (const locale of LOCALES) {
+		for (const theme of THEMES) {
+			const cardPath = path.join(
+				GENERATED_ASSET_DIRECTORY,
+				locale.directory,
+				theme,
+				`${workId}.svg`,
+			);
+			let card;
+			try {
+				card = await readFile(cardPath, "utf8");
+			} catch (error) {
+				if (error?.code === "ENOENT") continue;
+				throw error;
+			}
+
+			const iconMatch =
+				/<image href="(data:image\/[^"]+)" x="20" y="20" width="80" height="80"/.exec(
+					card,
+				);
+			const iconDataUrl = validateEmbeddedImageDataUrl(
+				iconMatch?.[1] ?? "",
+			);
+			if (iconDataUrl) return iconDataUrl;
+		}
+	}
+
+	return "";
 }
 
 function truncateText(value, maxUnits) {
@@ -403,19 +495,35 @@ function renderSvgCard(work, iconDataUrl, theme, locale) {
 }
 
 async function createCardAssets(work) {
-	const iconDataUrl = await fetchImageDataUrl(work.imageUrl, 160, 160, 82);
+	let iconDataUrl;
+	let iconSource = "fresh";
+	try {
+		iconDataUrl = await fetchImageDataUrl(work.imageUrl, 160, 160, 82);
+	} catch (error) {
+		iconDataUrl = await getPreviousEmbeddedIcon(work.id);
+		if (!iconDataUrl) {
+			console.warn(
+				`Skipping new work "${work.title}" after five icon download attempts: ${error.message}`,
+			);
+			return { cards: [], iconSource: "skipped", work };
+		}
 
-	return LOCALES.flatMap((locale) =>
-		THEMES.map((theme) => ({
-			filename: path.join(locale.directory, theme, `${work.id}.svg`),
-			content: renderSvgCard(
-				work,
-				iconDataUrl,
-				theme,
-				locale,
-			),
-		})),
-	);
+		iconSource = "cached";
+		console.warn(
+			`Reusing the previous embedded icon for "${work.title}" after five download attempts: ${error.message}`,
+		);
+	}
+
+	return {
+		cards: LOCALES.flatMap((locale) =>
+			THEMES.map((theme) => ({
+				filename: path.join(locale.directory, theme, `${work.id}.svg`),
+				content: renderSvgCard(work, iconDataUrl, theme, locale),
+			})),
+		),
+		iconSource,
+		work,
+	};
 }
 
 async function replaceGeneratedAssets(cards) {
@@ -548,12 +656,24 @@ async function main() {
 		);
 	}
 
-	const cards = (await Promise.all(works.map(createCardAssets))).flat();
+	const cardResults = await Promise.all(works.map(createCardAssets));
+	const includedResults = cardResults.filter(
+		(result) => result.iconSource !== "skipped",
+	);
+	if (includedResults.length === 0) {
+		console.warn(
+			"No work icon was available; keeping the previous showcase unchanged",
+		);
+		return;
+	}
+
+	const includedWorks = includedResults.map((result) => result.work);
+	const cards = includedResults.flatMap((result) => result.cards);
 	const nextReadmes = readmes.map(({ locale, readmePath, content }) => ({
 		readmePath,
 		content: replaceGeneratedSection(
 			content,
-			renderSection(works, locale),
+			renderSection(includedWorks, locale),
 			locale.licenseHeading,
 		),
 	}));
@@ -567,7 +687,12 @@ async function main() {
 	await access(GENERATED_ASSET_DIRECTORY);
 
 	console.log(
-		`Updated ${readmes.length} README files with ${works.length} Konado work cards each`,
+		[
+			`Updated ${readmes.length} README files with ${includedWorks.length} Konado work cards each`,
+			`(${cardResults.filter((result) => result.iconSource === "fresh").length} fresh icons,`,
+			`${cardResults.filter((result) => result.iconSource === "cached").length} cached icons,`,
+			`${cardResults.filter((result) => result.iconSource === "skipped").length} skipped works)`,
+		].join(" "),
 	);
 }
 
