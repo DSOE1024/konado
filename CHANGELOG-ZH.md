@@ -1,6 +1,111 @@
 ## 2.6 - Ketchup
 
-Konado 2.5 版本正式发布。本版本代号为 Ketchup
+Konado 2.6 版本正式发布。本版本代号为 Ketchup，聚焦于实时演出增强与脚本表达能力提升，新增相机系统（移动、复位、晃动）、角色动画系统（滑入退场）、运行时国际化、NVL 全屏文本、对话框显隐控制、等待外部信号等核心功能，并推出 Konado Showcase 展示页，进一步完善视觉小说开发的全链路能力。
+
+### 新增
+
+#### 相机系统
+
+- 新增 `cam move`、`cam reset`、`cam shake` 三种镜头指令，支持脚本级相机控制
+- 新增 `KonadoCameraManager` 相机管理器节点，管理多相机目标与过渡动画
+- 新增 `cam shake` 镜头晃动功能，支持自定义晃动时长
+- 支持 tween 动画类型与时长参数，实现平滑镜头过渡
+
+#### 角色动画系统
+
+- 重构角色动画系统，新增角色滑入退场动画
+- 新增 `enter_exit_anim_config.gd` 动画配置资源，支持自定义入场/退场动画时长与曲线
+- 将角色动画逻辑集中到 `animated_actor_layer.gd`，统一管理
+
+#### NVL 屏幕文本（Overlay 正文）
+
+- 新增 `screentext` 脚本指令，支持全屏 NVL 正文显示
+- 新增 `KND_ScreenText` 场景与组件，实现逐行淡入动画
+- 支持独立 RichTextLabel 逐行渲染，自定义行间距、左间距、上间距
+- 每行显示完成后闪烁三角箭头指示器，提示点击播放下一行
+- 提供 `display_finished` 等回调信号，与对话流程无缝集成
+
+#### 对话框显隐控制
+
+- 新增 `showtextbox` 脚本指令，支持自定义淡入动画时长控制对话框显示
+- 新增 `hidetextbox` 脚本指令，支持自定义淡出动画时长控制对话框隐藏
+- 时长参数设为 `0.0` 时禁用动画，立即显示/隐藏
+- 在 `KND_DialogueBox` 中新增 `show_dialogue_box_with_duration()`、`hide_dialogue_box_with_duration()` 方法
+
+#### 等待外部信号
+
+- 新增 `waitsignal` 脚本指令，在对话流程中暂停等待指定外部信号触发
+- 新增 `emit_wait_signal(signal_name: String)` 方法，供外部代码触发信号继续对话
+- 适用于过场动画、小游戏、自定义交互等场景
+
+#### 运行时国际化
+
+- 初步实现运行时脚本国际化支持（i18n runtime），支持在游戏运行时动态切换语言
+- 新增 `KND_I18n` 国际化服务节点，提供注册与翻译接口
+- 对话管理器支持加载本地化后的对话资源
+
+#### 语音与音频
+
+- 新增语音进度显示功能，在对话框中显示配音播放进度
+- 新增 `voice_progress_display.tscn` 进度显示模板场景
+- 支持通过对话框节点关闭进度显示
+
+#### 文档与展示
+
+- 新增 Konado Showcase 展示页生成器，自动抓取并展示使用 Konado 制作的游戏
+
+#### 其他
+
+- 更换项目多许可证，更新文档说明
+- 将 `middle` 主题改为 `default` 继承场景，确保继承关系正确
+
+### 语法变更
+
+- **新增 `screentext` 命令**：NVL 全屏正文显示
+  ```ks
+  screentext {
+      "这是全屏文本第一行"
+      "这是全屏文本第二行"
+  }
+  ```
+
+- **新增 `showtextbox` / `hidetextbox` 命令**：对话框显隐控制
+  ```ks
+  showtextbox 1.0    # 用 1 秒淡入动画显示对话框
+  hidetextbox 0.5    # 用 0.5 秒淡出动画隐藏对话框
+  showtextbox 0.0    # 禁用动画，立即显示
+  ```
+
+- **新增 `waitsignal` 命令**：等待外部信号
+  ```ks
+  waitsignal "over"       # 等待名为 "over" 的外部信号
+  waitsignal minigame_done # 标识符形式
+  ```
+
+- **新增 `cam` 命令扩展**：镜头晃动
+  ```ks
+  cam shake          # 默认时长晃动
+  cam shake 2.0      # 晃动 2 秒
+  cam move target linear 1.0  # 线性过渡 1 秒
+  cam reset fade 2.0          # 淡入过渡 2 秒复位
+  ```
+
+### 修复
+
+- 修复主菜单退出按钮在非编辑器环境下的节点路径问题
+- 修复 `middle` 主题作为默认主题的继承场景配置
+
+### 改进
+
+- 重构角色动画系统，动画逻辑集中管理，便于扩展
+- 语音进度显示支持开关配置，灵活适配不同项目需求
+- Konado Showcase 自动生成，降低社区展示维护成本
+
+### 兼容性提示
+
+- 建议使用 Godot 4.7 或更高版本。
+- 不支持直接从 2.4 升级到 2.6 跨版本升级，建议重新迁移项目
+- 运行时国际化功能需要额外配置 `KND_I18n` 节点，非强制功能。
 
 ## 2.5 - Diguoji
 

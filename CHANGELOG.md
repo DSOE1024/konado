@@ -1,3 +1,116 @@
+## 2.6 - Ketchup
+
+Konado 2.6 is officially released. Codenamed "Ketchup", this version focuses on live performance enhancement and script expression capability. It introduces a camera system (move, reset, shake), character animation system (slide-in/out), runtime internationalization, NVL full-screen text, dialogue box show/hide control, wait signal, and the Konado Showcase page, further completing the visual novel development pipeline.
+
+### Added
+
+#### Camera System
+
+- Added `cam move`, `cam reset`, `cam shake` camera commands for script-level camera control
+- Added `KonadoCameraManager` camera manager node for managing multiple camera targets and transitions
+- Added `cam shake` camera shake with configurable duration
+- Added tween animation type and duration parameters for smooth camera transitions
+
+#### Character Animation System
+
+- Refactored character animation system with slide-in/out animations
+- Added `enter_exit_anim_config.gd` animation configuration resource for custom entry/exit duration and curves
+- Centralized character animation logic in `animated_actor_layer.gd`
+
+#### NVL Screen Text (Overlay Text)
+
+- Added `screentext` script command for full-screen NVL text display
+- Added `KND_ScreenText` scene and component with line-by-line fade-in animation
+- Supports independent RichTextLabel per line with custom line spacing, left padding, and top padding
+- Blinking triangle arrow indicator appears after each line completes, prompting click to play next line
+- Provides `display_finished` callback signal for seamless dialogue flow integration
+
+#### Dialogue Box Show/Hide Control
+
+- Added `showtextbox` script command with configurable fade-in duration for dialogue box display
+- Added `hidetextbox` script command with configurable fade-out duration for dialogue box hiding
+- Set duration to `0.0` to disable animation (instant show/hide)
+- Added `show_dialogue_box_with_duration()` and `hide_dialogue_box_with_duration()` methods in `KND_DialogueBox`
+
+#### Wait Signal
+
+- Added `waitsignal` script command to pause dialogue flow and wait for an external signal
+- Added `emit_wait_signal(signal_name: String)` method for external code to trigger signal continuation
+- Suitable for cutscenes, minigames, custom interactions, and more
+
+#### Runtime Internationalization
+
+- Added runtime script internationalization support (i18n runtime), enabling dynamic language switching during gameplay
+- Added `KND_I18n` internationalization service node with registration and translation interfaces
+- Dialogue manager supports loading localized dialogue resources
+
+#### Voice & Audio
+
+- Added voice progress display in dialogue box showing voice playback progress
+- Added `voice_progress_display.tscn` progress display template scene
+- Supports toggling progress display via dialogue box node settings
+
+#### Documentation & Showcase
+
+- Added Konado Showcase page generator that automatically fetches and displays games made with Konado
+- Added multi-language (Chinese/English/Japanese/Korean) Konado Showcase pages
+- Added multi-language documentation version management, default documentation version updated to 2.6
+- Added 2.6 camera, text, and other new feature tutorial documentation
+- Added Korean (ko) and Japanese (ja) full documentation translations
+
+#### Other
+
+- Replaced project license with multi-license, updated documentation
+- Changed `middle` theme to `default` inherited scene for correct inheritance
+
+### Syntax Changes
+
+- **New `screentext` command**: NVL full-screen text display
+  ```ks
+  screentext {
+      "This is the first line of full-screen text"
+      "This is the second line"
+  }
+  ```
+
+- **New `showtextbox` / `hidetextbox` commands**: Dialogue box show/hide control
+  ```ks
+  showtextbox 1.0    # Show dialogue box with 1s fade-in animation
+  hidetextbox 0.5    # Hide dialogue box with 0.5s fade-out animation
+  showtextbox 0.0    # Disable animation, show instantly
+  ```
+
+- **New `waitsignal` command**: Wait for external signal
+  ```ks
+  waitsignal "over"        # Wait for signal named "over"
+  waitsignal minigame_done # Identifier form
+  ```
+
+- **Extended `cam` command**: Camera shake
+  ```ks
+  cam shake          # Shake with default duration
+  cam shake 2.0      # Shake for 2 seconds
+  cam move target linear 1.0  # Linear transition over 1 second
+  cam reset fade 2.0          # Fade transition over 2 seconds
+  ```
+
+### Fixed
+
+- Fixed main menu quit button node path issue in non-editor environments
+- Fixed `middle` theme inheritance scene configuration as default theme
+
+### Improvements
+
+- Refactored character animation system, centralized animation logic for easier extension
+- Voice progress display supports toggle configuration for flexible project adaptation
+- Konado Showcase auto-generation reduces community showcase maintenance cost
+
+### Compatibility Notes
+
+- Godot 4.7 or later is recommended.
+- Direct upgrade from 2.4 to 2.6 is not supported; project migration is recommended.
+- Runtime internationalization requires additional `KND_I18n` node configuration; it is an optional feature.
+
 ## 2.5 - Diguoji
 
 Konado 2.5 is officially released. Codenamed "Diguoji", this version focuses on game flow completeness and development experience enhancement. It introduces quick save/load functionality, a game startup main menu, character scene-based architecture, background transition effects, and launches a VSCode syntax highlighting extension along with editor skill packs, further improving the out-of-the-box development experience.
