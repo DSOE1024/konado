@@ -95,6 +95,10 @@ func _validate_node(node: KS_AST.ASTNode, context: String) -> void:
 		pass
 	elif node is KS_AST.ScreenTextNode:
 		pass
+	elif node is KS_AST.ShowTextBoxNode:
+		pass
+	elif node is KS_AST.HideTextBoxNode:
+		pass
 
 
 ## 验证演员操作

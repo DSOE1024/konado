@@ -58,6 +58,9 @@ var _temp_variables: Dictionary = {}
 
 @export_category("UI Settings")
 
+## 自动显示dialogue_box
+@export var auto_show_dialogue_box: bool = true
+
 ## 演员画布横向分块
 @export var horizontal_division: int = 5
 
@@ -415,8 +418,6 @@ func start_dialogue() -> void:
 		_konado_choice_interface.show()
 	if _acting_interface:
 		_acting_interface.show()
-		
-	_konado_dialogue_box.show_dialogue_box()
 	_dialogue_goto_state(DialogState.PLAYING)
 	print_rich("[color=yellow]开始对话 [/color]")
 	# 播放镜头信号
@@ -451,41 +452,50 @@ func _process(delta) -> void:
 				# 判断对话类型
 				# 如果是普通对话
 				if cur_dialogue_type == KND_Dialogue.Type.ORDINARY_DIALOG:
-					# 播放对话
-					var chara_id
-					var content
-					var voice_id
-					if (dialog.character_id != null):
-						chara_id = dialog.character_id
-					if (dialog.dialog_content != null):
-						content = _interpolate_variables(dialog.dialog_content)
-					if dialog.voice_id:
-						voice_id = dialog.voice_id
-		
-					var playvoice: bool = false
-					var voice_wait_time: float = 0.0
-					if voice_id:
-						playvoice = true
-					
-					# 如果有配音播放配音
-					if voice_id:
-						voice_wait_time = _play_voice(voice_id)
+					var play_dialogue = func():
+						# 播放对话
+						var chara_id
+						var content
+						var voice_id
+						if (dialog.character_id != null):
+							chara_id = dialog.character_id
+						if (dialog.dialog_content != null):
+							content = _interpolate_variables(dialog.dialog_content)
+						if dialog.voice_id:
+							voice_id = dialog.voice_id
+			
+						var playvoice: bool = false
+						var voice_wait_time: float = 0.0
+						if voice_id:
+							playvoice = true
+						
+						# 如果有配音播放配音
+						if voice_id:
+							voice_wait_time = _play_voice(voice_id)
+						else:
+							if _konado_dialogue_box:
+								_konado_dialogue_box.clear_voice_progress()
+						
+						if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
+							_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
+						
+						_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice, voice_wait_time))
+						# 设置角色高亮
+						if actor_auto_highlight:
+							if chara_id:
+								_acting_interface.highlight_actor(chara_id)
+						# 播放对话
+						_konado_dialogue_box.typing_interval = _typing_interval
+						_konado_dialogue_box.dialogue_text = content
+						_konado_dialogue_box.character_name = chara_id
+						
+					if auto_show_dialogue_box:
+						if not _konado_dialogue_box.is_dialogue_box_visible():
+							_konado_dialogue_box.show_dialogue_box(play_dialogue)
 					else:
-						if _konado_dialogue_box:
-							_konado_dialogue_box.clear_voice_progress()
-					
-					if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
-						_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
-					
-					_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice, voice_wait_time))
-					# 设置角色高亮
-					if actor_auto_highlight:
-						if chara_id:
-							_acting_interface.highlight_actor(chara_id)
-					# 播放对话
-					_konado_dialogue_box.typing_interval = _typing_interval
-					_konado_dialogue_box.dialogue_text = content
-					_konado_dialogue_box.character_name = chara_id
+						if not _konado_dialogue_box.is_dialogue_box_visible():
+							printerr("请先让对话框显示")
+						play_dialogue.call()
 				# 如果是切换背景
 				elif cur_dialogue_type == KND_Dialogue.Type.SWITCH_BACKGROUND:
 					# 显示背景
@@ -579,6 +589,30 @@ func _process(delta) -> void:
 						s.connect(_auto_process_next.bind(s))
 					
 					_screen_text.display(dialog.text_content)
+				# 显示对话框
+				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_TEXTBOX:
+					if _konado_dialogue_box == null:
+						printerr("未指定 _konado_dialogue_box 组件，跳过")
+						_dialogue_goto_state(DialogState.PAUSED)
+						_process_next()
+						return
+					
+					var s = _konado_dialogue_box.on_dialogue_show_completed
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
+					_konado_dialogue_box.show_dialogue_box_with_duration(dialog.textbox_duration)
+				# 隐藏对话框
+				elif cur_dialogue_type == KND_Dialogue.Type.HIDE_TEXTBOX:
+					if _konado_dialogue_box == null:
+						printerr("未指定 _konado_dialogue_box 组件，跳过")
+						_dialogue_goto_state(DialogState.PAUSED)
+						_process_next()
+						return
+					
+					var s = _konado_dialogue_box.on_dialogue_hide_completed
+					if not s.is_connected(_auto_process_next.bind(s)):
+						s.connect(_auto_process_next.bind(s))
+					_konado_dialogue_box.hide_dialogue_box_with_duration(dialog.textbox_duration)
 				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
 					var dialog_choices = dialog.choices

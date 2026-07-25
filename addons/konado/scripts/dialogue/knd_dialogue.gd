@@ -28,7 +28,9 @@ enum Type {
 	MOVE_CAM,
 	RESET_CAM,
 	CAM_SHAKE,
-	SCREEN_TEXT
+	SCREEN_TEXT,
+	SHOW_TEXTBOX,
+	HIDE_TEXTBOX
 }
 
 @export var dialog_type: Type:
@@ -125,6 +127,9 @@ enum Type {
 
 ## NVL 屏幕文本内容行列表
 @export var text_content: Array[String] = []
+
+## 对话框显示/隐藏动画时长（秒），0.0 表示禁用动画
+@export var textbox_duration: float = 0.0
 
 func add_choice(text: String, target_id: String) -> void:
 	var c := KND_DialogueChoice.new()

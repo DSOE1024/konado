@@ -198,7 +198,7 @@ func hide_dialogue_box() -> void:
 	fade_tween.set_trans(fade_trans_type)
 	fade_tween.set_ease(fade_ease_type)
 	
-	# 同时过渡三个节点的 modulate:a 从当前值到 0
+	# 同时过渡所有节点的 modulate:a 从当前值到 0
 	fade_tween.tween_property(self, "modulate:a", 0.0, fade_duration)
 	if character_name_label:
 		fade_tween.tween_property(character_name_label, "modulate:a", 0.0, fade_duration)
@@ -222,8 +222,60 @@ func hide_dialogue_box() -> void:
 		on_dialogue_hide_completed.emit()
 	)
 	
+## 检查对话框是否显示
+func is_dialogue_box_visible() -> bool:
+	if self.modulate.a == 0.0:
+		return false
+	return true
+
+## 隐藏对话框（自定义动画时长）
+func hide_dialogue_box_with_duration(duration: float) -> void:
+	clear_voice_progress()
+	if fade_tween != null and fade_tween.is_running():
+		fade_tween.kill()
+	
+	# 0.0 表示禁用动画，直接隐藏
+	if duration <= 0.0:
+		self.hide()
+		self.modulate.a = 1.0
+		character_name_label.hide()
+		character_name_label.modulate.a = 1.0
+		dialogue_label.hide()
+		dialogue_label.modulate.a = 1.0
+		on_dialogue_hide_completed.emit()
+		return
+	
+	# 创建新的透明度过渡动画
+	fade_tween = get_tree().create_tween()
+	fade_tween.set_trans(fade_trans_type)
+	fade_tween.set_ease(fade_ease_type)
+	
+	# 同时过渡所有节点的 modulate:a 从当前值到 0
+	fade_tween.tween_property(self, "modulate:a", 0.0, duration)
+	if character_name_label:
+		fade_tween.tween_property(character_name_label, "modulate:a", 0.0, duration)
+	if dialogue_label:
+		fade_tween.tween_property(dialogue_label, "modulate:a", 0.0, duration)
+	if typewriter_text:
+		fade_tween.tween_property(typewriter_text, "modulate:a", 0.0, duration)
+	
+	# 动画结束后隐藏所有节点并重置透明度
+	fade_tween.finished.connect(func():
+		self.hide()
+		self.modulate.a = 1.0
+		
+		character_name_label.hide()
+		character_name_label.modulate.a = 1.0
+		
+		dialogue_label.hide()
+		dialogue_label.modulate.a = 1.0
+		
+		# 发射对话框隐藏完成信号
+		on_dialogue_hide_completed.emit()
+	)
+
 ## 显示对话框（带透明度过渡动画）
-func show_dialogue_box() -> void:
+func show_dialogue_box(callback: Callable = Callable()) -> void:
 	# 先显示节点并重置透明度
 	self.show()
 	self.modulate.a = 0.0
@@ -240,6 +292,30 @@ func show_dialogue_box() -> void:
 	# 过渡modulate的alpha值从0到1
 	fade_tween.tween_property(self, "modulate:a", 1.0, fade_duration)
 	# 动画结束后发射显示完成信号
+	fade_tween.finished.connect(func():
+		on_dialogue_show_completed.emit()
+		callback.call()
+	)
+
+## 显示对话框（自定义动画时长）
+func show_dialogue_box_with_duration(duration: float) -> void:
+	self.show()
+	self.modulate.a = 0.0
+	
+	if fade_tween != null and fade_tween.is_running():
+		fade_tween.kill()
+	
+	# 0.0 表示禁用动画，直接显示
+	if duration <= 0.0:
+		self.modulate.a = 1.0
+		on_dialogue_show_completed.emit()
+		return
+	
+	# 创建新的透明度过渡动画
+	fade_tween = get_tree().create_tween()
+	fade_tween.set_trans(fade_trans_type)
+	fade_tween.set_ease(fade_ease_type)
+	fade_tween.tween_property(self, "modulate:a", 1.0, duration)
 	fade_tween.finished.connect(func():
 		on_dialogue_show_completed.emit()
 	)

@@ -33,6 +33,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_cpdxb")
 script = ExtResource("2_652dd")
+auto_show_dialogue_box = false
 _konado_choice_interface = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/ChoicesContainer")
 _konado_dialogue_box = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/KonadoDialogueBox")
 _screen_text = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/ScreenText")
