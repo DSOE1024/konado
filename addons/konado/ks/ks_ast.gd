@@ -128,3 +128,7 @@ class ShowTextBoxNode extends ASTNode:
 ## 隐藏对话框节点
 class HideTextBoxNode extends ASTNode:
 	var duration: float = 0.0         ## 淡出动画时长（秒），0.0 表示禁用动画
+
+## 等待外部信号节点
+class WaitSignalNode extends ASTNode:
+	var signal_name: String = ""       ## 等待的外部信号名称
