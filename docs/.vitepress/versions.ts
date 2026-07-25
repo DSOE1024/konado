@@ -10,18 +10,18 @@ export const DOC_VERSIONS = [
     },
   },
   {
-    value: '2.5',
+    value: '2.6',
     labels: {
-      zh: '2.5最新版',
-      tc: '2.5 最新版',
-      en: '2.5 Latest',
-      ja: '2.5最新版',
-      ko: '2.5 최신판',
+      zh: '2.6最新版',
+      tc: '2.6 最新版',
+      en: '2.6 Latest',
+      ja: '2.6最新版',
+      ko: '2.6 최신판',
     },
   },
 ] as const
 
-export const DEFAULT_DOC_VERSION = '2.4'
+export const DEFAULT_DOC_VERSION = '2.6'
 
 export const VERSION_SWITCHER_LABELS = {
   zh: '文档版本',
