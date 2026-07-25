@@ -79,6 +79,10 @@ func _parse_statement() -> KS_AST.ASTNode:
 	match tok.type:
 		KS_Token.Type.KW_SCREENTEXT:
 			return _parse_screen_text()
+		KS_Token.Type.KW_SHOWTEXTBOX:
+			return _parse_show_textbox()
+		KS_Token.Type.KW_HIDETEXTBOX:
+			return _parse_hide_textbox()
 		KS_Token.Type.KW_BACKGROUND:
 			return _parse_background()
 		KS_Token.Type.KW_ACTOR:
@@ -186,6 +190,40 @@ func _parse_screen_text() -> KS_AST.ScreenTextNode:
 			node.lines.append(text_tok.value)
 		_skip_to_next_line()
 
+	return node
+
+
+## 显示对话框解析：showtextbox <duration>
+func _parse_show_textbox() -> KS_AST.ShowTextBoxNode:
+	var node := KS_AST.ShowTextBoxNode.new()
+	node.line = _peek().line
+	_advance()  # 跳过 showtextbox
+
+	# 读取动画时长
+	var dur_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
+	if dur_tok == null:
+		_error("showtextbox 缺少动画时长")
+		return null
+	node.duration = float(str(dur_tok.value))
+
+	_skip_to_next_line()
+	return node
+
+
+## 隐藏对话框解析：hidetextbox <duration>
+func _parse_hide_textbox() -> KS_AST.HideTextBoxNode:
+	var node := KS_AST.HideTextBoxNode.new()
+	node.line = _peek().line
+	_advance()  # 跳过 hidetextbox
+
+	# 读取动画时长
+	var dur_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
+	if dur_tok == null:
+		_error("hidetextbox 缺少动画时长")
+		return null
+	node.duration = float(str(dur_tok.value))
+
+	_skip_to_next_line()
 	return node
 
 
