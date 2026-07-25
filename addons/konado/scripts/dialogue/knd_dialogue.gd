@@ -30,7 +30,8 @@ enum Type {
 	CAM_SHAKE,
 	SCREEN_TEXT,
 	SHOW_TEXTBOX,
-	HIDE_TEXTBOX
+	HIDE_TEXTBOX,
+	WAIT_SIGNAL
 }
 
 @export var dialog_type: Type:
@@ -130,6 +131,9 @@ enum Type {
 
 ## 对话框显示/隐藏动画时长（秒），0.0 表示禁用动画
 @export var textbox_duration: float = 0.0
+
+## 等待的外部信号名称
+@export var wait_signal_name: String = ""
 
 func add_choice(text: String, target_id: String) -> void:
 	var c := KND_DialogueChoice.new()

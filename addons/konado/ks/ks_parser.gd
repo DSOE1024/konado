@@ -83,6 +83,8 @@ func _parse_statement() -> KS_AST.ASTNode:
 			return _parse_show_textbox()
 		KS_Token.Type.KW_HIDETEXTBOX:
 			return _parse_hide_textbox()
+		KS_Token.Type.KW_WAITSIGNAL:
+			return _parse_wait_signal()
 		KS_Token.Type.KW_BACKGROUND:
 			return _parse_background()
 		KS_Token.Type.KW_ACTOR:
@@ -222,6 +224,27 @@ func _parse_hide_textbox() -> KS_AST.HideTextBoxNode:
 		_error("hidetextbox 缺少动画时长")
 		return null
 	node.duration = float(str(dur_tok.value))
+
+	_skip_to_next_line()
+	return node
+
+
+## 等待外部信号解析：waitsignal <name>
+func _parse_wait_signal() -> KS_AST.WaitSignalNode:
+	var node := KS_AST.WaitSignalNode.new()
+	node.line = _peek().line
+	_advance()  # 跳过 waitsignal
+
+	# 读取信号名称（字符串字面量或标识符）
+	if _check(KS_Token.Type.STRING_LITERAL):
+		var tok := _advance()
+		node.signal_name = tok.value
+	elif _check(KS_Token.Type.IDENTIFIER):
+		var tok := _advance()
+		node.signal_name = str(tok.value)
+	else:
+		_error("waitsignal 缺少信号名称")
+		return null
 
 	_skip_to_next_line()
 	return node

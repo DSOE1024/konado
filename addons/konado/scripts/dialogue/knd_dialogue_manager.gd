@@ -56,6 +56,9 @@ signal custom_signal(content: String)
 ## 对话临时变量存储（$前缀，仅脚本内有效，每次镜头重置）
 var _temp_variables: Dictionary = {}
 
+## 等待中的外部信号名称（用于 WAIT_SIGNAL 类型）
+var _waiting_signal_name: String = ""
+
 @export_category("UI Settings")
 
 ## 自动显示dialogue_box
@@ -306,6 +309,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 	justenter = true
 	dialogueState = DialogState.OFF
 	_temp_variables.clear()
+	_waiting_signal_name = ""
 	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
 		cur_node_id = cur_dialogue_shot.start_node_id
 	elif cur_dialogue_shot.dialogues.size() > 0:
@@ -325,6 +329,7 @@ func set_shot(new_shot: KND_Shot) -> void:
 		new_shot = localized_shot
 	cur_dialogue_shot = new_shot.duplicate()
 	_temp_variables.clear()
+	_waiting_signal_name = ""
 	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
 		cur_node_id = cur_dialogue_shot.start_node_id
 	elif cur_dialogue_shot.dialogues.size() > 0:
@@ -613,6 +618,9 @@ func _process(delta) -> void:
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_konado_dialogue_box.hide_dialogue_box_with_duration(dialog.textbox_duration)
+				# 等待外部信号
+				elif cur_dialogue_type == KND_Dialogue.Type.WAIT_SIGNAL:
+					_waiting_signal_name = dialog.wait_signal_name
 				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
 					var dialog_choices = dialog.choices
@@ -791,7 +799,17 @@ func isfinishtyping(wait_voice: bool, wait_voice_time: float) -> void:
 			await get_tree().create_timer(0.05).timeout
 			_process_next()
 		print("触发打字完成信号")
-	
+
+## 触发等待的外部信号，匹配成功则继续下一句对话
+## 外部调用示例： $dialogue_manager.emit_wait_signal("over")
+func emit_wait_signal(signal_name: String) -> void:
+	if _waiting_signal_name.is_empty():
+		return
+	if _waiting_signal_name == signal_name:
+		_waiting_signal_name = ""
+		_dialogue_goto_state(DialogState.PAUSED)
+		_process_next()
+
 ## 处理下一个，绑定到下一个按钮
 func _process_next() -> void:
 	dialogue_line_end.emit(cur_node_id)
@@ -854,6 +872,8 @@ func stop_dialogue() -> void:
 		_screen_text.hide()
 		_screen_text.modulate.a = 0.0
 	print_rich("[color=yellow]关闭对话[/color]")
+	# 重置等待信号
+	_waiting_signal_name = ""
 	# 切换到关闭状态
 	_dialogue_goto_state(DialogState.OFF)
 	_konado_dialogue_box.hide_dialogue_box()

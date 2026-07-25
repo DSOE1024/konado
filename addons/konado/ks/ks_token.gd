@@ -35,6 +35,7 @@ enum Type {
 	KW_CAM,
 	KW_SHOWTEXTBOX,
 	KW_HIDETEXTBOX,
+	KW_WAITSIGNAL,
 
 	# 子关键字
 	KW_SHOW,
@@ -113,6 +114,7 @@ const KEYWORDS: Dictionary = {
 	"shake": Type.KW_SHAKE,
 	"showtextbox": Type.KW_SHOWTEXTBOX,
 	"hidetextbox": Type.KW_HIDETEXTBOX,
+	"waitsignal": Type.KW_WAITSIGNAL,
 }
 
 var type: Type
