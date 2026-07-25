@@ -33,6 +33,8 @@ enum Type {
 	KW_ACHIEVEMENT,
 	KW_END,
 	KW_CAM,
+	KW_SHOWTEXTBOX,
+	KW_HIDETEXTBOX,
 
 	# 子关键字
 	KW_SHOW,
@@ -109,6 +111,8 @@ const KEYWORDS: Dictionary = {
 	"scale": Type.KW_SCALE,
 	"reset": Type.KW_RESET,
 	"shake": Type.KW_SHAKE,
+	"showtextbox": Type.KW_SHOWTEXTBOX,
+	"hidetextbox": Type.KW_HIDETEXTBOX,
 }
 
 var type: Type

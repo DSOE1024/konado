@@ -120,3 +120,11 @@ class EndNode extends ASTNode:
 ## NVL 屏幕文本节点（Overlay 正文）
 class ScreenTextNode extends ASTNode:
 	var lines: Array[String] = []    ## 文本行列表
+
+## 显示对话框节点
+class ShowTextBoxNode extends ASTNode:
+	var duration: float = 0.0         ## 淡入动画时长（秒），0.0 表示禁用动画
+
+## 隐藏对话框节点
+class HideTextBoxNode extends ASTNode:
+	var duration: float = 0.0         ## 淡出动画时长（秒），0.0 表示禁用动画
