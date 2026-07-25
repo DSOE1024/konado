@@ -111,6 +111,10 @@ func _emit_node(node: KS_AST.ASTNode) -> KND_Dialogue:
 		return _emit_end(node)
 	if node is KS_AST.ScreenTextNode:
 		return _emit_screen_text(node)
+	if node is KS_AST.ShowTextBoxNode:
+		return _emit_show_textbox(node)
+	if node is KS_AST.HideTextBoxNode:
+		return _emit_hide_textbox(node)
 
 	return null
 
@@ -389,6 +393,22 @@ func _emit_end(node: KS_AST.EndNode) -> KND_Dialogue:
 	var d := KND_Dialogue.new()
 	d.source_file_line = node.line
 	d.dialog_type = KND_Dialogue.Type.THE_END
+	return d
+
+
+func _emit_show_textbox(node: KS_AST.ShowTextBoxNode) -> KND_Dialogue:
+	var d := KND_Dialogue.new()
+	d.source_file_line = node.line
+	d.dialog_type = KND_Dialogue.Type.SHOW_TEXTBOX
+	d.textbox_duration = node.duration
+	return d
+
+
+func _emit_hide_textbox(node: KS_AST.HideTextBoxNode) -> KND_Dialogue:
+	var d := KND_Dialogue.new()
+	d.source_file_line = node.line
+	d.dialog_type = KND_Dialogue.Type.HIDE_TEXTBOX
+	d.textbox_duration = node.duration
 	return d
 
 
