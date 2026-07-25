@@ -99,6 +99,8 @@ func _validate_node(node: KS_AST.ASTNode, context: String) -> void:
 		pass
 	elif node is KS_AST.HideTextBoxNode:
 		pass
+	elif node is KS_AST.WaitSignalNode:
+		pass
 
 
 ## 验证演员操作

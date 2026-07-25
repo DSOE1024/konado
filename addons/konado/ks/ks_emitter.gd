@@ -115,6 +115,8 @@ func _emit_node(node: KS_AST.ASTNode) -> KND_Dialogue:
 		return _emit_show_textbox(node)
 	if node is KS_AST.HideTextBoxNode:
 		return _emit_hide_textbox(node)
+	if node is KS_AST.WaitSignalNode:
+		return _emit_wait_signal(node)
 
 	return null
 
@@ -409,6 +411,14 @@ func _emit_hide_textbox(node: KS_AST.HideTextBoxNode) -> KND_Dialogue:
 	d.source_file_line = node.line
 	d.dialog_type = KND_Dialogue.Type.HIDE_TEXTBOX
 	d.textbox_duration = node.duration
+	return d
+
+
+func _emit_wait_signal(node: KS_AST.WaitSignalNode) -> KND_Dialogue:
+	var d := KND_Dialogue.new()
+	d.source_file_line = node.line
+	d.dialog_type = KND_Dialogue.Type.WAIT_SIGNAL
+	d.wait_signal_name = node.signal_name
 	return d
 
 
