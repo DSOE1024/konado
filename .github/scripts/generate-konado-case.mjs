@@ -534,15 +534,16 @@ async function replaceGeneratedAssets(cards) {
 	);
 
 	try {
-		await Promise.all(
-			LOCALES.flatMap((locale) =>
+		await Promise.all([
+			writeFile(path.join(temporaryDirectory, ".gdignore"), "", "utf8"),
+			...LOCALES.flatMap((locale) =>
 				THEMES.map((theme) =>
 					mkdir(path.join(temporaryDirectory, locale.directory, theme), {
 						recursive: true,
 					}),
 				),
 			),
-		);
+		]);
 		await Promise.all(
 			cards.map((card) =>
 				writeFile(
