@@ -7,4 +7,5 @@ order: 7
 
 欢迎PR游戏列表
 
+- [Speckled Band](https://www.happycatgame.com/detail/speckled-band-en) - Based on the Classic Sherlock Holmes Tale
 - [雨夜重逢](https://github.com/Maicarons/raininght-akonado-demo) - 由 [Akonado](https://github.com/Maicarons/akonado) AI管线全自动生成的单章短篇视觉小说Demo。
