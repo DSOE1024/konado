@@ -121,6 +121,8 @@ func _parse_statement() -> KS_AST.ASTNode:
 			return _parse_achievement()
 		KS_Token.Type.KW_CAM:
 			return _parse_camera()
+		KS_Token.Type.KW_ASYNCAM:
+			return _parse_asyncam()
 		KS_Token.Type.KW_END:
 			return _parse_end()
 
@@ -485,6 +487,77 @@ func _parse_camera() -> KS_AST.CameraNode:
 
 		_:
 			_error("未知的 cam 操作: %s（应为 move、reset 或 shake）" % str(action_tok.value))
+			return null
+
+	_skip_to_next_line()
+	return node
+
+
+## 异步相机解析：asyncam move <target_cam> [tween_type] [tween_time] | asyncam reset [tween_type] [tween_time] | asyncam shake [duration] | asyncam stop
+func _parse_asyncam() -> KS_AST.AsyncCamNode:
+	var node := KS_AST.AsyncCamNode.new()
+	node.line = _peek().line
+	_advance()  # 跳过 asyncam
+
+	var action_tok := _peek()
+	if action_tok == null:
+		_error("asyncam 缺少操作指令")
+		return null
+
+	match action_tok.type:
+		KS_Token.Type.KW_MOVE:
+			node.action = "move"
+			_advance()
+			var target_tok := _expect_any_value()
+			if target_tok == null:
+				_error("asyncam move 缺少目标镜头名")
+				return null
+			node.target_cam = str(target_tok.value)
+
+			# 可选的 tween 参数
+			if not _at_line_end():
+				var tween_tok := _peek()
+				if tween_tok.type == KS_Token.Type.IDENTIFIER:
+					node.tween_type = str(_advance().value)
+					if not _at_line_end():
+						var time_tok := _peek()
+						if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
+							node.tween_time = float(str(_advance().value))
+						elif time_tok.type == KS_Token.Type.IDENTIFIER:
+							node.tween_time = float(str(_advance().value))
+
+		KS_Token.Type.KW_RESET:
+			node.action = "reset"
+			_advance()
+
+			if not _at_line_end():
+				var tween_tok := _peek()
+				if tween_tok.type == KS_Token.Type.IDENTIFIER:
+					node.tween_type = str(_advance().value)
+					if not _at_line_end():
+						var time_tok := _peek()
+						if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
+							node.tween_time = float(str(_advance().value))
+						elif time_tok.type == KS_Token.Type.IDENTIFIER:
+							node.tween_time = float(str(_advance().value))
+
+		KS_Token.Type.KW_SHAKE:
+			node.action = "shake"
+			_advance()
+
+			if not _at_line_end():
+				var time_tok := _peek()
+				if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
+					node.shake_time = float(str(_advance().value))
+				elif time_tok.type == KS_Token.Type.IDENTIFIER:
+					node.shake_time = float(str(_advance().value))
+
+		KS_Token.Type.KW_STOP:
+			node.action = "stop"
+			_advance()
+
+		_:
+			_error("asyncam 未知操作: %s（应为 move、reset、shake 或 stop）" % str(action_tok.value))
 			return null
 
 	_skip_to_next_line()

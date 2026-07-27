@@ -581,6 +581,30 @@ func _process(delta) -> void:
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 					_konado_cam_manager.shake_cam(dialog.cam_shake_time, callback)
+				# 异步移动镜头（不阻塞对话，后台运行）
+				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_MOVE_CAM:
+					print("异步移动镜头: %s" % dialog.target_cam)
+					_konado_cam_manager.async_move_cam(dialog.target_cam, dialog.cam_tween_time)
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
+				# 异步重置镜头（不阻塞对话）
+				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_RESET_CAM:
+					print("异步重置镜头")
+					_konado_cam_manager.async_reset_cam(dialog.cam_tween_time)
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
+				# 异步镜头晃动（不阻塞对话）
+				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_CAM_SHAKE:
+					print("异步镜头晃动: %.2f 秒" % dialog.cam_shake_time)
+					_konado_cam_manager.async_shake_cam(dialog.cam_shake_time)
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
+				# 强制停止所有异步相机 Tween（瞬间定格）
+				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_CAM_STOP:
+					print("强制停止异步相机动画")
+					_konado_cam_manager.async_stop_all()
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
 				# 屏幕文本（NVL Overlay）
 				elif cur_dialogue_type == KND_Dialogue.Type.SCREEN_TEXT:
 					if _screen_text == null:
