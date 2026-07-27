@@ -132,3 +132,11 @@ class HideTextBoxNode extends ASTNode:
 ## 等待外部信号节点
 class WaitSignalNode extends ASTNode:
 	var signal_name: String = ""       ## 等待的外部信号名称
+
+## 异步相机操作节点（不阻塞对话）
+class AsyncCamNode extends ASTNode:
+	var action: String = ""         ## "move"、"reset"、"shake" 或 "stop"
+	var target_cam: String = ""     ## move 操作的目标镜头名
+	var tween_type: String = ""     ## tween 动画类型
+	var tween_time: float = 0.0     ## tween 动画时间
+	var shake_time: float = 0.0     ## shake 晃动持续时间
