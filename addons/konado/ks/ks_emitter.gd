@@ -117,6 +117,8 @@ func _emit_node(node: KS_AST.ASTNode) -> KND_Dialogue:
 		return _emit_hide_textbox(node)
 	if node is KS_AST.WaitSignalNode:
 		return _emit_wait_signal(node)
+	if node is KS_AST.AsyncCamNode:
+		return _emit_asyncam(node)
 
 	return null
 
@@ -419,6 +421,48 @@ func _emit_wait_signal(node: KS_AST.WaitSignalNode) -> KND_Dialogue:
 	d.source_file_line = node.line
 	d.dialog_type = KND_Dialogue.Type.WAIT_SIGNAL
 	d.wait_signal_name = node.signal_name
+	return d
+
+
+func _emit_asyncam(node: KS_AST.AsyncCamNode) -> KND_Dialogue:
+	var d := KND_Dialogue.new()
+	d.source_file_line = node.line
+
+	match node.action:
+		"move":
+			d.dialog_type = KND_Dialogue.Type.ASYNC_MOVE_CAM
+			d.target_cam = node.target_cam
+
+			if node.tween_type.is_empty():
+				d.cam_tween_type = ""
+				d.cam_tween_time = 0.0
+			elif node.tween_type == "none":
+				d.cam_tween_type = "none"
+				d.cam_tween_time = 0.0
+			else:
+				d.cam_tween_type = node.tween_type
+				d.cam_tween_time = node.tween_time if node.tween_time > 0 else 1.0
+
+		"reset":
+			d.dialog_type = KND_Dialogue.Type.ASYNC_RESET_CAM
+
+			if node.tween_type.is_empty():
+				d.cam_tween_type = ""
+				d.cam_tween_time = 0.0
+			elif node.tween_type == "none":
+				d.cam_tween_type = "none"
+				d.cam_tween_time = 0.0
+			else:
+				d.cam_tween_type = node.tween_type
+				d.cam_tween_time = node.tween_time if node.tween_time > 0 else 1.0
+
+		"shake":
+			d.dialog_type = KND_Dialogue.Type.ASYNC_CAM_SHAKE
+			d.cam_shake_time = node.shake_time if node.shake_time > 0 else 1.0
+
+		"stop":
+			d.dialog_type = KND_Dialogue.Type.ASYNC_CAM_STOP
+
 	return d
 
 

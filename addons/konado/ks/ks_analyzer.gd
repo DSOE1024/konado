@@ -101,6 +101,8 @@ func _validate_node(node: KS_AST.ASTNode, context: String) -> void:
 		pass
 	elif node is KS_AST.WaitSignalNode:
 		pass
+	elif node is KS_AST.AsyncCamNode:
+		pass
 
 
 ## 验证演员操作
