@@ -35,7 +35,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: .github/scripts/requirements.txt
 
@@ -56,6 +56,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Install test dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3 libfontconfig1
 
       - name: Import project
         run: godot --headless --editor --path . --quit
@@ -122,7 +127,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Check plugin resource boundaries
         run: python plugin_path_checker.py "res://addons/konado/" "./addons/konado/"
