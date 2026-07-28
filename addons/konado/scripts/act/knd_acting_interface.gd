@@ -62,6 +62,16 @@ var _transition_old_background: KND_BackgroundSceneBase
 var _pending_shader_background: KND_BackgroundSceneBase
 var _background_transition_wait_count: int = 0
 
+## 启用全局演员背景色调混合
+@export var enable_tint_intensity: bool = true
+## 全局演员背景色调混合
+@export var global_tint_intensity: float = 0.3:
+	set(value):
+		global_tint_intensity = clamp(value, 0.0, 0.5)
+		# 如果正在游戏中，立刻刷新所有角色染色
+		if is_inside_tree():
+			apply_background_tint_to_characters()
+
 const BACKGROUND_EFFECT_NAMES := {
 	BackgroundTransitionEffectsType.NONE_EFFECT: "none",
 	BackgroundTransitionEffectsType.EraseEffect: "erase",
@@ -76,6 +86,10 @@ const BACKGROUND_EFFECT_NAMES := {
 
 
 func _ready() -> void:
+	self.background_change_finished.connect(
+		func():
+			self.apply_background_tint_to_characters()
+	)
 	_ensure_stage_nodes()
 	for child in _chara_controler.get_children():
 		child.queue_free()
@@ -333,6 +347,7 @@ func show_character(chara_id: String, h_division: int, pos_h: int, state: String
 	temp_node.set_stage_position(h_division, pos_h)
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
+	apply_background_tint_to_characters()
 	temp_node.actor_motion_started.connect(_on_character_motion_started.bind(chara_id))
 	temp_node.actor_motion_finished.connect(_on_character_motion_finished.bind(chara_id))
 	temp_node.set_motion_layer_scene(motion_layer_scene)
@@ -487,4 +502,23 @@ func _on_character_motion_started(motion_name: String, actor_id: String) -> void
 
 func _on_character_motion_finished(motion_name: String, actor_id: String) -> void:
 	character_motion_finished.emit(actor_id, motion_name)
+	
+	
+## 从当前背景获取环境色，并应用到所有角色的视觉层
+func apply_background_tint_to_characters() -> void:
+	if _current_background_scene == null:
+		return
+		
+	var raw_color: Color = _current_background_scene.get_scene_tint_color()
+	# 默认禁用
+	var total_intensity: float = 1.0
+	if enable_tint_intensity:
+		total_intensity = clamp(global_tint_intensity * _current_background_scene.scene_tint_intensity, 0.0, 1.0)
+	var tint_color: Color = Color.WHITE.lerp(raw_color, total_intensity)
+	
+	for actor_id in actor_dict.keys():
+		var chara_node := get_chara_node(actor_id) as KND_Actor
+		if chara_node:
+			chara_node.set_actor_modulate(tint_color)
+			
 	
