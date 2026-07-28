@@ -21,19 +21,28 @@ signal background_exit_finished
 	set(value):
 		scene_tint_intensity = clamp(value, 0.0, 2.0)
 
+## 当无法从纹理中提取色调时，使用的默认环境色
+@export var default_env_color: Color = Color.WHITE
+
 var _transition_tween: Tween
 var _active_animation: StringName = &""
 var _active_phase: String = ""
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if animation_player == null:
 		animation_player = get_node_or_null("AnimationPlayer") as AnimationPlayer
-	if animation_player and not animation_player.animation_finished.is_connected(_on_animation_finished):
+	if (
+		animation_player
+		and not animation_player.animation_finished.is_connected(_on_animation_finished)
+	):
 		animation_player.animation_finished.connect(_on_animation_finished)
+
 
 func setup_background(_background_name: String, _params: Dictionary = {}) -> void:
 	pass
+
 
 ## 给系统内置 shader 转场使用的静态纹理。
 ## 图片背景默认会递归寻找第一个 TextureRect / Sprite2D；视频、Live2D、Spine 等动态场景可保持为空，
@@ -41,11 +50,14 @@ func setup_background(_background_name: String, _params: Dictionary = {}) -> voi
 func get_transition_texture() -> Texture2D:
 	return _find_transition_texture(self)
 
+
 func play_enter(effect_name: String = "none", params: Dictionary = {}) -> void:
 	_play_transition("enter", effect_name, params)
 
+
 func play_exit(effect_name: String = "none", params: Dictionary = {}) -> void:
 	_play_transition("exit", effect_name, params)
+
 
 func stop_background_transition() -> void:
 	if _transition_tween and _transition_tween.is_valid():
@@ -56,6 +68,7 @@ func stop_background_transition() -> void:
 	_active_animation = &""
 	_active_phase = ""
 
+
 func _play_transition(phase: String, effect_name: String, _params: Dictionary) -> void:
 	stop_background_transition()
 	_active_phase = phase
@@ -65,6 +78,7 @@ func _play_transition(phase: String, effect_name: String, _params: Dictionary) -
 		_play_default_fade(phase)
 		return
 	_finish_transition(phase)
+
 
 func _play_animation_for_phase(phase: String, effect_name: String) -> bool:
 	if animation_player == null:
@@ -80,6 +94,7 @@ func _play_animation_for_phase(phase: String, effect_name: String) -> bool:
 			return true
 	return false
 
+
 func _play_default_fade(phase: String) -> void:
 	var from_alpha := 0.0 if phase == "enter" else modulate.a
 	var to_alpha := 1.0 if phase == "enter" else 0.0
@@ -87,6 +102,7 @@ func _play_default_fade(phase: String) -> void:
 	_transition_tween = create_tween()
 	_transition_tween.tween_property(self, "modulate:a", to_alpha, default_transition_duration)
 	_transition_tween.finished.connect(_finish_transition.bind(phase))
+
 
 func _finish_transition(phase: String) -> void:
 	_transition_tween = null
@@ -97,10 +113,12 @@ func _finish_transition(phase: String) -> void:
 	else:
 		background_exit_finished.emit()
 
+
 func _on_animation_finished(animation_name: StringName) -> void:
 	if animation_name != _active_animation:
 		return
 	_finish_transition(_active_phase)
+
 
 func _find_transition_texture(node: Node) -> Texture2D:
 	if node is TextureRect:
@@ -116,9 +134,7 @@ func _find_transition_texture(node: Node) -> Texture2D:
 		if texture:
 			return texture
 	return null
-	
-## 当无法从纹理中提取色调时，使用的默认环境色
-@export var default_env_color: Color = Color.WHITE
+
 
 ## 返回当前背景场景的代表色（环境光颜色）
 func get_scene_tint_color() -> Color:
@@ -126,6 +142,7 @@ func get_scene_tint_color() -> Color:
 	if tex == null:
 		return default_env_color
 	return _calculate_average_color(tex)
+
 
 ## 从 Texture2D 中计算全图平均色
 func _calculate_average_color(texture: Texture2D) -> Color:
