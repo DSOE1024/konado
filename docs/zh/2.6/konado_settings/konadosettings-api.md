@@ -27,22 +27,24 @@ order: 2
   - `key`：设置项的键
 - **返回值**：设置值，如果不存在则返回默认值或 null
 
-#### `set_setting(category: String, key: String, value: Variant) -> void`
-- **描述**：修改设置，持久化并发出信号
+#### `set_setting(category: String, key: String, value: Variant) -> bool`
+- **描述**：验证并持久化设置；成功后发出信号
 - **参数**：
   - `category`：设置分类
   - `key`：设置项的键
   - `value`：新的设置值
+- **返回值**：验证和保存都成功时返回 `true`，否则返回 `false`
 
 #### `register_category(cat: SettingCategory) -> void`
 - **描述**：在运行时注册额外的设置分类
 - **参数**：
   - `cat`：要注册的设置分类
 
-#### `reset_category(category_id: String) -> void`
-- **描述**：将指定分类的所有设置重置为默认值
+#### `reset_category(category_id: String) -> bool`
+- **描述**：以一次保存操作将指定分类的所有设置重置为默认值
 - **参数**：
   - `category_id`：分类 ID
+- **返回值**：重置成功时返回 `true`，否则返回 `false`
 
 #### `get_categories() -> Array`
 - **描述**：获取所有注册的分类（根据当前平台过滤）
@@ -350,9 +352,9 @@ add_child(panel)
    - 修改 `settings_manager.gd` 中的 `_load_saved()` 和 `set_setting()` 方法
    - 实现自定义的存储和加载逻辑
 
-3. **添加设置验证**：
-   - 在 `set_setting()` 中添加值验证逻辑
-   - 确保设置值在有效范围内
+3. **扩展设置验证**：
+   - 在 `_validate_value()` 中扩展自定义类型的验证逻辑
+   - 内置类型已验证数值范围、布尔类型和选项列表
 
 4. **国际化支持**：
    - 修改 `display_name` 和 `label` 的处理逻辑

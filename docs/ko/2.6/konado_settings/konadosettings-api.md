@@ -27,22 +27,24 @@ order: 2
   - `key`: 설정 항목의 키.
 - **반환값**: 설정 값입니다. 존재하지 않으면 기본값 또는 null을 반환합니다.
 
-#### `set_setting(category: String, key: String, value: Variant) -> void`
-- **설명**: 설정을 변경하고 저장한 뒤 시그널을 발생시킵니다.
+#### `set_setting(category: String, key: String, value: Variant) -> bool`
+- **설명**: 설정을 검증하고 저장한 뒤 성공한 경우 변경 시그널을 발생시킵니다.
 - **매개변수**:
   - `category`: 설정 카테고리.
   - `key`: 설정 항목의 키.
   - `value`: 새 설정 값.
+- **반환값**: 검증과 저장이 모두 성공하면 `true`, 그렇지 않으면 `false`.
 
 #### `register_category(cat: SettingCategory) -> void`
 - **설명**: 실행 중에 추가 설정 카테고리를 등록합니다.
 - **매개변수**:
   - `cat`: 등록할 설정 카테고리.
 
-#### `reset_category(category_id: String) -> void`
-- **설명**: 지정한 카테고리의 모든 설정을 기본값으로 되돌립니다.
+#### `reset_category(category_id: String) -> bool`
+- **설명**: 한 번의 저장 작업으로 지정한 카테고리의 모든 설정을 기본값으로 되돌립니다.
 - **매개변수**:
   - `category_id`: 카테고리 ID.
+- **반환값**: 초기화에 성공하면 `true`, 그렇지 않으면 `false`.
 
 #### `get_categories() -> Array`
 - **설명**: 등록된 모든 카테고리를 현재 플랫폼에 맞게 필터링해 가져옵니다.
@@ -350,9 +352,9 @@ add_child(panel)
    - `settings_manager.gd`의 `_load_saved()`와 `set_setting()` 메서드를 수정합니다.
    - 사용자 정의 저장 및 로드 로직을 구현합니다.
 
-3. **설정 검증 추가**:
-   - `set_setting()`에 값 검증 로직을 추가합니다.
-   - 설정 값이 유효한 범위 안에 있는지 보장합니다.
+3. **설정 검증 확장**:
+   - 사용자 지정 설정 타입에 맞게 `_validate_value()`를 확장합니다.
+   - 기본 제공 타입은 숫자 범위, 불리언 값, 옵션 포함 여부를 이미 검증합니다.
 
 4. **국제화 지원 추가**:
    - `display_name`과 `label` 처리 로직을 수정합니다.

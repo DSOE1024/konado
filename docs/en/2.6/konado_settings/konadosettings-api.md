@@ -27,22 +27,24 @@ The settings manager is an autoloaded singleton that manages all setting items.
   - `key`: Key of the setting item.
 - **Return value**: The setting value. If it does not exist, returns the default value or null.
 
-#### `set_setting(category: String, key: String, value: Variant) -> void`
-- **Description**: Updates a setting, persists it, and emits the change signal.
+#### `set_setting(category: String, key: String, value: Variant) -> bool`
+- **Description**: Validates and persists a setting, then emits the change signal on success.
 - **Parameters**:
   - `category`: Setting category.
   - `key`: Key of the setting item.
   - `value`: New setting value.
+- **Return value**: `true` when validation and persistence both succeed; otherwise `false`.
 
 #### `register_category(cat: SettingCategory) -> void`
 - **Description**: Registers an additional setting category at runtime.
 - **Parameters**:
   - `cat`: The setting category to register.
 
-#### `reset_category(category_id: String) -> void`
-- **Description**: Resets all settings in the specified category to their default values.
+#### `reset_category(category_id: String) -> bool`
+- **Description**: Resets all settings in the specified category with a single save operation.
 - **Parameters**:
   - `category_id`: Category ID.
+- **Return value**: `true` when the reset succeeds; otherwise `false`.
 
 #### `get_categories() -> Array`
 - **Description**: Gets all registered categories, filtered for the current platform.
@@ -350,9 +352,9 @@ add_child(panel)
    - Modify `_load_saved()` and `set_setting()` in `settings_manager.gd`.
    - Implement custom save and load logic.
 
-3. **Add setting validation**:
-   - Add value validation logic in `set_setting()`.
-   - Ensure setting values stay within valid ranges.
+3. **Extend setting validation**:
+   - Extend `_validate_value()` for custom setting types.
+   - Built-in types already validate numeric ranges, Boolean values, and option membership.
 
 4. **Add internationalization support**:
    - Modify how `display_name` and `label` are processed.

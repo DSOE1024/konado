@@ -27,22 +27,24 @@ order: 2
   - `key`: 設定項目のキー。
 - **戻り値**: 設定値。存在しない場合はデフォルト値、または null を返します。
 
-#### `set_setting(category: String, key: String, value: Variant) -> void`
-- **説明**: 設定を変更し、保存してシグナルを送信します。
+#### `set_setting(category: String, key: String, value: Variant) -> bool`
+- **説明**: 設定を検証して保存し、成功した場合に変更シグナルを送信します。
 - **引数**:
   - `category`: 設定カテゴリ。
   - `key`: 設定項目のキー。
   - `value`: 新しい設定値。
+- **戻り値**: 検証と保存の両方に成功した場合は `true`、それ以外は `false`。
 
 #### `register_category(cat: SettingCategory) -> void`
 - **説明**: 実行時に追加の設定カテゴリを登録します。
 - **引数**:
   - `cat`: 登録する設定カテゴリ。
 
-#### `reset_category(category_id: String) -> void`
-- **説明**: 指定したカテゴリ内のすべての設定をデフォルト値に戻します。
+#### `reset_category(category_id: String) -> bool`
+- **説明**: 1 回の保存処理で、指定したカテゴリ内のすべての設定をデフォルト値に戻します。
 - **引数**:
   - `category_id`: カテゴリ ID。
+- **戻り値**: リセットに成功した場合は `true`、それ以外は `false`。
 
 #### `get_categories() -> Array`
 - **説明**: 登録済みのすべてのカテゴリを、現在のプラットフォームに応じてフィルタして取得します。
@@ -350,9 +352,9 @@ add_child(panel)
    - `settings_manager.gd` の `_load_saved()` と `set_setting()` メソッドを変更します。
    - 独自の保存・読み込み処理を実装します。
 
-3. **設定値の検証を追加する**:
-   - `set_setting()` に値の検証処理を追加します。
-   - 設定値が有効な範囲内に収まるようにします。
+3. **設定値の検証を拡張する**:
+   - カスタム設定タイプ向けに `_validate_value()` を拡張します。
+   - 組み込みタイプでは、数値範囲、ブール値、選択肢への所属をすでに検証します。
 
 4. **国際化対応を追加する**:
    - `display_name` と `label` の処理ロジックを変更します。

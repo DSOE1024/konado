@@ -27,22 +27,24 @@ order: 2
   - `key`：設定項目的鍵。
 - **回傳值**：設定值；若不存在，則回傳預設值或 null。
 
-#### `set_setting(category: String, key: String, value: Variant) -> void`
-- **描述**：修改設定，持久化並發出訊號。
+#### `set_setting(category: String, key: String, value: Variant) -> bool`
+- **描述**：驗證並持久化設定；成功後發出訊號。
 - **參數**：
   - `category`：設定分類。
   - `key`：設定項目的鍵。
   - `value`：新的設定值。
+- **回傳值**：驗證與儲存皆成功時回傳 `true`，否則回傳 `false`。
 
 #### `register_category(cat: SettingCategory) -> void`
 - **描述**：在執行時註冊額外的設定分類。
 - **參數**：
   - `cat`：要註冊的設定分類。
 
-#### `reset_category(category_id: String) -> void`
-- **描述**：將指定分類中的所有設定重設為預設值。
+#### `reset_category(category_id: String) -> bool`
+- **描述**：以一次儲存操作將指定分類中的所有設定重設為預設值。
 - **參數**：
   - `category_id`：分類 ID。
+- **回傳值**：重設成功時回傳 `true`，否則回傳 `false`。
 
 #### `get_categories() -> Array`
 - **描述**：取得所有已註冊分類，並依目前平台過濾。
@@ -350,9 +352,9 @@ add_child(panel)
    - 修改 `settings_manager.gd` 中的 `_load_saved()` 和 `set_setting()` 方法。
    - 實作自訂的儲存與載入邏輯。
 
-3. **新增設定驗證**：
-   - 在 `set_setting()` 中新增數值驗證邏輯。
-   - 確保設定值在有效範圍內。
+3. **擴充設定驗證**：
+   - 在 `_validate_value()` 中擴充自訂類型的驗證邏輯。
+   - 內建類型已驗證數值範圍、布林型別與選項清單。
 
 4. **國際化支援**：
    - 修改 `display_name` 和 `label` 的處理邏輯。
