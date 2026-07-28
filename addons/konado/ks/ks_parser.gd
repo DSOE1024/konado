@@ -1,17 +1,8 @@
-extends RefCounted
+extends "res://addons/konado/ks/ks_parser_context.gd"
 class_name KS_Parser
 
 ## KS 语法分析器
 ## 将 Token 流转换为抽象语法树（AST）
-
-var _tokens: Array[KS_Token] = []
-var _pos: int = 0
-var _path: String = ""
-var _errors: Array[String] = []
-
-
-func _init() -> void:
-	pass
 
 
 ## 获取解析错误列表
@@ -69,70 +60,73 @@ func parse_single_statement(tokens: Array[KS_Token], path: String = "") -> KS_AS
 # 语句分发
 # ============================================================
 
+
 func _parse_statement() -> KS_AST.ASTNode:
 	var tok := _peek()
-
-	# 对话（以字符串字面量开头）
-	if tok.type == KS_Token.Type.STRING_LITERAL:
-		return _parse_dialogue()
+	var statement: KS_AST.ASTNode
 
 	match tok.type:
+		KS_Token.Type.STRING_LITERAL:
+			statement = _parse_dialogue()
 		KS_Token.Type.KW_SCREENTEXT:
-			return _parse_screen_text()
+			statement = _parse_screen_text()
 		KS_Token.Type.KW_SHOWTEXTBOX:
-			return _parse_show_textbox()
+			statement = _parse_show_textbox()
 		KS_Token.Type.KW_HIDETEXTBOX:
-			return _parse_hide_textbox()
+			statement = _parse_hide_textbox()
 		KS_Token.Type.KW_WAITSIGNAL:
-			return _parse_wait_signal()
+			statement = _parse_wait_signal()
 		KS_Token.Type.KW_BACKGROUND:
-			return _parse_background()
+			statement = _parse_background()
 		KS_Token.Type.KW_ACTOR:
-			return _parse_actor()
+			statement = _parse_actor()
 		KS_Token.Type.KW_PLAY:
-			return _parse_play_audio()
+			statement = _parse_play_audio()
 		KS_Token.Type.KW_STOP:
-			return _parse_stop_audio()
+			statement = _parse_stop_audio()
 		KS_Token.Type.KW_CHOICE:
-			return _parse_choice_group()
+			statement = _parse_choice_group()
 		KS_Token.Type.KW_BRANCH:
-			return _parse_branch()
+			statement = _parse_branch()
 		KS_Token.Type.KW_IF:
-			return _parse_if_else()
-		KS_Token.Type.KW_ELSE:
-			# 顶层出现 else/endif 说明已被 if 消费或格式错误，跳过
+			statement = _parse_if_else()
+		KS_Token.Type.KW_ELSE, KS_Token.Type.KW_ENDIF:
 			_advance()
 			_skip_to_next_line()
-			return null
-		KS_Token.Type.KW_ENDIF:
-			_advance()
-			_skip_to_next_line()
-			return null
-		KS_Token.Type.KW_SET, KS_Token.Type.KW_ADD, KS_Token.Type.KW_SUB, \
-		KS_Token.Type.KW_MUL, KS_Token.Type.KW_DIV:
-			return _parse_variable()
+		KS_Token.Type.KW_SET:
+			statement = _parse_variable()
+		KS_Token.Type.KW_ADD:
+			statement = _parse_variable()
+		KS_Token.Type.KW_SUB:
+			statement = _parse_variable()
+		KS_Token.Type.KW_MUL:
+			statement = _parse_variable()
+		KS_Token.Type.KW_DIV:
+			statement = _parse_variable()
 		KS_Token.Type.KW_JUMP_BRANCH:
-			return _parse_jump_branch()
+			statement = _parse_jump_branch()
 		KS_Token.Type.KW_JUMP:
-			return _parse_jump()
+			statement = _parse_jump()
 		KS_Token.Type.KW_SIGNAL:
-			return _parse_signal()
+			statement = _parse_signal()
 		KS_Token.Type.KW_ACHIEVEMENT:
-			return _parse_achievement()
+			statement = _parse_achievement()
 		KS_Token.Type.KW_CAM:
-			return _parse_camera()
+			statement = _parse_camera()
 		KS_Token.Type.KW_ASYNCAM:
-			return _parse_asyncam()
+			statement = _parse_asyncam()
 		KS_Token.Type.KW_END:
-			return _parse_end()
+			statement = _parse_end()
+		_:
+			_error("无法识别的语法：%s" % str(tok))
 
-	_error("无法识别的语法：%s" % str(tok))
-	return null
+	return statement
 
 
 # ============================================================
 # 各语句解析
 # ============================================================
+
 
 ## 对话解析：  "角色" "内容" [voice_id]
 func _parse_dialogue() -> KS_AST.DialogueNode:
@@ -152,7 +146,10 @@ func _parse_dialogue() -> KS_AST.DialogueNode:
 	# 可选的配音标签
 	if not _at_line_end():
 		var voice_tok := _peek()
-		if voice_tok.type == KS_Token.Type.IDENTIFIER or voice_tok.type == KS_Token.Type.STRING_LITERAL:
+		if (
+			voice_tok.type == KS_Token.Type.IDENTIFIER
+			or voice_tok.type == KS_Token.Type.STRING_LITERAL
+		):
 			node.voice_id = str(_advance().value)
 
 	_skip_to_next_line()
@@ -281,96 +278,120 @@ func _parse_actor() -> KS_AST.ActorNode:
 	_advance()  # 跳过 actor
 
 	var action_tok := _peek()
-	if action_tok == null:
+	var is_valid := (
+		action_tok.type != KS_Token.Type.NEWLINE and action_tok.type != KS_Token.Type.EOF
+	)
+
+	if not is_valid:
 		_error("actor 缺少操作指令")
-		return null
+	else:
+		match action_tok.type:
+			KS_Token.Type.KW_SHOW:
+				is_valid = _parse_actor_show(node)
+			KS_Token.Type.KW_EXIT:
+				is_valid = _parse_actor_exit(node)
+			KS_Token.Type.KW_CHANGE:
+				is_valid = _parse_actor_change(node)
+			KS_Token.Type.KW_MOVE:
+				is_valid = _parse_actor_move(node)
+			KS_Token.Type.KW_MOTION:
+				is_valid = _parse_actor_motion(node)
+			_:
+				_error("未知的 actor 操作: %s" % str(action_tok.value))
+				is_valid = false
 
-	match action_tok.type:
-		KS_Token.Type.KW_SHOW:
-			node.action = "show"
-			_advance()
-			var name_tok := _expect_any_value()
-			if name_tok == null:
-				_error("actor show 缺少角色名")
-				return null
-			node.actor_name = str(name_tok.value)
+	if is_valid:
+		_skip_to_next_line()
+		return node
+	return null
 
-			var state_tok := _expect_any_value()
-			if state_tok == null:
-				_error("actor show 缺少状态")
-				return null
-			node.state = str(state_tok.value)
 
-			# 可选 at <position>
-			if not _at_line_end() and _check(KS_Token.Type.KW_AT):
-				_advance()  # 跳过 at
-				var pos_tok := _expect_any_value()
-				if pos_tok:
-					node.position = float(str(pos_tok.value))
-					node.has_position = true
+func _parse_actor_show(node: KS_AST.ActorNode) -> bool:
+	node.action = "show"
+	_advance()
+	var name_tok := _expect_any_value()
+	if name_tok == null:
+		_error("actor show 缺少角色名")
+		return false
+	var state_tok := _expect_any_value()
+	if state_tok == null:
+		_error("actor show 缺少状态")
+		return false
+	node.actor_name = str(name_tok.value)
+	node.state = str(state_tok.value)
+	if not _at_line_end() and _check(KS_Token.Type.KW_AT):
+		_advance()
+		var pos_tok := _expect_any_value()
+		if pos_tok == null:
+			_error("actor show 的 at 缺少位置")
+			return false
+		node.position = float(str(pos_tok.value))
+		node.has_position = true
+	return true
 
-		KS_Token.Type.KW_EXIT:
-			node.action = "exit"
-			_advance()
-			var name_tok := _expect_any_value()
-			if name_tok == null:
-				_error("actor exit 缺少角色名")
-				return null
-			node.actor_name = str(name_tok.value)
 
-		KS_Token.Type.KW_CHANGE:
-			node.action = "change"
-			_advance()
-			var name_tok := _expect_any_value()
-			if name_tok == null:
-				_error("actor change 缺少角色名")
-				return null
-			node.actor_name = str(name_tok.value)
+func _parse_actor_exit(node: KS_AST.ActorNode) -> bool:
+	node.action = "exit"
+	_advance()
+	return _parse_actor_name(node, "actor exit 缺少角色名")
 
-			var state_tok := _expect_any_value()
-			if state_tok == null:
-				_error("actor change 缺少新状态")
-				return null
-			node.state = str(state_tok.value)
 
-		KS_Token.Type.KW_MOVE:
-			node.action = "move"
-			_advance()
-			var name_tok := _expect_any_value()
-			if name_tok == null:
-				_error("actor move 缺少角色名")
-				return null
-			node.actor_name = str(name_tok.value)
+func _parse_actor_change(node: KS_AST.ActorNode) -> bool:
+	node.action = "change"
+	_advance()
+	var name_tok := _expect_any_value()
+	if name_tok == null:
+		_error("actor change 缺少角色名")
+		return false
+	var state_tok := _expect_any_value()
+	if state_tok == null:
+		_error("actor change 缺少新状态")
+		return false
+	node.actor_name = str(name_tok.value)
+	node.state = str(state_tok.value)
+	return true
 
-			var pos_tok := _expect_any_value()
-			if pos_tok == null:
-				_error("actor move 缺少目标坐标")
-				return null
-			node.position = float(str(pos_tok.value))
-			node.has_position = true
 
-		KS_Token.Type.KW_MOTION:
-			node.action = "motion"
-			_advance()
-			var name_tok := _expect_any_value()
-			if name_tok == null:
-				_error("actor motion 缺少角色名")
-				return null
-			node.actor_name = str(name_tok.value)
+func _parse_actor_move(node: KS_AST.ActorNode) -> bool:
+	node.action = "move"
+	_advance()
+	var name_tok := _expect_any_value()
+	if name_tok == null:
+		_error("actor move 缺少角色名")
+		return false
+	var pos_tok := _expect_any_value()
+	if pos_tok == null:
+		_error("actor move 缺少目标坐标")
+		return false
+	node.actor_name = str(name_tok.value)
+	node.position = float(str(pos_tok.value))
+	node.has_position = true
+	return true
 
-			var motion_tok := _expect_any_value()
-			if motion_tok == null:
-				_error("actor motion 缺少动作名")
-				return null
-			node.motion_name = str(motion_tok.value)
 
-		_:
-			_error("未知的 actor 操作: %s" % str(action_tok.value))
-			return null
+func _parse_actor_motion(node: KS_AST.ActorNode) -> bool:
+	node.action = "motion"
+	_advance()
+	var name_tok := _expect_any_value()
+	if name_tok == null:
+		_error("actor motion 缺少角色名")
+		return false
+	var motion_tok := _expect_any_value()
+	if motion_tok == null:
+		_error("actor motion 缺少动作名")
+		return false
+	node.actor_name = str(name_tok.value)
+	node.motion_name = str(motion_tok.value)
+	return true
 
-	# 跳过行末剩余 token（如 scale、motion 参数等额外参数）
-	_skip_to_next_line()
-	return node
+
+func _parse_actor_name(node: KS_AST.ActorNode, error_message: String) -> bool:
+	var name_tok := _expect_any_value()
+	if name_tok == null:
+		_error(error_message)
+		return false
+	node.actor_name = str(name_tok.value)
+	return true
 
 
 ## play audio: play bgm/sfx <name>
@@ -493,7 +514,8 @@ func _parse_camera() -> KS_AST.CameraNode:
 	return node
 
 
-## 异步相机解析：asyncam move <target_cam> [tween_type] [tween_time] | asyncam reset [tween_type] [tween_time] | asyncam shake [duration] | asyncam stop
+## 异步相机解析：支持 asyncam move/reset/shake/stop，
+## move 和 reset 可附带 tween_type 与 tween_time。
 func _parse_asyncam() -> KS_AST.AsyncCamNode:
 	var node := KS_AST.AsyncCamNode.new()
 	node.line = _peek().line
@@ -874,6 +896,7 @@ func _parse_end() -> KS_AST.EndNode:
 # 块级解析辅助
 # ============================================================
 
+
 ## 解析缩进块（用于 branch 内部）
 func _parse_indented_block() -> Array:
 	var stmts: Array = []  # Array[KS_AST.ASTNode]
@@ -922,102 +945,3 @@ func _parse_condition_block() -> Array:
 			stmts.append(stmt)
 
 	return stmts
-
-
-# ============================================================
-# Token 流操作辅助
-# ============================================================
-
-## 查看当前 Token（不消费）
-func _peek() -> KS_Token:
-	if _pos < _tokens.size():
-		return _tokens[_pos]
-	return KS_Token.new(KS_Token.Type.EOF, "", 0, 0)
-
-
-## 消费并返回当前 Token
-func _advance() -> KS_Token:
-	var tok := _peek()
-	if _pos < _tokens.size():
-		_pos += 1
-	return tok
-
-
-## 检查当前 Token 类型
-func _check(type: KS_Token.Type) -> bool:
-	return _peek().type == type
-
-
-## 期望指定类型的 Token，否则报错
-func _expect(type: KS_Token.Type) -> KS_Token:
-	if _check(type):
-		return _advance()
-	_error("期望 %s，实际为 %s" % [KS_Token.Type.keys()[type], str(_peek())])
-	return null
-
-
-## 期望任意值 Token（STRING_LITERAL / NUMBER_LITERAL / IDENTIFIER / VARIABLE_REF / 关键字）
-func _expect_any_value() -> KS_Token:
-	var tok := _peek()
-	if tok.type == KS_Token.Type.NEWLINE or tok.type == KS_Token.Type.EOF:
-		return null
-	return _advance()
-
-
-## 是否在行末（NEWLINE 或 EOF）
-func _at_line_end() -> bool:
-	var tok := _peek()
-	return tok.type == KS_Token.Type.NEWLINE or tok.type == KS_Token.Type.EOF
-
-
-## 跳过所有 NEWLINE
-func _skip_newlines() -> void:
-	while _pos < _tokens.size() and _tokens[_pos].type == KS_Token.Type.NEWLINE:
-		_pos += 1
-
-
-## 跳到下一行（消费到 NEWLINE 或 EOF）
-func _skip_to_next_line() -> void:
-	while _pos < _tokens.size():
-		if _tokens[_pos].type == KS_Token.Type.NEWLINE:
-			_pos += 1
-			return
-		if _tokens[_pos].type == KS_Token.Type.EOF:
-			return
-		_pos += 1
-
-
-## 是否到达 Token 流末尾
-func _at_end() -> bool:
-	return _pos >= _tokens.size() or _peek().type == KS_Token.Type.EOF
-
-
-## 检查当前行（可能跨 INDENT）是否以指定关键字开头
-func _check_keyword_on_line(kw: KS_Token.Type) -> bool:
-	var look := _pos
-	# 跳过可能的 INDENT
-	if look < _tokens.size() and _tokens[look].type == KS_Token.Type.INDENT:
-		look += 1
-	if look < _tokens.size() and _tokens[look].type == kw:
-		return true
-	return false
-
-
-## 跳过到指定关键字之后（含行末 NEWLINE）
-func _skip_past_keyword(kw: KS_Token.Type) -> void:
-	if _check(KS_Token.Type.INDENT):
-		_advance()
-	if _check(kw):
-		_advance()
-	# 跳过冒号（else: 的冒号已在关键字中处理，但独立冒号也需处理）
-	if _check(KS_Token.Type.COLON):
-		_advance()
-	_skip_to_next_line()
-
-
-## 错误记录
-func _error(msg: String) -> void:
-	var line_num := _peek().line if _peek() else 0
-	var err := "语法错误：%s [行：%d] %s" % [_path, line_num, msg]
-	_errors.append(err)
-	push_error(err)

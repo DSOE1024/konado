@@ -107,8 +107,8 @@ func compile_line(line: String, line_number: int, path: String = "") -> KND_Dial
 
 	# 直接发射（跳过语义分析，单行模式无上下文）
 	return _emitter.emit_single(node)
-	
-	
+
+
 func _report_error(path: String, line: int, msg: String) -> void:
 	var err := "错误：%s [行：%d] %s" % [path, line, msg]
 	_errors.append(err)

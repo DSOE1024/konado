@@ -1,184 +1,216 @@
 extends RefCounted
 class_name KS_Analyzer
 
-## KS 语义分析器
-## 对 AST 进行语义验证：标签引用、演员生命周期等
+## KS 语义分析器。
+## 演员生命周期使用控制流状态分析：must 表示所有可达路径都存在，
+## may 表示至少一条可达路径存在，分支之间不会再互相污染状态。
 
 var _errors: Array[String] = []
 var _warnings: Array[String] = []
 var _branch_ids: Array[String] = []
-var _active_actors: Array[String] = []
+var _branch_nodes: Dictionary = {}
 var _dep_characters: Array[String] = []
-var _path: String = ""
+var _visited_states: Dictionary = {}
+var _visited_branches: Dictionary = {}
+var _path := ""
 
 
-func _init() -> void:
-	pass
-
-
-## 获取错误列表
 func get_errors() -> Array[String]:
 	return _errors
 
 
-## 获取警告列表
 func get_warnings() -> Array[String]:
 	return _warnings
 
 
-## 获取角色依赖列表
 func get_dep_characters() -> Array[String]:
 	return _dep_characters
 
 
-## 分析 AST，返回 true 表示通过验证
 func analyze(script: KS_AST.ScriptNode, path: String = "") -> bool:
 	_errors.clear()
 	_warnings.clear()
 	_branch_ids.clear()
-	_active_actors.clear()
+	_branch_nodes.clear()
 	_dep_characters.clear()
+	_visited_states.clear()
+	_visited_branches.clear()
 	_path = path
 
-	# 第一遍：收集所有 branch 标签ID
-	_collect_branch_ids(script)
+	_collect_metadata(script.statements, false)
+	_walk(script.statements, _empty_state(), "主线")
 
-	# 第二遍：验证所有语句
-	_validate_statements(script.statements, "主线")
-
+	# 不可达分支仍要做局部语义检查，避免死代码藏住资源或演员错误。
+	for branch_id in _branch_ids:
+		if not _visited_branches.has(branch_id):
+			_walk_branch(branch_id, _empty_state())
 	return _errors.is_empty()
 
 
-## 收集所有 branch 声明的标签ID
-func _collect_branch_ids(script: KS_AST.ScriptNode) -> void:
-	for stmt in script.statements:
-		if stmt is KS_AST.BranchNode:
-			_branch_ids.append(stmt.branch_id)
+func _collect_metadata(statements: Array, inside_branch: bool) -> void:
+	for statement in statements:
+		if statement is KS_AST.ActorNode and statement.action == "show":
+			if not _dep_characters.has(statement.actor_name):
+				_dep_characters.append(statement.actor_name)
+		elif statement is KS_AST.BranchNode:
+			if inside_branch:
+				_error(statement.line, "branch 内不能嵌套 branch")
+				continue
+			if _branch_nodes.has(statement.branch_id):
+				_error(statement.line, "branch 标签 '%s' 重复" % statement.branch_id)
+				continue
+			_branch_ids.append(statement.branch_id)
+			_branch_nodes[statement.branch_id] = statement
+			_collect_metadata(statement.body, true)
+		elif statement is KS_AST.IfElseNode:
+			_collect_metadata(statement.if_body, inside_branch)
+			_collect_metadata(statement.else_body, inside_branch)
 
 
-## 验证语句列表
-func _validate_statements(stmts: Array, context: String) -> void:
-	for stmt in stmts:
-		_validate_node(stmt, context)
+func _empty_state() -> Dictionary:
+	return {"must": [], "may": []}
 
 
-## 分发验证单个节点
-func _validate_node(node: KS_AST.ASTNode, context: String) -> void:
-	if node is KS_AST.ActorNode:
-		_validate_actor(node, context)
-	elif node is KS_AST.ChoiceGroupNode:
-		_validate_choice(node, context)
-	elif node is KS_AST.BranchNode:
-		_validate_branch(node)
-	elif node is KS_AST.IfElseNode:
-		_validate_if_else(node, context)
-	elif node is KS_AST.JumpBranchNode:
-		_validate_jump_branch(node, context)
-	elif node is KS_AST.DialogueNode:
-		pass  # 对话节点无需额外验证
-	elif node is KS_AST.BackgroundNode:
-		pass
-	elif node is KS_AST.AudioNode:
-		pass
-	elif node is KS_AST.CameraNode:
-		pass
-	elif node is KS_AST.VariableNode:
-		pass
-	elif node is KS_AST.JumpNode:
-		pass
-	elif node is KS_AST.SignalNode:
-		if node.signal_content.is_empty():
-			_error(node.line, "信号指令内容为空")
-	elif node is KS_AST.AchievementNode:
-		_validate_achievement(node)
-	elif node is KS_AST.EndNode:
-		pass
-	elif node is KS_AST.ScreenTextNode:
-		pass
-	elif node is KS_AST.ShowTextBoxNode:
-		pass
-	elif node is KS_AST.HideTextBoxNode:
-		pass
-	elif node is KS_AST.WaitSignalNode:
-		pass
-	elif node is KS_AST.AsyncCamNode:
-		pass
+func _copy_state(state: Dictionary) -> Dictionary:
+	return {"must": state["must"].duplicate(), "may": state["may"].duplicate()}
 
 
-## 验证演员操作
-func _validate_actor(node: KS_AST.ActorNode, context: String) -> void:
+func _state_key(branch_id: String, state: Dictionary) -> String:
+	var must: Array = state["must"].duplicate()
+	var may: Array = state["may"].duplicate()
+	must.sort()
+	may.sort()
+	return "%s|%s|%s" % [branch_id, ",".join(must), ",".join(may)]
+
+
+## 返回当前语句列表是否仍可顺序执行；state 会就地更新。
+func _walk(statements: Array, state: Dictionary, context: String) -> bool:
+	for statement in statements:
+		if statement is KS_AST.BranchNode:
+			continue
+		if statement is KS_AST.ActorNode:
+			_apply_actor(statement, state)
+		elif statement is KS_AST.ChoiceGroupNode:
+			if statement.options.is_empty():
+				_error(statement.line, "选项行没有有效的选项")
+			for option in statement.options:
+				if not _branch_nodes.has(option.branch_target):
+					_error(
+						statement.line,
+						"跳转标签 '%s' 不存在（当前可选标签：%s）" % [option.branch_target, str(_branch_ids)]
+					)
+				else:
+					_walk_branch(option.branch_target, _copy_state(state))
+			return false
+		elif statement is KS_AST.JumpBranchNode:
+			if not _branch_nodes.has(statement.target_branch):
+				_warning(statement.line, "jump_branch 目标分支 '%s' 未找到" % statement.target_branch)
+			else:
+				_walk_branch(statement.target_branch, _copy_state(state))
+			return false
+		elif statement is KS_AST.IfElseNode:
+			if not _walk_if_else(statement, state, context):
+				return false
+		elif statement is KS_AST.SignalNode and statement.signal_content.is_empty():
+			_error(statement.line, "信号指令内容为空")
+		elif statement is KS_AST.AchievementNode and statement.target_id.is_empty():
+			_error(statement.line, "achievement 目标ID为空")
+		elif statement is KS_AST.JumpNode or statement is KS_AST.EndNode:
+			return false
+	return true
+
+
+func _walk_branch(branch_id: String, state: Dictionary) -> void:
+	var state_key := _state_key(branch_id, state)
+	if _visited_states.has(state_key):
+		return
+	_visited_states[state_key] = true
+	_visited_branches[branch_id] = true
+	var branch: KS_AST.BranchNode = _branch_nodes[branch_id]
+	_walk(branch.body, state, "分支 '%s'" % branch_id)
+
+
+func _walk_if_else(node: KS_AST.IfElseNode, state: Dictionary, context: String) -> bool:
+	var if_state := _copy_state(state)
+	var else_state := _copy_state(state)
+	var if_continues := _walk(node.if_body, if_state, "%s/if块" % context)
+	var else_continues := true
+	if not node.else_body.is_empty():
+		else_continues = _walk(node.else_body, else_state, "%s/else块" % context)
+
+	if not if_continues and not else_continues:
+		return false
+	if if_continues and not else_continues:
+		state["must"] = if_state["must"]
+		state["may"] = if_state["may"]
+	elif else_continues and not if_continues:
+		state["must"] = else_state["must"]
+		state["may"] = else_state["may"]
+	else:
+		state["must"] = _intersection(if_state["must"], else_state["must"])
+		state["may"] = _union(if_state["may"], else_state["may"])
+	return true
+
+
+func _apply_actor(node: KS_AST.ActorNode, state: Dictionary) -> void:
+	var must: Array = state["must"]
+	var may: Array = state["may"]
 	match node.action:
 		"show":
-			if not _dep_characters.has(node.actor_name):
-				_dep_characters.append(node.actor_name)
-			if not _active_actors.has(node.actor_name):
-				_active_actors.append(node.actor_name)
+			if not must.has(node.actor_name):
+				must.append(node.actor_name)
+			if not may.has(node.actor_name):
+				may.append(node.actor_name)
 		"exit":
-			if _active_actors.has(node.actor_name):
-				_active_actors.erase(node.actor_name)
-			else:
-				_warning(node.line, "无法移除不存在的角色 '%s'" % node.actor_name)
+			_validate_actor_exists(node, must, may, "移除")
+			must.erase(node.actor_name)
+			may.erase(node.actor_name)
 		"change":
-			if not _active_actors.has(node.actor_name):
-				_warning(node.line, "无法改变不存在角色 '%s' 的状态" % node.actor_name)
+			_validate_actor_exists(node, must, may, "改变")
 		"move":
-			if not _active_actors.has(node.actor_name):
-				_warning(node.line, "无法移动不存在的角色 '%s'" % node.actor_name)
+			_validate_actor_exists(node, must, may, "移动")
 		"motion":
-			if not _active_actors.has(node.actor_name):
-				_warning(node.line, "无法播放不存在角色 '%s' 的舞台动作" % node.actor_name)
+			_validate_actor_exists(node, must, may, "播放舞台动作")
 
 
-## 验证选项跳转目标
-func _validate_choice(node: KS_AST.ChoiceGroupNode, context: String) -> void:
-	if node.options.is_empty():
-		_error(node.line, "选项行没有有效的选项")
+func _validate_actor_exists(
+	node: KS_AST.ActorNode, must: Array, may: Array, action: String
+) -> void:
+	if must.has(node.actor_name):
 		return
-
-	for option in node.options:
-		if not _branch_ids.has(option.branch_target):
-			_error(node.line, "跳转标签 '%s' 不存在（当前可选标签：%s）" % [
-				option.branch_target, str(_branch_ids)])
-
-
-## 验证分支
-func _validate_branch(node: KS_AST.BranchNode) -> void:
-	# 检查分支内不能嵌套分支
-	for stmt in node.body:
-		if stmt is KS_AST.BranchNode:
-			_error(stmt.line, "branch 内不能嵌套 branch")
-			return
-
-	# 验证分支内部语句
-	_validate_statements(node.body, "分支 '%s'" % node.branch_id)
+	if may.has(node.actor_name):
+		_warning(node.line, "角色 '%s' 在部分路径上不存在，无法安全%s" % [node.actor_name, action])
+	else:
+		_warning(node.line, "角色 '%s' 不存在，无法%s" % [node.actor_name, action])
 
 
-## 验证条件分支
-func _validate_if_else(node: KS_AST.IfElseNode, context: String) -> void:
-	_validate_statements(node.if_body, "%s/if块" % context)
-	if node.else_body.size() > 0:
-		_validate_statements(node.else_body, "%s/else块" % context)
+func _intersection(left: Array, right: Array) -> Array:
+	var result: Array = []
+	for value in left:
+		if right.has(value):
+			result.append(value)
+	return result
 
 
-## 验证 jump_branch 目标
-func _validate_jump_branch(node: KS_AST.JumpBranchNode, context: String) -> void:
-	if not _branch_ids.has(node.target_branch):
-		_warning(node.line, "jump_branch 目标分支 '%s' 未找到" % node.target_branch)
+func _union(left: Array, right: Array) -> Array:
+	var result := left.duplicate()
+	for value in right:
+		if not result.has(value):
+			result.append(value)
+	return result
 
 
-## 验证成就操作
-func _validate_achievement(node: KS_AST.AchievementNode) -> void:
-	if node.target_id.is_empty():
-		_error(node.line, "achievement 目标ID为空")
+func _error(line_num: int, message: String) -> void:
+	var error := "错误：%s [行：%d] %s" % [_path, line_num, message]
+	if _errors.has(error):
+		return
+	_errors.append(error)
+	push_error(error)
 
 
-func _error(line_num: int, msg: String) -> void:
-	var err := "错误：%s [行：%d] %s" % [_path, line_num, msg]
-	_errors.append(err)
-	push_error(err)
-
-
-func _warning(line_num: int, msg: String) -> void:
-	var warn := "警告：%s [行：%d] %s" % [_path, line_num, msg]
-	_warnings.append(warn)
-	push_warning(warn)
+func _warning(line_num: int, message: String) -> void:
+	var warning := "警告：%s [行：%d] %s" % [_path, line_num, message]
+	if _warnings.has(warning):
+		return
+	_warnings.append(warning)
+	push_warning(warning)
