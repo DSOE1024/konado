@@ -1,3 +1,50 @@
+## 2.6.1 - Ketchup
+
+### Camera and Acting
+
+- Added the non-blocking `asyncam` command with `move`, `reset`, `shake`, and `stop` operations, allowing camera animation and dialogue playback to run concurrently
+- Added configurable actor background tint blending based on the active background scene
+- Added smooth fade-out, state-change, and fade-in transitions for `actor change`, which can be configured or disabled in `KND_ActingInterface`
+- Added cancellation and completion handling for overlapping or invalid actor state changes so dialogue flow cannot remain blocked
+
+### Internationalization
+
+- Rebuilt `KND_I18n` as a runtime service that centrally manages UI translations, locale persistence, localized `.ks` lookup, and dialogue reload notifications
+- Added `KND_LocaleCatalog` to centrally manage built-in and custom locales, normalize locale codes, and migrate legacy locale values
+- Added `KND_LocalizedScriptLoader` with sequential fallback through the full locale code, base language, and original script file
+- Added stable dialogue position restoration by `node_id` when switching languages at runtime
+
+### Konado.NET
+
+- Added `InternationalizationAPI` for locale switching, locale normalization, translation registration, and localized script loading from C#
+- Expanded `DialogueManagerAPI` with explicit lifecycle binding, typed signals, save/load access, localized script reload, and wait-signal forwarding
+- Added CI tests for Konado.NET
+
+### Other Improvements
+
+- Extracted dialogue runtime responsibilities into dedicated services and added safe fallbacks when optional systems are unavailable
+- Hardened actor, background, audio, typewriter, achievement, settings, web tool, and editor integration lifecycles
+- Aligned Konado.NET wrappers with their GDScript resource contracts and allowed wrappers to accept GDScript resource subclasses
+- Raised the supported Godot baseline and all official build/test images to Godot 4.7.1
+- Added checks for GDScript linting and formatting, GDScript runtime architecture, Konado.NET compilation and runtime behavior, plugin metadata, resource boundaries, and documentation resource paths
+- Excluded tests, skills, and editor-only Konado resources from release packages
+- Added pull-request commit identity checks that reject prohibited AI attribution email addresses
+- Removed the scheduled daily-build workflow and its prerelease publishing path
+- Updated the 2.6 documentation and synchronized localization terminology, examples, demo resources, and GodotHub image links across languages
+- Added documentation for asynchronous camera operations, actor state fade transitions, runtime story localization, and the updated Konado.NET APIs
+- Removed the obsolete Konado.NET `DialogueActor` wrapper in favor of direct resource-backed dialogue properties
+
+### Bug Fixes
+
+- Fixed inconsistent localized demo script structures so all bundled languages now use the same dialogue structure and stable node identifiers
+- Fixed legacy locale values such as `zh-TW`, `zh-CN`, and `tc` by migrating them to canonical locale codes when read
+- Fixed actor state transitions that could duplicate visual nodes, lose the original alpha, apply a superseded state, or complete more than once
+- Fixed actor and background transition failure paths so invalid resources safely release dialogue flow
+- Fixed a mismatch between the default actor background tint intensity and its configured behavior
+- Fixed save writes to use temporary and backup files, preventing incomplete writes from overwriting valid save data
+- Fixed settings persistence so in-memory values are committed only after the configuration is written successfully
+- Fixed KS parsing and analysis for malformed statements, actor command arguments, and conditional branch control flow
+
 ## 2.6 - Ketchup
 
 Konado 2.6 is officially released. Codenamed "Ketchup", this version focuses on live performance enhancement and script expression capability. It introduces a camera system (move, reset, shake), character animation system (slide-in/out), runtime internationalization, NVL full-screen text, dialogue box show/hide control, wait signal, and the Konado Showcase page, further completing the visual novel development pipeline.
