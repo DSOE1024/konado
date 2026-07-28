@@ -1,0 +1,88 @@
+name: Project Export
+
+on:
+  workflow_call:
+    inputs:
+      artifact_prefix:
+        description: Prefix applied to uploaded build artifacts
+        required: false
+        type: string
+        default: project
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: 4.7.1
+
+jobs:
+  export:
+    name: Export / ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows
+            preset: Windows Desktop
+            export_mode: --export-release
+            output: build/windows/Konado Project.exe
+            artifact_path: build/windows
+          - target: linux
+            preset: Linux
+            export_mode: --export-release
+            output: build/linux/Konado Project.x86_64
+            artifact_path: build/linux
+          - target: web
+            preset: Web
+            export_mode: --export-release
+            output: build/web/index.html
+            artifact_path: build/web
+          - target: android-arm64
+            preset: Android
+            export_mode: --export-debug
+            output: build/android/Konado Project-arm64.apk
+            artifact_path: build/android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - name: Install export templates
+        shell: bash
+        run: |
+          source_dir="/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          target_dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          source_config="/root/.config/godot"
+          target_config="$HOME/.config/godot"
+          mkdir -p "$(dirname "$target_dir")"
+          if [ "$source_dir" != "$target_dir" ]; then
+            mv "$source_dir" "$target_dir"
+          fi
+          if [ "$source_config" != "$target_config" ] && [ -d "$source_config" ]; then
+            mkdir -p "$(dirname "$target_config")"
+            mv "$source_config" "$target_config"
+          fi
+          test -d "$target_dir"
+
+      - name: Export project
+        shell: bash
+        run: |
+          output="${{ matrix.output }}"
+          mkdir -p "$(dirname "$output")"
+          godot --headless --verbose \
+            ${{ matrix.export_mode }} \
+            "${{ matrix.preset }}" \
+            "$output"
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_prefix }}-${{ matrix.target }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 7
