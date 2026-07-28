@@ -3,6 +3,22 @@ extends SceneTree
 var _failures := 0
 
 
+class FakeActor:
+	extends KND_Actor
+
+	var requested_statuses: Array[String] = []
+	var last_transition_duration := -1.0
+	var next_result := true
+
+	func apply_character_status(
+		status_name: String, transition_duration: float = 0.0, completion: Callable = Callable()
+	) -> void:
+		requested_statuses.append(status_name)
+		last_transition_duration = transition_duration
+		if completion.is_valid():
+			completion.call(next_result)
+
+
 func _init() -> void:
 	call_deferred("_run")
 
@@ -11,7 +27,9 @@ func _run() -> void:
 	_test_actor_commands()
 	_test_analyzer_control_flow()
 	_test_dialogue_services()
+	_test_acting_interface_state_change()
 	_test_save_system_contract()
+	await _test_actor_state_transition()
 	if _failures == 0:
 		print("PASS: GDScript architecture tests")
 	quit(_failures)
@@ -65,6 +83,141 @@ func _test_actor_commands() -> void:
 			actor_case.value,
 			"actor command preserves its payload"
 		)
+
+
+func _test_actor_state_transition() -> void:
+	var host := Control.new()
+	var visual := ColorRect.new()
+	visual.modulate = Color(0.8, 0.7, 0.6, 0.65)
+	host.add_child(visual)
+	get_root().add_child(host)
+	await process_frame
+
+	var applied_statuses: Array[String] = []
+	var events: Array[String] = []
+	var completions: Array[bool] = []
+	var controller := KND_ActorStateTransitionController.new(
+		host,
+		func() -> CanvasItem: return visual,
+		func(status_name: String) -> bool:
+			applied_statuses.append(status_name)
+			return not status_name.is_empty()
+	)
+	controller.transition_started.connect(
+		func(status_name: String) -> void: events.append("started:" + status_name)
+	)
+	controller.status_applied.connect(
+		func(status_name: String) -> void: events.append("applied:" + status_name)
+	)
+	controller.transition_finished.connect(
+		func(status_name: String, succeeded: bool) -> void:
+			events.append("finished:%s:%s" % [status_name, succeeded])
+	)
+
+	controller.request("idle", 0.0, func(succeeded: bool) -> void: completions.append(succeeded))
+	_expect_equal(
+		events,
+		["started:idle", "applied:idle", "finished:idle:true"],
+		"immediate status changes preserve signal order"
+	)
+	_expect_equal(completions, [true], "immediate status changes complete exactly once")
+	_expect(not controller.is_transitioning(), "immediate status changes leave no active request")
+	_expect_approx(visual.modulate.a, 0.65, "immediate status changes preserve alpha")
+
+	events.clear()
+	completions.clear()
+	controller.request("happy", 0.1, func(succeeded: bool) -> void: completions.append(succeeded))
+	_expect(controller.is_transitioning(), "animated status changes expose active state")
+	await create_timer(0.25).timeout
+	_expect_equal(
+		events,
+		["started:happy", "applied:happy", "finished:happy:true"],
+		"animated status changes preserve signal order"
+	)
+	_expect_equal(completions, [true], "animated status changes complete exactly once")
+	_expect(not controller.is_transitioning(), "animated status changes clear active state")
+	_expect_approx(visual.modulate.a, 0.65, "animated status changes restore alpha")
+	_expect_equal(host.get_child_count(), 1, "status transitions do not duplicate visual nodes")
+
+	events.clear()
+	completions.clear()
+	controller.request("sad", 1.0, func(succeeded: bool) -> void: completions.append(succeeded))
+	controller.request("angry", 0.0, func(succeeded: bool) -> void: completions.append(succeeded))
+	_expect_equal(
+		completions, [false, true], "superseded and replacement requests each complete exactly once"
+	)
+	_expect(events.has("finished:sad:false"), "superseded status changes report failed completion")
+	_expect(
+		events.has("finished:angry:true"), "replacement status changes report successful completion"
+	)
+	_expect_equal(applied_statuses.back(), "angry", "only the replacement status is applied")
+	_expect_approx(visual.modulate.a, 0.65, "cancelling a transition restores alpha")
+	_expect_equal(host.get_child_count(), 1, "cancelling transitions leaves no temporary nodes")
+
+	completions.clear()
+	controller.request("", 0.0, func(succeeded: bool) -> void: completions.append(succeeded))
+	_expect_equal(completions, [false], "invalid status changes fail without hanging")
+
+	var no_visual_completions: Array[bool] = []
+	var no_visual_controller := KND_ActorStateTransitionController.new(
+		host, func() -> CanvasItem: return null, func(_status_name: String) -> bool: return true
+	)
+	no_visual_controller.request(
+		"voice_only", 1.0, func(succeeded: bool) -> void: no_visual_completions.append(succeeded)
+	)
+	_expect_equal(
+		no_visual_completions,
+		[true],
+		"non-visual character scenes fall back to immediate status changes"
+	)
+
+	host.queue_free()
+	await process_frame
+
+
+func _test_acting_interface_state_change() -> void:
+	var acting_interface := KND_ActingInterface.new()
+	var actor := FakeActor.new()
+	acting_interface.actor_nodes["Kona"] = actor
+	acting_interface.actor_dict["Kona"] = {"id": "Kona", "state": "idle"}
+	var completion_count := [0]
+	acting_interface.character_state_changed.connect(func() -> void: completion_count[0] += 1)
+
+	acting_interface.change_actor_state("Kona", "happy")
+	_expect_equal(actor.requested_statuses, ["happy"], "acting interface forwards target status")
+	_expect_approx(
+		actor.last_transition_duration,
+		acting_interface.actor_state_fade_duration,
+		"acting interface forwards configured transition duration"
+	)
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"happy",
+		"successful state changes persist the target state"
+	)
+	_expect_equal(completion_count[0], 1, "successful state changes complete exactly once")
+
+	actor.next_result = false
+	acting_interface.change_actor_state("Kona", "missing")
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"happy",
+		"failed state changes roll back persisted actor state"
+	)
+	_expect_equal(completion_count[0], 2, "failed state changes still release dialogue flow")
+
+	actor.next_result = true
+	acting_interface.enable_actor_state_fade = false
+	acting_interface.change_actor_state("Kona", "idle")
+	_expect_approx(
+		actor.last_transition_duration,
+		0.0,
+		"disabling state fades uses the immediate transition path"
+	)
+	_expect_equal(completion_count[0], 3, "immediate state changes complete exactly once")
+
+	actor.free()
+	acting_interface.free()
 
 
 func _test_dialogue_services() -> void:
@@ -190,6 +343,13 @@ func _expect(condition: bool, message: String) -> void:
 
 func _expect_equal(actual: Variant, expected: Variant, message: String) -> void:
 	if actual == expected:
+		return
+	_failures += 1
+	printerr("FAIL: %s\n  expected: %s\n  actual:   %s" % [message, expected, actual])
+
+
+func _expect_approx(actual: float, expected: float, message: String) -> void:
+	if is_equal_approx(actual, expected):
 		return
 	_failures += 1
 	printerr("FAIL: %s\n  expected: %s\n  actual:   %s" % [message, expected, actual])

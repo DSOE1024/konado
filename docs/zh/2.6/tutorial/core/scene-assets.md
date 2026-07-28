@@ -51,7 +51,7 @@ VideoCharacter (KND_CharacterSceneBase)
 
 ```text
 actor show kona normal at 2
-actor state kona happy
+actor change kona happy
 ```
 
 系统会调用角色场景的 `apply_status(status_name)`。用户场景通常覆写 `_apply_status`：
@@ -77,6 +77,8 @@ func _apply_status(resolved_status_name: String, original_status_name: String) -
 ```
 
 对于 Live2D、Spine、视频角色，只需要把 `_apply_status` 内部换成对应的播放逻辑。例如设置 Live2D 表情、播放 Spine 动画、切换视频流。
+
+`actor change` 默认会在角色挂载层上执行“淡出—应用状态—淡入”，不会复制角色场景。角色场景只需同步完成 `_apply_status`；对话系统会负责转场和等待。具体配置请参阅[演员切换状态](../script/actor/actor-change-state.md)。
 
 ### 状态别名
 

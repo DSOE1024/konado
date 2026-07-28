@@ -14,6 +14,14 @@ signal actor_moved
 signal actor_motion_started(motion_name: String)
 ## 演员舞台动作完成信号
 signal actor_motion_finished(motion_name: String)
+## 角色状态转场开始
+signal actor_status_change_started(status_name: String)
+## 角色状态已应用；淡入动画可能仍在进行
+signal actor_status_applied(status_name: String)
+## 角色状态转场被后续请求或生命周期操作取消
+signal actor_status_change_cancelled(status_name: String)
+## 角色状态转场完成
+signal actor_status_change_finished(status_name: String, succeeded: bool)
 
 ## 是否使用补间动画，将会在角色移动时显示动画效果
 @export var use_tween: bool = true
@@ -52,6 +60,7 @@ var _status_node: Node = null
 var _move_tween: Tween
 var _suspend_layout_update := false
 var _is_visible := false
+var _status_transition: KND_ActorStateTransitionController
 
 
 ## 判断角色是否在左侧区域（用于确定进场/退场方向）
@@ -92,12 +101,18 @@ func _is_exit_motion(motion_name: String) -> bool:
 
 
 func _ready() -> void:
+	_ensure_status_transition()
 	if texture_rect:
 		texture_rect.modulate.a = 1.0
 		texture_rect.visible = true
 	_bind_motion_layer_signals()
 	_on_resized()
 	_is_visible = true
+
+
+func _exit_tree() -> void:
+	if _status_transition:
+		_status_transition.cancel()
 
 
 func _on_resized() -> void:
@@ -307,31 +322,62 @@ func set_character_scene(scene: PackedScene, initial_status: String = "") -> voi
 	if instance is CanvasItem:
 		instance.visible = true
 	if not initial_status.is_empty():
-		apply_character_status(initial_status)
+		_apply_character_status_immediately(initial_status)
 
 
 ## 演员节点只负责把剧本里的状态名转发给角色场景。
 ## 这里不判断图片、Spine、Live2D 或视频，避免主链路重新绑定到某一种媒体类型。
-func apply_character_status(status_name: String) -> void:
+func apply_character_status(
+	status_name: String, transition_duration: float = 0.0, completion: Callable = Callable()
+) -> void:
+	_ensure_status_transition()
+	_status_transition.request(status_name, transition_duration, completion)
+
+
+func _apply_character_status_immediately(status_name: String) -> bool:
 	if status_name.is_empty():
-		return
+		return false
 	if _status_node == null:
 		push_error("角色场景节点未创建，无法切换状态：" + status_name)
-		return
+		return false
 	# 优先使用正式协议；后面的 has_method 分支用于兼容未继承基类的用户场景。
 	if _status_node is KND_CharacterSceneBase:
 		(_status_node as KND_CharacterSceneBase).apply_status(status_name)
-		return
-	if _status_node.has_method("apply_status"):
-		_status_node.call("apply_status", status_name)
-		return
-	if _status_node.has_method("change_status"):
-		_status_node.call("change_status", status_name)
-		return
-	if _status_node.has_method("set_status"):
-		_status_node.call("set_status", status_name)
-		return
+		return true
+	var method_name := _get_compatible_status_method()
+	if not method_name.is_empty():
+		_status_node.call(method_name, status_name)
+		return true
 	push_warning("角色场景未实现 apply_status：" + status_name)
+	return false
+
+
+func _get_compatible_status_method() -> StringName:
+	for method_name: StringName in [&"apply_status", &"change_status", &"set_status"]:
+		if _status_node.has_method(method_name):
+			return method_name
+	return &""
+
+
+func _ensure_status_transition() -> void:
+	if _status_transition:
+		return
+	_status_transition = KND_ActorStateTransitionController.new(
+		self, _get_status_transition_visual, _apply_character_status_immediately
+	)
+	_status_transition.transition_started.connect(
+		func(status_name: String): actor_status_change_started.emit(status_name)
+	)
+	_status_transition.status_applied.connect(
+		func(status_name: String): actor_status_applied.emit(status_name)
+	)
+	_status_transition.transition_cancelled.connect(
+		func(status_name: String): actor_status_change_cancelled.emit(status_name)
+	)
+	_status_transition.transition_finished.connect(
+		func(status_name: String, succeeded: bool):
+			actor_status_change_finished.emit(status_name, succeeded)
+	)
 
 
 ## 舞台层动作，例如 shake、jump_twice、bounce。
@@ -358,6 +404,8 @@ func set_character_texture(texture: Texture) -> void:
 
 
 func _clear_status_node() -> void:
+	if _status_transition:
+		_status_transition.cancel()
 	if _status_node and is_instance_valid(_status_node):
 		_status_node.queue_free()
 	_status_node = null
@@ -441,6 +489,14 @@ func _get_status_visual() -> CanvasItem:
 	if texture_rect:
 		return texture_rect
 	return null
+
+
+## 状态切换优先作用在稳定的角色挂载层，避免角色场景切换内部子节点后 Tween 失效。
+func _get_status_transition_visual() -> CanvasItem:
+	var mount := _get_character_mount()
+	if mount is CanvasItem:
+		return mount as CanvasItem
+	return _get_status_visual()
 
 
 func _get_character_mount() -> Node:
