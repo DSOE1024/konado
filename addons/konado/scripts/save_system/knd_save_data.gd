@@ -26,6 +26,7 @@ var save_time: Dictionary = {}
 ## 存档版本
 var version: String = "1.0"
 
+
 ## 转换为字典
 func to_dict() -> Dictionary:
 	return {
@@ -38,25 +39,26 @@ func to_dict() -> Dictionary:
 		"version": version
 	}
 
+
 ## 从字典加载
 func from_dict(data: Dictionary) -> void:
 	if data.has("dialogue_state"):
 		dialogue_state = data["dialogue_state"]
-	
+
 	if data.has("variables"):
 		variables = data["variables"]
-	
+
 	if data.has("audio_state"):
 		audio_state = data["audio_state"]
-	
+
 	if data.has("actor_state"):
 		actor_state = data["actor_state"]
-	
+
 	if data.has("background_state"):
 		background_state = data["background_state"]
-	
+
 	if data.has("save_time"):
 		save_time = data["save_time"]
-	
+
 	if data.has("version"):
 		version = data["version"]

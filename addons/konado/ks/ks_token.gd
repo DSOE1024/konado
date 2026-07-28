@@ -6,11 +6,10 @@ class_name KS_Token
 
 enum Type {
 	# 字面量
-	STRING_LITERAL,    ## 双引号包裹的字符串 "..."
-	NUMBER_LITERAL,    ## 数字（整数或浮点数）
-	IDENTIFIER,        ## 标识符（未匹配关键字的裸词）
-	VARIABLE_REF,      ## 变量引用 %name 或 $name
-
+	STRING_LITERAL,  ## 双引号包裹的字符串 "..."
+	NUMBER_LITERAL,  ## 数字（整数或浮点数）
+	IDENTIFIER,  ## 标识符（未匹配关键字的裸词）
+	VARIABLE_REF,  ## 变量引用 %name 或 $name
 	# 主关键字
 	KW_SCREENTEXT,
 	KW_BACKGROUND,
@@ -37,7 +36,6 @@ enum Type {
 	KW_SHOWTEXTBOX,
 	KW_HIDETEXTBOX,
 	KW_WAITSIGNAL,
-
 	# 子关键字
 	KW_SHOW,
 	KW_EXIT,
@@ -53,26 +51,23 @@ enum Type {
 	KW_SCALE,
 	KW_RESET,
 	KW_SHAKE,
-
 	# 定界符
-	LBRACE,            ## {
-	RBRACE,            ## }
-
+	LBRACE,  ## {
+	RBRACE,  ## }
 	# 运算符
-	OP_ARROW,          ## ->
-	OP_EQ,             ## ==
-	OP_NEQ,            ## !=
-	OP_GT,             ## >
-	OP_LT,             ## <
-	OP_GTE,            ## >=
-	OP_LTE,            ## <=
-	OP_ASSIGN,         ## =
-	COLON,             ## :
-
+	OP_ARROW,  ## ->
+	OP_EQ,  ## ==
+	OP_NEQ,  ## !=
+	OP_GT,  ## >
+	OP_LT,  ## <
+	OP_GTE,  ## >=
+	OP_LTE,  ## <=
+	OP_ASSIGN,  ## =
+	COLON,  ## :
 	# 结构
-	INDENT,            ## 缩进标记
-	NEWLINE,           ## 行结束
-	EOF,               ## 文件结束
+	INDENT,  ## 缩进标记
+	NEWLINE,  ## 行结束
+	EOF,  ## 文件结束
 }
 
 ## 关键字查找表
@@ -120,12 +115,14 @@ const KEYWORDS: Dictionary = {
 }
 
 var type: Type
-var value: Variant       ## 词素值
-var line: int            ## 源代码行号（1-based）
-var column: int          ## 列号（1-based）
+var value: Variant  ## 词素值
+var line: int  ## 源代码行号（1-based）
+var column: int  ## 列号（1-based）
 
 
-func _init(p_type: Type = Type.EOF, p_value: Variant = "", p_line: int = 0, p_column: int = 0) -> void:
+func _init(
+	p_type: Type = Type.EOF, p_value: Variant = "", p_line: int = 0, p_column: int = 0
+) -> void:
 	type = p_type
 	value = p_value
 	line = p_line

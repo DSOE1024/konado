@@ -1,17 +1,8 @@
 @tool
-class_name KndGraphEdit
 extends VBoxContainer
+class_name KndGraphEdit
 
 signal graph_modified
-
-var graph_edit: GraphEdit
-var add_menu_btn: MenuButton
-var file_label: Label
-var status_label: Label
-var save_btn: Button
-var current_shot: KND_Shot
-var current_file_path: String = ""
-var _popup_pos: Vector2
 
 const ADD_ITEMS := [
 	["Dialogue", KND_Dialogue.Type.ORDINARY_DIALOG],
@@ -30,6 +21,15 @@ const ADD_ITEMS := [
 	["Signal", KND_Dialogue.Type.SIGNAL],
 	["End", KND_Dialogue.Type.THE_END],
 ]
+
+var graph_edit: GraphEdit
+var add_menu_btn: MenuButton
+var file_label: Label
+var status_label: Label
+var save_btn: Button
+var current_shot: KND_Shot
+var current_file_path: String = ""
+var _popup_pos: Vector2
 
 
 func _ready() -> void:
@@ -144,6 +144,7 @@ func edit(path: String) -> void:
 
 # --- 新建 ---
 
+
 func _on_new() -> void:
 	var file_dialog := EditorFileDialog.new()
 	file_dialog.file_mode = EditorFileDialog.FILE_MODE_SAVE_FILE
@@ -154,34 +155,34 @@ func _on_new() -> void:
 	var base_ctrl := EditorInterface.get_base_control()
 	base_ctrl.add_child(file_dialog)
 
-	file_dialog.file_selected.connect(func(path: String):
-		# 清空当前图
-		_clear_graph_contents()
-		# 创建并保存空Shot
-		var shot := KND_Shot.new()
-		shot.ks_path = path
-		var err := ResourceSaver.save(shot, path)
-		if err == OK:
-			current_file_path = path
-			current_shot = shot
-			_update_file_label()
-			_update_status()
-			print("Graph Editor: 已新建 %s" % path)
-			# 刷新文件系统
-			EditorInterface.get_resource_filesystem().scan()
-		else:
-			push_error("Graph Editor: 无法创建文件 %s (错误码: %d)" % [path, err])
-		file_dialog.queue_free()
+	file_dialog.file_selected.connect(
+		func(path: String):
+			# 清空当前图
+			_clear_graph_contents()
+			# 创建并保存空Shot
+			var shot := KND_Shot.new()
+			shot.ks_path = path
+			var err := ResourceSaver.save(shot, path)
+			if err == OK:
+				current_file_path = path
+				current_shot = shot
+				_update_file_label()
+				_update_status()
+				print("Graph Editor: 已新建 %s" % path)
+				# 刷新文件系统
+				EditorInterface.get_resource_filesystem().scan()
+			else:
+				push_error("Graph Editor: 无法创建文件 %s (错误码: %d)" % [path, err])
+			file_dialog.queue_free()
 	)
 
-	file_dialog.canceled.connect(func():
-		file_dialog.queue_free()
-	)
+	file_dialog.canceled.connect(func(): file_dialog.queue_free())
 
 	file_dialog.popup_centered_ratio(0.6)
 
 
 # --- 打开 ---
+
 
 func _on_open() -> void:
 	var file_dialog := EditorFileDialog.new()
@@ -193,19 +194,19 @@ func _on_open() -> void:
 	var base_ctrl := EditorInterface.get_base_control()
 	base_ctrl.add_child(file_dialog)
 
-	file_dialog.file_selected.connect(func(path: String):
-		edit(path)
-		file_dialog.queue_free()
+	file_dialog.file_selected.connect(
+		func(path: String):
+			edit(path)
+			file_dialog.queue_free()
 	)
 
-	file_dialog.canceled.connect(func():
-		file_dialog.queue_free()
-	)
+	file_dialog.canceled.connect(func(): file_dialog.queue_free())
 
 	file_dialog.popup_centered_ratio(0.6)
 
 
 # --- 保存 ---
+
 
 func _on_save() -> void:
 	if current_file_path.is_empty():
@@ -225,16 +226,15 @@ func _show_save_as_dialog() -> void:
 	var base_ctrl := EditorInterface.get_base_control()
 	base_ctrl.add_child(file_dialog)
 
-	file_dialog.file_selected.connect(func(path: String):
-		current_file_path = path
-		_save_to_path(path)
-		_update_file_label()
-		file_dialog.queue_free()
+	file_dialog.file_selected.connect(
+		func(path: String):
+			current_file_path = path
+			_save_to_path(path)
+			_update_file_label()
+			file_dialog.queue_free()
 	)
 
-	file_dialog.canceled.connect(func():
-		file_dialog.queue_free()
-	)
+	file_dialog.canceled.connect(func(): file_dialog.queue_free())
 
 	file_dialog.popup_centered_ratio(0.6)
 
@@ -252,14 +252,14 @@ func _save_to_path(path: String) -> void:
 	# ResourceSaver.save() 的第二个参数 path 会自动处理路径
 	#var err := ResourceSaver.save(shot, path)
 	#if err == OK:
-		#current_shot = shot
-		#status_label.text = "已保存: %s" % path.get_file()
-		#print("Graph Editor: 已保存 %s" % path)
-		## 刷新文件系统使编辑器识别新/更新的文件
-		#EditorInterface.get_resource_filesystem().scan()
+	#current_shot = shot
+	#status_label.text = "已保存: %s" % path.get_file()
+	#print("Graph Editor: 已保存 %s" % path)
+	## 刷新文件系统使编辑器识别新/更新的文件
+	#EditorInterface.get_resource_filesystem().scan()
 	#else:
-		#status_label.text = "保存失败 (错误码: %d)" % err
-		#push_error("Graph Editor: 保存失败 %s (错误码: %d)" % [path, err])
+	#status_label.text = "保存失败 (错误码: %d)" % err
+	#push_error("Graph Editor: 保存失败 %s (错误码: %d)" % [path, err])
 
 
 func _update_file_label() -> void:
@@ -270,6 +270,7 @@ func _update_file_label() -> void:
 
 
 # --- 添加节点 ---
+
 
 func _on_add_menu_id(id: int) -> void:
 	if id < 0 or id >= ADD_ITEMS.size():
@@ -290,7 +291,10 @@ func _add_node_at(type: KND_Dialogue.Type, pos: Vector2) -> GraphNode:
 
 # --- 连接管理 ---
 
-func _on_connection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
+
+func _on_connection_request(
+	from_node: StringName, from_port: int, to_node: StringName, to_port: int
+) -> void:
 	# 先断开该输出端口已有的连接（一个输出端口只能连一个目标）
 	for c in graph_edit.get_connection_list():
 		if c["from_node"] == from_node and c["from_port"] == from_port:
@@ -299,7 +303,9 @@ func _on_connection_request(from_node: StringName, from_port: int, to_node: Stri
 	graph_modified.emit()
 
 
-func _on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
+func _on_disconnection_request(
+	from_node: StringName, from_port: int, to_node: StringName, to_port: int
+) -> void:
 	graph_edit.disconnect_node(from_node, from_port, to_node, to_port)
 	graph_modified.emit()
 
@@ -310,7 +316,9 @@ func _on_delete_nodes_request(nodes: Array[StringName]) -> void:
 		if node and node is GraphNode:
 			for c in graph_edit.get_connection_list():
 				if c["from_node"] == node_name or c["to_node"] == node_name:
-					graph_edit.disconnect_node(c["from_node"], c["from_port"], c["to_node"], c["to_port"])
+					graph_edit.disconnect_node(
+						c["from_node"], c["from_port"], c["to_node"], c["to_port"]
+					)
 			node.queue_free()
 	_update_status()
 	graph_modified.emit()
@@ -321,12 +329,13 @@ func _on_popup_request(at_position: Vector2) -> void:
 	var menu := PopupMenu.new()
 	for i in range(ADD_ITEMS.size()):
 		menu.add_item(ADD_ITEMS[i][0], i)
-	menu.id_pressed.connect(func(id: int):
-		if id >= 0 and id < ADD_ITEMS.size():
-			var type: KND_Dialogue.Type = ADD_ITEMS[id][1]
-			var local_pos := (at_position + graph_edit.scroll_offset) / graph_edit.zoom
-			_add_node_at(type, local_pos)
-		menu.queue_free()
+	menu.id_pressed.connect(
+		func(id: int):
+			if id >= 0 and id < ADD_ITEMS.size():
+				var type: KND_Dialogue.Type = ADD_ITEMS[id][1]
+				var local_pos := (at_position + graph_edit.scroll_offset) / graph_edit.zoom
+				_add_node_at(type, local_pos)
+			menu.queue_free()
 	)
 	add_child(menu)
 	print(at_position)
@@ -335,6 +344,7 @@ func _on_popup_request(at_position: Vector2) -> void:
 
 
 # --- 清空 ---
+
 
 func _on_clear() -> void:
 	_clear_graph_contents()
@@ -352,6 +362,7 @@ func _clear_graph_contents() -> void:
 
 
 # --- 自动布局 ---
+
 
 func _auto_layout() -> void:
 	var nodes: Array[GraphNode] = []
@@ -387,7 +398,9 @@ func _auto_layout() -> void:
 			y += 250.0
 
 
-func _all_sources_in(node_name: String, connections: Array[Dictionary], placed: Array[GraphNode]) -> bool:
+func _all_sources_in(
+	node_name: String, connections: Array[Dictionary], placed: Array[GraphNode]
+) -> bool:
 	var placed_names: Dictionary = {}
 	for p in placed:
 		placed_names[p.name] = true
@@ -408,4 +421,6 @@ func _update_status() -> void:
 	for child in graph_edit.get_children():
 		if child is GraphNode:
 			count += 1
-	status_label.text = "Nodes: %d | Connections: %d" % [count, graph_edit.get_connection_list().size()]
+	status_label.text = (
+		"Nodes: %d | Connections: %d" % [count, graph_edit.get_connection_list().size()]
+	)

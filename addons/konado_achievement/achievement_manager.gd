@@ -4,22 +4,13 @@ extends Node
 
 signal achievement_unlocked(achievement_id: String, data: Dictionary)
 signal achievement_progress_updated(achievement_id: String, current: float, target: float)
-signal achievements_reset()
-signal achievements_loaded()
+signal achievements_reset
+signal achievements_loaded
 
 @export var config_path: String = "res://addons/konado_achievement/data/achievements.json"
 @export var save_path: String = "user://achievements_save.json"
 @export var popup_duration: float = 3.0
-@export var popup_position: String = "top_left" # top_left, top_right, bottom_left, bottom_right
-
-var _achievements: Dictionary = {}       # id -> 成就数据字典
-var _unlocked: Dictionary = {}           # id -> bool
-var _progress: Dictionary = {}           # key -> float (计数器值)
-var _popup_scene: PackedScene = null
-var _panel_scene: PackedScene = null
-var _active_popup: Control = null
-var _active_panel: Control = null
-var _popup_timer: Timer = null
+@export var popup_position: String = "top_left"  # top_left, top_right, bottom_left, bottom_right
 
 ## 覆盖此回调以将解锁同步到外部后端。
 ## func(achievement_id: String, data: Dictionary) -> void
@@ -29,6 +20,15 @@ var on_external_unlock: Callable = Callable()
 var custom_save_handler: Callable = Callable()  # func(data: Dictionary) -> void
 var custom_load_handler: Callable = Callable()  # func() -> Dictionary
 
+var _achievements: Dictionary = {}  # id -> 成就数据字典
+var _unlocked: Dictionary = {}  # id -> bool
+var _progress: Dictionary = {}  # key -> float (计数器值)
+var _popup_scene: PackedScene = null
+var _panel_scene: PackedScene = null
+var _active_popup: Control = null
+var _active_panel: Control = null
+var _popup_timer: Timer = null
+
 
 func _ready() -> void:
 	_popup_scene = load("res://addons/konado_achievement/achievement_popup.tscn")
@@ -36,6 +36,7 @@ func _ready() -> void:
 	_load_config()
 	_load_save_data()
 	achievements_loaded.emit()
+
 
 func _load_config() -> void:
 	_achievements.clear()
@@ -56,6 +57,7 @@ func _load_config() -> void:
 				_achievements[entry["id"]] = entry
 	print("KonadoAchievement 加载了 %d 个成就。" % _achievements.size())
 
+
 func _load_save_data() -> void:
 	if custom_load_handler.is_valid():
 		var data: Dictionary = custom_load_handler.call()
@@ -73,6 +75,7 @@ func _load_save_data() -> void:
 	var data: Dictionary = json.data
 	_unlocked = data.get("unlocked", {})
 	_progress = data.get("progress", {})
+
 
 func _save_data() -> void:
 	var data := {"unlocked": _unlocked, "progress": _progress}
@@ -104,6 +107,7 @@ func unlock_achievement(achievement_id: String) -> bool:
 		on_external_unlock.call(achievement_id, ach_data)
 	return true
 
+
 ## 增加计数器键值并自动检查相关成就。
 func increment_progress(key: String, amount: float = 1.0) -> void:
 	_progress[key] = _progress.get(key, 0.0) + amount
@@ -120,6 +124,7 @@ func increment_progress(key: String, amount: float = 1.0) -> void:
 			if _check_conditions(cond):
 				unlock_achievement(ach_id)
 
+
 ## 设置标志键值并自动检查相关成就。
 func set_flag(key: String, value: Variant = true) -> void:
 	_progress[key] = value
@@ -133,13 +138,16 @@ func set_flag(key: String, value: Variant = true) -> void:
 			if _check_conditions(cond):
 				unlock_achievement(ach_id)
 
+
 ## 检查成就是否已解锁。
 func is_unlocked(achievement_id: String) -> bool:
 	return _unlocked.get(achievement_id, false)
 
+
 ## 获取单个成就的完整数据字典。
 func get_achievement(achievement_id: String) -> Dictionary:
 	return _achievements.get(achievement_id, {})
+
 
 ## 获取所有成就作为字典数组。
 func get_all_achievements() -> Array:
@@ -150,17 +158,21 @@ func get_all_achievements() -> Array:
 		result.append(d)
 	return result
 
+
 ## 仅获取已解锁的成就。
 func get_unlocked_achievements() -> Array:
 	return get_all_achievements().filter(func(a): return a["unlocked"])
+
 
 ## 仅获取未解锁的成就。
 func get_locked_achievements() -> Array:
 	return get_all_achievements().filter(func(a): return not a["unlocked"])
 
+
 ## 获取键的当前进度值。
 func get_progress(key: String) -> float:
 	return float(_progress.get(key, 0.0))
+
 
 ## 获取解锁百分比（0.0 到 1.0）。
 func get_unlock_percentage() -> float:
@@ -172,6 +184,7 @@ func get_unlock_percentage() -> float:
 			unlocked_count += 1
 	return float(unlocked_count) / float(_achievements.size())
 
+
 ## 重置所有成就和进度
 func reset_all() -> void:
 	print("重置所有成就")
@@ -180,16 +193,19 @@ func reset_all() -> void:
 	_save_data()
 	achievements_reset.emit()
 
+
 ## 重置单个成就
 func reset_achievement(achievement_id: String) -> void:
 	_unlocked.erase(achievement_id)
 	_save_data()
+
 
 ## 从 JSON 重新加载配置
 func reload_config() -> void:
 	_load_config()
 	_load_save_data()
 	achievements_loaded.emit()
+
 
 # 弹出成就
 func _show_popup(ach_data: Dictionary) -> void:
@@ -206,7 +222,9 @@ func _show_popup(ach_data: Dictionary) -> void:
 		var icon_path: String = ach_data.get("icon", "")
 		if icon_path.is_empty():
 			icon_path = "res://addons/konado_achievement/icons/default_icon.svg"
-		_active_popup.setup(ach_data.get("name", ""), ach_data.get("description", ""), icon_path, popup_position)
+		_active_popup.setup(
+			ach_data.get("name", ""), ach_data.get("description", ""), icon_path, popup_position
+		)
 	# 自动关闭计时器
 	if _popup_timer:
 		_popup_timer.queue_free()
@@ -217,10 +235,12 @@ func _show_popup(ach_data: Dictionary) -> void:
 	add_child(_popup_timer)
 	_popup_timer.start()
 
+
 func _dismiss_popup() -> void:
 	if _active_popup and is_instance_valid(_active_popup):
 		_active_popup.queue_free()
 		_active_popup = null
+
 
 # 弹出成就列表
 func show_panel() -> void:
@@ -237,9 +257,11 @@ func show_panel() -> void:
 	if _active_panel.has_method("refresh"):
 		_active_panel.refresh()
 
+
 func hide_panel() -> void:
 	if _active_panel and is_instance_valid(_active_panel):
 		_active_panel.visible = false
+
 
 func toggle_panel() -> void:
 	if is_panel_visible():
@@ -247,8 +269,10 @@ func toggle_panel() -> void:
 	else:
 		show_panel()
 
+
 func is_panel_visible() -> bool:
 	return _active_panel != null and is_instance_valid(_active_panel) and _active_panel.visible
+
 
 ## 判断成就条件
 func _check_conditions(cond: Dictionary) -> bool:

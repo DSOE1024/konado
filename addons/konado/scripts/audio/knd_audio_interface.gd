@@ -34,12 +34,12 @@ var _voice_volume: float = 1.0
 func _update_volume_from_settings() -> void:
 	if _settings_bridge == null:
 		return
-	
+
 	_master_volume = _settings_bridge.get_master_volume()
 	_music_volume = _settings_bridge.get_music_volume()
 	_sfx_volume = _settings_bridge.get_sfx_volume()
 	_voice_volume = _settings_bridge.get_voice_volume()
-	
+
 	# 应用音量
 	if bgm_player:
 		bgm_player.volume_db = linear_to_db(_master_volume * _music_volume)
@@ -48,10 +48,12 @@ func _update_volume_from_settings() -> void:
 	if sound_effect_player:
 		sound_effect_player.volume_db = linear_to_db(_master_volume * _sfx_volume)
 
+
 ## 设置变更处理
-func _on_setting_changed(category: String, key: String, value: Variant) -> void:
+func _on_setting_changed(category: String, _key: String, _value: Variant) -> void:
 	if category == "audio":
 		_update_volume_from_settings()
+
 
 ## 将线性音量转换为分贝
 func linear_to_db(linear: float) -> float:
@@ -61,7 +63,7 @@ func linear_to_db(linear: float) -> float:
 
 
 ## 播放BGM的方法（循环播放）
-func play_bgm(audio: AudioStream, audio_id: String) -> void:
+func play_bgm(audio: AudioStream, _audio_id: String) -> void:
 	if not bgm_player:
 		push_error("没找到bgm_player")
 		finish_playbgm.emit()
@@ -71,10 +73,9 @@ func play_bgm(audio: AudioStream, audio_id: String) -> void:
 	bgm_player.stream = audio
 	bgm_player.play()
 	finish_playbgm.emit()
-	bgm_player.finished.connect(func():
-		bgm_player.play())
-		
-	
+	bgm_player.finished.connect(func(): bgm_player.play())
+
+
 ## 停止播放BGM的方法
 func stop_bgm() -> void:
 	if not bgm_player:
@@ -92,11 +93,12 @@ func play_voice(audio: AudioStream) -> void:
 		return
 	if voice_player.is_playing():
 		voice_player.stop()
-	voice_player.stream=audio
+	voice_player.stream = audio
 	voice_player.play()
 	finish_playvoice.emit()
 	await voice_player.finished
 	voice_finish_playing.emit()
+
 
 ## 停止播放语音的方法
 func stop_voice() -> void:
@@ -104,6 +106,7 @@ func stop_voice() -> void:
 		push_error("没找到voice_player")
 		return
 	voice_player.stop()
+
 
 ## 播放音效的方法
 func play_sound_effect(audio: AudioStream) -> void:

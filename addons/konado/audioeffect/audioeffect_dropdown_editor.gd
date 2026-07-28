@@ -11,13 +11,14 @@ var name_to_path: Dictionary = {}
 var updating: bool = false
 var audio_effect_dir: String = ""
 
+
 func _init(type: String) -> void:
 	match type:
 		"typewriter":
 			audio_effect_dir = TYPEWRITER_AUDIO_EFFECT_DIR
 		_:
 			audio_effect_dir = ""
-			
+
 	option_button.size_flags_horizontal = SIZE_EXPAND_FILL
 	option_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	add_child(option_button)
@@ -25,11 +26,11 @@ func _init(type: String) -> void:
 	_load_audio_options()
 	option_button.item_selected.connect(_on_item_selected)
 
+
 func _load_audio_options() -> void:
 	option_button.clear()
 	name_to_path.clear()
 	var dir = DirAccess.open(TYPEWRITER_AUDIO_EFFECT_DIR)
-
 
 	# 遍历目录下的所有文件
 	dir.list_dir_begin()
@@ -48,6 +49,7 @@ func _load_audio_options() -> void:
 		var tip = "无有效音效"
 		option_button.add_item(tip)
 		name_to_path[tip] = ""
+
 
 func _update_property() -> void:
 	# 防重复更新：内部选择触发时，忽略外部同步
@@ -75,6 +77,7 @@ func _update_property() -> void:
 			break
 	# 更新下拉选中状态
 	option_button.select(target_idx)
+
 
 func _on_item_selected(selected_idx: int) -> void:
 	# 防重复更新：外部同步时，忽略内部选择

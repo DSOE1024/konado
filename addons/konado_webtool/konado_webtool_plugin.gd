@@ -9,6 +9,7 @@ func _enter_tree() -> void:
 	add_autoload_singleton(AUTOLOAD_NAME, AUTOLOAD_PATH)
 	print("[KND_WebTool] 已启用")
 
+
 func _exit_tree() -> void:
 	remove_autoload_singleton(AUTOLOAD_NAME)
 	print("[KND_WebTool] 已禁用")

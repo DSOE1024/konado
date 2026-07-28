@@ -1,0 +1,1 @@
+extends KND_Dialogue

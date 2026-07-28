@@ -1,6 +1,6 @@
 @tool
-class_name KND_TypewriterText
 extends Control
+class_name KND_TypewriterText
 ## 支持 BBCode 富文本的 GPU 加速打字机文本组件。
 ##
 ## 使用专用的 CanvasItem 着色器逐字符渲染文本，并实现平滑的方向性淡入效果。
@@ -60,9 +60,9 @@ signal character_revealed(index: int)
 		_mark_dirty()
 
 # ── 内部状态 ──────────────────────────────────────────────────────────
-var _chars: Array = []          # 每个字符的字典
+var _chars: Array = []  # 每个字符的字典
 var _total_chars: int = 0
-var _progress: float = 0.0     # 当前显示光标（以字符索引为单位）
+var _progress: float = 0.0  # 当前显示光标（以字符索引为单位）
 var _playing: bool = false
 var _finished: bool = false
 var _dirty: bool = true
@@ -74,12 +74,13 @@ var _f_regular: Font
 var _f_bold: Font
 var _f_italic: Font
 var _f_bold_italic: Font
-var _sys_font: SystemFont        # 缓存的系统字体，支持 CJK / 多语言
+var _sys_font: SystemFont  # 缓存的系统字体，支持 CJK / 多语言
 
 # 着色器材料（只创建一次）
 var _shader_mat: ShaderMaterial
 
 var _line_count: int = 0
+
 
 # ── 生命周期 ────────────────────────────────────────────────────────────────
 func _ready() -> void:
@@ -88,6 +89,7 @@ func _ready() -> void:
 	_rebuild()
 	if auto_start and _total_chars > 0 and not Engine.is_editor_hint():
 		start()
+
 
 func _process(delta: float) -> void:
 	if not _playing:
@@ -107,13 +109,16 @@ func _process(delta: float) -> void:
 	_sync_shader()
 	queue_redraw()
 
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_dirty = true
 		queue_redraw()
 
+
 func _get_minimum_size() -> Vector2:
 	return Vector2(0.0, _text_height)
+
 
 func _draw() -> void:
 	if _dirty:
@@ -142,14 +147,23 @@ func _draw() -> void:
 		if cd.underline:
 			var adv: float = cd.advance
 			var ul_y: float = pos.y + f.get_descent(sz) * 0.3
-			draw_line(Vector2(pos.x, ul_y), Vector2(pos.x + adv, ul_y),
-				draw_color, maxf(1.0, float(sz) / 16.0))
+			draw_line(
+				Vector2(pos.x, ul_y),
+				Vector2(pos.x + adv, ul_y),
+				draw_color,
+				maxf(1.0, float(sz) / 16.0)
+			)
 		# 删除线
 		if cd.strikethrough:
 			var adv: float = cd.advance
 			var st_y: float = pos.y - f.get_ascent(sz) * 0.3
-			draw_line(Vector2(pos.x, st_y), Vector2(pos.x + adv, st_y),
-				draw_color, maxf(1.0, float(sz) / 16.0))
+			draw_line(
+				Vector2(pos.x, st_y),
+				Vector2(pos.x + adv, st_y),
+				draw_color,
+				maxf(1.0, float(sz) / 16.0)
+			)
+
 
 # ── 公共 API ───────────────────────────────────────────────────────────────
 ## 从头开始打字机效果的文本显示。
@@ -162,6 +176,7 @@ func start() -> void:
 	_sync_shader()
 	queue_redraw()
 
+
 ## 立即显示所有文本。
 func skip() -> void:
 	_progress = float(_total_chars) + fade_width
@@ -173,6 +188,7 @@ func skip() -> void:
 	_sync_shader()
 	queue_redraw()
 
+
 ## 隐藏所有文本并停止。
 func reset() -> void:
 	_progress = 0.0
@@ -182,6 +198,7 @@ func reset() -> void:
 	_sync_shader()
 	queue_redraw()
 
+
 ## 在运行时更改显示的文本（BBCode）。
 func set_bbcode(new_text: String, autoplay: bool = true) -> void:
 	bbcode_text = new_text
@@ -190,17 +207,21 @@ func set_bbcode(new_text: String, autoplay: bool = true) -> void:
 	if autoplay:
 		start()
 
+
 ## 当打字机动画运行时返回 true。
 func is_playing() -> bool:
 	return _playing
+
 
 ## 当所有字符都完全显示后返回 true。
 func is_finished() -> bool:
 	return _finished
 
+
 ## 当前的显示进度，以字符索引为单位。
 func get_progress() -> float:
 	return _progress
+
 
 # ── BBCode 解析器 ────────────────────────────────────────────────────────────
 ## 将 bbcode_text 解析为每个字符的字典数组 _chars。
@@ -220,7 +241,9 @@ func _parse_bbcode() -> void:
 	while i < length:
 		# Escaped bracket
 		if src[i] == "\\" and i + 1 < length and src[i + 1] == "[":
-			_push_char("[", cur_color, bold_d > 0, italic_d > 0, under_d > 0, strike_d > 0, cur_size)
+			_push_char(
+				"[", cur_color, bold_d > 0, italic_d > 0, under_d > 0, strike_d > 0, cur_size
+			)
 			i += 2
 			continue
 		# Tag opening
@@ -265,8 +288,10 @@ func _parse_bbcode() -> void:
 		i += 1
 	_total_chars = _chars.size()
 
-func _push_char(ch: String, col: Color, bold: bool, italic: bool,
-				underline: bool, strike: bool, sz: int) -> void:
+
+func _push_char(
+	ch: String, col: Color, bold: bool, italic: bool, underline: bool, strike: bool, sz: int
+) -> void:
 	var f: Font
 	if bold and italic:
 		f = _f_bold_italic
@@ -276,30 +301,45 @@ func _push_char(ch: String, col: Color, bold: bool, italic: bool,
 		f = _f_italic
 	else:
 		f = _f_regular
-	_chars.push_back({
-		"ch": ch,
-		"color": col,
-		"font": f,
-		"size": sz,
-		"underline": underline,
-		"strikethrough": strike,
-		"pos": Vector2.ZERO,
-		"advance": 0.0,
-	})
+	(
+		_chars
+		. push_back(
+			{
+				"ch": ch,
+				"color": col,
+				"font": f,
+				"size": sz,
+				"underline": underline,
+				"strikethrough": strike,
+				"pos": Vector2.ZERO,
+				"advance": 0.0,
+			}
+		)
+	)
+
 
 # ── 字体变体 ────────────────────────────────────────────────────────────
 ## 返回（并懒加载创建）一个覆盖 CJK / 多语言字形的 SystemFont。
 func _ensure_sys_font() -> SystemFont:
 	if _sys_font == null:
 		_sys_font = SystemFont.new()
-		_sys_font.font_names = PackedStringArray([
-			"Noto Sans CJK SC", "Noto Sans CJK",
-			"Source Han Sans SC", "Source Han Sans",
-			"Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
-			"WenQuanYi Micro Hei", "Droid Sans Fallback",
-			"Noto Sans", "sans-serif",
-		])
+		_sys_font.font_names = PackedStringArray(
+			[
+				"Noto Sans CJK SC",
+				"Noto Sans CJK",
+				"Source Han Sans SC",
+				"Source Han Sans",
+				"Microsoft YaHei",
+				"PingFang SC",
+				"Hiragino Sans GB",
+				"WenQuanYi Micro Hei",
+				"Droid Sans Fallback",
+				"Noto Sans",
+				"sans-serif",
+			]
+		)
 	return _sys_font
+
 
 func _build_font_variants() -> void:
 	var sys := _ensure_sys_font()
@@ -337,6 +377,7 @@ func _build_font_variants() -> void:
 	biv.fallbacks = fb
 	_f_bold_italic = biv
 
+
 # ── 布局引擎 ────────────────────────────────────────────────────────────
 ## 计算字符位置，支持单词感知的自动换行。
 func _compute_layout() -> void:
@@ -370,8 +411,9 @@ func _compute_layout() -> void:
 			if ln_asc == 0.0:
 				ln_asc = _f_regular.get_ascent(font_size)
 				ln_desc = _f_regular.get_descent(font_size)
-			lines.append({"start": ln_start, "end": idx, "width": ln_w,
-					  "ascent": ln_asc, "descent": ln_desc})
+			lines.append(
+				{"start": ln_start, "end": idx, "width": ln_w, "ascent": ln_asc, "descent": ln_desc}
+			)
 			ln_start = idx + 1
 			ln_w = 0.0
 			ln_asc = 0.0
@@ -395,8 +437,15 @@ func _compute_layout() -> void:
 				if wrap_asc == 0.0:
 					wrap_asc = _f_regular.get_ascent(font_size)
 					wrap_desc = _f_regular.get_descent(font_size)
-				lines.append({"start": ln_start, "end": last_space, "width": wrap_w,
-						  "ascent": wrap_asc, "descent": wrap_desc})
+				lines.append(
+					{
+						"start": ln_start,
+						"end": last_space,
+						"width": wrap_w,
+						"ascent": wrap_asc,
+						"descent": wrap_desc
+					}
+				)
 				ln_start = last_space + 1
 				# 重新计算剩余部分的累计值
 				ln_w = 0.0
@@ -413,8 +462,15 @@ func _compute_layout() -> void:
 				if ln_asc == 0.0:
 					ln_asc = _f_regular.get_ascent(font_size)
 					ln_desc = _f_regular.get_descent(font_size)
-				lines.append({"start": ln_start, "end": idx, "width": ln_w,
-						  "ascent": ln_asc, "descent": ln_desc})
+				lines.append(
+					{
+						"start": ln_start,
+						"end": idx,
+						"width": ln_w,
+						"ascent": ln_asc,
+						"descent": ln_desc
+					}
+				)
 				ln_start = idx
 				ln_w = 0.0
 				ln_asc = 0.0
@@ -428,9 +484,16 @@ func _compute_layout() -> void:
 		if ln_asc == 0.0:
 			ln_asc = _f_regular.get_ascent(font_size)
 			ln_desc = _f_regular.get_descent(font_size)
-		lines.append({"start": ln_start, "end": _total_chars, "width": ln_w,
-				  "ascent": ln_asc, "descent": ln_desc})
-				
+		lines.append(
+			{
+				"start": ln_start,
+				"end": _total_chars,
+				"width": ln_w,
+				"ascent": ln_asc,
+				"descent": ln_desc
+			}
+		)
+
 	_line_count = lines.size()
 	# ── 分配位置 ────────────────────────────────────────────────────
 	var y: float = 0.0
@@ -447,6 +510,7 @@ func _compute_layout() -> void:
 	_text_height = y
 	update_minimum_size()
 
+
 func _line_x_offset(line_width: float) -> float:
 	match horizontal_alignment:
 		HORIZONTAL_ALIGNMENT_CENTER:
@@ -456,13 +520,15 @@ func _line_x_offset(line_width: float) -> float:
 		_:
 			return 0.0
 
+
 # ── 着色器助手 ───────────────────────────────────────────────────────────
 func _init_shader() -> void:
-	var shader := preload("res://addons/konado/typewriter/typewriter_fade.gdshader")
+	var TypewriterFadeShader := preload("res://addons/konado/typewriter/typewriter_fade.gdshader")
 	_shader_mat = ShaderMaterial.new()
-	_shader_mat.shader = shader
+	_shader_mat.shader = TypewriterFadeShader
 	material = _shader_mat
 	_sync_shader()
+
 
 func _sync_shader() -> void:
 	if _shader_mat == null:
@@ -479,11 +545,13 @@ func _sync_shader() -> void:
 	if _line_count > 0:
 		_shader_mat.set_shader_parameter("line_height", _text_height / float(_line_count))
 
+
 # ── 内部函数 ────────────────────────────────────────────────────────────────
 func _mark_dirty() -> void:
 	_dirty = true
 	if is_inside_tree():
 		queue_redraw()
+
 
 func _rebuild() -> void:
 	_dirty = false
@@ -491,6 +559,7 @@ func _rebuild() -> void:
 	_parse_bbcode()
 	_compute_layout()
 	_sync_shader()
+
 
 ## 编辑器预览：在编辑器中显示所有文本。
 func _get_configuration_warnings() -> PackedStringArray:

@@ -4,18 +4,20 @@ extends EditorInspectorPlugin
 # 预加载自定义的EditorProperty下拉控件
 var AudioDropdownEditor = preload("res://addons/konado/audioeffect/audioeffect_dropdown_editor.gd")
 
+
 # 仅处理KND_DialogueBox类
 func _can_handle(object: Object) -> bool:
 	return object is KND_DialogueBox
 
+
 func _parse_property(
-	object: Object,
-	type: Variant.Type,
+	_object: Object,
+	_type: Variant.Type,
 	name: String,
-	hint_type: PropertyHint,
-	hint_string: String,
-	usage_flags,
-	wide: bool
+	_hint_type: PropertyHint,
+	_hint_string: String,
+	_usage_flags,
+	_wide: bool
 ) -> bool:
 	# 仅处理typing_effect_audio属性
 	if name == "typing_effect_audio":

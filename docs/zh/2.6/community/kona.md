@@ -17,9 +17,9 @@ Kona的身影贯穿于Konado的全场景中，无论是启动界面、官网首�
 当然在小版本更新时，Kona也会有一些小变化，比如换上不同季节的服饰，或是增加一些小配件，让形象更加丰富多元。
 
 
-> 画师：[ioniccrystal](https://github.com/ioniccrystal)  
-> 发布时间：2025-09-15  
+> 画师：[ioniccrystal](https://github.com/ioniccrystal)
+> 发布时间：2025-09-15
 
 <p align="center">
-<img src="https://godothub.atomgit.net/web/icon/konado/kona/kona.png" alt="Kona 2.0 主形象图" width="300"/>
+<img src="https://legacy.godothub.com/kbgirl/kona/kona.png" alt="Kona 2.0 主形象图" width="300"/>
 </p>

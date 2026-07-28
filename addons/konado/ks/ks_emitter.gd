@@ -4,15 +4,6 @@ class_name KS_Emitter
 ## KS 代码生成器（发射器）
 ## 将验证后的 AST 转换为 KND_Shot / KND_Dialogue 结构
 
-var _node_counter: int = 0
-var _ifelse_counter: int = 0
-var _path: String = ""
-
-## 分支存储：branch_id -> Array[KND_Dialogue]
-var _branch_dialogues: Dictionary = {}
-## if/else 块存储：ifelse_key -> {"if": Array, "else": Array}
-var _ifelse_blocks: Dictionary = {}
-
 ## 背景特效表
 const BACKGROUND_EFFECTS_MAP: Dictionary = {
 	"none": KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT,
@@ -25,6 +16,15 @@ const BACKGROUND_EFFECTS_MAP: Dictionary = {
 	"cyberglitch": KND_ActingInterface.BackgroundTransitionEffectsType.CYBER_GLITCH_EFFECT,
 	"blink": KND_ActingInterface.BackgroundTransitionEffectsType.BlinkEffect,
 }
+
+var _node_counter: int = 0
+var _ifelse_counter: int = 0
+var _path: String = ""
+
+## 分支存储：branch_id -> Array[KND_Dialogue]
+var _branch_dialogues: Dictionary = {}
+## if/else 块存储：ifelse_key -> {"if": Array, "else": Array}
+var _ifelse_blocks: Dictionary = {}
 
 
 func _init() -> void:
@@ -62,8 +62,8 @@ func emit_single(node: KS_AST.ASTNode) -> KND_Dialogue:
 func _next_node_id() -> String:
 	_node_counter += 1
 	return "ks_node_%d" % _node_counter
-	
-	
+
+
 ## 语句列表发射
 func _emit_statements(stmts: Array) -> Array[KND_Dialogue]:
 	var dialogues: Array[KND_Dialogue] = []
@@ -83,49 +83,50 @@ func _emit_statements(stmts: Array) -> Array[KND_Dialogue]:
 
 ## 分发发射单个 AST 节点
 func _emit_node(node: KS_AST.ASTNode) -> KND_Dialogue:
+	var dialogue: KND_Dialogue
 	if node is KS_AST.DialogueNode:
-		return _emit_dialogue(node)
-	if node is KS_AST.BackgroundNode:
-		return _emit_background(node)
-	if node is KS_AST.ActorNode:
-		return _emit_actor(node)
-	if node is KS_AST.AudioNode:
-		return _emit_audio(node)
-	if node is KS_AST.CameraNode:
-		return _emit_camera(node)
-	if node is KS_AST.ChoiceGroupNode:
-		return _emit_choice(node)
-	if node is KS_AST.IfElseNode:
-		return _emit_if_else(node)
-	if node is KS_AST.VariableNode:
-		return _emit_variable(node)
-	if node is KS_AST.JumpNode:
-		return _emit_jump(node)
-	if node is KS_AST.JumpBranchNode:
-		return _emit_jump_branch(node)
-	if node is KS_AST.SignalNode:
-		return _emit_signal(node)
-	if node is KS_AST.AchievementNode:
-		return _emit_achievement(node)
-	if node is KS_AST.EndNode:
-		return _emit_end(node)
-	if node is KS_AST.ScreenTextNode:
-		return _emit_screen_text(node)
-	if node is KS_AST.ShowTextBoxNode:
-		return _emit_show_textbox(node)
-	if node is KS_AST.HideTextBoxNode:
-		return _emit_hide_textbox(node)
-	if node is KS_AST.WaitSignalNode:
-		return _emit_wait_signal(node)
-	if node is KS_AST.AsyncCamNode:
-		return _emit_asyncam(node)
-
-	return null
+		dialogue = _emit_dialogue(node)
+	elif node is KS_AST.BackgroundNode:
+		dialogue = _emit_background(node)
+	elif node is KS_AST.ActorNode:
+		dialogue = _emit_actor(node)
+	elif node is KS_AST.AudioNode:
+		dialogue = _emit_audio(node)
+	elif node is KS_AST.CameraNode:
+		dialogue = _emit_camera(node)
+	elif node is KS_AST.ChoiceGroupNode:
+		dialogue = _emit_choice(node)
+	elif node is KS_AST.IfElseNode:
+		dialogue = _emit_if_else(node)
+	elif node is KS_AST.VariableNode:
+		dialogue = _emit_variable(node)
+	elif node is KS_AST.JumpNode:
+		dialogue = _emit_jump(node)
+	elif node is KS_AST.JumpBranchNode:
+		dialogue = _emit_jump_branch(node)
+	elif node is KS_AST.SignalNode:
+		dialogue = _emit_signal(node)
+	elif node is KS_AST.AchievementNode:
+		dialogue = _emit_achievement(node)
+	elif node is KS_AST.EndNode:
+		dialogue = _emit_end(node)
+	elif node is KS_AST.ScreenTextNode:
+		dialogue = _emit_screen_text(node)
+	elif node is KS_AST.ShowTextBoxNode:
+		dialogue = _emit_show_textbox(node)
+	elif node is KS_AST.HideTextBoxNode:
+		dialogue = _emit_hide_textbox(node)
+	elif node is KS_AST.WaitSignalNode:
+		dialogue = _emit_wait_signal(node)
+	elif node is KS_AST.AsyncCamNode:
+		dialogue = _emit_asyncam(node)
+	return dialogue
 
 
 # ============================================================
 # 各类型节点发射
 # ============================================================
+
 
 func _emit_dialogue(node: KS_AST.DialogueNode) -> KND_Dialogue:
 	var d := KND_Dialogue.new()
@@ -146,11 +147,14 @@ func _emit_background(node: KS_AST.BackgroundNode) -> KND_Dialogue:
 	d.background_image_name = node.background_name
 	if not node.effect.is_empty():
 		d.background_toggle_effects = BACKGROUND_EFFECTS_MAP.get(
-			node.effect, KND_ActingInterface.BackgroundTransitionEffectsType.NULL)
+			node.effect, KND_ActingInterface.BackgroundTransitionEffectsType.NULL
+		)
 		if d.background_toggle_effects == KND_ActingInterface.BackgroundTransitionEffectsType.NULL:
 			push_warning("警告：%s [行：%d] 目标效果 '%s' 未找到" % [_path, d.source_file_line, node.effect])
-			d.background_toggle_effects = KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT
-			
+			d.background_toggle_effects = (
+				KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT
+			)
+
 	return d
 
 
@@ -520,10 +524,12 @@ func _post_process(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> void:
 	for idx in range(main_dialogues.size() - 1):
 		var cur: KND_Dialogue = main_dialogues[idx]
 		var nxt: KND_Dialogue = main_dialogues[idx + 1]
-		if cur.dialog_type != KND_Dialogue.Type.SHOW_CHOICE \
-			and cur.dialog_type != KND_Dialogue.Type.THE_END \
-			and cur.dialog_type != KND_Dialogue.Type.JUMP \
-			and cur.dialog_type != KND_Dialogue.Type.JUMP_BRANCH:
+		if (
+			cur.dialog_type != KND_Dialogue.Type.SHOW_CHOICE
+			and cur.dialog_type != KND_Dialogue.Type.THE_END
+			and cur.dialog_type != KND_Dialogue.Type.JUMP
+			and cur.dialog_type != KND_Dialogue.Type.JUMP_BRANCH
+		):
 			cur.next_id = nxt.node_id
 
 	# 5. 解析选项的 next_id（tag -> node_id）
@@ -564,9 +570,17 @@ func _post_process(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> void:
 				else_dialogs[idx].next_id = else_dialogs[idx + 1].node_id
 
 	# 8. 连接 if/else 块（主线 + 分支内）
-	_link_ifelse_blocks(main_dialogues, ifelse_if_first, ifelse_else_first, ifelse_if_last, ifelse_else_last)
+	_link_ifelse_blocks(
+		main_dialogues, ifelse_if_first, ifelse_else_first, ifelse_if_last, ifelse_else_last
+	)
 	for tag_name in _branch_dialogues:
-		_link_ifelse_blocks(_branch_dialogues[tag_name], ifelse_if_first, ifelse_else_first, ifelse_if_last, ifelse_else_last)
+		_link_ifelse_blocks(
+			_branch_dialogues[tag_name],
+			ifelse_if_first,
+			ifelse_else_first,
+			ifelse_if_last,
+			ifelse_else_last
+		)
 
 	# 9. 扁平化：将所有对话放入 shot.dialogues
 	shot.dialogues.clear()
@@ -595,8 +609,12 @@ func _resolve_choice_targets(dialogs: Array, tag_map: Dictionary) -> void:
 				if tag_map.has(choice.next_id):
 					choice.next_id = tag_map[choice.next_id]
 				else:
-					push_warning("警告：%s [行：%d] 选项跳转标签 '%s' 未找到对应分支" % [
-						_path, d.source_file_line, choice.next_id])
+					push_warning(
+						(
+							"警告：%s [行：%d] 选项跳转标签 '%s' 未找到对应分支"
+							% [_path, d.source_file_line, choice.next_id]
+						)
+					)
 
 
 ## 解析 jump_branch 跳转目标
@@ -607,12 +625,19 @@ func _resolve_jump_branch_targets(dialogs: Array, tag_map: Dictionary) -> void:
 			if tag_map.has(target):
 				d.next_id = tag_map[target]
 			else:
-				push_warning("警告：%s [行：%d] jump_branch 目标分支 '%s' 未找到" % [
-					_path, d.source_file_line, target])
+				push_warning(
+					"警告：%s [行：%d] jump_branch 目标分支 '%s' 未找到" % [_path, d.source_file_line, target]
+				)
 
 
 ## 连接 if/else 块的跳转关系
-func _link_ifelse_blocks(dialogs: Array, if_first: Dictionary, else_first: Dictionary, if_last: Dictionary, else_last: Dictionary) -> void:
+func _link_ifelse_blocks(
+	dialogs: Array,
+	if_first: Dictionary,
+	else_first: Dictionary,
+	if_last: Dictionary,
+	else_last: Dictionary
+) -> void:
 	for d in dialogs:
 		if d.dialog_type == KND_Dialogue.Type.IFELSE_BRANCH:
 			var key: String = d.get_meta("ifelse_key", "")

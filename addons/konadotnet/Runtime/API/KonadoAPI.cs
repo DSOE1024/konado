@@ -4,28 +4,46 @@ namespace Konado.Runtime.API;
 
 public sealed partial class KonadoAPI : Node
 {
-    public bool IsApiReady { get; private set; }
-    public static KonadoAPI API { get; private set; }
-    public static DialogueManagerAPI DialogueManagerApi { get; private set; }
+	public bool IsApiReady { get; private set; }
+	public static KonadoAPI? API { get; private set; }
+	public static DialogueManagerAPI? DialogueManagerApi { get; private set; }
+	public static InternationalizationAPI? InternationalizationApi { get; private set; }
 
-    public override void _Ready()
-    {
-        API = this;
+	public override void _Ready()
+	{
+		API = this;
 
-        var existingApi = GetNodeOrNull<DialogueManagerAPI>("DialogueManagerAPI");
-        if (existingApi != null)
-        {
-            DialogueManagerApi = existingApi;
-            IsApiReady = true;
-            return;
-        }
+		DialogueManagerApi = GetNodeOrNull<DialogueManagerAPI>("DialogueManagerAPI");
+		if (DialogueManagerApi == null)
+		{
+			DialogueManagerApi = new DialogueManagerAPI
+			{
+				Name = "DialogueManagerAPI",
+			};
+			AddChild(DialogueManagerApi);
+		}
 
-        DialogueManagerApi = new DialogueManagerAPI();
+		InternationalizationApi = GetNodeOrNull<InternationalizationAPI>(
+			"InternationalizationAPI");
+		if (InternationalizationApi == null)
+		{
+			InternationalizationApi = new InternationalizationAPI
+			{
+				Name = "InternationalizationAPI",
+			};
+			AddChild(InternationalizationApi);
+		}
 
-        DialogueManagerApi.Name = "DialogueManagerAPI";
+		IsApiReady = true;
+	}
 
-        AddChild(DialogueManagerApi);
-
-        IsApiReady = true;
-    }
+	public override void _ExitTree()
+	{
+		IsApiReady = false;
+		if (API != this)
+			return;
+		API = null;
+		DialogueManagerApi = null;
+		InternationalizationApi = null;
+	}
 }

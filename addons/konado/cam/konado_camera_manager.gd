@@ -4,12 +4,13 @@ class_name KonadoCameraManager
 
 ## Konado相机管理器
 
-var tween: Tween
 @export var current: Camera2D
 
 @export var bg_container: Node
 
 @export var cameras: Array[KonadoCamera2D] = []
+
+var tween: Tween
 
 ## 异步相机 Tween 追踪列表（用于 asyncam stop 强制终止）
 var _async_tweens: Array[Tween] = []
@@ -18,13 +19,16 @@ var _async_target_pos: Vector2 = Vector2.ZERO
 ## 异步相机最终目标缩放
 var _async_target_zoom: Vector2 = Vector2.ONE
 
+
 func _ready() -> void:
 	current.position = get_window().size / 2
+
 
 ## 递归获取指定节点下所有 KonadoCamera2D 节点列表
 func get_all_konado_cameras() -> void:
 	cameras = []
 	_traverse(bg_container, cameras)
+
 
 ## 递归遍历辅助函数
 func _traverse(node: Node, out_list: Array[KonadoCamera2D]) -> void:
@@ -32,12 +36,14 @@ func _traverse(node: Node, out_list: Array[KonadoCamera2D]) -> void:
 		if child is KonadoCamera2D:
 			out_list.append(child)
 		_traverse(child, out_list)
-		
+
+
 func move_cam(cam_name: String, time: float, callback: Callable = Callable()) -> void:
 	for cam in cameras:
 		if cam.camera_setup == cam_name:
 			camera_trans(cam, time, callback)
-			
+
+
 func camera_trans(next_cam: Camera2D, ft: float = 2.0, callback: Callable = Callable()) -> void:
 	if tween:
 		tween.kill()
@@ -47,10 +53,10 @@ func camera_trans(next_cam: Camera2D, ft: float = 2.0, callback: Callable = Call
 	tween.tween_property(current, "zoom", next_cam.zoom, ft)
 	tween.set_parallel(false)
 	tween.tween_callback(callback)
-	
-	
+
+
 func reset_cam(use_tween: bool, ft: float = 2.0, callback: Callable = Callable()) -> void:
-	var pos: Vector2 = (get_window().size / 2)
+	var pos: Vector2 = get_window().size / 2
 	if use_tween:
 		if tween:
 			tween.kill()
@@ -66,6 +72,7 @@ func reset_cam(use_tween: bool, ft: float = 2.0, callback: Callable = Callable()
 		if callback.is_valid():
 			callback.call()
 
+
 func shake_cam(duration: float, callback: Callable = Callable()) -> void:
 	if duration <= 0:
 		if callback.is_valid():
@@ -79,15 +86,18 @@ func shake_cam(duration: float, callback: Callable = Callable()) -> void:
 
 	var shake_tween := create_tween()
 	shake_tween.tween_method(Callable(self, "_apply_shake"), 0.0, 1.0, duration)
-	shake_tween.tween_callback(func():
-		current.offset = original_offset
-		if callback.is_valid():
-			callback.call()
+	shake_tween.tween_callback(
+		func():
+			current.offset = original_offset
+			if callback.is_valid():
+				callback.call()
 	)
+
 
 # ============================================================
 # 异步相机操作（不阻塞对话）
 # ============================================================
+
 
 ## 异步移动镜头到目标机位，不阻塞对话；返回后 Tween 在后台运行
 func async_move_cam(cam_name: String, time: float) -> void:
@@ -98,11 +108,13 @@ func async_move_cam(cam_name: String, time: float) -> void:
 			_start_async_tween(cam.position, cam.zoom, time)
 			return
 
+
 ## 异步重置镜头到默认位置，不阻塞对话
 func async_reset_cam(time: float) -> void:
 	_async_target_pos = get_window().size / 2
 	_async_target_zoom = Vector2.ONE
 	_start_async_tween(_async_target_pos, _async_target_zoom, time)
+
 
 ## 异步镜头晃动，不阻塞对话
 func async_shake_cam(duration: float) -> void:
@@ -113,13 +125,12 @@ func async_shake_cam(duration: float) -> void:
 
 	var shake_tween := create_tween()
 	shake_tween.tween_method(Callable(self, "_apply_shake"), 0.0, 1.0, duration)
-	shake_tween.tween_callback(func():
-		current.offset = original_offset
-	)
+	shake_tween.tween_callback(func(): current.offset = original_offset)
 	_async_tweens.append(shake_tween)
 	# 将初始偏移也记录为最终目标，以便 stop 时恢复
 	_async_target_pos = current.position
 	_async_target_zoom = current.zoom
+
 
 ## 强制终止所有异步相机 Tween，瞬间定格到最终目标位置
 func async_stop_all() -> void:
@@ -133,6 +144,7 @@ func async_stop_all() -> void:
 	# 清除晃动偏移
 	current.offset = Vector2.ZERO
 
+
 ## 启动异步 Tween（无回调，不阻塞）
 func _start_async_tween(target_pos: Vector2, target_zoom: Vector2, ft: float) -> void:
 	var async_tween := create_tween()
@@ -141,16 +153,19 @@ func _start_async_tween(target_pos: Vector2, target_zoom: Vector2, ft: float) ->
 	async_tween.tween_property(current, "zoom", target_zoom, ft)
 	async_tween.set_parallel(false)
 	# Tween 完成后自动从追踪列表移除
-	async_tween.finished.connect(func():
-		_async_tweens.erase(async_tween)
-	)
+	async_tween.finished.connect(func(): _async_tweens.erase(async_tween))
 	_async_tweens.append(async_tween)
+
 
 func _apply_shake(progress: float) -> void:
 	var shake_intensity := (1.0 - progress) * 65.0
-	
+
 	var time := Time.get_ticks_msec() / 1000.0
-	var offset_x := (sin(time * 20.0) * 0.5 + sin(time * 37.0) * 0.3 + sin(time * 67.0) * 0.2) * shake_intensity
-	var offset_y := (cos(time * 17.0) * 0.5 + cos(time * 31.0) * 0.3 + cos(time * 59.0) * 0.2) * shake_intensity
-	
+	var offset_x := (
+		(sin(time * 20.0) * 0.5 + sin(time * 37.0) * 0.3 + sin(time * 67.0) * 0.2) * shake_intensity
+	)
+	var offset_y := (
+		(cos(time * 17.0) * 0.5 + cos(time * 31.0) * 0.3 + cos(time * 59.0) * 0.2) * shake_intensity
+	)
+
 	current.offset = Vector2(offset_x, offset_y)

@@ -7,7 +7,7 @@ order: 5
 
 ## 前言
 
-语法高亮是编辑器的重要组成部分，它能帮助开发者直观地识别代码结构，从而提升编写效率和可读性。  
+语法高亮是编辑器的重要组成部分，它能帮助开发者直观地识别代码结构，从而提升编写效率和可读性。
 `KND_KsHighlighter` 是基于 Godot 引擎的 `SyntaxHighlighter` 实现的一款高亮器，专门用于 KS 脚本。它将高亮规则集中定义在单个脚本中，使得自定义和扩展变得非常灵活——你可以轻松调整现有规则，也可以添加全新的配色方案。
 
 ## 基本实现
@@ -35,13 +35,13 @@ order: 5
 
 默认的配色方案以资源文件形式存储在：
 ```
-res://addons/konado/editor/ks_editor/ks_syntax_highlighter.tres
+res://addons/konado/editor/ks_editor/highlighter.tres
 ```
 
-直接编辑该资源文件可以保留修改，并避免每次重新生成。  
+直接编辑该资源文件可以保留修改，并避免每次重新生成。
 在代码中加载并使用该资源：
 ```gdscript
-set_syntax_highlighter(load("res://addons/konado/editor/ks_editor/ks_syntax_highlighter.tres"))
+set_syntax_highlighter(load("res://addons/konado/editor/ks_editor/highlighter.tres"))
 ```
 
 ### 方式二：动态创建实例
