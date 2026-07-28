@@ -82,10 +82,12 @@ jobs:
           path: downloaded
 
       - name: Prepare release notes
+        id: release
         shell: bash
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
           awk -v version="$version" '
             /^##[[:space:]]+/ {
               if (capturing) {
@@ -130,7 +132,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: Konado Release ${{ github.ref_name }}
+          name: ${{ steps.release.outputs.version }}
           body_path: release-notes.md
           draft: false
           prerelease: false
