@@ -57,7 +57,7 @@ If you appreciate our work, please consider supporting us via this [link](https:
 
 
 <div align="center">
-  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+  <img src="https://legacy.godothub.com/kbgirl/kona/kona_love.png" alt="kona_love" height="150">
 </div>
 
 
