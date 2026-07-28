@@ -17,7 +17,7 @@ Konado WebTool 通过在 Web 平台上注入 JavaScript 代码来实现快捷键
 1. 检测当前平台是否为 Web 平台
 2. 如果是 Web 平台且启用了开发者工具支持，则注入快捷键处理代码
 3. 根据配置动态构建允许的快捷键列表
-4. 监听键盘事件，对允许的快捷键阻止默认行为，从而放行到浏览器
+4. 监听键盘事件，阻止允许的快捷键继续传递给 Godot，同时保留浏览器的默认行为
 
 ### 与其他解决方案比较
 
@@ -55,6 +55,7 @@ Konado WebTool 通过在 Web 平台上注入 JavaScript 代码来实现快捷键
 | 属性 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `enable_web_devtool` | bool | true | 是否启用 Web 开发者工具快捷键放行 |
+| `allow_in_release` | bool | false | 是否在正式导出包中启用快捷键放行 |
 | `enable_f12` | bool | true | 是否启用 F12 快捷键 |
 | `enable_f5` | bool | true | 是否启用 F5 快捷键 |
 | `enable_f11` | bool | true | 是否启用 F11 快捷键 |
@@ -64,5 +65,8 @@ Konado WebTool 通过在 Web 平台上注入 JavaScript 代码来实现快捷键
 | `enable_ctrl_u` | bool | true | 是否启用 Ctrl+U 快捷键 |
 | `enable_ctrl_r` | bool | true | 是否启用 Ctrl+R 快捷键 |
 
+为了避免在生产环境暴露调试入口，正式导出包默认不安装快捷键处理器。如需在运行时修改配置，请在修改属性后调用：
 
-
+```gdscript
+KND_WebTool.refresh_shortcuts()
+```

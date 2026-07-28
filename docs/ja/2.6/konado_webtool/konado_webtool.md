@@ -16,7 +16,7 @@ Konado WebTool は Web プラットフォーム上で JavaScript コードを注
 1. 現在のプラットフォームが Web かどうかを検出します
 2. Web プラットフォームで開発者ツールサポートが有効な場合、ショートカット処理コードを注入します
 3. 設定に基づいて許可するショートカット一覧を動的に構築します
-4. キーボードイベントを監視し、許可されたショートカットのデフォルト動作を阻止してブラウザへ通します
+4. ブラウザのデフォルト動作を維持したまま、許可されたショートカットが Godot へ伝播するのを止めます
 
 ### 他の解決策との比較
 
@@ -53,6 +53,7 @@ Konado WebTool は Web プラットフォーム上で JavaScript コードを注
 | プロパティ | 型 | デフォルト | 説明 |
 |------|------|--------|------|
 | `enable_web_devtool` | bool | true | Web 開発者ツールショートカットの通過を有効にするか |
+| `allow_in_release` | bool | false | リリースエクスポートでショートカットの通過を有効にするか |
 | `enable_f12` | bool | true | F12 ショートカットを有効にするか |
 | `enable_f5` | bool | true | F5 ショートカットを有効にするか |
 | `enable_f11` | bool | true | F11 ショートカットを有効にするか |
@@ -61,3 +62,9 @@ Konado WebTool は Web プラットフォーム上で JavaScript コードを注
 | `enable_ctrl_shift_c` | bool | true | Ctrl+Shift+C ショートカットを有効にするか |
 | `enable_ctrl_u` | bool | true | Ctrl+U ショートカットを有効にするか |
 | `enable_ctrl_r` | bool | true | Ctrl+R ショートカットを有効にするか |
+
+本番環境でデバッグ用の入口が公開されないように、リリースエクスポートではデフォルトでショートカットハンドラーをインストールしません。実行時にプロパティを変更した場合は、次の呼び出しで設定を反映します。
+
+```gdscript
+KND_WebTool.refresh_shortcuts()
+```

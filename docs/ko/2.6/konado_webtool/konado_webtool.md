@@ -16,7 +16,7 @@ Konado WebTool은 Web 플랫폼에 JavaScript 코드를 주입해 단축키를 �
 1. 현재 플랫폼이 Web 플랫폼인지 확인합니다
 2. Web 플랫폼이고 개발자 도구 지원이 활성화되어 있으면 단축키 처리 코드를 주입합니다
 3. 설정에 따라 허용할 단축키 목록을 동적으로 구성합니다
-4. 키보드 이벤트를 감시하고, 허용된 단축키에 대해 기본 동작을 막아 브라우저로 통과시킵니다
+4. 브라우저의 기본 동작은 유지하면서 허용된 단축키가 Godot으로 전파되지 않도록 합니다
 
 ### 다른 해결책과 비교
 
@@ -53,6 +53,7 @@ Konado WebTool은 Web 플랫폼에 JavaScript 코드를 주입해 단축키를 �
 | 속성 | 유형 | 기본값 | 설명 |
 |------|------|--------|------|
 | `enable_web_devtool` | bool | true | Web 개발자 도구 단축키 통과를 활성화할지 여부 |
+| `allow_in_release` | bool | false | 릴리스 내보내기에서 단축키 통과를 활성화할지 여부 |
 | `enable_f12` | bool | true | F12 단축키를 활성화할지 여부 |
 | `enable_f5` | bool | true | F5 단축키를 활성화할지 여부 |
 | `enable_f11` | bool | true | F11 단축키를 활성화할지 여부 |
@@ -61,3 +62,9 @@ Konado WebTool은 Web 플랫폼에 JavaScript 코드를 주입해 단축키를 �
 | `enable_ctrl_shift_c` | bool | true | Ctrl+Shift+C 단축키를 활성화할지 여부 |
 | `enable_ctrl_u` | bool | true | Ctrl+U 단축키를 활성화할지 여부 |
 | `enable_ctrl_r` | bool | true | Ctrl+R 단축키를 활성화할지 여부 |
+
+프로덕션 환경에 디버깅 진입점이 노출되지 않도록 릴리스 내보내기에서는 기본적으로 단축키 처리기를 설치하지 않습니다. 런타임에 속성을 변경한 뒤 다음 호출로 설정을 적용합니다.
+
+```gdscript
+KND_WebTool.refresh_shortcuts()
+```

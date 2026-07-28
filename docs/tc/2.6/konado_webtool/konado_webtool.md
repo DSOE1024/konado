@@ -16,7 +16,7 @@ Konado WebTool 透過在 Web 平台上注入 JavaScript 程式碼來實現快捷
 1. 檢測目前平台是否為 Web 平台
 2. 如果是 Web 平台且啟用了開發者工具支援，則注入快捷鍵處理程式碼
 3. 根據設定動態建構允許的快捷鍵列表
-4. 監聽鍵盤事件，對允許的快捷鍵阻止預設行為，從而放行到瀏覽器
+4. 監聽鍵盤事件，阻止允許的快捷鍵繼續傳遞給 Godot，同時保留瀏覽器的預設行為
 
 ### 與其他解決方案比較
 
@@ -53,6 +53,7 @@ Konado WebTool 透過在 Web 平台上注入 JavaScript 程式碼來實現快捷
 | 屬性 | 類型 | 預設值 | 描述 |
 |------|------|--------|------|
 | `enable_web_devtool` | bool | true | 是否啟用 Web 開發者工具快捷鍵放行 |
+| `allow_in_release` | bool | false | 是否在正式匯出套件中啟用快捷鍵放行 |
 | `enable_f12` | bool | true | 是否啟用 F12 快捷鍵 |
 | `enable_f5` | bool | true | 是否啟用 F5 快捷鍵 |
 | `enable_f11` | bool | true | 是否啟用 F11 快捷鍵 |
@@ -61,3 +62,9 @@ Konado WebTool 透過在 Web 平台上注入 JavaScript 程式碼來實現快捷
 | `enable_ctrl_shift_c` | bool | true | 是否啟用 Ctrl+Shift+C 快捷鍵 |
 | `enable_ctrl_u` | bool | true | 是否啟用 Ctrl+U 快捷鍵 |
 | `enable_ctrl_r` | bool | true | 是否啟用 Ctrl+R 快捷鍵 |
+
+為避免在正式環境暴露除錯入口，正式匯出套件預設不會安裝快捷鍵處理器。如需在執行階段修改設定，請在修改屬性後呼叫：
+
+```gdscript
+KND_WebTool.refresh_shortcuts()
+```

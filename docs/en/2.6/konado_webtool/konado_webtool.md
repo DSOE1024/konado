@@ -16,7 +16,7 @@ Konado WebTool works by injecting JavaScript code on the Web platform to let sho
 1. Detect whether the current platform is Web
 2. If it is Web and developer tool support is enabled, inject shortcut handling code
 3. Dynamically build the allowed shortcut list based on configuration
-4. Listen for keyboard events and prevent default behavior for allowed shortcuts, allowing them to pass through to the browser
+4. Stop allowed shortcuts from propagating to Godot while preserving the browser's default behavior
 
 ### Comparison with Other Solutions
 
@@ -53,6 +53,7 @@ In the autoloaded `KND_WebTool` node, you can configure the following properties
 | Property | Type | Default | Description |
 |------|------|--------|------|
 | `enable_web_devtool` | bool | true | Whether to allow Web developer tool shortcuts |
+| `allow_in_release` | bool | false | Whether to allow shortcuts in release exports |
 | `enable_f12` | bool | true | Whether to enable F12 |
 | `enable_f5` | bool | true | Whether to enable F5 |
 | `enable_f11` | bool | true | Whether to enable F11 |
@@ -61,3 +62,9 @@ In the autoloaded `KND_WebTool` node, you can configure the following properties
 | `enable_ctrl_shift_c` | bool | true | Whether to enable Ctrl+Shift+C |
 | `enable_ctrl_u` | bool | true | Whether to enable Ctrl+U |
 | `enable_ctrl_r` | bool | true | Whether to enable Ctrl+R |
+
+To avoid exposing debugging entry points in production, release exports do not install the shortcut handler by default. After changing these properties at runtime, apply the configuration with:
+
+```gdscript
+KND_WebTool.refresh_shortcuts()
+```
