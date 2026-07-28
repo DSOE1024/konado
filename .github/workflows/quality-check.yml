@@ -1,0 +1,136 @@
+name: Quality Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflow-lint:
+    name: Workflow syntax
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7
+
+  gdscript-lint:
+    name: GDScript lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: .github/scripts/requirements.txt
+
+      - name: Install pinned tools
+        run: python -m pip install -r .github/scripts/requirements.txt
+
+      - name: Lint GDScript
+        run: gdlint addons sample tests
+
+      - name: Check GDScript formatting
+        run: gdformat --check addons sample tests
+
+  gdscript-runtime:
+    name: GDScript architecture
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Import project
+        run: godot --headless --editor --path . --quit
+
+      - name: Test parser and dialogue services
+        run: >-
+          python .github/scripts/run_godot_test.py
+          tests/dialogue/test_gdscript_architecture.gd
+
+      - name: Test internationalization
+        run: |
+          python .github/scripts/run_godot_test.py tests/i18n/test_knd_i18n.gd
+          python .github/scripts/run_godot_test.py tests/i18n/test_knd_i18n_autoload.gd
+
+  dotnet-build:
+    name: Konado.NET compile
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Compile Konado.NET
+        run: >-
+          dotnet build .github/scripts/Konado.CI.csproj
+          --configuration Release
+          --nologo
+          --warnaserror
+
+      - name: Check C# formatting
+        run: >-
+          dotnet format .github/scripts/Konado.CI.csproj
+          --verify-no-changes
+          --no-restore
+
+  dotnet-runtime:
+    name: Konado.NET runtime
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:mono-4.7.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Run Konado.NET inside Godot
+        run: bash .github/scripts/run_dotnet_runtime_tests.sh
+
+  resource-integrity:
+    name: Resource integrity
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Check plugin resource boundaries
+        run: python plugin_path_checker.py "res://addons/konado/" "./addons/konado/"
+
+      - name: Check plugin metadata
+        run: python .github/scripts/check_plugin_configs.py
+
+      - name: Check documentation resource paths
+        run: >-
+          python .github/scripts/check_doc_resource_paths.py
+          docs/zh/2.6 docs/en/2.6 docs/ja/2.6 docs/ko/2.6 docs/tc/2.6
