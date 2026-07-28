@@ -417,3 +417,14 @@ func _find_texture_rect(node: Node) -> TextureRect:
 	return null
 
 @export var slot: Control
+
+## 整体设置整个Actor容器（slot）全部子UI/角色的modulate，全局统一染色
+func set_actor_modulate(color: Color) -> void:
+	if slot:
+		slot.modulate = color
+
+## 只修改角色画面本体modulate（立绘、Live2D、Spine），动作层motion_layer不受影响
+func set_visual_modulate(color: Color) -> void:
+	var target_visual: CanvasItem = _get_status_visual()
+	if target_visual:
+		target_visual.modulate = color

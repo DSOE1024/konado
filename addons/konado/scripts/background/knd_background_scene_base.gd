@@ -16,6 +16,11 @@ signal background_exit_finished
 @export var use_default_fade: bool = true
 @export var default_transition_duration: float = 0.35
 
+## 场景独立的染色加权系数（1.0 为默认，0 彻底无染色），没有特殊需求不用调整
+@export var scene_tint_intensity: float = 1.0:
+	set(value):
+		scene_tint_intensity = clamp(value, 0.0, 2.0)
+
 var _transition_tween: Tween
 var _active_animation: StringName = &""
 var _active_phase: String = ""
@@ -111,3 +116,22 @@ func _find_transition_texture(node: Node) -> Texture2D:
 		if texture:
 			return texture
 	return null
+	
+## 当无法从纹理中提取色调时，使用的默认环境色
+@export var default_env_color: Color = Color.WHITE
+
+## 返回当前背景场景的代表色（环境光颜色）
+func get_scene_tint_color() -> Color:
+	var tex = get_transition_texture()
+	if tex == null:
+		return default_env_color
+	return _calculate_average_color(tex)
+
+## 从 Texture2D 中计算全图平均色
+func _calculate_average_color(texture: Texture2D) -> Color:
+	var img = texture.get_image()
+	if img == null or img.is_empty():
+		return Color.WHITE
+	# 缩小到 1x1 线性插值，直接得到平均色
+	img.resize(1, 1, Image.INTERPOLATE_BILINEAR)
+	return img.get_pixel(0, 0)

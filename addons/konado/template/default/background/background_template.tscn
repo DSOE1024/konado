@@ -12,6 +12,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_bgtemplate")
 animation_player = NodePath("AnimationPlayer")
+scene_tint_intensity = null
 
 [node name="Content" type="Control" parent="." unique_id=674105596]
 layout_mode = 1
