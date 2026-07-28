@@ -15,18 +15,24 @@ signal motion_finished(motion_name: String)
 
 var _active_motion_name: String = ""
 
+
 func _ready() -> void:
 	if animation_player == null:
 		animation_player = get_node_or_null("AnimationPlayer") as AnimationPlayer
 	if mount_node == null:
 		mount_node = get_node_or_null("CharacterMount")
-	if animation_player and not animation_player.animation_finished.is_connected(_on_animation_finished):
+	if (
+		animation_player
+		and not animation_player.animation_finished.is_connected(_on_animation_finished)
+	):
 		animation_player.animation_finished.connect(_on_animation_finished)
+
 
 func get_mount_node() -> Node:
 	if mount_node:
 		return mount_node
 	return self
+
 
 func play_motion(motion_name: String, _params: Dictionary = {}) -> void:
 	if motion_name.is_empty():
@@ -45,20 +51,24 @@ func play_motion(motion_name: String, _params: Dictionary = {}) -> void:
 	motion_started.emit(motion_name)
 	_finish_motion(motion_name)
 
+
 func stop_motion() -> void:
 	if animation_player:
 		animation_player.stop()
 	_reset_motion_target()
 	_active_motion_name = ""
 
+
 func _finish_motion(motion_name: String) -> void:
 	_active_motion_name = ""
 	motion_finished.emit(motion_name)
+
 
 func _on_animation_finished(animation_name: StringName) -> void:
 	if str(animation_name) != _active_motion_name:
 		return
 	_finish_motion(_active_motion_name)
+
 
 func _reset_motion_target() -> void:
 	var target := _get_motion_target()
@@ -71,11 +81,13 @@ func _reset_motion_target() -> void:
 		modulate.a = 1.0
 		canvas_item.modulate = modulate
 
+
 func _get_motion_target() -> Node:
 	var target := get_mount_node()
 	if target is Control or target is Node2D:
 		return target
 	return self
+
 
 func _get_animation_names_text() -> String:
 	if animation_player == null:

@@ -26,10 +26,6 @@ signal actor_motion_finished(motion_name: String)
 
 @export var texture_rect: TextureRect
 @export var motion_layer: KND_ActorMotionLayer
-var _status_node: Node = null
-var _move_tween: Tween
-var _suspend_layout_update := false
-var _is_visible := false
 
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
 @export var h_division: int = 5:
@@ -50,31 +46,50 @@ var _is_visible := false
 ## 是否使用偏移动画（短距离移动+淡入），否则使用边缘进场动画（从屏幕外飞入）
 @export var use_offset: bool = true
 
+@export var slot: Control
+
+var _status_node: Node = null
+var _move_tween: Tween
+var _suspend_layout_update := false
+var _is_visible := false
+
+
 ## 判断角色是否在左侧区域（用于确定进场/退场方向）
 func _is_left_side() -> bool:
 	return h_character_position <= h_division / 2
 
+
 ## 获取进场动画名称
 func _get_enter_animation_name() -> String:
-	return "left_enter_offset" if (use_offset and _is_left_side()) else \
-		   "right_enter_offset" if use_offset else \
-		   "left_enter" if _is_left_side() else \
-	       "right_enter"
+	return (
+		"left_enter_offset"
+		if (use_offset and _is_left_side())
+		else (
+			"right_enter_offset"
+			if use_offset
+			else "left_enter" if _is_left_side() else "right_enter"
+		)
+	)
+
 
 ## 获取退场动画名称
 func _get_exit_animation_name() -> String:
-	return "left_exit_offset" if (use_offset and _is_left_side()) else \
-		   "right_exit_offset" if use_offset else \
-		   "left_exit" if _is_left_side() else \
-	       "right_exit"
+	return (
+		"left_exit_offset"
+		if (use_offset and _is_left_side())
+		else "right_exit_offset" if use_offset else "left_exit" if _is_left_side() else "right_exit"
+	)
+
 
 ## 判断是否为进场动画
 func _is_enter_motion(motion_name: String) -> bool:
 	return motion_name.begins_with("left_enter") or motion_name.begins_with("right_enter")
 
+
 ## 判断是否为退场动画
 func _is_exit_motion(motion_name: String) -> bool:
 	return motion_name.begins_with("left_exit") or motion_name.begins_with("right_exit")
+
 
 func _ready() -> void:
 	if texture_rect:
@@ -83,6 +98,7 @@ func _ready() -> void:
 	_bind_motion_layer_signals()
 	_on_resized()
 	_is_visible = true
+
 
 func _on_resized() -> void:
 	if not slot:
@@ -93,12 +109,17 @@ func _on_resized() -> void:
 	if _move_tween:
 		_move_tween.kill()
 		_move_tween = null
-	
+
 	if use_tween and animation_time > 0.0:
 		var tween: Tween = slot.create_tween()
 		_move_tween = tween
 		tween.set_parallel(true)
-		tween.tween_property(slot, "position:x", -size.x / h_division * (h_division - h_character_position ) + slot.size.x/2, animation_time)
+		tween.tween_property(
+			slot,
+			"position:x",
+			-size.x / h_division * (h_division - h_character_position) + slot.size.x / 2,
+			animation_time
+		)
 		await tween.finished
 		if _move_tween != tween:
 			return
@@ -106,10 +127,13 @@ func _on_resized() -> void:
 		_layout_status_node()
 		actor_moved.emit()
 	else:
-		slot.position.x = -size.x / h_division * (h_division - h_character_position ) + slot.size.x/2
-	
+		slot.position.x = (
+			-size.x / h_division * (h_division - h_character_position) + slot.size.x / 2
+		)
+
 		_layout_status_node()
 		actor_moved.emit()
+
 
 func set_stage_position(target_h_division: int, target_h_character_position: int) -> bool:
 	var next_h_division: int = clamp(target_h_division, 2, 5)
@@ -123,6 +147,7 @@ func set_stage_position(target_h_division: int, target_h_character_position: int
 	_on_resized()
 	return true
 
+
 ## 高亮
 func set_highlight(highlight: bool) -> void:
 	if _status_node and _status_node.has_method("set_highlight"):
@@ -135,7 +160,7 @@ func set_highlight(highlight: bool) -> void:
 		visual.set_modulate(Color(1.0, 1.0, 1.0))
 	else:
 		visual.set_modulate(Color(0.35, 0.35, 0.35, 1.0))
-	pass
+
 
 ## 角色进场动画
 ## 根据角色位置自动判断进场方向（左/右），优先使用motion_layer的移动进场动画
@@ -143,13 +168,13 @@ func enter_actor(play_anim: bool = true) -> void:
 	if not play_anim:
 		emit_signal("actor_entered")
 		return
-	
+
 	var visual := _get_status_visual()
 	if visual == null:
 		print("警告：角色状态节点未赋值，无法执行进场动画")
 		emit_signal("actor_entered")
 		return
-	
+
 	if motion_layer and motion_layer.animation_player:
 		var anim_name: StringName = _get_enter_animation_name()
 		if motion_layer.animation_player.has_animation(anim_name):
@@ -157,15 +182,16 @@ func enter_actor(play_anim: bool = true) -> void:
 			_set_visibility(false)
 			play_actor_motion(anim_name)
 			return
-	
+
 	visual.visible = true
 	visual.modulate.a = 0.0
-	
+
 	var tween: Tween = visual.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(visual, "modulate:a", 1.0, animation_time)
 	tween.finished.connect(_on_enter_animation_finished)
 	tween.play()
+
 
 ## 角色退场动画
 ## 根据角色位置自动判断退场方向（左/右），优先使用motion_layer的移动退场动画
@@ -174,24 +200,25 @@ func exit_actor(play_anim: bool = true) -> void:
 		emit_signal("actor_exited")
 		self.queue_free()
 		return
-	
+
 	var visual := _get_status_visual()
 	if visual == null:
 		print("警告：角色状态节点未赋值，无法执行退场动画")
 		emit_signal("actor_exited")
 		self.queue_free()
 		return
-	
+
 	if motion_layer and motion_layer.animation_player:
 		var anim_name := _get_exit_animation_name()
 		if motion_layer.animation_player.has_animation(anim_name):
 			play_actor_motion(anim_name)
 			return
-	
+
 	var tween: Tween = visual.create_tween()
 	tween.tween_property(visual, "modulate:a", 0.0, animation_time)
 	tween.finished.connect(func(): self.queue_free())
 	tween.play()
+
 
 ## 设置角色可见性（先不显示，等待进场动画开始后再显示）
 func set_visible(deferred: bool = true) -> void:
@@ -202,43 +229,53 @@ func set_visible(deferred: bool = true) -> void:
 		_is_visible = true
 		_set_visibility(true)
 
+
 ## 设置可见性
 func _set_visibility(visible: bool) -> void:
 	var visual := _get_status_visual()
 	if visual:
 		visual.visible = visible
 
+
 ## 从左侧进场动画
 func enter_from_left() -> void:
 	_play_enter_motion("left_enter")
+
 
 ## 从右侧进场动画
 func enter_from_right() -> void:
 	_play_enter_motion("right_enter")
 
+
 ## 从左侧偏移进场动画（短距离移动+淡入）
 func enter_from_left_offset() -> void:
 	_play_enter_motion("left_enter_offset")
+
 
 ## 从右侧偏移进场动画（短距离移动+淡入）
 func enter_from_right_offset() -> void:
 	_play_enter_motion("right_enter_offset")
 
+
 ## 退场到左侧动画
 func exit_to_left() -> void:
 	play_actor_motion("left_exit")
+
 
 ## 退场到右侧动画
 func exit_to_right() -> void:
 	play_actor_motion("right_exit")
 
+
 ## 退场到左侧偏移动画（短距离移动+淡出）
 func exit_to_left_offset() -> void:
 	play_actor_motion("left_exit_offset")
 
+
 ## 退场到右侧偏移动画（短距离移动+淡出）
 func exit_to_right_offset() -> void:
 	play_actor_motion("right_exit_offset")
+
 
 ## 播放进场动画的通用方法
 func _play_enter_motion(motion_name: String) -> void:
@@ -246,9 +283,11 @@ func _play_enter_motion(motion_name: String) -> void:
 	_set_visibility(false)
 	play_actor_motion(motion_name)
 
+
 ## 进场动画完成回调
 func _on_enter_animation_finished() -> void:
 	actor_entered.emit()
+
 
 func set_character_scene(scene: PackedScene, initial_status: String = "") -> void:
 	_clear_status_node()
@@ -270,6 +309,7 @@ func set_character_scene(scene: PackedScene, initial_status: String = "") -> voi
 	if not initial_status.is_empty():
 		apply_character_status(initial_status)
 
+
 ## 演员节点只负责把剧本里的状态名转发给角色场景。
 ## 这里不判断图片、Spine、Live2D 或视频，避免主链路重新绑定到某一种媒体类型。
 func apply_character_status(status_name: String) -> void:
@@ -282,7 +322,7 @@ func apply_character_status(status_name: String) -> void:
 	if _status_node is KND_CharacterSceneBase:
 		(_status_node as KND_CharacterSceneBase).apply_status(status_name)
 		return
-	elif _status_node.has_method("apply_status"):
+	if _status_node.has_method("apply_status"):
 		_status_node.call("apply_status", status_name)
 		return
 	if _status_node.has_method("change_status"):
@@ -292,6 +332,7 @@ func apply_character_status(status_name: String) -> void:
 		_status_node.call("set_status", status_name)
 		return
 	push_warning("角色场景未实现 apply_status：" + status_name)
+
 
 ## 舞台层动作，例如 shake、jump_twice、bounce。
 ## 这些动作作用在 MotionLayer 上，和角色场景内部的表情、Live2D motion、视频切换分开。
@@ -305,6 +346,7 @@ func play_actor_motion(motion_name: String, params: Dictionary = {}) -> void:
 		return
 	motion_layer.play_motion(motion_name, params)
 
+
 func set_character_texture(texture: Texture) -> void:
 	_clear_status_node()
 	if not texture_rect:
@@ -314,10 +356,12 @@ func set_character_texture(texture: Texture) -> void:
 	texture_rect.visible = true
 	texture_rect.texture = texture
 
+
 func _clear_status_node() -> void:
 	if _status_node and is_instance_valid(_status_node):
 		_status_node.queue_free()
 	_status_node = null
+
 
 func set_motion_layer_scene(scene: PackedScene) -> void:
 	if scene == null:
@@ -340,6 +384,7 @@ func set_motion_layer_scene(scene: PackedScene) -> void:
 	texture_rect = _find_texture_rect(motion_layer)
 	_bind_motion_layer_signals()
 
+
 func _bind_motion_layer_signals() -> void:
 	if motion_layer == null:
 		return
@@ -348,11 +393,13 @@ func _bind_motion_layer_signals() -> void:
 	if not motion_layer.motion_finished.is_connected(_on_motion_layer_finished):
 		motion_layer.motion_finished.connect(_on_motion_layer_finished)
 
+
 func _on_motion_layer_started(motion_name: String) -> void:
 	actor_motion_started.emit(motion_name)
 	if _is_enter_motion(motion_name):
 		_is_visible = true
 		_set_visibility(true)
+
 
 func _on_motion_layer_finished(motion_name: String) -> void:
 	actor_motion_finished.emit(motion_name)
@@ -365,6 +412,7 @@ func _on_motion_layer_finished(motion_name: String) -> void:
 			motion_layer.stop_motion()
 		emit_signal("actor_exited")
 		self.queue_free()
+
 
 func _layout_status_node() -> void:
 	var mount := _get_character_mount()
@@ -382,6 +430,7 @@ func _layout_status_node() -> void:
 		if mount is Control:
 			node_2d.position = (mount as Control).size * 0.5
 
+
 func _get_status_visual() -> CanvasItem:
 	if _status_node:
 		if _status_node is CanvasItem:
@@ -393,10 +442,12 @@ func _get_status_visual() -> CanvasItem:
 		return texture_rect
 	return null
 
+
 func _get_character_mount() -> Node:
 	if motion_layer:
 		return motion_layer.get_mount_node()
 	return slot
+
 
 func _find_canvas_item(node: Node) -> CanvasItem:
 	for child in node.get_children():
@@ -407,6 +458,7 @@ func _find_canvas_item(node: Node) -> CanvasItem:
 			return nested
 	return null
 
+
 func _find_texture_rect(node: Node) -> TextureRect:
 	if node is TextureRect:
 		return node as TextureRect
@@ -416,12 +468,12 @@ func _find_texture_rect(node: Node) -> TextureRect:
 			return texture
 	return null
 
-@export var slot: Control
 
 ## 整体设置整个Actor容器（slot）全部子UI/角色的modulate，全局统一染色
 func set_actor_modulate(color: Color) -> void:
 	if slot:
 		slot.modulate = color
+
 
 ## 只修改角色画面本体modulate（立绘、Live2D、Spine），动作层motion_layer不受影响
 func set_visual_modulate(color: Color) -> void:
