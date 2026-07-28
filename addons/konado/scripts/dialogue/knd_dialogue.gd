@@ -1,8 +1,6 @@
 extends KND_Data
 class_name KND_Dialogue
 
-@export var source_file_line: int = -1
-
 enum Type {
 	ORDINARY_DIALOG,
 	DISPLAY_ACTOR,
@@ -37,6 +35,8 @@ enum Type {
 	ASYNC_CAM_SHAKE,
 	ASYNC_CAM_STOP
 }
+
+@export var source_file_line: int = -1
 
 @export var dialog_type: Type:
 	set(v):
@@ -138,6 +138,7 @@ enum Type {
 
 ## 等待的外部信号名称
 @export var wait_signal_name: String = ""
+
 
 func add_choice(text: String, target_id: String) -> void:
 	var c := KND_DialogueChoice.new()
