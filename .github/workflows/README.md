@@ -2,6 +2,7 @@
 
 | 工作流 | 触发方式 | 职责 | 是否写入仓库 |
 | --- | --- | --- | --- |
+| `identity-check.yml` | PR 创建、重开、更新或转为可审查 | 检查最多 250 个提交的作者、提交者和身份 trailer；发现已知 AI 提交邮箱或超出可核验上限时留言并关闭 PR | 是，关闭并评论 PR |
 | `quality-check.yml` | PR、`main` Push、手动 | Action 语法、GDScript 静态与架构测试、Konado.NET 编译、插件与文档资源完整性 | 否 |
 | `export-check.yml` | 相关项目文件的 PR/Push、手动 | 调用可复用构建，验证 Windows、Linux、Web、Android 导出 | 否 |
 | `project-export.yml` | 仅 `workflow_call` | 统一四个平台的 Godot 4.7.1 构建与产物上传 | 否 |
@@ -12,7 +13,8 @@
 
 ## 设计约束
 
-- PR 检查使用只读权限。
+- PR 构建和质量检查使用只读权限；身份策略仅授予读取提交元数据、评论和关闭 PR 所需的最小权限。
+- 身份策略使用 `pull_request_target` 读取 GitHub API 元数据，不检出或执行 PR 分支代码。
 - 构建逻辑集中在 `project-export.yml`，CI 与正式发布共用，避免平台配置漂移。
 - 文档部署在案例刷新成功后进行；PR 只触发文档构建工作流。
 - 正式发布只接受 Tag Push；手动运行只生成可下载构建产物。
