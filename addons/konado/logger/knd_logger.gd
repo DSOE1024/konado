@@ -3,28 +3,26 @@ class_name KND_Logger
 
 ## Konado Logger，Konado日志记录器
 
-const LOG_FILE_PATH: String = "user://konado_log.log"
-
 signal error_caught(msg: String)
-signal message_caught(msg: String, error: bool)	
+signal message_caught(msg: String, error: bool)
+
+const LOG_FILE_PATH: String = "user://konado_log.log"
 
 static var _mutex := Mutex.new()
 
-static var _error_type_name := ClassDB.class_get_enum_constants("Logger", "ErrorType")	
+static var _error_type_name := ClassDB.class_get_enum_constants("Logger", "ErrorType")
+
 
 func _log_error(
-	function: String, 
-	file: String, 
-	line: int, 
-	code: String, 
-	rationale: String, 
-	editor_notify: bool, 
-	error_type: int, 
+	function: String,
+	file: String,
+	line: int,
+	code: String,
+	rationale: String,
+	editor_notify: bool,
+	error_type: int,
 	script_backtraces: Array[ScriptBacktrace]
 ) -> void:
-	
-	_mutex.lock()
-	
 	var sb := PackedStringArray()
 	sb.append("Something's broken in Konado!")
 	sb.append("=============================")
@@ -35,24 +33,37 @@ func _log_error(
 	sb.append("  Error Code: {0}".format([code]))
 	sb.append("  Reason: {0}".format([rationale]))
 	sb.append("  Editor Notify: {0}".format(["YES" if editor_notify else "NO"]))
-	sb.append("  Error Type: {0}".format([_error_type_name[error_type] if error_type < _error_type_name.size() else "UNKNOWN"]))
-	if script_backtraces.size() > 0:
+	sb.append(
+		"  Error Type: {0}".format(
+			[_error_type_name[error_type] if error_type < _error_type_name.size() else "UNKNOWN"]
+		)
+	)
+	var konado_trace_found := false
+	if not script_backtraces.is_empty():
 		sb.append("=============================")
 		sb.append("  script backtraces:")
-		for i in script_backtraces:
-			if i.format().find("res://addons/konado") != -1:
-				sb.append("      " + i.format())
-				var msg = "\n".join(sb)
-				var filestream = FileAccess.open(LOG_FILE_PATH, FileAccess.WRITE)
-				filestream.store_string(msg)
-				filestream.close()
-				error_caught.emit(msg)
-	
+		for trace in script_backtraces:
+			var formatted_trace := trace.format()
+			if formatted_trace.find("res://addons/konado") != -1:
+				konado_trace_found = true
+				sb.append("      " + formatted_trace)
+	if not konado_trace_found:
+		return
+
+	var msg := "\n".join(sb)
+	_mutex.lock()
+	var filestream := FileAccess.open(LOG_FILE_PATH, FileAccess.READ_WRITE)
+	if filestream == null:
+		filestream = FileAccess.open(LOG_FILE_PATH, FileAccess.WRITE)
+	if filestream != null:
+		filestream.seek_end()
+		if filestream.get_position() > 0:
+			filestream.store_line("")
+		filestream.store_line(msg)
+		filestream.close()
 	_mutex.unlock()
+	error_caught.emit(msg)
+
 
 func _log_message(message: String, error: bool) -> void:
-	_mutex.lock()
-	
 	message_caught.emit(message, error)
-	
-	_mutex.unlock()
