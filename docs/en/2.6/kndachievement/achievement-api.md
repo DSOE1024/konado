@@ -60,6 +60,15 @@ func _on_progress_updated(achievement_id: String, current: float, target: float)
     # Display progress hint
 ```
 
+### achievement_reset
+
+**Signal signature:** `achievement_reset(achievement_id: String)`
+
+**Triggered when:** A single unlocked achievement is successfully reset
+
+**Parameters:**
+- `achievement_id`: ID of the reset achievement
+
 ### achievements_reset
 
 **Signal signature:** `achievements_reset()`

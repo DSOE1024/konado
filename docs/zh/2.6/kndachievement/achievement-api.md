@@ -60,6 +60,15 @@ func _on_progress_updated(achievement_id: String, current: float, target: float)
     # 显示进度提示
 ```
 
+### achievement_reset
+
+**信号签名：** `achievement_reset(achievement_id: String)`
+
+**触发时机：** 单个已解锁成就成功重置后触发
+
+**参数说明：**
+- `achievement_id`: 被重置的成就 ID
+
 ### achievements_reset
 
 **信号签名：** `achievements_reset()`

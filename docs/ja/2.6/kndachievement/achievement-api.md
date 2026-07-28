@@ -60,6 +60,15 @@ func _on_progress_updated(achievement_id: String, current: float, target: float)
     # 進捗ヒントを表示
 ```
 
+### achievement_reset
+
+**シグナルシグネチャ：** `achievement_reset(achievement_id: String)`
+
+**トリガータイミング：** 解除済みの実績を個別に正常リセットしたとき
+
+**引数：**
+- `achievement_id`: リセットされた実績の ID
+
 ### achievements_reset
 
 **シグナルシグネチャ：** `achievements_reset()`

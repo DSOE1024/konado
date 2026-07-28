@@ -60,6 +60,15 @@ func _on_progress_updated(achievement_id: String, current: float, target: float)
     # 顯示進度提示
 ```
 
+### achievement_reset
+
+**訊號簽名：** `achievement_reset(achievement_id: String)`
+
+**觸發時機：** 單一已解鎖成就成功重設後觸發
+
+**參數說明：**
+- `achievement_id`: 被重設的成就 ID
+
 ### achievements_reset
 
 **訊號簽名：** `achievements_reset()`

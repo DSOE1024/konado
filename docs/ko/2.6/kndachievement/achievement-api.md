@@ -60,6 +60,15 @@ func _on_progress_updated(achievement_id: String, current: float, target: float)
     # 진행도 안내 표시
 ```
 
+### achievement_reset
+
+**시그널 시그니처:** `achievement_reset(achievement_id: String)`
+
+**트리거 시점:** 해금된 단일 업적이 성공적으로 초기화된 뒤
+
+**매개변수 설명:**
+- `achievement_id`: 초기화된 업적 ID
+
 ### achievements_reset
 
 **시그널 시그니처:** `achievements_reset()`
