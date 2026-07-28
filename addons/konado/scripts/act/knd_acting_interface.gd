@@ -511,7 +511,7 @@ func apply_background_tint_to_characters() -> void:
 		
 	var raw_color: Color = _current_background_scene.get_scene_tint_color()
 	# 默认禁用
-	var total_intensity: float = 1.0
+	var total_intensity: float = 0.0
 	if enable_tint_intensity:
 		total_intensity = clamp(global_tint_intensity * _current_background_scene.scene_tint_intensity, 0.0, 1.0)
 	var tint_color: Color = Color.WHITE.lerp(raw_color, total_intensity)
