@@ -3,9 +3,9 @@ class_name KND_DialogueManager
 
 ## KND_DialogueManager
 ##
-## Konado对话管理器是对话系统的核心管理类，负责统一调度和管理对话流程的全生命周期，包括对话初始化、播放控制、各类对话指令执行（普通对话、角色显示/隐藏/移动、背景切换、音频播放、选项分支等）、状态管理和错误处理。
+## Konado对话管理器是对话系统的核心管理类，负责统一调度和管理对话流程的全生命周期。
+## 包括对话初始化、播放控制、对话指令执行、状态管理和错误处理。
 ## 将该脚本挂载到场景中的Control节点上，在编辑器面板中配置配置对话资源后即可开始使用
-
 
 ## 镜头开启播放的信号
 signal shot_start
@@ -21,6 +21,11 @@ signal dialogue_line_end(node_id: String)
 
 ## 自定义信号
 signal custom_signal(content: String)
+
+## 对话状态（0:关闭，1:播放，2:播放完成下一个）
+enum DialogState { OFF = 0, PLAYING = 1, PAUSED = 2 }
+
+const DIALOGUE_SERVICES := preload("res://addons/konado/scripts/dialogue/knd_dialogue_services.gd")
 
 @export_category("Playback Settings")
 
@@ -47,17 +52,10 @@ signal custom_signal(content: String)
 ## 自动播放速度
 @export var autoplayspeed: float = 2
 
-
 @export_category("Global Variable")
 
 ## 对话全局变量存储（%前缀，持久化）
 @export var variable_store: KND_VariableStore
-
-## 对话临时变量存储（$前缀，仅脚本内有效，每次镜头重置）
-var _temp_variables: Dictionary = {}
-
-## 等待中的外部信号名称（用于 WAIT_SIGNAL 类型）
-var _waiting_signal_name: String = ""
 
 @export_category("UI Settings")
 
@@ -82,44 +80,10 @@ var _waiting_signal_name: String = ""
 @export var _audio_interface: KND_AudioInterface
 
 ## 自动播放按钮
-@export var _autoPlayButton: Button
+@export var _auto_play_button: Button
 
 ## 设置按钮
-@export var _settingsButton: Button
-
-## 对话资源ID
-var _dialog_data_id: int = 0
-
-var option_triggered: bool = false
-
-## 对话状态（0:关闭，1:播放，2:播放完成下一个）
-enum DialogState 
-{
-	OFF = 0, 
-	PLAYING = 1, 
-	PAUSED = 2
-}
-
-var dialogueState: DialogState
-
-## 当前对话
-var cur_dialogue_shot: KND_Shot
-
-## 当前对话节点ID
-var cur_node_id: String = ""
-
-## 是否第一进入当前句对话，由于一些方法只需要在首次进入当前行对话时调用一次，而一些方法需要循环调用（如检查打字动画是否完成的方法）
-## 因此，需要判断是否第一次进入当前行对话
-var justenter: bool
-
-## 当前对话的类型
-var cur_dialogue_type: KND_Dialogue.Type
-
-## 获取当前对话节点
-func _current_dialogue() -> KND_Dialogue:
-	if cur_dialogue_shot == null or cur_node_id.is_empty():
-		return null
-	return cur_dialogue_shot.find_node(cur_node_id)
+@export var _settings_button: Button
 
 ## 资源列表
 @export_category("Dialogue Resources")
@@ -150,38 +114,73 @@ func _current_dialogue() -> KND_Dialogue:
 ## 存档系统
 @export var save_system: KND_SaveSystem
 
-## 成就系统单例引用
-var achievement_mgr: Node = null
-
 ## 设置桥接器
 @export var _settings_bridge: KND_SettingsBridge
-
-## 运行时国际化服务
-var _i18n_service: Node
 
 @export_category("Camera")
 ## 相机管理器
 @export var _konado_cam_manager: KonadoCameraManager
 
+var option_triggered: bool = false
+
+var dialogue_state: DialogState
+
+## 当前对话
+var cur_dialogue_shot: KND_Shot
+
+## 当前对话节点ID
+var cur_node_id: String = ""
+
+## 是否第一进入当前句对话，由于一些方法只需要在首次进入当前行对话时调用一次，而一些方法需要循环调用（如检查打字动画是否完成的方法）
+## 因此，需要判断是否第一次进入当前行对话
+var justenter: bool
+
+## 当前对话的类型
+var cur_dialogue_type: KND_Dialogue.Type
+
+## 成就系统单例引用
+var achievement_mgr: Node = null
+
+## 对话临时变量存储（$前缀，仅脚本内有效，每次镜头重置）
+var _temp_variables: Dictionary = {}
+
+## 等待中的外部信号名称（用于 WAIT_SIGNAL 类型）
+var _waiting_signal_name: String = ""
+
+## 对话资源ID
+var _dialog_data_id: int = 0
+
+## 运行时国际化服务
+var _i18n_service: Node
+var _dialogue_services: RefCounted
+var _logger: KND_Logger
+
+
+func _services() -> RefCounted:
+	if _dialogue_services == null:
+		_dialogue_services = DIALOGUE_SERVICES.new(self)
+	return _dialogue_services
+
+
+## 获取当前对话节点
+func _current_dialogue() -> KND_Dialogue:
+	if cur_dialogue_shot == null or cur_node_id.is_empty():
+		return null
+	return cur_dialogue_shot.find_node(cur_node_id)
+
 
 ## 设置变更处理
 func _on_setting_changed(category: String, key: String, value: Variant) -> void:
-	match category:
-		"text":
-			match key:
-				"text_speed":
-					_typing_interval = value
-				"auto_delay":
-					autoplayspeed = value
-				"auto_mode":
-					start_autoplay(value)
-		"audio":
-			# 音频设置变更由 KND_AudioInterface 处理
-			pass
+	_services()._apply_setting(category, key, value)
+
 
 func _ready() -> void:
 	_i18n_service = get_tree().root.get_node_or_null("KND_I18n")
-	if _i18n_service != null and _i18n_service.has_method("is_enabled") and _i18n_service.call("is_enabled"):
+	if _i18n_service != null:
+		if not _i18n_service.call("is_initialized"):
+			await Signal(_i18n_service, "initialized")
+			if not is_inside_tree():
+				return
 		_i18n_service.call("register_dialogue_manager", self)
 		var localized_start := _load_localized_shot(start_dialogue_shot)
 		if localized_start != null:
@@ -202,50 +201,44 @@ func _ready() -> void:
 			func():
 				printerr("对话已隐藏，自动停止")
 				stop_dialogue()
-				)
-		
+		)
+
 	if enable_overlay_log:
 		print("开启日志记录器")
 		# 初始化Logger
-		var logger: KND_Logger = KND_Logger.new()
-		OS.add_logger(logger)
+		_logger = KND_Logger.new()
+		OS.add_logger(_logger)
 		# 使用Deferred避免线程问题
-		logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
-		
+		_logger.error_caught.connect(_show_error, ConnectFlags.CONNECT_DEFERRED)
+
 		if error_skip_btn:
-			error_skip_btn.pressed.connect(func():
-				error_tooltip_panel.hide())
+			error_skip_btn.pressed.connect(func(): error_tooltip_panel.hide())
 		else:
 			push_warning("未指定 error_skip_btn")
-	
+
 	if _konado_dialogue_box:
 		_konado_dialogue_box.on_dialogue_click.connect(_process_next)
 	else:
 		push_error("未指定 _konado_dialogue_box")
-		
-	if _autoPlayButton:
-		_autoPlayButton.toggled.connect(start_autoplay)
+
+	if _auto_play_button:
+		_auto_play_button.toggled.connect(start_autoplay)
 	else:
-		push_error("未指定 _autoPlayButton")
+		push_error("未指定 _auto_play_button")
 
 	if _konado_dialogue_box and _audio_interface and _audio_interface.voice_player:
 		_konado_dialogue_box.bind_voice_player(_audio_interface.voice_player)
-		
+
 	# 如果有设置系统
 	if _settings_bridge:
-		_settings_bridge.setting_changed.connect(
-			_on_setting_changed
-		)
-		if _settingsButton:
-			_settingsButton.pressed.connect(
-				func():
-					_settings_bridge.show_settings_panel()
-					)
-	
+		_settings_bridge.setting_changed.connect(_on_setting_changed)
+		if _settings_button:
+			_settings_button.pressed.connect(func(): _settings_bridge.show_settings_panel())
+
 	# 设置存档系统的对话管理器引用
 	if save_system:
 		save_system.set_dialogue_manager(self)
-		
+
 	## 尝试获取成就系统
 	achievement_mgr = get_tree().root.get_node_or_null("KND_AchievementManager")
 	if achievement_mgr == null:
@@ -254,22 +247,20 @@ func _ready() -> void:
 	if not variable_store:
 		variable_store = KND_VariableStore.new()
 		print("变量存储自动初始化")
-	
 
 	# 自动初始化和开始对话
 	if init_onstart:
 		print("自动初始化对话")
 		# 初始化对话
 		if not autostart:
-			init_dialogue(func():
-				print("请手动开始对话")
-				)
+			init_dialogue(func(): print("请手动开始对话"))
 		else:
-			init_dialogue(func():
-				print("自动开始对话")
-				await get_tree().process_frame
-				start_dialogue()
-				)
+			init_dialogue(
+				func():
+					print("自动开始对话")
+					await get_tree().process_frame
+					start_dialogue()
+			)
 	else:
 		print("请手动初始化对话")
 
@@ -277,18 +268,17 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if _i18n_service != null and is_instance_valid(_i18n_service):
 		_i18n_service.call("unregister_dialogue_manager", self)
-	
-	
-	
+	if _logger != null:
+		if _logger.error_caught.is_connected(_show_error):
+			_logger.error_caught.disconnect(_show_error)
+		OS.remove_logger(_logger)
+		_logger = null
+
+
 ## 显示报错
 func _show_error(msg: String) -> void:
-	if enable_overlay_log:
-		if error_tooltip_label:
-			error_tooltip_label.text = msg
-		else:
-			printerr(msg)
-		if error_tooltip_panel:
-			error_tooltip_panel.show()
+	_services()._show_error(msg)
+
 
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:
@@ -296,18 +286,16 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 	if start_dialogue_shot == null:
 		push_error("未设置对话镜头")
 		return
-	else:
-		# 如果不为空，复制一份start_dialogue_shot
-		cur_dialogue_shot = start_dialogue_shot.duplicate()
+	# 如果不为空，复制一份start_dialogue_shot
+	cur_dialogue_shot = start_dialogue_shot.duplicate()
 	# 将角色表传给acting_interface
 	_acting_interface.chara_list = chara_list
 
 	# 初始化各管理器
 	_acting_interface.delete_all_actor()
-	
 
 	justenter = true
-	dialogueState = DialogState.OFF
+	dialogue_state = DialogState.OFF
 	_temp_variables.clear()
 	_waiting_signal_name = ""
 	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
@@ -316,11 +304,21 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		cur_node_id = cur_dialogue_shot.dialogues[0].node_id
 	else:
 		cur_node_id = ""
-	print_rich("[color=yellow]初始化对话 [/color]" + "justenter: " + str(justenter) +
-	" 当前节点ID: " + str(cur_node_id) + " 当前状态: " + str(dialogueState))
+	print_rich(
+		(
+			"[color=yellow]初始化对话 [/color]"
+			+ "justenter: "
+			+ str(justenter)
+			+ " 当前节点ID: "
+			+ str(cur_node_id)
+			+ " 当前状态: "
+			+ str(dialogue_state)
+		)
+	)
 	print("---------------------------------------------")
 	if callback:
 		callback.call()
+
 
 ## 设置对话数据的方法
 func set_shot(new_shot: KND_Shot) -> void:
@@ -340,82 +338,38 @@ func set_shot(new_shot: KND_Shot) -> void:
 
 ## 重新加载当前镜头的语言脚本，并尽量保持当前节点。
 func reload_localized_script(locale: String) -> bool:
-	var service := _get_i18n_service()
-	if service == null:
-		return false
-	var source_shot := cur_dialogue_shot if cur_dialogue_shot != null else start_dialogue_shot
-	if source_shot == null or source_shot.ks_path.is_empty() or source_shot.ks_path == "null":
-		return false
-
-	var localized_shot: KND_Shot = service.call(
-		"load_localized_script", source_shot.ks_path, locale
-	) as KND_Shot
-	if localized_shot == null:
-		return false
-
-	var previous_shot := cur_dialogue_shot
-	var previous_node_id := cur_node_id
-	var restore_node_id: String = service.call(
-		"choose_restore_node_id", previous_shot, localized_shot, previous_node_id
-	)
-	start_dialogue_shot = localized_shot
-	cur_dialogue_shot = localized_shot.duplicate()
-	cur_node_id = restore_node_id
-	justenter = true
-	_refresh_current_localized_dialogue()
-	return true
+	return _services()._reload_localized_script(locale)
 
 
 func _get_i18n_service() -> Node:
-	if _i18n_service == null and is_inside_tree():
-		_i18n_service = get_tree().root.get_node_or_null("KND_I18n")
-	return _i18n_service
+	return _services()._get_i18n_service()
 
 
 func _load_localized_shot(shot: KND_Shot) -> KND_Shot:
-	var service := _get_i18n_service()
-	if service == null or shot == null or shot.ks_path.is_empty() or shot.ks_path == "null":
-		return shot
-	return service.call("load_localized_script", shot.ks_path) as KND_Shot
+	return _services()._load_localized_shot(shot)
 
 
 func _refresh_current_localized_dialogue() -> void:
-	var dialogue := _current_dialogue()
-	if dialogue == null:
-		return
-	cur_dialogue_type = dialogue.dialog_type
-	if dialogue.dialog_type != KND_Dialogue.Type.ORDINARY_DIALOG or _konado_dialogue_box == null:
-		return
-	_konado_dialogue_box.character_name = dialogue.character_id
-	_konado_dialogue_box.dialogue_text = _interpolate_variables(dialogue.dialog_content)
-	
+	_services()._refresh_current_localized_dialogue()
+
+
 ## 设置角色表的方法
 func set_chara_list(chara_list: KND_CharacterList) -> void:
-	if chara_list == null:
-		printerr("角色列表为空")
-		return
-	print(chara_list.to_string())
-	self.chara_list = chara_list
+	_services()._set_character_list(chara_list)
+
 
 func set_background_list(background_list: KND_BackgroundList) -> void:
-	if background_list == null:
-		printerr("背景列表为空")
-		return
-	print(background_list.to_string())
-	self.background_list = background_list
+	_services()._set_background_list(background_list)
+
 
 func set_bgm_list(bgm_list: KND_BgmList) -> void:
-	if bgm_list == null:
-		printerr("BGM列表为空")
-		return
-	print(bgm_list.to_string())
-	self.bgm_list = bgm_list
-	
+	_services()._set_bgm_list(bgm_list)
+
+
 ## 获取对话变量
 func get_dialogue_variable(key: String) -> Dictionary:
-	if variable_store and variable_store.has(key):
-		return { "value": variable_store.get_value(key) }
-	return {}
+	return _services()._get_dialogue_variable(key)
+
 
 ## 开始对话的方法
 func start_dialogue() -> void:
@@ -429,8 +383,8 @@ func start_dialogue() -> void:
 	shot_start.emit()
 
 
-func _process(delta) -> void:
-	match dialogueState:
+func _process(_delta) -> void:
+	match dialogue_state:
 		# 关闭状态
 		DialogState.OFF:
 			if justenter:
@@ -449,51 +403,45 @@ func _process(delta) -> void:
 					print_rich("[color=red]当前节点为空，节点ID: %s[/color]" % cur_node_id)
 					_dialogue_goto_state(DialogState.OFF)
 					return
-				# 对话类型
 				cur_dialogue_type = dialog.dialog_type
 				dialogue_line_start.emit(cur_node_id)
-				# 隐藏选项
 				_konado_choice_interface._choice_container.hide()
-				# 判断对话类型
-				# 如果是普通对话
 				if cur_dialogue_type == KND_Dialogue.Type.ORDINARY_DIALOG:
 					var play_dialogue = func():
-						# 播放对话
 						var chara_id
 						var content
 						var voice_id
-						if (dialog.character_id != null):
+						if dialog.character_id != null:
 							chara_id = dialog.character_id
-						if (dialog.dialog_content != null):
+						if dialog.dialog_content != null:
 							content = _interpolate_variables(dialog.dialog_content)
 						if dialog.voice_id:
 							voice_id = dialog.voice_id
-			
+
 						var playvoice: bool = false
 						var voice_wait_time: float = 0.0
 						if voice_id:
 							playvoice = true
-						
-						# 如果有配音播放配音
+
 						if voice_id:
 							voice_wait_time = _play_voice(voice_id)
 						else:
 							if _konado_dialogue_box:
 								_konado_dialogue_box.clear_voice_progress()
-						
+
 						if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
 							_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
-						
-						_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice, voice_wait_time))
-						# 设置角色高亮
+
+						_konado_dialogue_box.typing_completed.connect(
+							isfinishtyping.bind(playvoice, voice_wait_time)
+						)
 						if actor_auto_highlight:
 							if chara_id:
 								_acting_interface.highlight_actor(chara_id)
-						# 播放对话
 						_konado_dialogue_box.typing_interval = _typing_interval
 						_konado_dialogue_box.dialogue_text = content
 						_konado_dialogue_box.character_name = chara_id
-						
+
 					if auto_show_dialogue_box:
 						if not _konado_dialogue_box.is_dialogue_box_visible():
 							_konado_dialogue_box.show_dialogue_box(play_dialogue)
@@ -501,184 +449,155 @@ func _process(delta) -> void:
 						if not _konado_dialogue_box.is_dialogue_box_visible():
 							printerr("请先让对话框显示")
 						play_dialogue.call()
-				# 如果是切换背景
 				elif cur_dialogue_type == KND_Dialogue.Type.SWITCH_BACKGROUND:
-					# 显示背景
 					var bg_name = dialog.background_name
 					if bg_name.is_empty():
 						bg_name = dialog.background_image_name
 					var bg_effect = dialog.background_toggle_effects
 					var s = _acting_interface.background_change_finished
-					# 检查信号是否已经连接
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_acting_interface.show()
 					_display_background(bg_name, bg_effect)
-				# 如果是显示演员
 				elif cur_dialogue_type == KND_Dialogue.Type.DISPLAY_ACTOR:
-					# 显示演员
 					var s = _acting_interface.character_shown
-					# 检查信号是否已经连接
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_acting_interface.show()
 					_display_character(dialog)
-				# 如果是改变演员状态
 				elif cur_dialogue_type == KND_Dialogue.Type.ACTOR_CHANGE_STATE:
 					var actor = dialog.change_state_actor
 					var target_state = dialog.change_state
 					var s = _acting_interface.character_state_changed
-					# 检查信号是否已经连接
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_actor_change_state(actor, target_state)
-				# 如果是移动演员
 				elif cur_dialogue_type == KND_Dialogue.Type.MOVE_ACTOR:
 					var actor = dialog.target_move_chara
 					var pos = dialog.target_move_pos
 					var s = _acting_interface.character_moved
-					# 检查信号是否已经连接
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_acting_interface.move_actor(actor, pos.x)
-				# 如果是播放演员舞台动作
 				elif cur_dialogue_type == KND_Dialogue.Type.ACTOR_MOTION:
 					var actor = dialog.motion_actor
 					var motion_name = dialog.motion_name
 					var s = _acting_interface.character_motion_finished
 					var auto_next := _auto_process_next_from_motion.bind(s)
-					# 检查信号是否已经连接
 					if not s.is_connected(auto_next):
 						s.connect(auto_next)
 					_acting_interface.play_actor_motion(actor, motion_name)
-				# 如果是删除演员
 				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
-					# 删除演员
 					var actor = dialog.exit_actor
 					var s = _acting_interface.character_deleted
-					# 检查信号是否已经连接
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_exit_actor(actor)
-				# 移动镜头
 				elif cur_dialogue_type == KND_Dialogue.Type.MOVE_CAM:
 					var callback = func():
 						print("镜头移动完毕")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 					_konado_cam_manager.move_cam(dialog.target_cam, dialog.cam_tween_time, callback)
-				# 重置镜头
 				elif cur_dialogue_type == KND_Dialogue.Type.RESET_CAM:
 					var callback = func():
 						print("镜头重置完毕")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 					_konado_cam_manager.reset_cam(true, dialog.cam_tween_time, callback)
-				# 镜头晃动
 				elif cur_dialogue_type == KND_Dialogue.Type.CAM_SHAKE:
 					var callback = func():
 						print("镜头晃动完毕")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 					_konado_cam_manager.shake_cam(dialog.cam_shake_time, callback)
-				# 异步移动镜头（不阻塞对话，后台运行）
 				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_MOVE_CAM:
 					print("异步移动镜头: %s" % dialog.target_cam)
 					_konado_cam_manager.async_move_cam(dialog.target_cam, dialog.cam_tween_time)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 异步重置镜头（不阻塞对话）
 				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_RESET_CAM:
 					print("异步重置镜头")
 					_konado_cam_manager.async_reset_cam(dialog.cam_tween_time)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 异步镜头晃动（不阻塞对话）
 				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_CAM_SHAKE:
 					print("异步镜头晃动: %.2f 秒" % dialog.cam_shake_time)
 					_konado_cam_manager.async_shake_cam(dialog.cam_shake_time)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 强制停止所有异步相机 Tween（瞬间定格）
 				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_CAM_STOP:
 					print("强制停止异步相机动画")
 					_konado_cam_manager.async_stop_all()
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 屏幕文本（NVL Overlay）
 				elif cur_dialogue_type == KND_Dialogue.Type.SCREEN_TEXT:
 					if _screen_text == null:
 						printerr("未指定 _screen_text 组件，跳过")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 						return
-					
+
 					var s = _screen_text.display_finished
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
-					
+
 					_screen_text.display(dialog.text_content)
-				# 显示对话框
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_TEXTBOX:
 					if _konado_dialogue_box == null:
 						printerr("未指定 _konado_dialogue_box 组件，跳过")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 						return
-					
+
 					var s = _konado_dialogue_box.on_dialogue_show_completed
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_konado_dialogue_box.show_dialogue_box_with_duration(dialog.textbox_duration)
-				# 隐藏对话框
 				elif cur_dialogue_type == KND_Dialogue.Type.HIDE_TEXTBOX:
 					if _konado_dialogue_box == null:
 						printerr("未指定 _konado_dialogue_box 组件，跳过")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
 						return
-					
+
 					var s = _konado_dialogue_box.on_dialogue_hide_completed
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
 					_konado_dialogue_box.hide_dialogue_box_with_duration(dialog.textbox_duration)
-				# 等待外部信号
 				elif cur_dialogue_type == KND_Dialogue.Type.WAIT_SIGNAL:
 					_waiting_signal_name = dialog.wait_signal_name
-				# 如果是选项
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
 					var dialog_choices = dialog.choices
 					if dialog_choices.size() <= 0:
 						printerr("当前没有任何选项，为不影响运行跳过")
 						_dialogue_goto_state(DialogState.PAUSED)
-						get_tree().process_frame
+						await get_tree().process_frame
 						_process_next()
 					else:
 						print_rich("[color=green]显示选项，共 %d 个选项[/color]" % dialog_choices.size())
 						for c in dialog_choices:
-							print_rich("[color=green]  \"%s\" -> %s[/color]" % [c.choice_text, c.next_id])
+							print_rich(
+								'[color=green]  "%s" -> %s[/color]' % [c.choice_text, c.next_id]
+							)
 						_konado_choice_interface.display_options(dialog_choices, self)
 						_acting_interface.show()
 						_konado_choice_interface.show()
 						_konado_choice_interface._choice_container.show()
-				# 如果是播放BGM
 				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_BGM:
 					var bgm_name = dialog.bgm_name
 					_play_bgm(bgm_name)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 如果是停止BGM
 				elif cur_dialogue_type == KND_Dialogue.Type.STOP_BGM:
 					_audio_interface.stop_bgm()
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 如果是播放音效
 				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_SOUND_EFFECT:
 					var se_name = dialog.soundeffect_name
 					_play_soundeffect(se_name)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# if-else流程控制分支
 				elif cur_dialogue_type == KND_Dialogue.Type.IFELSE_BRANCH:
 					print("ifelse流程控制分支")
 					var condition_met = false
@@ -723,7 +642,6 @@ func _process(delta) -> void:
 							_dialogue_goto_state(DialogState.PLAYING)
 						else:
 							_dialogue_goto_state(DialogState.OFF)
-				# 如果是分支对话
 				elif cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话（已弃用）[/color]")
 					if not dialog.next_id.is_empty():
@@ -731,7 +649,6 @@ func _process(delta) -> void:
 						_dialogue_goto_state(DialogState.PLAYING)
 					else:
 						_dialogue_goto_state(DialogState.OFF)
-				# 如果是镜头跳转
 				elif cur_dialogue_type == KND_Dialogue.Type.JUMP:
 					var load_path = dialog.jump_shot_path
 					if load_path:
@@ -740,7 +657,6 @@ func _process(delta) -> void:
 						_dialogue_goto_state(DialogState.OFF)
 						set_shot(res)
 						_dialogue_goto_state(DialogState.PLAYING)
-				# 如果是分支内跳转
 				elif cur_dialogue_type == KND_Dialogue.Type.JUMP_BRANCH:
 					if not dialog.next_id.is_empty():
 						cur_node_id = dialog.next_id
@@ -748,51 +664,48 @@ func _process(delta) -> void:
 					else:
 						printerr("jump_branch 目标节点为空")
 						_dialogue_goto_state(DialogState.OFF)
-				# 信号触发
 				elif cur_dialogue_type == KND_Dialogue.Type.SIGNAL:
 					var content = dialog.custom_signal_name
 					custom_signal.emit(content)
 					await get_tree().process_frame
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 解锁成就
 				elif cur_dialogue_type == KND_Dialogue.Type.ACHIEVEMENT_UNLOCK:
 					if achievement_mgr:
 						achievement_mgr.unlock_achievement(dialog.achievement_id)
 					_dialogue_goto_state(DialogState.PAUSED)
-					get_tree().process_frame
+					await get_tree().process_frame
 					_process_next()
-				# 更新成就进度
 				elif cur_dialogue_type == KND_Dialogue.Type.ACHIEVEMENT_PROGRESS:
 					if achievement_mgr:
-						achievement_mgr.increment_progress(dialog.achievement_id, dialog.achievement_value)
+						achievement_mgr.increment_progress(
+							dialog.achievement_id, dialog.achievement_value
+						)
 					_dialogue_goto_state(DialogState.PAUSED)
-					get_tree().process_frame
+					await get_tree().process_frame
 					_process_next()
-				# 设置成就标志位
 				elif cur_dialogue_type == KND_Dialogue.Type.ACHIEVEMENT_FLAG:
 					if achievement_mgr:
-						achievement_mgr.set_flag(dialog.achievement_flag_name, dialog.achievement_flag_value)
+						achievement_mgr.set_flag(
+							dialog.achievement_flag_name, dialog.achievement_flag_value
+						)
 					_dialogue_goto_state(DialogState.PAUSED)
-					get_tree().process_frame
+					await get_tree().process_frame
 					_process_next()
-				# 变量操作
 				elif cur_dialogue_type == KND_Dialogue.Type.SET_VARIABLE:
 					_handle_variable_operation(dialog)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# 如果剧终
 				elif cur_dialogue_type == KND_Dialogue.Type.THE_END:
-					# 停止对话
 					stop_dialogue()
-					
+
 		# 完成下一个状态
 		DialogState.PAUSED:
 			if justenter:
 				justenter = false
 				print_rich("[color=cyan][b]状态：[/b][/color][color=orange]播放完成状态[/color]")
-				
-		
+
+
 ## 打字完成回调
 func isfinishtyping(wait_voice: bool, wait_voice_time: float) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
@@ -801,10 +714,7 @@ func isfinishtyping(wait_voice: bool, wait_voice_time: float) -> void:
 			print("等待音频播放完成")
 			# 创建计时器
 			var timer = get_tree().create_timer(wait_voice_time)
-			timer.timeout.connect(
-				func():
-					_process_next()
-					)
+			timer.timeout.connect(func(): _process_next())
 		else:
 			await get_tree().create_timer(autoplayspeed).timeout
 			_process_next()
@@ -814,7 +724,7 @@ func isfinishtyping(wait_voice: bool, wait_voice_time: float) -> void:
 		if current == null:
 			print("当前对话为空，无法获取下一句")
 			return
-		
+
 		var next_id = current.next_id
 		# 检查下一句是否是选项，如果是自动下一句
 		var nd: KND_Dialogue = cur_dialogue_shot.find_node(next_id)
@@ -823,6 +733,7 @@ func isfinishtyping(wait_voice: bool, wait_voice_time: float) -> void:
 			await get_tree().create_timer(0.05).timeout
 			_process_next()
 		print("触发打字完成信号")
+
 
 ## 触发等待的外部信号，匹配成功则继续下一句对话
 ## 外部调用示例： $dialogue_manager.emit_wait_signal("over")
@@ -834,11 +745,12 @@ func emit_wait_signal(signal_name: String) -> void:
 		_dialogue_goto_state(DialogState.PAUSED)
 		_process_next()
 
+
 ## 处理下一个，绑定到下一个按钮
 func _process_next() -> void:
 	dialogue_line_end.emit(cur_node_id)
 	print_rich("[color=yellow]判断状态[/color]")
-	match dialogueState:
+	match dialogue_state:
 		DialogState.OFF:
 			print("对话关闭状态，无需做任何操作")
 			return
@@ -857,7 +769,11 @@ func _process_next() -> void:
 			print("对话播放完成，开始播放下一个")
 			# 检查是否还有下一个节点
 			var cur: KND_Dialogue = _current_dialogue()
-			if cur == null or cur.next_id.is_empty() or cur_dialogue_shot.find_node(cur.next_id) == null:
+			if (
+				cur == null
+				or cur.next_id.is_empty()
+				or cur_dialogue_shot.find_node(cur.next_id) == null
+			):
 				# 切换到对话关闭状态
 				_dialogue_goto_state(DialogState.OFF)
 			else:
@@ -865,7 +781,8 @@ func _process_next() -> void:
 				# 切换到播放状态
 				_dialogue_goto_state(DialogState.PLAYING)
 			return
-	
+
+
 ## 自动下一个，添加信号解绑功能保证只被触发一次
 func _auto_process_next(s: Signal) -> void:
 	if _konado_cam_manager:
@@ -879,6 +796,7 @@ func _auto_process_next(s: Signal) -> void:
 		print("触发自动下一个信号")
 	_process_next()
 
+
 func _auto_process_next_from_motion(_actor_id: String, _motion_name: String, s: Signal) -> void:
 	var auto_next := _auto_process_next_from_motion.bind(s)
 	_dialogue_goto_state(DialogState.PAUSED)
@@ -886,11 +804,14 @@ func _auto_process_next_from_motion(_actor_id: String, _motion_name: String, s: 
 		s.disconnect(auto_next)
 		print("触发演员动作自动下一个信号")
 	_process_next()
-	
+
+
 ## 关闭对话的方法
 func stop_dialogue() -> void:
 	_acting_interface.delete_all_actor()
-	_acting_interface.clean_background(KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT)
+	_acting_interface.clean_background(
+		KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT
+	)
 	# 隐藏 NVL 屏幕文本
 	if _screen_text and _screen_text.visible:
 		_screen_text.hide()
@@ -902,14 +823,16 @@ func stop_dialogue() -> void:
 	_dialogue_goto_state(DialogState.OFF)
 	_konado_dialogue_box.hide_dialogue_box()
 	shot_end.emit()
-	
+
+
 ## 对话状态切换的方法
 func _dialogue_goto_state(dialogstate: DialogState) -> void:
 	# 重置justenter状态
 	justenter = true
 	# 切换状态到
-	dialogueState = dialogstate
-	print_rich("[color=yellow]切换状态到: [/color]" + str(dialogueState))
+	dialogue_state = dialogstate
+	print_rich("[color=yellow]切换状态到: [/color]" + str(dialogue_state))
+
 
 ## 导航到下一个节点
 func _goto_next_node() -> void:
@@ -920,251 +843,71 @@ func _goto_next_node() -> void:
 	# 打印时间 日期+时间
 	print("当前时间：" + str(Time.get_time_string_from_system()))
 	print("导航到节点: %s" % cur_node_id)
-			
+
+
 ## 开始自动播放的方法
 func start_autoplay(value: bool):
 	autoplay = value
 	if value:
-		_autoPlayButton.set_text(tr("停止播放"))
+		_auto_play_button.set_text(tr("停止播放"))
 	else:
-		_autoPlayButton.set_text(tr("自动播放"))
+		_auto_play_button.set_text(tr("自动播放"))
 	await get_tree().process_frame
-	if autoplay or dialogueState != DialogState.OFF:
+	if autoplay or dialogue_state != DialogState.OFF:
 		_process_next()
-	
-	
-	
+
+
 ## 显示背景的方法
-func _display_background(bg_name: String, effect: KND_ActingInterface.BackgroundTransitionEffectsType) -> void:
-	if bg_name == null or bg_name.is_empty():
-		push_error("背景名称为空，请检查 KS/Shot 是否已经重新导入")
-		_acting_interface.background_change_finished.emit()
-		return
-	if background_list == null:
-		push_error("背景列表未配置")
-		_acting_interface.background_change_finished.emit()
-		return
-	var bg_list = background_list.background_list
-	var target_background: KND_Background
-	for bg in bg_list:
-		if bg.background_name == bg_name:
-			target_background = bg
-			break
-	if target_background == null:
-		push_error("背景没有找到：" + bg_name)
-		_acting_interface.background_change_finished.emit()
-		return
-	if target_background.background_scene == null:
-		push_error("背景[%s]没有配置背景场景" % bg_name)
-		_acting_interface.background_change_finished.emit()
-		return
-	_acting_interface.change_background_scene(target_background.background_scene, bg_name, effect)
-	
+func _display_background(
+	bg_name: String, effect: KND_ActingInterface.BackgroundTransitionEffectsType
+) -> void:
+	_services()._display_background(bg_name, effect)
+
 
 ## 演员状态切换的方法
 func _actor_change_state(chara_id: String, state_id: String):
-	var target_chara: KND_Character
-	for chara in chara_list.characters:
-		if chara.chara_name == chara_id:
-			target_chara = chara
-			break
-	if target_chara == null:
-		push_error("切换角色状态失败：未找到角色[%s]" % chara_id)
-		_acting_interface.character_state_changed.emit()
-		return
-	_acting_interface.change_actor_state(target_chara.chara_name, state_id)
+	_services()._actor_change_state(chara_id, state_id)
+
 
 ## 从角色列表创建并显示角色
 func _display_character(dialogue: KND_Dialogue) -> void:
-	var target_chara: KND_Character
-	var target_chara_name = dialogue.character_name
-	for chara in chara_list.characters:
-		if chara.chara_name == target_chara_name:
-			target_chara = chara
-			break
-	
-	if target_chara == null:
-		push_error("显示角色失败：未找到角色[%s]" % target_chara_name)
-		_acting_interface.character_shown.emit()
-		_acting_interface.character_created.emit()
-		return
-		
-	# 读取对话的角色状态ID
-	var target_state_name = dialogue.character_state
-	if target_chara.character_scene == null:
-		push_error("显示角色失败：角色[%s]没有配置角色场景" % target_chara_name)
-		_acting_interface.character_shown.emit()
-		_acting_interface.character_created.emit()
-		return
-	# 角色位置
-	var pos = dialogue.actor_position
-	# 创建角色
-	_acting_interface.show_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_chara.character_scene, target_chara.actor_motion_layer)
-		
+	_services()._display_character(dialogue)
+
+
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:
-	_acting_interface.delete_character(actor_name)
+	_services()._exit_actor(actor_name)
+
 
 ## 播放BGM
 func _play_bgm(bgm_name: String) -> void:
-	if bgm_name.is_empty() || bgm_name == null:
-		push_error("播放BGM失败：传入的bgm_name为空字符串或null，请检查调用参数")
-		return
-		
-	if bgm_list == null:
-		push_error("播放BGM失败：bgm_list对象未初始化（null），无法查找BGM[%s]" % bgm_name)
-		return
-	
-	if bgm_list.bgms == null:
-		push_error("播放BGM失败：bgm_list中未找到bgms数组或数组为null，无法查找BGM[%s]" % bgm_name)
-		return
-	
-	var target_bgm: AudioStream = null
-	for index in bgm_list.bgms.size():
-		var bgm_data = bgm_list.bgms[index]
+	_services()._play_bgm(bgm_name)
 
-		if bgm_data == null:
-			push_error("播放BGM失败：bgm_list.bgms数组中索引[%d]位置的BGM数据为空，当前查找的BGM名称：%s" % [index, bgm_name])
-			return
-			
-		if bgm_data.bgm_name == bgm_name:
-			target_bgm = bgm_data.bgm
-			break
-	
-	if target_bgm:
-		_audio_interface.play_bgm(target_bgm, bgm_name)
-	else:
-		# 收集所有可用的BGM名称，方便调试
-		var available_bgm_names: Array[String] = []
-		for bgm_data in bgm_list.bgms:
-			available_bgm_names.append(bgm_data.bgm_name)
-		
-		push_error(
-            "播放BGM失败：未找到名称为[%s]的BGM。\n"
-			+ "当前bgm_list中可用的BGM列表：%s"
-			% [bgm_name, str(available_bgm_names)]
-		)
 
 ## 播放配音，返回音频时长
 func _play_voice(voice_name: String) -> float:
-	if voice_name == null:
-		if _konado_dialogue_box:
-			_konado_dialogue_box.clear_voice_progress()
-		return 0.0
-	var target_voice: AudioStream
-	if voice_list == null or voice_list.voices == null:
-		if _konado_dialogue_box:
-			_konado_dialogue_box.clear_voice_progress()
-		return 0.0
-	for voice in voice_list.voices:
-		if voice.voice_name == voice_name:
-			target_voice = voice.voice
-			break
-	if target_voice == null:
-		push_error("播放配音失败：未找到名称为[%s]的语音" % voice_name)
-		if _konado_dialogue_box:
-			_konado_dialogue_box.clear_voice_progress()
-		return 0.0
-	_audio_interface.play_voice(target_voice)
-	return target_voice.get_length()
+	return _services()._play_voice(voice_name)
 
 
 ## 播放音效
 func _play_soundeffect(se_name: String) -> void:
-	if se_name == null:
-		return
-	var target_soundeffect: AudioStream
+	_services()._play_sound_effect(se_name)
 
-	if soundeffect_list == null or soundeffect_list.soundeffects == null:
-		return # 判空
-	for soundeffect in soundeffect_list.soundeffects:
-		if soundeffect.se_name == se_name:
-			target_soundeffect = soundeffect.se
-			break
-	_audio_interface.play_sound_effect(target_soundeffect)
-	pass
 
 func _handle_variable_operation(dialog: KND_Dialogue) -> void:
-	var operand: Variant = dialog.variable_operand
-	if operand is String:
-		if (operand as String).is_valid_int():
-			operand = (operand as String).to_int()
-		elif (operand as String).is_valid_float():
-			operand = (operand as String).to_float()
-		elif (operand as String).to_lower() == "true":
-			operand = true
-		elif (operand as String).to_lower() == "false":
-			operand = false
+	_services()._handle_variable_operation(dialog)
 
-	if dialog.is_persistent:
-		if not variable_store:
-			printerr("持久变量存储未初始化")
-			return
-		variable_store.apply_operation(dialog.variable_name, dialog.variable_operation, operand)
-		print_rich("[color=cyan]持久变量操作: %%%s = %s[/color]" % [dialog.variable_name, str(variable_store.get_value(dialog.variable_name))])
-	else:
-		_apply_temp_operation(dialog.variable_name, dialog.variable_operation, operand)
-		print_rich("[color=magenta]临时变量操作: $%s = %s[/color]" % [dialog.variable_name, str(_temp_variables.get(dialog.variable_name))])
-
-func _apply_temp_operation(name: String, op: int, operand: Variant) -> void:
-	match op:
-		KND_VariableStore.Operation.SET:
-			_temp_variables[name] = operand
-		KND_VariableStore.Operation.ADD:
-			var current = _temp_variables.get(name, 0)
-			if typeof(current) == TYPE_STRING:
-				_temp_variables[name] = str(current) + str(operand)
-			else:
-				_temp_variables[name] = float(current) + float(operand)
-		KND_VariableStore.Operation.SUB:
-			_temp_variables[name] = float(_temp_variables.get(name, 0)) - float(operand)
-		KND_VariableStore.Operation.MUL:
-			_temp_variables[name] = float(_temp_variables.get(name, 0)) * float(operand)
-		KND_VariableStore.Operation.DIV:
-			var divisor = float(operand)
-			if divisor == 0.0:
-				push_error("临时变量 '$%s' 除法操作除数为零" % name)
-				return
-			_temp_variables[name] = float(_temp_variables.get(name, 0)) / divisor
 
 ## 获取变量字符，比如好感度，角色名称等
 func _interpolate_variables(text: String) -> String:
-	if text.is_empty():
-		return text
+	return _services()._interpolate_variables(text)
 
-	var result = text
-	var regex = RegEx.new()
-	regex.compile("([%$])(\\w+)")
-
-	var matches = regex.search_all(text)
-	var offset = 0
-
-	for match in matches:
-		var prefix = match.get_string(1)
-		var var_name = match.get_string(2)
-		var value: Variant = null
-
-		if prefix == "%":
-			if variable_store and variable_store.has(var_name):
-				value = variable_store.get_value(var_name)
-		elif prefix == "$":
-			if _temp_variables.has(var_name):
-				value = _temp_variables[var_name]
-
-		if value != null:
-			var start = match.get_start() + offset
-			var end = match.get_end() + offset
-			var replacement = str(value)
-			result = result.substr(0, start) + replacement + result.substr(end)
-			offset += replacement.length() - match.get_string().length()
-
-	return result
 
 ## 选项触发方法
 func on_option_triggered(choice: KND_DialogueChoice) -> void:
 	_konado_choice_interface._choice_container.hide()
 	dialogue_line_end.emit(cur_node_id)
-	print_rich("[color=green]玩家选择: \"%s\" -> %s[/color]" % [choice.choice_text, choice.next_id])
+	print_rich('[color=green]玩家选择: "%s" -> %s[/color]' % [choice.choice_text, choice.next_id])
 	if not choice.next_id.is_empty():
 		var target = cur_dialogue_shot.find_node(choice.next_id)
 		if target == null:
@@ -1177,136 +920,55 @@ func on_option_triggered(choice: KND_DialogueChoice) -> void:
 		print_rich("[color=yellow]选项没有跳转目标，停止对话[/color]")
 		_dialogue_goto_state(DialogState.OFF)
 
+
 ## 保存游戏
 func save_game(save_id: int) -> bool:
-	if not save_system:
-		printerr("存档系统未设置")
-		return false
-	return save_system.save_game(save_id)
+	return _services()._save_game(save_id)
+
 
 ## 加载游戏
 func load_game(save_id: int) -> bool:
-	if not save_system:
-		printerr("存档系统未设置")
-		return false
-	return save_system.load_game(save_id)
+	return _services()._load_game(save_id)
+
 
 ## 删除存档
 func delete_save(save_id: int) -> bool:
-	if not save_system:
-		printerr("存档系统未设置")
-		return false
-	return save_system.delete_save(save_id)
+	return _services()._delete_save(save_id)
+
 
 ## 获取存档信息
 func get_save_info(save_id: int) -> Dictionary:
-	if not save_system:
-		printerr("存档系统未设置")
-		return {}
-	return save_system.get_save_info(save_id)
+	return _services()._get_save_info(save_id)
+
 
 ## 获取所有存档信息
 func get_all_save_info() -> Array[Dictionary]:
-	if not save_system:
-		printerr("存档系统未设置")
-		return []
-	return save_system.get_all_save_info()
+	return _services()._get_all_save_info()
+
 
 ## 设置存档策略
 func set_save_strategy(strategy: Dictionary) -> void:
-	if save_system:
-		save_system.save_strategy = strategy
+	_services()._set_save_strategy(strategy)
+
 
 ## 获取存档策略
 func get_save_strategy() -> Dictionary:
-	if not save_system:
-		return {}
-	return save_system.save_strategy
+	return _services()._get_save_strategy()
 
 
 func _on_achievement_pressed() -> void:
-	if achievement_mgr:
-		achievement_mgr.show_panel()
-	else:
-		printerr("无KND_AchievementManager")
-	pass
+	_services()._show_achievement_panel()
+
 
 func _on_main_menu_pressed() -> void:
-	get_tree().change_scene_to_file("res://sample/demo/main.tscn")
+	_services()._open_main_menu()
+
 
 ## 快速保存
 func _on_quick_save_pressed() -> void:
-	if not save_system:
-		printerr("存档系统未设置")
-		return
-	var success = save_system.save_game(0)
-	if success:
-		print("快速保存完成")
-		_show_toast("快速保存成功")
-	else:
-		printerr("快速保存失败")
-		_show_toast("快速保存失败")
+	_services()._quick_save()
+
 
 ## 快速读取
 func _on_quick_load_pressed() -> void:
-	if not save_system:
-		printerr("存档系统未设置")
-		return
-	var save_info = save_system.get_save_info(0)
-	if not save_info.get("exists", false):
-		printerr("无快速存档可读取")
-		_show_toast("无快速存档可读取")
-		return
-	# 弹出确认框
-	_show_load_confirm_dialog()
-
-## 显示读取确认对话框
-func _show_load_confirm_dialog() -> void:
-	var dialog = ConfirmationDialog.new()
-	dialog.title = ""
-	dialog.dialog_text = tr("读取会失去未保存的进度。\n\n你确定要这么做吗？")
-	dialog.confirmed.connect(_on_load_confirmed.bind(dialog))
-	dialog.canceled.connect(func(): dialog.queue_free())
-	add_child(dialog)
-	dialog.popup_centered()
-
-## 确认读取后执行加载
-func _on_load_confirmed(dialog: ConfirmationDialog) -> void:
-	dialog.queue_free()
-	var success = save_system.load_game(0)
-	if success:
-		print("快速读取完成")
-	else:
-		printerr("快速读取失败")
-		_show_toast("快速读取失败")
-
-## 显示轻量提示信息
-func _show_toast(message: String, duration: float = 2.0) -> void:
-	var toast = Label.new()
-	toast.text = tr(message)
-	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast.add_theme_font_size_override("font_size", 28)
-	
-	# 背景样式
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0.7)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 24
-	style.content_margin_right = 24
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
-	toast.add_theme_stylebox_override("normal", style)
-	
-	# 定位到屏幕顶部居中
-	add_child(toast)
-	toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_KEEP_SIZE)
-	toast.position.y = 40
-	
-	# 延时后淡出并移除
-	var tween = create_tween()
-	tween.tween_interval(duration)
-	tween.tween_property(toast, "modulate:a", 0.0, 0.3)
-	tween.tween_callback(toast.queue_free)
+	_services()._quick_load()

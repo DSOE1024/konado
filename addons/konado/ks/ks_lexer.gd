@@ -69,6 +69,7 @@ func tokenize_line(line: String, line_number: int) -> Array[KS_Token]:
 # 内部实现
 # ============================================================
 
+
 ## 测量行首缩进等级（4空格或1制表符 = 1级）
 func _measure_indent(line: String) -> int:
 	var spaces := 0
@@ -101,7 +102,7 @@ func _tokenize_line(line: String, line_num: int) -> Array[KS_Token]:
 		var ch := line[pos]
 
 		# 字符串字面量
-		if ch == "\"":
+		if ch == '"':
 			var tok := _read_string_literal(line, pos, line_num)
 			if tok == null:
 				return []
@@ -190,7 +191,11 @@ func _tokenize_line(line: String, line_num: int) -> Array[KS_Token]:
 		# 标识符或关键字
 		if _is_ident_start(ch):
 			var word_tok := _read_word(line, pos, line_num)
-			pos += word_tok.value.length() if word_tok.type == KS_Token.Type.IDENTIFIER else str(word_tok.value).length()
+			pos += (
+				word_tok.value.length()
+				if word_tok.type == KS_Token.Type.IDENTIFIER
+				else str(word_tok.value).length()
+			)
 			tokens.append(word_tok)
 			continue
 
@@ -209,11 +214,11 @@ func _read_string_literal(line: String, start: int, line_num: int) -> KS_Token:
 
 	while pos < length:
 		var ch := line[pos]
-		if ch == "\\" and pos + 1 < length and line[pos + 1] == "\"":
-			result += "\""
+		if ch == "\\" and pos + 1 < length and line[pos + 1] == '"':
+			result += '"'
 			pos += 2
 			continue
-		if ch == "\"":
+		if ch == '"':
 			return KS_Token.new(KS_Token.Type.STRING_LITERAL, result, line_num, start + 1)
 		result += ch
 		pos += 1
@@ -227,10 +232,10 @@ func _calc_raw_string_length(line: String, start: int) -> int:
 	var pos := start + 1  # 跳过开头引号
 	var length := line.length()
 	while pos < length:
-		if line[pos] == "\\" and pos + 1 < length and line[pos + 1] == "\"":
+		if line[pos] == "\\" and pos + 1 < length and line[pos + 1] == '"':
 			pos += 2
 			continue
-		if line[pos] == "\"":
+		if line[pos] == '"':
 			return pos - start + 1
 		pos += 1
 	return pos - start
@@ -250,7 +255,9 @@ func _read_variable_ref(line: String, start: int, line_num: int) -> KS_Token:
 		pos += 1
 
 	var var_name := line.substr(name_start, pos - name_start)
-	return KS_Token.new(KS_Token.Type.VARIABLE_REF, {"prefix": prefix, "name": var_name}, line_num, start + 1)
+	return KS_Token.new(
+		KS_Token.Type.VARIABLE_REF, {"prefix": prefix, "name": var_name}, line_num, start + 1
+	)
 
 
 ## 读取数字字面量
@@ -332,7 +339,13 @@ func _is_ident_char(ch: String) -> bool:
 	if ch.length() != 1:
 		return false
 	var code := ch.unicode_at(0)
-	return (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or (code >= 48 and code <= 57) or code == 95 or code >= 0x80
+	return (
+		(code >= 65 and code <= 90)
+		or (code >= 97 and code <= 122)
+		or (code >= 48 and code <= 57)
+		or code == 95
+		or code >= 0x80
+	)
 
 
 ## 错误记录

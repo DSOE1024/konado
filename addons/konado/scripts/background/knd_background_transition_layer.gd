@@ -7,52 +7,64 @@ class_name KND_BackgroundTransitionLayer
 ## 图片场景会优先直接提供纹理；视频、Live2D、Spine 等动态场景则用两个 SubViewport
 ## 分别承载旧背景场景和新背景场景，再把两个 ViewportTexture 交给 shader 合成。
 
-signal transition_finished(old_background: KND_BackgroundSceneBase, new_background: KND_BackgroundSceneBase)
+signal transition_finished(
+	old_background: KND_BackgroundSceneBase, new_background: KND_BackgroundSceneBase
+)
 
 const TRANSITION_CONFIGS := {
-	"erase": {
+	"erase":
+	{
 		"shader": preload("res://addons/konado/shader/bg_trans_effects/erase_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
-	"blinds": {
+	"blinds":
+	{
 		"shader": preload("res://addons/konado/shader/bg_trans_effects/blinds_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
-	"wave": {
+	"wave":
+	{
 		"shader": preload("res://addons/konado/shader/bg_trans_effects/wave_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.8,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
-	"fade": {
+	"fade":
+	{
 		"shader": preload("res://addons/konado/shader/bg_trans_effects/alpha_fade_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
-	"vortex": {
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/vortex_swap_effect.gdshader"),
+	"vortex":
+	{
+		"shader":
+		preload("res://addons/konado/shader/bg_trans_effects/vortex_swap_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
-	"windmill": {
+	"windmill":
+	{
 		"shader": preload("res://addons/konado/shader/bg_trans_effects/windmill_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
-	"cyberglitch": {
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/cyber_glitch_effect.gdshader"),
+	"cyberglitch":
+	{
+		"shader":
+		preload("res://addons/konado/shader/bg_trans_effects/cyber_glitch_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
-	"blink": {
+	"blink":
+	{
 		"shader": preload("res://addons/konado/shader/bg_trans_effects/blink_effect.gdshader"),
 		"duration": 3.0,
 		"progress_target": 1.0,
@@ -73,23 +85,32 @@ var _old_background: KND_BackgroundSceneBase
 var _new_background: KND_BackgroundSceneBase
 var _is_transitioning: bool = false
 
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 	_ensure_nodes()
 	_sync_viewport_size()
 
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_sync_viewport_size()
 
+
 func supports_effect(effect_name: String) -> bool:
 	return TRANSITION_CONFIGS.has(effect_name)
+
 
 func is_transitioning() -> bool:
 	return _is_transitioning
 
-func play_transition(old_background: KND_BackgroundSceneBase, new_background: KND_BackgroundSceneBase, effect_name: String) -> void:
+
+func play_transition(
+	old_background: KND_BackgroundSceneBase,
+	new_background: KND_BackgroundSceneBase,
+	effect_name: String
+) -> void:
 	if not supports_effect(effect_name):
 		push_error("背景 shader 转场不存在：" + effect_name)
 		transition_finished.emit(old_background, new_background)
@@ -129,6 +150,7 @@ func play_transition(old_background: KND_BackgroundSceneBase, new_background: KN
 
 	call_deferred("_start_shader_transition", effect_name)
 
+
 func cancel_transition(queue_backgrounds: bool = true) -> void:
 	if _transition_tween and _transition_tween.is_valid():
 		_transition_tween.kill()
@@ -146,6 +168,7 @@ func cancel_transition(queue_backgrounds: bool = true) -> void:
 	_new_background = null
 	if _current_fallback and _current_fallback.get_parent():
 		_current_fallback.get_parent().remove_child(_current_fallback)
+
 
 func _ensure_nodes() -> void:
 	if _current_viewport == null:
@@ -181,6 +204,7 @@ func _ensure_nodes() -> void:
 			_shader_material = ShaderMaterial.new()
 			_shader_rect.material = _shader_material
 
+
 func _create_viewport(node_name: String) -> SubViewport:
 	var viewport := SubViewport.new()
 	viewport.name = node_name
@@ -189,6 +213,7 @@ func _create_viewport(node_name: String) -> SubViewport:
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	return viewport
 
+
 func _create_viewport_root(node_name: String) -> Control:
 	var root := Control.new()
 	root.name = node_name
@@ -196,10 +221,12 @@ func _create_viewport_root(node_name: String) -> Control:
 	_set_full_rect(root, _get_transition_size())
 	return root
 
+
 func _prepare_viewport_root(root: Control) -> void:
 	for child in root.get_children():
 		root.remove_child(child)
 	_set_full_rect(root, _get_transition_size())
+
 
 func _move_background_to_root(background: KND_BackgroundSceneBase, root: Control) -> void:
 	if background == null:
@@ -211,6 +238,7 @@ func _move_background_to_root(background: KND_BackgroundSceneBase, root: Control
 	background.show()
 	background.modulate.a = 1.0
 	_set_full_rect(background, root.size)
+
 
 func _start_shader_transition(effect_name: String) -> void:
 	await get_tree().process_frame
@@ -226,7 +254,10 @@ func _start_shader_transition(effect_name: String) -> void:
 
 	_play_shader_tween(config)
 
-func _start_shader_transition_with_textures(effect_name: String, current_texture: Texture2D, target_texture: Texture2D) -> void:
+
+func _start_shader_transition_with_textures(
+	effect_name: String, current_texture: Texture2D, target_texture: Texture2D
+) -> void:
 	var config: Dictionary = TRANSITION_CONFIGS[effect_name]
 	_shader_material.shader = config["shader"]
 	_shader_material.set_shader_parameter("progress", 0.0)
@@ -234,6 +265,7 @@ func _start_shader_transition_with_textures(effect_name: String, current_texture
 	_shader_material.set_shader_parameter("target_texture", target_texture)
 	_shader_rect.visible = true
 	_play_shader_tween(config)
+
 
 func _play_shader_tween(config: Dictionary) -> void:
 	var duration := float(config["duration"])
@@ -243,13 +275,11 @@ func _play_shader_tween(config: Dictionary) -> void:
 		return
 	_transition_tween = create_tween()
 	_transition_tween.tween_property(
-		_shader_material,
-		"shader_parameter/progress",
-		progress_target,
-		duration
+		_shader_material, "shader_parameter/progress", progress_target, duration
 	)
 	_transition_tween.set_trans(config["tween_trans"])
 	_transition_tween.finished.connect(_finish_shader_transition, ConnectFlags.CONNECT_ONE_SHOT)
+
 
 func _finish_shader_transition() -> void:
 	if not _is_transitioning:
@@ -268,6 +298,7 @@ func _finish_shader_transition() -> void:
 		_current_fallback.get_parent().remove_child(_current_fallback)
 	transition_finished.emit(old_background, new_background)
 
+
 func _sync_viewport_size() -> void:
 	if _current_viewport == null or _target_viewport == null:
 		return
@@ -282,6 +313,7 @@ func _sync_viewport_size() -> void:
 		_set_full_rect(child as Control, viewport_size)
 	_set_full_rect(_shader_rect, Vector2(viewport_size))
 
+
 func _get_transition_size() -> Vector2i:
 	var rect_size := size
 	var parent_control := get_parent() as Control
@@ -291,10 +323,12 @@ func _get_transition_size() -> Vector2i:
 		rect_size = get_viewport_rect().size
 	return Vector2i(max(2, int(rect_size.x)), max(2, int(rect_size.y)))
 
+
 func _get_transition_texture(background: KND_BackgroundSceneBase) -> Texture2D:
 	if background == null:
 		return null
 	return background.get_transition_texture()
+
 
 func _get_fallback_texture() -> Texture2D:
 	if _fallback_texture:
@@ -303,6 +337,7 @@ func _get_fallback_texture() -> Texture2D:
 	image.fill(Color.BLACK)
 	_fallback_texture = ImageTexture.create_from_image(image)
 	return _fallback_texture
+
 
 func _set_full_rect(control: Control, target_size: Vector2 = Vector2.ZERO) -> void:
 	if control == null:

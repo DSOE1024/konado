@@ -14,7 +14,6 @@ public partial class Konadotnet : EditorPlugin
 	private readonly Dictionary<string, string> _autoloads = new Dictionary<string, string>()
 	{
 		{"KonadoAPI", "res://addons/konadotnet/Runtime/API/KonadoAPI.cs"}
-		// {"DialogueManagerAPI", "res://addons/konadotnet/api/DialogueManagerAPI.cs"}
 	};
 
 	public override void _EnterTree()
@@ -63,9 +62,20 @@ public partial class Konadotnet : EditorPlugin
 
 	public override void _ExitTree()
 	{
+	}
+
+	public override void _DisablePlugin()
+	{
 		foreach (var autoload in _autoloads)
 		{
-			if (ProjectSettings.HasSetting($"autoload/{autoload.Key}"))
+			var settingName = $"autoload/{autoload.Key}";
+			if (!ProjectSettings.HasSetting(settingName))
+			{
+				continue;
+			}
+
+			var currentPath = ProjectSettings.GetSetting(settingName).As<string>()?.TrimStart('*');
+			if (currentPath == autoload.Value)
 			{
 				RemoveAutoloadSingleton(autoload.Key);
 			}

@@ -8,8 +8,10 @@ extends KND_CharacterSceneBase
 
 var sprite: AnimatedSprite2D
 
+
 func _ready() -> void:
 	sprite = get_node_or_null(animated_sprite_path) as AnimatedSprite2D
+
 
 ## 对 AnimatedSprite2D 来说，状态名最终落到同名动画。
 ## 其他媒体类型可以把这里改成播放 Spine 动画、设置 Live2D 表情或切换视频流。
@@ -26,11 +28,13 @@ func _apply_status(resolved_status_name: String, original_status_name: String) -
 
 	push_warning("角色场景未找到动画：" + original_status_name)
 
+
 ## demo 里先把动作当作一次性状态播放。
 ## 后续如果接入角色场景内部动作，可以在这里做不改变 current_status 的短动画。
 func _play_action(action_name: String) -> void:
 	apply_status(action_name)
 	finish_action(action_name)
+
 
 func _get_sprite() -> AnimatedSprite2D:
 	if sprite == null:

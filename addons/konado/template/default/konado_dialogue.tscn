@@ -24,7 +24,7 @@ metadata/_snap_enabled = true
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
 gradient = SubResource("Gradient_6xj1n")
 
-[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_screen_text", "_acting_interface", "_audio_interface", "_autoPlayButton", "_settingsButton", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system", "_settings_bridge", "_konado_cam_manager")]
+[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_screen_text", "_acting_interface", "_audio_interface", "_auto_play_button", "_settings_button", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system", "_settings_bridge", "_konado_cam_manager")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -39,8 +39,8 @@ _konado_dialogue_box = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/KonadoD
 _screen_text = NodePath("KonadoUI/CanvasLayer2/DialogueInterface/ScreenText")
 _acting_interface = NodePath("KonadoUI/CanvasLayer/ActingInterface")
 _audio_interface = NodePath("KonadoAudioInterface")
-_autoPlayButton = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/AutoPlay")
-_settingsButton = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/Settings")
+_auto_play_button = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/AutoPlay")
+_settings_button = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/Settings")
 error_tooltip_panel = NodePath("KonadoErrorToolTip")
 error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
 error_skip_btn = NodePath("KonadoErrorToolTip/Skip")

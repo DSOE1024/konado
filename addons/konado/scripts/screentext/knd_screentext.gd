@@ -60,6 +60,7 @@ func _ready() -> void:
 	if next_line_indicator:
 		next_line_indicator.hide()
 
+
 ## 显示 NVL 文本内容
 ## text_lines: 文本行列表
 ## align: 对齐方式（"left"/"center"/"right"）
@@ -85,9 +86,10 @@ func show_screen_text() -> void:
 	_fade_tween.set_trans(fade_trans_type)
 	_fade_tween.set_ease(fade_ease_type)
 	_fade_tween.tween_property(self, "modulate:a", 1.0, fade_duration)
-	_fade_tween.tween_callback(func():
-		screen_text_shown.emit()
-		_reveal_current_line()
+	_fade_tween.tween_callback(
+		func():
+			screen_text_shown.emit()
+			_reveal_current_line()
 	)
 
 
@@ -104,11 +106,12 @@ func hide_screen_text() -> void:
 	_fade_tween.set_trans(fade_trans_type)
 	_fade_tween.set_ease(fade_ease_type)
 	_fade_tween.tween_property(self, "modulate:a", 0.0, fade_duration)
-	_fade_tween.tween_callback(func():
-		hide()
-		modulate.a = 1.0
-		_clear_text()
-		screen_text_hidden.emit()
+	_fade_tween.tween_callback(
+		func():
+			hide()
+			modulate.a = 1.0
+			_clear_text()
+			screen_text_hidden.emit()
 	)
 
 
@@ -140,9 +143,10 @@ func _reveal_current_line() -> void:
 	_line_tween.set_trans(Tween.TRANS_LINEAR)
 	_line_tween.set_ease(Tween.EASE_IN)
 	_line_tween.tween_property(label, "modulate:a", 1.0, line_fade_duration)
-	_line_tween.tween_callback(func():
-		_line_index += 1
-		_show_indicator()
+	_line_tween.tween_callback(
+		func():
+			_line_index += 1
+			_show_indicator()
 	)
 
 
@@ -163,7 +167,9 @@ func _show_indicator() -> void:
 
 	_kill_blink_tween()
 	_blink_tween = create_tween().set_loops()
-	_blink_tween.tween_property(next_line_indicator, "modulate:a", blink_min_alpha, blink_cycle * 0.5)
+	_blink_tween.tween_property(
+		next_line_indicator, "modulate:a", blink_min_alpha, blink_cycle * 0.5
+	)
 	_blink_tween.tween_property(next_line_indicator, "modulate:a", 1.0, blink_cycle * 0.5)
 
 	_is_waiting_input = true
@@ -215,12 +221,11 @@ func _build_text(text_lines: Array[String], align: String) -> void:
 				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			_:
 				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-				
+
 		label.position = Vector2(left_padding, 0)
 		label.fit_content = true
 		label.custom_maximum_size.x = size.x - left_padding
 		label.mouse_filter = MOUSE_FILTER_IGNORE
-	
 
 		# 初始隐藏
 		label.modulate.a = 0.0

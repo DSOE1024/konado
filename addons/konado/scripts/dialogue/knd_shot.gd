@@ -14,6 +14,7 @@ class_name KND_Shot
 ## 依赖角色
 @export var dep_characters: Array[String] = []
 
+
 ## 根据 node_id 查找对话节点
 func find_node(id: String) -> KND_Dialogue:
 	if id.is_empty():
@@ -22,6 +23,7 @@ func find_node(id: String) -> KND_Dialogue:
 		if d.node_id == id:
 			return d
 	return null
+
 
 ## 获取起始节点
 func get_start_node() -> KND_Dialogue:

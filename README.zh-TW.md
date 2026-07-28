@@ -60,7 +60,7 @@ Konado 是 Godot 引擎的對話創建工具包，提供模板和對話管理器
 您的贊助將幫助我們持續完善 Konado 專案。
 
 <div align="center">
-  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+  <img src="https://legacy.godothub.com/kbgirl/kona/kona_love.png" alt="kona_love" height="150">
 </div>
 
 

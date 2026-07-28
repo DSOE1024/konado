@@ -8,7 +8,7 @@ order: 1
 ## 基础依赖
 
 1. 安装 Konado 插件（必须）
-2. 支持 C# 的 Godot 版本（推荐 4.6 或更高版本）
+2. 支持 C# 的 Godot .NET 4.7.1 或更高版本
 3. 项目需要使用 Godot .NET 编辑器打开，普通 Godot 编辑器无法编译和加载 C# 插件脚本。
 
 ## 安装步骤
@@ -42,11 +42,8 @@ Konadotnet 依赖 Konado 主插件。推荐顺序是：
 
 ## 场景要求
 
-使用 `DialogueManagerAPI` 时，当前场景需要包含 `KND_DialogueManager` 节点。Konadotnet 会自动查找该节点，也兼容常见节点名：
-
-- `DialogManager`
-- `DialogueManager`
-- `KonadoDialogueManager`
+使用 `DialogueManagerAPI` 时，场景树中需要包含满足完整公开 API 契约的
+`KND_DialogueManager` 节点。Konadotnet 会在节点进入场景树时自动绑定，不依赖节点名称。
 
 如果场景中存在多个对话管理器，请在 C# 中手动绑定：
 
