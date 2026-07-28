@@ -1,4 +1,4 @@
-name: Docs
+name: Docs Deploy
 
 on:
   push:
@@ -6,14 +6,8 @@ on:
     paths:
       - "docs/**"
       - ".github/scripts/generate-konado-case.mjs"
-      - ".github/workflows/docs.yml"
-      - ".github/workflows/update-showcase.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - ".github/scripts/generate-konado-case.mjs"
-      - ".github/workflows/docs.yml"
+      - ".github/workflows/docs-build.yml"
+      - ".github/workflows/docs-deploy.yml"
       - ".github/workflows/update-showcase.yml"
   workflow_dispatch:
 
@@ -21,47 +15,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-${{ github.event.pull_request.number || github.ref }}
+  group: docs-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build VitePress
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-
-      - name: Install dependencies
-        working-directory: docs
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build documentation
-        working-directory: docs
-        run: pnpm docs:build
-
-      - name: Upload site
-        uses: actions/upload-artifact@v4
-        with:
-          name: vitepress-site
-          path: docs/.vitepress/dist
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
+    name: Build documentation
+    uses: ./.github/workflows/docs-build.yml
 
   update-showcase:
     name: Update showcase
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: build
     permissions:
       contents: write
@@ -69,7 +32,6 @@ jobs:
 
   deploy:
     name: Deploy docs branch
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [build, update-showcase]
     runs-on: ubuntu-24.04
     permissions:
