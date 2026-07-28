@@ -1,4 +1,3 @@
-#pragma warning disable CS0109
 using System.Linq;
 using Godot;
 
@@ -6,85 +5,99 @@ namespace Konado.Wrapper;
 
 public partial class KndShot : KndData
 {
-    private static GDScript _sourceScript;
-    private const string SourceScriptPath = "res://addons/konado/scripts/dialogue/knd_shot.gd";
+	private static GDScript? _sourceScript;
+	private const string SourceScriptPath = "res://addons/konado/scripts/dialogue/knd_shot.gd";
 
-    public KndShot(GodotObject source) : base(source)
-    {
-        LoadSourceScript();
-        if (source.GetScript().As<GDScript>() != _sourceScript)
-        {
-            throw new System.InvalidOperationException("Source object is not a KND_Shot resource!");
-        }
+	public KndShot(GodotObject source) : base(source)
+	{
+		var sourceScript = LoadSourceScript();
+		if (!InheritsSourceScript(source, sourceScript))
+		{
+			throw new System.InvalidOperationException("Source object is not a KND_Shot resource!");
+		}
 
-        SourceObject = source;
-    }
+		SourceObject = source;
+	}
 
-    public KndShot()
-    {
-        LoadSourceScript();
-        SourceObject = _sourceScript.New().AsGodotObject();
-    }
+	public KndShot()
+	{
+		SourceObject = LoadSourceScript().New().AsGodotObject();
+	}
 
-    private static void LoadSourceScript()
-    {
-        if (!ResourceLoader.Exists(SourceScriptPath))
-        {
-            throw new System.InvalidOperationException("KND_Shot source script not found!");
-        }
+	private static GDScript LoadSourceScript()
+	{
+		if (!ResourceLoader.Exists(SourceScriptPath))
+		{
+			throw new System.InvalidOperationException("KND_Shot source script not found!");
+		}
 
-        _sourceScript ??= ResourceLoader.Load<GDScript>(SourceScriptPath);
-    }
+		return _sourceScript ??= ResourceLoader.Load<GDScript>(SourceScriptPath);
+	}
 
-    public new static class GDScriptPropertyName
-    {
-        public new static readonly StringName KsPath = "ks_path";
-        public new static readonly StringName ShotId = "shot_id";
-        public new static readonly StringName StartNodeId = "start_node_id";
-        public new static readonly StringName Dialogues = "dialogues";
-    }
+	public static class GDScriptPropertyName
+	{
+		public static readonly StringName KsPath = "ks_path";
+		public static readonly StringName ShotId = "shot_id";
+		public static readonly StringName StartNodeId = "start_node_id";
+		public static readonly StringName Dialogues = "dialogues";
+		public static readonly StringName DepCharacters = "dep_characters";
+	}
 
-    public string KsPath
-    {
-        get => SourceObject.Get(GDScriptPropertyName.KsPath).As<string>();
-        set => SourceObject.Set(GDScriptPropertyName.KsPath, value);
-    }
+	public string KsPath
+	{
+		get => SourceObject.Get(GDScriptPropertyName.KsPath).As<string>();
+		set => SourceObject.Set(GDScriptPropertyName.KsPath, value);
+	}
 
-    public new string ShotId
-    {
-        get => SourceObject.Get(GDScriptPropertyName.ShotId).As<string>();
-        set => SourceObject.Set(GDScriptPropertyName.ShotId, value);
-    }
+	public string ShotId
+	{
+		get => SourceObject.Get(GDScriptPropertyName.ShotId).As<string>();
+		set => SourceObject.Set(GDScriptPropertyName.ShotId, value);
+	}
 
-    public string StartNodeId
-    {
-        get => SourceObject.Get(GDScriptPropertyName.StartNodeId).As<string>();
-        set => SourceObject.Set(GDScriptPropertyName.StartNodeId, value);
-    }
+	public string StartNodeId
+	{
+		get => SourceObject.Get(GDScriptPropertyName.StartNodeId).As<string>();
+		set => SourceObject.Set(GDScriptPropertyName.StartNodeId, value);
+	}
 
-    public Godot.Collections.Array<Dialogue> Dialogues
-    {
-        get => new(SourceObject.Get(GDScriptPropertyName.Dialogues).As<Godot.Collections.Array<Resource>>().Select(r => new Dialogue(r)));
-        set
-        {
-            var sourceDialogues = new Godot.Collections.Array<Resource>();
-            foreach (var dialogue in value)
-            {
-                sourceDialogues.Add(dialogue.SourceResource);
-            }
-            SourceObject.Set(GDScriptPropertyName.Dialogues, sourceDialogues);
-        }
-    }
+	public Godot.Collections.Array<Dialogue> Dialogues
+	{
+		get => new(SourceObject.Get(GDScriptPropertyName.Dialogues).As<Godot.Collections.Array<Resource>>().Select(r => new Dialogue(r)));
+		set
+		{
+			if (value != null)
+			{
+				foreach (var dialogue in value)
+				{
+					if (dialogue?.SourceResource == null)
+						throw new System.ArgumentException("Dialogues contains an invalid dialogue.", nameof(value));
+				}
+			}
 
-    public Dialogue FindNode(string nodeId)
-    {
-        var result = SourceObject.Call("find_node", nodeId).As<Resource>();
-        return result == null ? null : new Dialogue(result);
-    }
+			var sourceDialogues = SourceObject.Get(GDScriptPropertyName.Dialogues).AsGodotArray();
+			sourceDialogues.Clear();
+			if (value != null)
+				foreach (var dialogue in value)
+					sourceDialogues.Add(dialogue.SourceResource);
+		}
+	}
 
-    public Dialogue GetStartNode()
-    {
-        var result = SourceObject.Call("get_start_node").As<Resource>();
-        return result == null ? null : new Dialogue(result);
-    }
+	public Godot.Collections.Array<string> DepCharacters
+	{
+		get => SourceObject.Get(GDScriptPropertyName.DepCharacters).AsGodotArray<string>();
+		set => SourceObject.Set(GDScriptPropertyName.DepCharacters, value);
+	}
+
+	public Dialogue? FindNode(string nodeId)
+	{
+		var result = SourceObject.Call("find_node", nodeId).As<Resource>();
+		return result == null ? null : new Dialogue(result);
+	}
+
+	public Dialogue? GetStartNode()
+	{
+		var result = SourceObject.Call("get_start_node").As<Resource>();
+		return result == null ? null : new Dialogue(result);
+	}
 }
