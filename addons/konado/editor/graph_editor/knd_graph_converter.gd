@@ -15,6 +15,7 @@ static func _next_name() -> String:
 
 # --- KND_Shot -> GraphEdit ---
 
+
 static func shot_to_graph(shot: KND_Shot, graph: GraphEdit) -> void:
 	_clear_graph(graph)
 	if not shot or shot.dialogues.size() == 0:
@@ -69,6 +70,7 @@ static func shot_to_graph(shot: KND_Shot, graph: GraphEdit) -> void:
 
 # --- GraphEdit -> KND_Shot ---
 
+
 static func graph_to_shot(graph: GraphEdit) -> KND_Shot:
 	var shot := KND_Shot.new()
 	var nodes: Array[GraphNode] = []
@@ -111,7 +113,7 @@ static func graph_to_shot(graph: GraphEdit) -> KND_Shot:
 				if not target.is_empty() and gn_name_to_id.has(target):
 					d.choices[ci].next_id = gn_name_to_id[target]
 					print(d.choices[ci].next_id)
-					
+
 		elif type == KND_Dialogue.Type.IFELSE_BRANCH:
 			# Condition: if port 1, else port 2, after(next) port 3
 			var if_target := _find_connection_target(n.name, 1, connections)
@@ -132,7 +134,9 @@ static func graph_to_shot(graph: GraphEdit) -> KND_Shot:
 	return shot
 
 
-static func _find_connection_target(from_name: String, from_port: int, connections: Array[Dictionary]) -> String:
+static func _find_connection_target(
+	from_name: String, from_port: int, connections: Array[Dictionary]
+) -> String:
 	for c in connections:
 		if c["from_node"] == from_name and c["from_port"] == from_port:
 			return c["to_node"]

@@ -49,21 +49,36 @@ const TYPE_COLORS := {
 
 static func create(type: KND_Dialogue.Type, d: KND_Dialogue = null) -> GraphNode:
 	match type:
-		KND_Dialogue.Type.ORDINARY_DIALOG: return _dialogue(d)
-		KND_Dialogue.Type.DISPLAY_ACTOR: return _actor_show(d)
-		KND_Dialogue.Type.ACTOR_CHANGE_STATE: return _actor_change(d)
-		KND_Dialogue.Type.MOVE_ACTOR: return _actor_move(d)
-		KND_Dialogue.Type.ACTOR_MOTION: return _actor_motion(d)
-		KND_Dialogue.Type.EXIT_ACTOR: return _actor_exit(d)
-		KND_Dialogue.Type.SWITCH_BACKGROUND: return _background(d)
-		KND_Dialogue.Type.PLAY_BGM: return _play_bgm(d)
-		KND_Dialogue.Type.STOP_BGM: return _stop_bgm(d)
-		KND_Dialogue.Type.PLAY_SOUND_EFFECT: return _play_sfx(d)
-		KND_Dialogue.Type.SHOW_CHOICE: return _choice(d)
-		KND_Dialogue.Type.IFELSE_BRANCH: return _condition(d)
-		KND_Dialogue.Type.JUMP: return _jump(d)
-		KND_Dialogue.Type.SIGNAL: return _signal_node(d)
-		KND_Dialogue.Type.THE_END: return _end(d)
+		KND_Dialogue.Type.ORDINARY_DIALOG:
+			return _dialogue(d)
+		KND_Dialogue.Type.DISPLAY_ACTOR:
+			return _actor_show(d)
+		KND_Dialogue.Type.ACTOR_CHANGE_STATE:
+			return _actor_change(d)
+		KND_Dialogue.Type.MOVE_ACTOR:
+			return _actor_move(d)
+		KND_Dialogue.Type.ACTOR_MOTION:
+			return _actor_motion(d)
+		KND_Dialogue.Type.EXIT_ACTOR:
+			return _actor_exit(d)
+		KND_Dialogue.Type.SWITCH_BACKGROUND:
+			return _background(d)
+		KND_Dialogue.Type.PLAY_BGM:
+			return _play_bgm(d)
+		KND_Dialogue.Type.STOP_BGM:
+			return _stop_bgm(d)
+		KND_Dialogue.Type.PLAY_SOUND_EFFECT:
+			return _play_sfx(d)
+		KND_Dialogue.Type.SHOW_CHOICE:
+			return _choice(d)
+		KND_Dialogue.Type.IFELSE_BRANCH:
+			return _condition(d)
+		KND_Dialogue.Type.JUMP:
+			return _jump(d)
+		KND_Dialogue.Type.SIGNAL:
+			return _signal_node(d)
+		KND_Dialogue.Type.THE_END:
+			return _end(d)
 	return _base("Unknown", Color.GRAY)
 
 
@@ -96,7 +111,9 @@ static func read_fields(node: GraphNode) -> KND_Dialogue:
 		KND_Dialogue.Type.SWITCH_BACKGROUND:
 			d.background_name = _val(f, "bg_name")
 			d.background_image_name = d.background_name
-			d.background_toggle_effects = _ival(f, "bg_effect") as KND_ActingInterface.BackgroundTransitionEffectsType
+			d.background_toggle_effects = (
+				_ival(f, "bg_effect") as KND_ActingInterface.BackgroundTransitionEffectsType
+			)
 		KND_Dialogue.Type.PLAY_BGM:
 			d.bgm_name = _val(f, "bgm_name")
 		KND_Dialogue.Type.STOP_BGM:
@@ -123,6 +140,7 @@ static func read_fields(node: GraphNode) -> KND_Dialogue:
 
 
 # --- Node Builders ---
+
 
 static func _base(title_text: String, color: Color) -> GraphNode:
 	var n := GraphNode.new()
@@ -163,7 +181,10 @@ static func _actor_show(d: KND_Dialogue) -> GraphNode:
 	var f4 := _add_field(n, "Pos Y", str(d.actor_position.y) if d else "9")
 	var f5 := _add_field(n, "Scale", str(d.actor_scale) if d else "0.3")
 
-	n.set_meta("fields", {"character_name": f1, "character_state": f2, "pos_x": f3, "pos_y": f4, "actor_scale": f5})
+	n.set_meta(
+		"fields",
+		{"character_name": f1, "character_state": f2, "pos_x": f3, "pos_y": f4, "actor_scale": f5}
+	)
 	n.set_slot(0, true, FLOW_PORT, FLOW_COLOR, true, FLOW_PORT, FLOW_COLOR)
 	return n
 
@@ -384,6 +405,7 @@ static func _end(_d: KND_Dialogue) -> GraphNode:
 
 
 # --- Helpers ---
+
 
 static func _on_choice_add_option(n: GraphNode) -> void:
 	var choice_fields: Array = n.get_meta("fields").get("choices", [])
