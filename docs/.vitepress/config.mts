@@ -92,7 +92,7 @@ export default defineConfig({
   head: [
     [
       'link',
-      { rel: 'icon', href: 'https://godothub.atomgit.net/web/icon/konado/kona/icon.png' }
+      { rel: 'icon', href: 'https://legacy.godothub.com/kbgirl/kona/icon.png' }
     ],
     [
       'script',
@@ -128,7 +128,7 @@ export default defineConfig({
   ],
   themeConfig: {
     outline: [2, 3],
-    logo: 'https://godothub.atomgit.net/web/icon/konado/kona/icon.png',
+    logo: 'https://legacy.godothub.com/kbgirl/kona/icon.png',
     search: {
       provider: 'local'
     },

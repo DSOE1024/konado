@@ -134,8 +134,8 @@ var language_item = SettingItem.new()
 language_item.key = "language"
 language_item.label = "语言"
 language_item.type = SettingItem.Type.OPTION
-language_item.options = ["zh", "tc", "en", "ja", "ko"]
-language_item.default_value = "zh"
+language_item.options = ["zh_Hans", "zh_Hant", "en", "ja", "ko"]
+language_item.default_value = "zh_Hans"
 ```
 
 ## UI 工厂 (UIFactory)

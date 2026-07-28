@@ -26,7 +26,7 @@ order: 4
 音频进度显示是一个独立组件，默认场景位于：
 
 ```text
-res://addons/konado/template/voice_progress_display.tscn
+res://addons/konado/template/default/voice_progress_display.tscn
 ```
 
 如果只是修改进度条的颜色、圆角、尺寸或内部布局，优先编辑这个场景。默认组件中包含：
@@ -49,9 +49,8 @@ res://addons/konado/template/voice_progress_display.tscn
 如果要调整进度显示在对话框中的位置，请编辑对应对话框模板里的 `VoiceProgressDisplay` 实例，例如：
 
 ```text
-res://addons/konado/template/knd_dialogue_box.tscn
-res://addons/konado/template/knd_dialogue_box_left.tscn
-res://addons/konado/template/knd_dialogue_box_middle.tscn
+res://addons/konado/template/default/knd_dialogue_box.tscn
+res://addons/konado/template/custom_middle/konado_dialogue_middle.tscn
 ```
 
 组件脚本通过两个方法接收对话框传入的状态：

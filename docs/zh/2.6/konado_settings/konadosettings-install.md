@@ -13,5 +13,5 @@ Konado Settings 提供了一个完整的设置系统，支持通过 JSON 配置�
 
 ## 版本要求
 
-- Godot 4.6 或更高版本
+- Godot 4.7.1 或更高版本
 - 支持所有 Godot 支持的平台

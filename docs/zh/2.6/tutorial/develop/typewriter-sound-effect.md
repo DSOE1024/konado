@@ -47,7 +47,7 @@ res://addons/konado/audioeffect/typewriter/
 
 ```gdscript
 # 代码方式设置音效
-dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/click.wav")
+dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/typing_01.wav")
 ```
 
 ## 音效触发配置
@@ -111,7 +111,7 @@ var dialogue_box = $KND_DialogueBox
 dialogue_box.enable_typing_effect_audio = true
 
 # 设置音效
-dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/my_click.wav")
+dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/typing_01.wav")
 
 # 设置触发概率（每次都播）
 dialogue_box.audio_trigger_chance = 1.0
