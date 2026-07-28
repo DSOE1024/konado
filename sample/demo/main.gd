@@ -5,12 +5,15 @@ extends Control
 
 @export var quit_button: Button
 
+
 func _ready() -> void:
 	if OS.has_feature("web"):
 		quit_button.hide()
 
+
 func _on_start_button_pressed() -> void:
 	get_tree().change_scene_to_file("res://sample/demo/demo.tscn")
+
 
 func _on_quit_button_pressed() -> void:
 	get_tree().quit()
