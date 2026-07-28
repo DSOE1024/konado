@@ -10,6 +10,7 @@
 - `../../gdlintrc`：定义项目采用的类型、枚举和成员排列约定。
 - `check_doc_resource_paths.py`：验证当前各语言 2.6 文档中的 `res://addons/konado/` 静态路径。
 - `check_plugin_configs.py`：验证所有 `plugin.cfg` 引用的入口脚本和图标真实存在。
+- `check_plugin_resource_boundaries.py`：验证 Konado 核心插件没有引用其目录之外的资源。
 - `run_godot_test.py`：运行 Godot 脚本测试，并阻止“引擎输出脚本错误但退出码仍为 0”的假通过。
 - `run_dotnet_runtime_tests.sh`：在隔离的临时项目中编译并运行 Konado.NET 与 GDScript 的跨语言运行时测试。
 
@@ -23,7 +24,8 @@ python3 .github/scripts/check_doc_resource_paths.py \
   docs/zh/2.6 docs/en/2.6 docs/ja/2.6 docs/ko/2.6 docs/tc/2.6
 python3 .github/scripts/check_plugin_configs.py
 python3 .github/scripts/run_godot_test.py tests/i18n/test_knd_i18n.gd
-python3 plugin_path_checker.py "res://addons/konado/" "./addons/konado/"
+python3 .github/scripts/check_plugin_resource_boundaries.py \
+  "res://addons/konado/" "./addons/konado/"
 dotnet build .github/scripts/Konado.CI.csproj --configuration Release --warnaserror
 dotnet format .github/scripts/Konado.CI.csproj --verify-no-changes --no-restore
 bash .github/scripts/run_dotnet_runtime_tests.sh

@@ -130,7 +130,9 @@ jobs:
           python-version: "3.14"
 
       - name: Check plugin resource boundaries
-        run: python plugin_path_checker.py "res://addons/konado/" "./addons/konado/"
+        run: >-
+          python .github/scripts/check_plugin_resource_boundaries.py
+          "res://addons/konado/" "./addons/konado/"
 
       - name: Check plugin metadata
         run: python .github/scripts/check_plugin_configs.py

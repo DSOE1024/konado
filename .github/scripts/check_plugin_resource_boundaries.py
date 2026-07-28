@@ -3,8 +3,8 @@
 """
 Godot插件资源引用检查工具
 功能：检查插件目录内的场景/脚本/资源文件，确保所有资源引用都在插件目录内
-使用方式：python3 godot_plugin_checker.py <插件res路径> <插件本地目录>
-示例：python3 godot_plugin_checker.py "res://addons/konado/" "./addons/konado/"
+使用方式：python3 .github/scripts/check_plugin_resource_boundaries.py <插件res路径> <插件本地目录>
+示例：python3 .github/scripts/check_plugin_resource_boundaries.py "res://addons/konado/" "./addons/konado/"
 """
 
 import os
