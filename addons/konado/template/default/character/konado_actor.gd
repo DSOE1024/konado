@@ -334,6 +334,89 @@ func apply_character_status(status_name: String) -> void:
 	push_warning("角色场景未实现 apply_status：" + status_name)
 
 
+## 切换角色状态并带有交叉淡入淡出过渡效果。
+## 先创建旧视觉的覆盖层，然后立即切换状态，最后让覆盖层淡出。
+## 新状态始终可见，旧状态慢慢淡出，不会出现中间空场。
+## - status_name: 目标状态名
+## - fade_duration: 过渡总时长（秒）
+## - on_complete: 过渡完成后的回调（可选）
+func apply_character_status_with_fade(
+	status_name: String, fade_duration: float, on_complete: Callable = Callable()
+) -> void:
+	if status_name.is_empty():
+		if on_complete:
+			on_complete.call()
+		return
+
+	if fade_duration <= 0.0:
+		apply_character_status(status_name)
+		if on_complete:
+			on_complete.call()
+		return
+
+	# 创建旧视觉的覆盖层，用于交叉淡入淡出
+	var overlay := _create_visual_overlay()
+
+	# 立即切换状态（新视觉直接显示在覆盖层下方）
+	apply_character_status(status_name)
+
+	if overlay != null:
+		# 交叉淡入淡出：覆盖层（旧视觉）淡出，下方的新视觉一开始就是全亮
+		var tween := create_tween()
+		tween.tween_property(overlay, "modulate:a", 0.0, fade_duration)
+		tween.finished.connect(func():
+			if overlay and is_instance_valid(overlay):
+				overlay.queue_free()
+			if on_complete:
+				on_complete.call()
+		)
+		tween.play()
+	else:
+		# 无法创建覆盖层时，回退为直接淡入新视觉
+		var visual := _get_status_visual()
+		if visual:
+			visual.modulate.a = 0.0
+			var tween := create_tween()
+			tween.tween_property(visual, "modulate:a", 1.0, fade_duration)
+			tween.finished.connect(func():
+				if on_complete:
+					on_complete.call()
+			)
+			tween.play()
+		else:
+			if on_complete:
+				on_complete.call()
+
+
+## 创建当前视觉状态的覆盖层，用于交叉淡入淡出过渡。
+## 复制 _status_node 或 texture_rect 并添加到同一父节点，位置保持一致。
+func _create_visual_overlay() -> CanvasItem:
+	# 优先复制 _status_node 的完整副本，保留所有子节点和视觉状态
+	if _status_node != null and is_instance_valid(_status_node):
+		var parent := _status_node.get_parent()
+		if parent:
+			var dup := _status_node.duplicate()
+			if dup is CanvasItem:
+				parent.add_child(dup)
+				if dup is Control:
+					dup.set_anchors_preset(Control.PRESET_FULL_RECT)
+					dup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				return dup
+
+	# 回退：复制 texture_rect
+	if texture_rect != null and is_instance_valid(texture_rect):
+		var parent := texture_rect.get_parent()
+		if parent:
+			var dup := texture_rect.duplicate()
+			parent.add_child(dup)
+			if dup is Control:
+				dup.set_anchors_preset(Control.PRESET_FULL_RECT)
+				dup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			return dup
+
+	return null
+
+
 ## 舞台层动作，例如 shake、jump_twice、bounce。
 ## 这些动作作用在 MotionLayer 上，和角色场景内部的表情、Live2D motion、视频切换分开。
 func play_actor_motion(motion_name: String, params: Dictionary = {}) -> void:
