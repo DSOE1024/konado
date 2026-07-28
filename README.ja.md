@@ -60,7 +60,7 @@ Konado は Godot Engine 用のダイアログ作成ツールキットであり�
 あなたのスポンサーシップは、私たちが Konado プロジェクトを継続的に改善するのを助けます。
 
 <div align="center">
-  <img src="./assets/kona/kona_love.png" alt="kona_love" height="150">
+  <img src="https://legacy.godothub.com/kbgirl/kona/kona_love.png" alt="kona_love" height="150">
 </div>
 
 
