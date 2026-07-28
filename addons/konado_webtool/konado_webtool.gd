@@ -27,14 +27,20 @@ func _ready() -> void:
 
 
 func _inject_web_shortcut_handler() -> void:
-	JavaScriptBridge.eval("""
+	(
+		JavaScriptBridge
+		. eval(
+			(
+				"""
 		(function() {
 			if (window.__konado_devtool_injected) return;
 			window.__konado_devtool_injected = true;
 
 			// 根据当前配置动态构建快捷键列表
 			var shortcuts = [];
-	""" + _build_shortcuts_js_array() + """
+	"""
+				+ _build_shortcuts_js_array()
+				+ """
 
 			document.addEventListener('keydown', function(e) {
 				for (var i = 0; i < shortcuts.length; i++) {
@@ -52,12 +58,15 @@ func _inject_web_shortcut_handler() -> void:
 				}
 			}, true);
 		})();
-	""")
+	"""
+			)
+		)
+	)
 
 
 func _build_shortcuts_js_array() -> String:
 	var items: Array[String] = []
-	
+
 	if enable_f12:
 		items.append("{ key: 'F12', keyCode: 123 }")
 	if enable_f5:
@@ -74,8 +83,7 @@ func _build_shortcuts_js_array() -> String:
 		items.append("{ key: 'U', keyCode: 85, ctrl: true }")
 	if enable_ctrl_r:
 		items.append("{ key: 'R', keyCode: 82, ctrl: true }")
-	
+
 	if items.is_empty():
 		return "// No shortcuts enabled"
-	else:
-		return "shortcuts = [" + ", ".join(items) + "];"
+	return "shortcuts = [" + ", ".join(items) + "];"

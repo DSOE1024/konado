@@ -1,14 +1,14 @@
 extends Control
 class_name ActionBar
 
-signal continue_pressed      # 继续按钮点击信号
-signal replay_pressed        # 重新播放按钮点击信号
-signal save_pressed(visible: bool)          # 存档按钮点击信号
-signal load_pressed(visible: bool)          # 读档按钮点击信号
-signal record_pressed        # 记录按钮点击信号
-signal exit_pressed          # 退出按钮点击信号
-signal autoplay_pressed      # 自动按钮点击信号
-signal review_pressed        # 回顾按钮点击信号
+signal continue_pressed  # 继续按钮点击信号
+signal replay_pressed  # 重新播放按钮点击信号
+signal save_pressed(visible: bool)  # 存档按钮点击信号
+signal load_pressed(visible: bool)  # 读档按钮点击信号
+signal record_pressed  # 记录按钮点击信号
+signal exit_pressed  # 退出按钮点击信号
+signal autoplay_pressed  # 自动按钮点击信号
+signal review_pressed  # 回顾按钮点击信号
 
 ## 功能栏
 
@@ -28,17 +28,11 @@ signal review_pressed        # 回顾按钮点击信号
 # 存储所有需要被禁用的其他按钮（排除save_btn和load_btn）
 var other_buttons: Array[Button] = []
 
+
 func _ready() -> void:
 	# 初始化其他按钮数组（排除保存和加载按钮）
-	other_buttons = [
-		continue_btn,
-		replay_btn,
-		record_btn,
-		exit_btn,
-		autoplay_btn,
-		review_btn
-	]
-	
+	other_buttons = [continue_btn, replay_btn, record_btn, exit_btn, autoplay_btn, review_btn]
+
 	# 原有信号连接逻辑
 	if continue_btn:
 		continue_btn.pressed.connect(_on_continue_btn_pressed)
@@ -59,14 +53,17 @@ func _ready() -> void:
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	pass
-	
+
+
 func _on_continue_btn_pressed() -> void:
 	continue_pressed.emit()
 
+
 func _on_replay_btn_pressed() -> void:
 	replay_pressed.emit()
+
 
 func _on_save_btn_pressed(toggled_on: bool) -> void:
 	save_pressed.emit(toggled_on)
@@ -79,6 +76,7 @@ func _on_save_btn_pressed(toggled_on: bool) -> void:
 	elif load_btn and not toggled_on and not load_btn.button_pressed:
 		load_btn.disabled = false  # 两者都未激活时，加载按钮恢复可用
 
+
 func _on_load_btn_pressed(toggled_on: bool) -> void:
 	load_pressed.emit(toggled_on)
 	# 调用通用方法，根据加载按钮的切换状态启用/禁用其他按钮
@@ -89,17 +87,22 @@ func _on_load_btn_pressed(toggled_on: bool) -> void:
 	elif save_btn and not toggled_on and not save_btn.button_pressed:
 		save_btn.disabled = false  # 两者都未激活时，保存按钮恢复可用
 
+
 func _on_record_btn_pressed() -> void:
 	record_pressed.emit()
+
 
 func _on_exit_btn_pressed() -> void:
 	exit_pressed.emit()
 
+
 func _on_autoplay_btn_pressed() -> void:
 	autoplay_pressed.emit()
 
+
 func _on_review_btn_pressed() -> void:
 	review_pressed.emit()
+
 
 # 通用方法：切换其他按钮的启用/禁用状态
 func toggle_other_buttons_state(is_disable: bool) -> void:
