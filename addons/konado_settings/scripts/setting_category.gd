@@ -1,7 +1,7 @@
 ## 设置分类类 - 将相关的设置项分组在一起
 @tool
-class_name KND_SettingCategory
 extends Resource
+class_name KND_SettingCategory
 
 ## 分类的唯一标识符
 @export var id: String = ""

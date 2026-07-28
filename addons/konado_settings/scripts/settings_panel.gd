@@ -16,6 +16,7 @@ var _confirm_dialog: ConfirmationDialog
 ## 当前标签页的分类ID
 var _current_tab_cat_id: String = ""
 
+
 ## 节点就绪时调用
 func _ready() -> void:
 	# 设置按钮文本和信号连接
@@ -37,6 +38,7 @@ func _ready() -> void:
 	# 从注册的分类构建标签页
 	_build_tabs()
 
+
 ## 构建设置标签页
 func _build_tabs() -> void:
 	var mgr := _get_mgr()
@@ -53,11 +55,10 @@ func _build_tabs() -> void:
 		margc.add_theme_constant_override("margin_bottom", margin_value)
 		margc.add_theme_constant_override("margin_right", margin_value)
 
-		
 		var scroll := ScrollContainer.new()
 		scroll.name = tr(cat.display_name)
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		
+
 		margc.add_child(scroll)
 
 		var vbox := VBoxContainer.new()
@@ -65,14 +66,13 @@ func _build_tabs() -> void:
 		scroll.add_child(vbox)
 
 		for item: KND_SettingItem in cat.items:
-			if cat.id == "display" and item.key == "language":
-				var i18n := get_tree().root.get_node_or_null("KND_I18n")
-				if i18n != null and i18n.has_method("is_enabled") and not i18n.call("is_enabled"):
-					continue
-			var row: HBoxContainer = KND_SettingsUIFactory.create_control(cat.id, item, _on_value_changed)
+			var row: HBoxContainer = KND_SettingsUIFactory.create_control(
+				cat.id, item, _on_value_changed
+			)
 			vbox.add_child(row)
 
 		_tab_container.add_child(margc, true)
+
 
 ## 重建UI
 func rebuild() -> void:
@@ -90,10 +90,6 @@ func _on_locale_changed(_locale: String) -> void:
 	rebuild()
 
 
-func _on_i18n_toggle_changed(_enabled: bool) -> void:
-	rebuild()
-
-
 ## 当设置值改变时调用
 ## @param cat_id: 分类ID
 ## @param key: 设置项的键
@@ -102,9 +98,7 @@ func _on_value_changed(cat_id: String, key: String, value: Variant) -> void:
 	var mgr := _get_mgr()
 	if mgr:
 		mgr.set_setting(cat_id, key, value)
-	if cat_id == "display" and key == "enable_i18n":
-		await get_tree().process_frame
-		rebuild()
+
 
 ## 当点击恢复默认按钮时调用
 func _on_reset_pressed() -> void:
@@ -115,6 +109,7 @@ func _on_reset_pressed() -> void:
 		_current_tab_cat_id = cats[idx].id
 		_confirm_dialog.popup_centered()
 
+
 ## 当确认恢复默认设置时调用
 func _on_reset_confirmed() -> void:
 	var mgr := _get_mgr()
@@ -122,9 +117,11 @@ func _on_reset_confirmed() -> void:
 		mgr.reset_category(_current_tab_cat_id)
 		rebuild()
 
+
 ## 当点击关闭按钮时调用
 func _on_close_pressed() -> void:
 	hide()
+
 
 ## 获取设置管理器实例
 ## @return: 设置管理器节点
