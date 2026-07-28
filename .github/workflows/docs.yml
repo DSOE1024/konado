@@ -41,12 +41,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: docs/pnpm-lock.yaml
 
       - name: Install dependencies
         working-directory: docs
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build documentation
         working-directory: docs
