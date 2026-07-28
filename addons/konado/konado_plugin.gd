@@ -3,7 +3,7 @@ extends EditorPlugin
 class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
-const VERSION: String = "2.6.0"
+const VERSION: String = "2.6.1"
 const CODENAME: String = "Ketchup"
 const I18N_AUTOLOAD_NAME := "KND_I18n"
 const I18N_AUTOLOAD_PATH := "res://addons/konado/i18n/knd_i18n.gd"
