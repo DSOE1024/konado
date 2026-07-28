@@ -101,9 +101,8 @@ static func _add_option(
 		if item.options[i] == cur_val:
 			selected_idx = i
 	if selected_idx < 0:
-		opt.add_item(cur_val)
-		selected_idx = opt.item_count - 1
-		opt.set_item_metadata(selected_idx, cur_val)
+		push_warning("KND_Settings: 选项值无效，已显示默认值：%s/%s" % [cat_id, item.key])
+		selected_idx = maxi(item.options.find(str(item.default_value)), 0)
 	opt.selected = selected_idx
 	opt.custom_minimum_size.x = 140
 	opt.item_selected.connect(

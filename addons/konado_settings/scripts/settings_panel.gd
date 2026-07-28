@@ -10,16 +10,24 @@ extends CanvasLayer
 ## 关闭按钮
 @export var btn_close: Button
 
+## 面板标题
+@export var title_label: Label
+
 ## 确认对话框，用于恢复默认设置的确认
 var _confirm_dialog: ConfirmationDialog
 
 ## 当前标签页的分类ID
 var _current_tab_cat_id: String = ""
 
+var _ignore_setting_signal: bool = false
+var _rebuild_queued: bool = false
+var _rebuild_generation: int = 0
+
 
 ## 节点就绪时调用
 func _ready() -> void:
 	# 设置按钮文本和信号连接
+	title_label.text = tr("游戏设置")
 	btn_reset.text = tr("恢复默认")
 	btn_reset.pressed.connect(_on_reset_pressed)
 
@@ -34,6 +42,9 @@ func _ready() -> void:
 	var i18n := get_tree().root.get_node_or_null("KND_I18n")
 	if i18n != null:
 		i18n.locale_changed.connect(_on_locale_changed)
+	var mgr := _get_mgr()
+	if mgr != null:
+		mgr.setting_changed.connect(_on_setting_changed)
 
 	# 从注册的分类构建标签页
 	_build_tabs()
@@ -76,14 +87,19 @@ func _build_tabs() -> void:
 
 ## 重建UI
 func rebuild() -> void:
+	_rebuild_generation += 1
+	var generation := _rebuild_generation
 	for child in _tab_container.get_children():
 		child.queue_free()
 	# 等待一帧让节点被移除
-	await get_tree().create_timer(0.1).timeout
+	await get_tree().process_frame
+	if generation != _rebuild_generation:
+		return
 	_build_tabs()
 
 
 func _on_locale_changed(_locale: String) -> void:
+	title_label.text = tr("游戏设置")
 	btn_reset.text = tr("恢复默认")
 	btn_close.text = tr("关闭")
 	_confirm_dialog.dialog_text = tr("确定要将当前类别恢复为默认设置吗？")
@@ -97,7 +113,11 @@ func _on_locale_changed(_locale: String) -> void:
 func _on_value_changed(cat_id: String, key: String, value: Variant) -> void:
 	var mgr := _get_mgr()
 	if mgr:
-		mgr.set_setting(cat_id, key, value)
+		_ignore_setting_signal = true
+		var saved: bool = mgr.set_setting(cat_id, key, value)
+		_ignore_setting_signal = false
+		if not saved:
+			_queue_rebuild()
 
 
 ## 当点击恢复默认按钮时调用
@@ -114,7 +134,11 @@ func _on_reset_pressed() -> void:
 func _on_reset_confirmed() -> void:
 	var mgr := _get_mgr()
 	if mgr and _current_tab_cat_id != "":
-		mgr.reset_category(_current_tab_cat_id)
+		_ignore_setting_signal = true
+		var reset: bool = mgr.reset_category(_current_tab_cat_id)
+		_ignore_setting_signal = false
+		if not reset:
+			push_warning("KND_Settings: 无法恢复当前分类的默认设置")
 		rebuild()
 
 
@@ -127,3 +151,20 @@ func _on_close_pressed() -> void:
 ## @return: 设置管理器节点
 func _get_mgr() -> Node:
 	return get_tree().root.get_node_or_null("KND_Settings")
+
+
+func _on_setting_changed(_category: String, _key: String, _value: Variant) -> void:
+	if not _ignore_setting_signal:
+		_queue_rebuild()
+
+
+func _queue_rebuild() -> void:
+	if _rebuild_queued:
+		return
+	_rebuild_queued = true
+	_run_queued_rebuild.call_deferred()
+
+
+func _run_queued_rebuild() -> void:
+	_rebuild_queued = false
+	rebuild()
