@@ -32,173 +32,222 @@ const SAVE_EXT = ".kns"
 
 ## 对话管理器引用
 var dialogue_manager: KND_DialogueManager
+var save_dir := SAVE_DIR
+
 
 func _ready() -> void:
 	# 确保存档目录存在
 	_dir_check()
 
+
 ## 检查并创建存档目录
 func _dir_check() -> void:
-	if not DirAccess.dir_exists_absolute(SAVE_DIR):
-		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
+	if not DirAccess.dir_exists_absolute(save_dir):
+		var error := DirAccess.make_dir_recursive_absolute(save_dir)
+		if error != OK:
+			push_error("无法创建存档目录：%s" % error_string(error))
+
 
 ## 设置对话管理器
 func set_dialogue_manager(manager: KND_DialogueManager) -> void:
 	dialogue_manager = manager
 
+
 ## 创建存档
 func save_game(save_id: int) -> bool:
 	if save_id < 0 or save_id >= max_save_slots:
-		printerr("存档ID超出范围")
-		return false
-	
+		return _save_failed(save_id, "存档ID超出范围")
+
 	if not dialogue_manager:
-		printerr("对话管理器未设置")
-		return false
-	
+		return _save_failed(save_id, "对话管理器未设置")
+
 	# 创建存档数据
 	var save_data = KND_SaveData.new()
-	
+
 	# 填充存档数据
-	if save_strategy["include_dialogue_state"]:
+	if save_strategy.get("include_dialogue_state", true):
 		save_data.dialogue_state = _capture_dialogue_state()
-	
-	if save_strategy["include_variables"]:
+
+	if save_strategy.get("include_variables", true):
 		if dialogue_manager.variable_store:
 			save_data.variables = dialogue_manager.variable_store.to_dict()
 		else:
 			save_data.variables = {}
-	
-	if save_strategy["include_audio_state"]:
+
+	if save_strategy.get("include_audio_state", true):
 		save_data.audio_state = _capture_audio_state()
-	
-	if save_strategy["include_actor_state"]:
+
+	if save_strategy.get("include_actor_state", true):
 		save_data.actor_state = _capture_actor_state()
-	
-	if save_strategy["include_background_state"]:
+
+	if save_strategy.get("include_background_state", true):
 		save_data.background_state = _capture_background_state()
-	
+
 	# 添加存档元数据
 	save_data.save_time = Time.get_datetime_dict_from_system()
 	save_data.version = "1.0"
-	
+
 	# 序列化为JSON
 	var json = JSON.stringify(save_data.to_dict())
 	if json == "":
-		printerr("存档序列化失败")
-		return false
-	
-	# 写入文件
-	var save_path = SAVE_DIR + str(save_id) + SAVE_EXT
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if not file:
-		printerr("无法打开存档文件进行写入")
-		return false
-	
-	file.store_string(json)
-	file.close()
-	
+		return _save_failed(save_id, "存档序列化失败")
+
+	_dir_check()
+	var save_path := _get_save_path(save_id)
+	if not _write_save_file(save_path, json):
+		return _save_failed(save_id, "无法安全写入存档文件")
+
 	print("存档成功: " + OS.get_user_data_dir() + "/" + save_path.replace("user://", ""))
 	save_completed.emit(save_id, true)
 	return true
 
+
 ## 加载存档
 func load_game(save_id: int) -> bool:
 	if save_id < 0 or save_id >= max_save_slots:
-		printerr("存档ID超出范围")
-		return false
-	
+		return _load_failed(save_id, "存档ID超出范围")
+
 	if not dialogue_manager:
-		printerr("对话管理器未设置")
-		return false
-	
+		return _load_failed(save_id, "对话管理器未设置")
+
 	# 读取存档文件
-	var save_path = SAVE_DIR + str(save_id) + SAVE_EXT
+	var save_path := _get_save_path(save_id)
 	var file = FileAccess.open(save_path, FileAccess.READ)
 	if not file:
-		printerr("无法打开存档文件进行读取")
-		return false
-	
+		return _load_failed(save_id, "无法打开存档文件进行读取")
+
 	var json = file.get_as_text().strip_edges()
 	file.close()
-	
+
 	# 反序列化为存档数据
 	var parse_result = JSON.parse_string(json)
 	if typeof(parse_result) != TYPE_DICTIONARY:
-		printerr("存档解析失败")
-		return false
-	
+		return _load_failed(save_id, "存档解析失败")
+
 	var save_data = KND_SaveData.new()
 	save_data.from_dict(parse_result)
-	
+
 	# 恢复游戏状态
-	if save_strategy["include_dialogue_state"] and save_data.dialogue_state:
+	if save_strategy.get("include_dialogue_state", true) and save_data.dialogue_state:
 		_restore_dialogue_state(save_data.dialogue_state)
-	
+
 	# 恢复背景状态
-	if save_strategy["include_background_state"] and save_data.background_state:
+	if save_strategy.get("include_background_state", true) and save_data.background_state:
 		_restore_background_state(save_data.background_state)
-	
+
 	# 恢复演员状态
-	if save_strategy["include_actor_state"] and save_data.actor_state:
+	if save_strategy.get("include_actor_state", true) and save_data.actor_state:
 		_restore_actor_state(save_data.actor_state)
-	
+
 	# 恢复音频状态
-	if save_strategy["include_audio_state"] and save_data.audio_state:
+	if save_strategy.get("include_audio_state", true) and save_data.audio_state:
 		_restore_audio_state(save_data.audio_state)
-	
+
 	# 恢复游戏变量
-	if save_strategy["include_variables"] and save_data.variables:
+	if save_strategy.get("include_variables", true) and save_data.variables:
 		if dialogue_manager.variable_store:
 			dialogue_manager.variable_store.from_dict(save_data.variables)
 		else:
 			dialogue_manager.variable_store = KND_VariableStore.new()
 			dialogue_manager.variable_store.from_dict(save_data.variables)
-	
+
 	print("读档成功: " + save_path)
 	load_completed.emit(save_id, true)
 	return true
+
 
 ## 删除存档
 func delete_save(save_id: int) -> bool:
 	if save_id < 0 or save_id >= max_save_slots:
 		printerr("存档ID超出范围")
 		return false
-	
-	var save_path = SAVE_DIR + str(save_id) + SAVE_EXT
+
+	var save_path := _get_save_path(save_id)
 	if not FileAccess.file_exists(save_path):
 		return true  # 文件不存在，视为删除成功
-	
-	var dir = DirAccess.open(SAVE_DIR)
+
+	var dir = DirAccess.open(save_dir)
 	if dir:
-		return dir.remove(str(save_id) + SAVE_EXT)
+		return dir.remove(str(save_id) + SAVE_EXT) == OK
 	return false
+
+
+func _get_save_path(save_id: int) -> String:
+	return save_dir.path_join(str(save_id) + SAVE_EXT)
+
+
+func _save_failed(save_id: int, message: String) -> bool:
+	printerr(message)
+	save_completed.emit(save_id, false)
+	return false
+
+
+func _load_failed(save_id: int, message: String) -> bool:
+	printerr(message)
+	load_completed.emit(save_id, false)
+	return false
+
+
+## 先完整写入临时文件，再原子替换正式文件；替换失败时恢复上一份存档。
+func _write_save_file(save_path: String, content: String) -> bool:
+	var temporary_path := save_path + ".tmp"
+	var backup_path := save_path + ".bak"
+	if FileAccess.file_exists(temporary_path):
+		DirAccess.remove_absolute(temporary_path)
+
+	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(content)
+	file.flush()
+	var write_error := file.get_error()
+	file.close()
+	if write_error != OK:
+		DirAccess.remove_absolute(temporary_path)
+		return false
+
+	if FileAccess.file_exists(backup_path):
+		DirAccess.remove_absolute(backup_path)
+	var had_previous := FileAccess.file_exists(save_path)
+	if had_previous and DirAccess.rename_absolute(save_path, backup_path) != OK:
+		DirAccess.remove_absolute(temporary_path)
+		return false
+	if DirAccess.rename_absolute(temporary_path, save_path) != OK:
+		if had_previous:
+			DirAccess.rename_absolute(backup_path, save_path)
+		DirAccess.remove_absolute(temporary_path)
+		return false
+	if had_previous:
+		DirAccess.remove_absolute(backup_path)
+	return true
+
 
 ## 获取存档信息
 func get_save_info(save_id: int) -> Dictionary:
 	if save_id < 0 or save_id >= max_save_slots:
 		return {"exists": false}
-	
-	var save_path = SAVE_DIR + str(save_id) + SAVE_EXT
+
+	var save_path := _get_save_path(save_id)
 	if not FileAccess.file_exists(save_path):
 		return {"exists": false}
-	
+
 	var file = FileAccess.open(save_path, FileAccess.READ)
 	if not file:
 		return {"exists": false}
-	
+
 	var json = file.get_as_text()
 	file.close()
-	
+
 	var parse_result = JSON.parse_string(json)
 	if typeof(parse_result) != TYPE_DICTIONARY:
 		return {"exists": false}
-	
+
 	return {
 		"save_time": parse_result.get("save_time", {}),
 		"version": parse_result.get("version", ""),
 		"exists": true
 	}
+
 
 ## 获取所有存档信息
 func get_all_save_info() -> Array[Dictionary]:
@@ -207,10 +256,11 @@ func get_all_save_info() -> Array[Dictionary]:
 		save_infos.append(get_save_info(i))
 	return save_infos
 
+
 ## 捕获对话状态
 func _capture_dialogue_state() -> Dictionary:
 	var state = {}
-	
+
 	# 保存当前镜头
 	if dialogue_manager.cur_dialogue_shot:
 		var shot_path = dialogue_manager.cur_dialogue_shot.ks_path
@@ -218,13 +268,13 @@ func _capture_dialogue_state() -> Dictionary:
 		print("保存镜头路径: " + shot_path)
 	else:
 		print("当前镜头为空，未保存shot_path")
-	
+
 	# 保存当前对话节点ID
 	state["current_node_id"] = dialogue_manager.cur_node_id
-	
+
 	# 保存对话状态
-	state["dialogue_state"] = dialogue_manager.dialogueState
-	
+	state["dialogue_state"] = dialogue_manager.dialogue_state
+
 	# 保存当前对话内容（从对话框中获取）
 	if dialogue_manager._konado_dialogue_box:
 		state["current_dialog_content"] = dialogue_manager._konado_dialogue_box.dialogue_text
@@ -238,8 +288,9 @@ func _capture_dialogue_state() -> Dictionary:
 			if current_dialog and current_dialog.dialog_content:
 				state["current_dialog_content"] = current_dialog.dialog_content
 				print("保存对话内容: " + current_dialog.dialog_content)
-	
+
 	return state
+
 
 ## 恢复对话状态
 func _restore_dialogue_state(state: Dictionary) -> void:
@@ -248,22 +299,25 @@ func _restore_dialogue_state(state: Dictionary) -> void:
 		var shot = load(state["shot_path"]) as KND_Shot
 		if shot:
 			dialogue_manager.set_shot(shot)
-	
+
 	# 恢复对话节点ID
 	if state.has("current_node_id"):
 		var node_id: String = state["current_node_id"]
-		if dialogue_manager.cur_dialogue_shot and dialogue_manager.cur_dialogue_shot.find_node(node_id) != null:
+		if (
+			dialogue_manager.cur_dialogue_shot
+			and dialogue_manager.cur_dialogue_shot.find_node(node_id) != null
+		):
 			dialogue_manager.cur_node_id = node_id
 		elif dialogue_manager.cur_dialogue_shot:
 			# 节点ID无效，回退到起始节点
 			dialogue_manager.cur_node_id = dialogue_manager.cur_dialogue_shot.start_node_id
 		else:
 			dialogue_manager.cur_node_id = ""
-	
+
 	# 恢复对话状态
 	if state.has("dialogue_state"):
 		dialogue_manager._dialogue_goto_state(state["dialogue_state"])
-	
+
 	# 恢复对话框内容
 	if dialogue_manager._konado_dialogue_box:
 		if state.has("current_dialog_content"):
@@ -273,14 +327,15 @@ func _restore_dialogue_state(state: Dictionary) -> void:
 			dialogue_manager._konado_dialogue_box.character_name = state["current_character_name"]
 			print("恢复角色名称: " + state["current_character_name"])
 
+
 ## 捕获音频状态
 func _capture_audio_state() -> Dictionary:
 	var state = {}
-	
+
 	if dialogue_manager and dialogue_manager._audio_interface:
 		var audio_interface = dialogue_manager._audio_interface
 		print("捕获音频状态")
-		
+
 		# 保存BGM状态
 		if audio_interface.bgm_player:
 			print("BGM播放器存在")
@@ -295,7 +350,7 @@ func _capture_audio_state() -> Dictionary:
 				print("BGM播放器无流")
 		else:
 			print("BGM播放器不存在")
-		
+
 		# 保存语音状态
 		if audio_interface.voice_player:
 			print("语音播放器存在")
@@ -310,7 +365,7 @@ func _capture_audio_state() -> Dictionary:
 				print("语音播放器无流")
 		else:
 			print("语音播放器不存在")
-		
+
 		# 保存音效状态
 		if audio_interface.sound_effect_player:
 			print("音效播放器存在")
@@ -327,17 +382,18 @@ func _capture_audio_state() -> Dictionary:
 			print("音效播放器不存在")
 	else:
 		print("对话管理器或音频接口不存在")
-	
+
 	print("最终捕获的音频状态：" + str(state))
 	return state
+
 
 ## 恢复音频状态
 func _restore_audio_state(state: Dictionary) -> void:
 	if not dialogue_manager or not dialogue_manager._audio_interface:
 		return
-	
+
 	var audio_interface = dialogue_manager._audio_interface
-	
+
 	# 恢复BGM状态
 	if state.has("bgm"):
 		var bgm_state = state["bgm"]
@@ -349,7 +405,7 @@ func _restore_audio_state(state: Dictionary) -> void:
 					audio_interface.bgm_player.volume_db = bgm_state["volume_db"]
 				if bgm_state.has("is_playing") and bgm_state["is_playing"]:
 					audio_interface.bgm_player.play()
-	
+
 	# 恢复语音状态
 	if state.has("voice"):
 		var voice_state = state["voice"]
@@ -361,7 +417,7 @@ func _restore_audio_state(state: Dictionary) -> void:
 					audio_interface.voice_player.volume_db = voice_state["volume_db"]
 				if voice_state.has("is_playing") and voice_state["is_playing"]:
 					audio_interface.voice_player.play()
-	
+
 	# 恢复音效状态
 	if state.has("sound_effect"):
 		var se_state = state["sound_effect"]
@@ -374,21 +430,22 @@ func _restore_audio_state(state: Dictionary) -> void:
 				if se_state.has("is_playing") and se_state["is_playing"]:
 					audio_interface.sound_effect_player.play()
 
+
 ## 捕获演员状态
 func _capture_actor_state() -> Dictionary:
 	var state = {}
-	
+
 	if dialogue_manager and dialogue_manager._acting_interface:
 		var acting_interface = dialogue_manager._acting_interface
 		state["actors"] = []
-		
+
 		# 保存所有演员的状态
 		print("捕获演员状态，演员数量：" + str(acting_interface.actor_dict.size()))
 		for actor_id in acting_interface.actor_dict.keys():
 			print("处理演员：" + actor_id)
 			var actor_data = acting_interface.actor_dict[actor_id]
 			var actor_node = acting_interface.get_chara_node(actor_id)
-			
+
 			if actor_node:
 				var actor_state = {
 					"id": actor_id,
@@ -404,23 +461,21 @@ func _capture_actor_state() -> Dictionary:
 				print("未找到演员节点：" + actor_id)
 		if acting_interface.actor_dict.size() == 0:
 			print("演员字典中无数据")
-	
+
 	print("最终捕获的演员状态：" + str(state))
 	return state
+
 
 ## 恢复演员状态
 func _restore_actor_state(state: Dictionary) -> void:
 	if not dialogue_manager or not dialogue_manager._acting_interface:
 		return
-	
+
 	var acting_interface = dialogue_manager._acting_interface
-	
+
 	# 先删除所有现有演员
-	acting_interface.delete_all_actor()
-	
-	# 等待一帧，确保所有旧的演员节点都已经被完全删除
-	await get_tree().process_frame
-	
+	acting_interface.delete_all_actor(true)
+
 	# 恢复演员状态
 	if state.has("actors"):
 		for actor_state in state["actors"]:
@@ -433,7 +488,7 @@ func _restore_actor_state(state: Dictionary) -> void:
 						if chara.chara_name == actor_id:
 							target_chara = chara
 							break
-				
+
 				if target_chara:
 					var state_name = actor_state.get("state", "")
 					if target_chara.character_scene:
@@ -445,16 +500,15 @@ func _restore_actor_state(state: Dictionary) -> void:
 							target_chara.character_scene,
 							target_chara.actor_motion_layer
 						)
-						
-						# 等待一帧，确保演员节点能够正确创建
-						await get_tree().process_frame
+
 					else:
 						push_warning("恢复演员失败：角色[%s]没有配置角色场景" % actor_id)
+
 
 ## 捕获背景状态
 func _capture_background_state() -> Dictionary:
 	var state = {}
-	
+
 	if dialogue_manager and dialogue_manager._acting_interface:
 		var acting_interface = dialogue_manager._acting_interface
 		print("捕获背景状态")
@@ -462,22 +516,25 @@ func _capture_background_state() -> Dictionary:
 		print("背景ID：" + acting_interface.background_id)
 	else:
 		print("对话管理器或表演接口不存在")
-	
+
 	print("最终捕获的背景状态：" + str(state))
 	return state
+
 
 ## 恢复背景状态
 func _restore_background_state(state: Dictionary) -> void:
 	if not dialogue_manager or not dialogue_manager._acting_interface:
 		return
-	
+
 	var acting_interface = dialogue_manager._acting_interface
-	
+
 	# 恢复背景状态
 	if state.has("background_id"):
 		var bg_id = state["background_id"]
 		if bg_id == "":
-			acting_interface.clean_background(KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT)
+			acting_interface.clean_background(
+				KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT
+			)
 			return
 		var target_background: KND_Background
 		if dialogue_manager.background_list:
