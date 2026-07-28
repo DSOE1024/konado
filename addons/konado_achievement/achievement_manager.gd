@@ -4,12 +4,13 @@ extends Node
 
 signal achievement_unlocked(achievement_id: String, data: Dictionary)
 signal achievement_progress_updated(achievement_id: String, current: float, target: float)
+signal achievement_reset(achievement_id: String)
 signal achievements_reset
 signal achievements_loaded
 
 @export var config_path: String = "res://addons/konado_achievement/data/achievements.json"
 @export var save_path: String = "user://achievements_save.json"
-@export var popup_duration: float = 3.0
+@export_range(0.1, 60.0, 0.1, "or_greater") var popup_duration: float = 3.0
 @export var popup_position: String = "top_left"  # top_left, top_right, bottom_left, bottom_right
 
 ## 覆盖此回调以将解锁同步到外部后端。
@@ -39,7 +40,6 @@ func _ready() -> void:
 
 
 func _load_config() -> void:
-	_achievements.clear()
 	var file := FileAccess.open(config_path, FileAccess.READ)
 	if not file:
 		push_warning("KonadoAchievement 无法打开配置：%s" % config_path)
@@ -50,44 +50,64 @@ func _load_config() -> void:
 	if err != OK:
 		push_error("KonadoAchievement JSON 解析错误：%s" % json.get_error_message())
 		return
-	var data: Dictionary = json.data
-	if data.has("achievements") and data["achievements"] is Array:
-		for entry in data["achievements"]:
-			if entry is Dictionary and entry.has("id"):
-				_achievements[entry["id"]] = entry
+	var data: Variant = json.data
+	if not data is Dictionary or not data.get("achievements") is Array:
+		push_error("KonadoAchievement 配置根节点必须包含 achievements 数组。")
+		return
+	var loaded_achievements: Dictionary = {}
+	for index in data["achievements"].size():
+		var entry: Variant = data["achievements"][index]
+		if not _is_valid_achievement(entry, index):
+			continue
+		var achievement_id: String = entry["id"]
+		if loaded_achievements.has(achievement_id):
+			push_warning("KonadoAchievement 忽略重复成就 ID：%s" % achievement_id)
+			continue
+		loaded_achievements[achievement_id] = entry.duplicate(true)
+	_achievements = loaded_achievements
 	print("KonadoAchievement 加载了 %d 个成就。" % _achievements.size())
 
 
 func _load_save_data() -> void:
 	if custom_load_handler.is_valid():
-		var data: Dictionary = custom_load_handler.call()
-		_unlocked = data.get("unlocked", {})
-		_progress = data.get("progress", {})
+		_apply_save_data(custom_load_handler.call(), "自定义加载器")
 		return
-	var file := FileAccess.open(save_path, FileAccess.READ)
+	var load_path := save_path
+	if not FileAccess.file_exists(load_path) and FileAccess.file_exists(save_path + ".bak"):
+		load_path = save_path + ".bak"
+	var file := FileAccess.open(load_path, FileAccess.READ)
 	if not file:
 		return
 	var json := JSON.new()
 	var err := json.parse(file.get_as_text())
 	file.close()
 	if err != OK:
+		push_warning("KonadoAchievement 存档解析失败：%s" % load_path)
+		if load_path == save_path and FileAccess.file_exists(save_path + ".bak"):
+			_load_backup_save()
 		return
-	var data: Dictionary = json.data
-	_unlocked = data.get("unlocked", {})
-	_progress = data.get("progress", {})
+	if not _apply_save_data(json.data, load_path) and load_path == save_path:
+		_load_backup_save()
 
 
-func _save_data() -> void:
-	var data := {"unlocked": _unlocked, "progress": _progress}
+func _save_data() -> bool:
+	var data := {"unlocked": _unlocked.duplicate(true), "progress": _progress.duplicate(true)}
 	if custom_save_handler.is_valid():
 		custom_save_handler.call(data)
-		return
-	var file := FileAccess.open(save_path, FileAccess.WRITE)
+		return true
+	var temporary_path := save_path + ".tmp"
+	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if not file:
-		push_error("KonadoAchievement 无法写入保存：%s" % save_path)
-		return
+		push_error("KonadoAchievement 无法写入临时存档：%s" % temporary_path)
+		return false
 	file.store_string(JSON.stringify(data, "\t"))
+	file.flush()
+	var write_error := file.get_error()
 	file.close()
+	if write_error != OK:
+		push_error("KonadoAchievement 写入存档失败：%s" % error_string(write_error))
+		return false
+	return _replace_save_file(temporary_path)
 
 
 ## 通过 ID 直接解锁成就。如果是新解锁则返回 true。
@@ -98,45 +118,75 @@ func unlock_achievement(achievement_id: String) -> bool:
 	if _unlocked.get(achievement_id, false):
 		return false  # 已经解锁
 	_unlocked[achievement_id] = true
-	var ach_data: Dictionary = _achievements[achievement_id]
-	_save_data()
-	achievement_unlocked.emit(achievement_id, ach_data)
-	_show_popup(ach_data)
-	# 外部集成回调
-	if on_external_unlock.is_valid():
-		on_external_unlock.call(achievement_id, ach_data)
+	if not _save_data():
+		_unlocked.erase(achievement_id)
+		return false
+	_notify_unlocked(achievement_id)
 	return true
 
 
 ## 增加计数器键值并自动检查相关成就。
 func increment_progress(key: String, amount: float = 1.0) -> void:
-	_progress[key] = _progress.get(key, 0.0) + amount
-	_save_data()
+	if key.is_empty() or not is_finite(amount):
+		push_warning("KonadoAchievement 拒绝无效计数进度：%s" % key)
+		return
+	var current_value: Variant = _progress.get(key, 0.0)
+	if typeof(current_value) not in [TYPE_INT, TYPE_FLOAT]:
+		push_warning("KonadoAchievement 计数键与现有标志键冲突：%s" % key)
+		return
+	var previous_progress: Dictionary = _progress.duplicate(true)
+	var previous_unlocked: Dictionary = _unlocked.duplicate(true)
+	_progress[key] = float(current_value) + amount
+	var updated_achievements: Array[String] = []
+	var newly_unlocked: Array[String] = []
 	# 检查所有依赖于此键的成就
-	for ach_id in _achievements:
+	for ach_id: String in _achievements:
 		if _unlocked.get(ach_id, false):
 			continue
 		var ach: Dictionary = _achievements[ach_id]
 		var cond: Dictionary = ach.get("conditions", {})
 		if cond.get("target_key", "") == key:
-			var target_val: float = float(cond.get("target_value", 0))
-			achievement_progress_updated.emit(ach_id, _progress[key], target_val)
+			updated_achievements.append(ach_id)
 			if _check_conditions(cond):
-				unlock_achievement(ach_id)
+				_unlocked[ach_id] = true
+				newly_unlocked.append(ach_id)
+	if not _save_data():
+		_progress = previous_progress
+		_unlocked = previous_unlocked
+		return
+	for ach_id: String in updated_achievements:
+		var cond: Dictionary = _achievements[ach_id].get("conditions", {})
+		achievement_progress_updated.emit(
+			ach_id, float(_progress[key]), float(cond.get("target_value", 0))
+		)
+	for ach_id: String in newly_unlocked:
+		_notify_unlocked(ach_id)
 
 
 ## 设置标志键值并自动检查相关成就。
-func set_flag(key: String, value: Variant = true) -> void:
+func set_flag(key: String, value: bool = true) -> void:
+	if key.is_empty():
+		push_warning("KonadoAchievement 拒绝空标志键")
+		return
+	var previous_progress: Dictionary = _progress.duplicate(true)
+	var previous_unlocked: Dictionary = _unlocked.duplicate(true)
 	_progress[key] = value
-	_save_data()
-	for ach_id in _achievements:
+	var newly_unlocked: Array[String] = []
+	for ach_id: String in _achievements:
 		if _unlocked.get(ach_id, false):
 			continue
 		var ach: Dictionary = _achievements[ach_id]
 		var cond: Dictionary = ach.get("conditions", {})
 		if cond.get("target_key", "") == key:
 			if _check_conditions(cond):
-				unlock_achievement(ach_id)
+				_unlocked[ach_id] = true
+				newly_unlocked.append(ach_id)
+	if not _save_data():
+		_progress = previous_progress
+		_unlocked = previous_unlocked
+		return
+	for ach_id: String in newly_unlocked:
+		_notify_unlocked(ach_id)
 
 
 ## 检查成就是否已解锁。
@@ -146,14 +196,15 @@ func is_unlocked(achievement_id: String) -> bool:
 
 ## 获取单个成就的完整数据字典。
 func get_achievement(achievement_id: String) -> Dictionary:
-	return _achievements.get(achievement_id, {})
+	var achievement: Dictionary = _achievements.get(achievement_id, {})
+	return achievement.duplicate(true)
 
 
 ## 获取所有成就作为字典数组。
 func get_all_achievements() -> Array:
 	var result: Array = []
 	for ach_id in _achievements:
-		var d: Dictionary = _achievements[ach_id].duplicate()
+		var d: Dictionary = _achievements[ach_id].duplicate(true)
 		d["unlocked"] = _unlocked.get(ach_id, false)
 		result.append(d)
 	return result
@@ -188,16 +239,30 @@ func get_unlock_percentage() -> float:
 ## 重置所有成就和进度
 func reset_all() -> void:
 	print("重置所有成就")
+	var previous_unlocked: Dictionary = _unlocked.duplicate(true)
+	var previous_progress: Dictionary = _progress.duplicate(true)
 	_unlocked.clear()
 	_progress.clear()
-	_save_data()
+	if not _save_data():
+		_unlocked = previous_unlocked
+		_progress = previous_progress
+		return
 	achievements_reset.emit()
 
 
 ## 重置单个成就
 func reset_achievement(achievement_id: String) -> void:
+	if not _achievements.has(achievement_id):
+		push_warning("KonadoAchievement 未知成就：%s" % achievement_id)
+		return
+	var was_unlocked: bool = _unlocked.get(achievement_id, false)
+	if not was_unlocked:
+		return
 	_unlocked.erase(achievement_id)
-	_save_data()
+	if not _save_data():
+		_unlocked[achievement_id] = true
+		return
+	achievement_reset.emit(achievement_id)
 
 
 ## 从 JSON 重新加载配置
@@ -223,13 +288,16 @@ func _show_popup(ach_data: Dictionary) -> void:
 		if icon_path.is_empty():
 			icon_path = "res://addons/konado_achievement/icons/default_icon.svg"
 		_active_popup.setup(
-			ach_data.get("name", ""), ach_data.get("description", ""), icon_path, popup_position
+			ach_data.get("name", ""),
+			ach_data.get("description", ""),
+			icon_path,
+			_valid_popup_position()
 		)
 	# 自动关闭计时器
 	if _popup_timer:
 		_popup_timer.queue_free()
 	_popup_timer = Timer.new()
-	_popup_timer.wait_time = popup_duration
+	_popup_timer.wait_time = maxf(popup_duration, 0.1)
 	_popup_timer.one_shot = true
 	_popup_timer.timeout.connect(_dismiss_popup)
 	add_child(_popup_timer)
@@ -237,6 +305,10 @@ func _show_popup(ach_data: Dictionary) -> void:
 
 
 func _dismiss_popup() -> void:
+	if _popup_timer and is_instance_valid(_popup_timer):
+		_popup_timer.stop()
+		_popup_timer.queue_free()
+		_popup_timer = null
 	if _active_popup and is_instance_valid(_active_popup):
 		_active_popup.queue_free()
 		_active_popup = null
@@ -286,3 +358,123 @@ func _check_conditions(cond: Dictionary) -> bool:
 			return _progress.get(key, false) == target
 		_:
 			return false
+
+
+func _is_valid_achievement(entry: Variant, index: int) -> bool:
+	var problem: String = ""
+	if not entry is Dictionary:
+		problem = "非对象配置项，索引：%d" % index
+	else:
+		var achievement_id: Variant = entry.get("id")
+		var conditions: Variant = entry.get("conditions")
+		if not achievement_id is String or achievement_id.is_empty():
+			problem = "缺少有效 ID 的配置项，索引：%d" % index
+		elif not conditions is Dictionary:
+			problem = "缺少 conditions 的成就：%s" % achievement_id
+		else:
+			var condition_type: Variant = conditions.get("type")
+			var target_key: Variant = conditions.get("target_key")
+			var target_value: Variant = conditions.get("target_value")
+			if condition_type not in ["counter", "flag"]:
+				problem = "条件类型无效的成就：%s" % achievement_id
+			elif not target_key is String or target_key.is_empty():
+				problem = "target_key 无效的成就：%s" % achievement_id
+			elif condition_type == "counter" and typeof(target_value) not in [TYPE_INT, TYPE_FLOAT]:
+				problem = "计数目标无效的成就：%s" % achievement_id
+			elif condition_type == "flag" and not target_value is bool:
+				problem = "标志目标无效的成就：%s" % achievement_id
+			else:
+				problem = _get_achievement_metadata_problem(entry, achievement_id)
+	if not problem.is_empty():
+		push_warning("KonadoAchievement 忽略%s" % problem)
+		return false
+	return true
+
+
+func _get_achievement_metadata_problem(entry: Dictionary, achievement_id: String) -> String:
+	for field: String in ["name", "description", "icon", "category"]:
+		if entry.has(field) and not entry[field] is String:
+			return "%s 字段无效的成就：%s" % [field, achievement_id]
+	if entry.has("hidden") and not entry["hidden"] is bool:
+		return "hidden 字段无效的成就：%s" % achievement_id
+	if entry.has("points") and typeof(entry["points"]) not in [TYPE_INT, TYPE_FLOAT]:
+		return "points 字段无效的成就：%s" % achievement_id
+	return ""
+
+
+func _apply_save_data(data: Variant, source: String) -> bool:
+	if not data is Dictionary:
+		push_warning("KonadoAchievement 存档根节点无效：%s" % source)
+		return false
+	var unlocked: Variant = data.get("unlocked", {})
+	var progress: Variant = data.get("progress", {})
+	if not unlocked is Dictionary or not progress is Dictionary:
+		push_warning("KonadoAchievement 存档结构无效：%s" % source)
+		return false
+	var valid_unlocked: Dictionary = {}
+	for achievement_id: Variant in unlocked:
+		if (
+			achievement_id is String
+			and _achievements.has(achievement_id)
+			and unlocked[achievement_id] is bool
+		):
+			valid_unlocked[achievement_id] = unlocked[achievement_id]
+	var valid_progress: Dictionary = {}
+	for key: Variant in progress:
+		var value: Variant = progress[key]
+		if key is String and typeof(value) in [TYPE_BOOL, TYPE_INT, TYPE_FLOAT]:
+			valid_progress[key] = value
+	_unlocked = valid_unlocked
+	_progress = valid_progress
+	return true
+
+
+func _load_backup_save() -> void:
+	var backup_path := save_path + ".bak"
+	var file := FileAccess.open(backup_path, FileAccess.READ)
+	if not file:
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	file.close()
+	if err == OK and _apply_save_data(json.data, backup_path):
+		push_warning("KonadoAchievement 已从备份存档恢复。")
+
+
+func _replace_save_file(temporary_path: String) -> bool:
+	var backup_path := save_path + ".bak"
+	var absolute_save := ProjectSettings.globalize_path(save_path)
+	var absolute_temporary := ProjectSettings.globalize_path(temporary_path)
+	var absolute_backup := ProjectSettings.globalize_path(backup_path)
+	if FileAccess.file_exists(backup_path):
+		DirAccess.remove_absolute(absolute_backup)
+	if FileAccess.file_exists(save_path):
+		var backup_error := DirAccess.rename_absolute(absolute_save, absolute_backup)
+		if backup_error != OK:
+			push_error("KonadoAchievement 无法创建存档备份：%s" % error_string(backup_error))
+			DirAccess.remove_absolute(absolute_temporary)
+			return false
+	var replace_error := DirAccess.rename_absolute(absolute_temporary, absolute_save)
+	if replace_error != OK:
+		push_error("KonadoAchievement 无法替换存档：%s" % error_string(replace_error))
+		if FileAccess.file_exists(backup_path):
+			DirAccess.rename_absolute(absolute_backup, absolute_save)
+		return false
+	if FileAccess.file_exists(backup_path):
+		DirAccess.remove_absolute(absolute_backup)
+	return true
+
+
+func _notify_unlocked(achievement_id: String) -> void:
+	var achievement_data: Dictionary = get_achievement(achievement_id)
+	achievement_unlocked.emit(achievement_id, achievement_data)
+	_show_popup(achievement_data)
+	if on_external_unlock.is_valid():
+		on_external_unlock.call(achievement_id, achievement_data.duplicate(true))
+
+
+func _valid_popup_position() -> String:
+	if popup_position in ["top_left", "top_right", "bottom_left", "bottom_right"]:
+		return popup_position
+	push_warning("KonadoAchievement 弹窗位置无效，已回退到 top_left：%s" % popup_position)
+	return "top_left"

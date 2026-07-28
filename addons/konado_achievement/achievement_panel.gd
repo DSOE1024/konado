@@ -72,6 +72,13 @@ func _ready() -> void:
 	_item_container.add_theme_constant_override("separation", 8)
 	_scroll.add_child(_item_container)
 
+	KND_AchievementManager.achievement_unlocked.connect(_on_achievement_changed)
+	KND_AchievementManager.achievement_progress_updated.connect(_on_progress_changed)
+	KND_AchievementManager.achievement_reset.connect(_on_achievement_reset)
+	KND_AchievementManager.achievements_reset.connect(refresh)
+	KND_AchievementManager.achievements_loaded.connect(refresh)
+	refresh()
+
 
 func refresh() -> void:
 	if not _item_container:
@@ -199,6 +206,18 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 
 func _on_close() -> void:
 	KND_AchievementManager.hide_panel()
+
+
+func _on_achievement_changed(_achievement_id: String, _data: Dictionary) -> void:
+	refresh()
+
+
+func _on_progress_changed(_achievement_id: String, _current: float, _target: float) -> void:
+	refresh()
+
+
+func _on_achievement_reset(_achievement_id: String) -> void:
+	refresh()
 
 
 func _notification(what: int) -> void:
