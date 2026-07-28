@@ -56,6 +56,11 @@ const BACKGROUND_EFFECT_NAMES := {
 		if is_inside_tree():
 			apply_background_tint_to_characters()
 
+## 启用演员状态切换淡入淡出过渡
+@export var enable_actor_state_fade: bool = true
+## 演员状态切换淡入淡出总时长（秒），淡出和淡入各占一半
+@export var actor_state_fade_duration: float = 0.3
+
 ## 演员字典
 var actor_dict = {}
 ## 演员节点字典，用于快速访问演员节点
@@ -457,8 +462,15 @@ func change_actor_state(actor_id: String, state_id: String) -> void:
 	else:
 		# 修改字典中角色的状态
 		actor_dict[actor_id]["state"] = state_id
-		chara_node.apply_character_status(state_id)
-		character_state_changed.emit()
+		if enable_actor_state_fade and actor_state_fade_duration > 0.0:
+			# 使用淡入淡出过渡切换状态，完成后发射信号
+			chara_node.apply_character_status_with_fade(
+				state_id, actor_state_fade_duration,
+				func(): character_state_changed.emit()
+			)
+		else:
+			chara_node.apply_character_status(state_id)
+			character_state_changed.emit()
 		print("切换" + actor_id + "到" + str(state_id) + "状态")
 
 
