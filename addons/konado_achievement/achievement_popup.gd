@@ -7,6 +7,7 @@ var _desc_label: Label
 var _icon_rect: TextureRect
 var _header_label: Label
 
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	custom_minimum_size = Vector2(320, 80)
@@ -59,7 +60,10 @@ func _ready() -> void:
 	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_desc_label)
 
-func setup(title: String, description: String, icon_path: String, pos: String = "top_right") -> void:
+
+func setup(
+	title: String, description: String, icon_path: String, pos: String = "top_right"
+) -> void:
 	if _title_label:
 		_title_label.text = tr(title)
 	if _desc_label:
@@ -81,6 +85,7 @@ func setup(title: String, description: String, icon_path: String, pos: String = 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
 		_header_label.text = tr("成就解锁")
+
 
 func _apply_position(pos: String) -> void:
 	var vp_size := get_viewport_rect().size
