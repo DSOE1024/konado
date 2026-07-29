@@ -1,14 +1,19 @@
 @tool
 extends EditorExportPlugin
 
-## Encrypts compiled KS dialogue payloads with a fresh key for every export.
+## Encrypts compiled KonadoScript payloads with a preset-scoped key.
 
 const EXPORT_CACHE_ROOT := "user://.konado_export"
 const PROTECTED_RESOURCE_ROOT := "res://.konado_script_data"
+const EXPORT_PRESETS_PATH := "res://export_presets.cfg"
+const EXPORT_CREDENTIALS_PATH := "res://.godot/export_credentials.cfg"
+const EXPORT_KEY_OPTION := "konado/script_encryption_key"
+const EXPORT_KEY_HEX_LENGTH := KND_ScriptProtection.KEY_SIZE * 2
 
 var _build_key := PackedByteArray()
 var _export_cache_dir := ""
 var _key_announced := false
+var _key_generated := false
 var _protected_shot_count := 0
 var _failed_shot_count := 0
 var _last_protection_error := ""
@@ -22,17 +27,60 @@ func _supports_platform(_platform: EditorExportPlatform) -> bool:
 	return true
 
 
+func _get_export_options(_platform: EditorExportPlatform) -> Array[Dictionary]:
+	return [
+		{
+			"option":
+			{
+				"name": EXPORT_KEY_OPTION,
+				"type": TYPE_STRING,
+				"hint": PROPERTY_HINT_NONE,
+				"usage": PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SECRET,
+			},
+			"default_value": "",
+		}
+	]
+
+
+func _get_export_option_warning(_platform: EditorExportPlatform, option: String) -> String:
+	if option != EXPORT_KEY_OPTION:
+		return ""
+	var configured_key := String(get_option(EXPORT_KEY_OPTION)).strip_edges()
+	if configured_key.is_empty() or _is_valid_key_hex(configured_key):
+		return ""
+	if _is_chinese_editor():
+		return "KonadoScript 加密密钥必须是 %d 位十六进制字符；导出时会用随机密钥替换非法值。" % EXPORT_KEY_HEX_LENGTH
+	return (
+		(
+			"KonadoScript encryption key must contain exactly %d hexadecimal characters. "
+			+ "An invalid value will be replaced with a random key when exporting."
+		)
+		% EXPORT_KEY_HEX_LENGTH
+	)
+
+
+func _is_chinese_editor() -> bool:
+	return OS.get_locale().to_lower().begins_with("zh")
+
+
 func _export_begin(_features: PackedStringArray, is_debug: bool, path: String, _flags: int) -> void:
 	_start_export_key()
 	var export_kind := "调试" if is_debug else "正式"
-	print("[Konado] 已为%s导出生成随机剧本密钥：%s" % [export_kind, path])
+	if _build_key.size() != KND_ScriptProtection.KEY_SIZE:
+		push_error("[Konado] %s导出 %s：剧本密钥初始化失败。" % [export_kind, path])
+		return
+	var key_action := "生成并保存新" if _key_generated else "复用预设"
+	print("[Konado] %s导出 %s：已%s剧本密钥。" % [export_kind, path, key_action])
 	_announce_key()
 
 
 func _export_file(path: String, _type: String, _features: PackedStringArray) -> void:
 	if path.get_extension().to_lower() != "ks":
 		return
-	_ensure_export_key()
+	if not _ensure_export_key():
+		_register_export_failure(path)
+		skip()
+		return
 	var protected_bytes := _protect_script(path)
 	if protected_bytes.is_empty():
 		_register_export_failure(path)
@@ -90,6 +138,7 @@ func _export_end() -> void:
 	_build_key.clear()
 	_export_cache_dir = ""
 	_key_announced = false
+	_key_generated = false
 	_protected_shot_count = 0
 	_failed_shot_count = 0
 	_last_protection_error = ""
@@ -97,21 +146,75 @@ func _export_end() -> void:
 
 func _start_export_key() -> void:
 	_cleanup_export_cache()
-	_build_key = Crypto.new().generate_random_bytes(KND_ScriptProtection.KEY_SIZE)
+	_build_key.clear()
 	_export_cache_dir = EXPORT_CACHE_ROOT.path_join(
 		Crypto.new().generate_random_bytes(8).hex_encode()
 	)
 	_key_announced = false
+	_key_generated = false
 	_protected_shot_count = 0
 	_failed_shot_count = 0
 	_last_protection_error = ""
 
+	var configured_key := String(get_option(EXPORT_KEY_OPTION)).strip_edges()
+	_key_generated = not _is_valid_key_hex(configured_key)
+	if _key_generated:
+		_build_key = Crypto.new().generate_random_bytes(KND_ScriptProtection.KEY_SIZE)
+		if not _persist_generated_key(_build_key.hex_encode()):
+			_build_key.clear()
+			_last_protection_error = "无法将自动生成的密钥保存到当前导出预设"
+	else:
+		_build_key = configured_key.to_lower().hex_decode()
 
-func _ensure_export_key() -> void:
-	if _build_key.size() == KND_ScriptProtection.KEY_SIZE:
-		return
-	_start_export_key()
-	_announce_key()
+
+func _persist_generated_key(key_hex: String) -> bool:
+	var preset := get_export_preset()
+	if preset == null:
+		push_error("[Konado] 无法写回剧本密钥：当前导出预设不可用。")
+		return false
+	preset.set(EXPORT_KEY_OPTION, key_hex)
+	if String(preset.get(EXPORT_KEY_OPTION)) != key_hex:
+		push_error("[Konado] 无法写回剧本密钥：导出预设拒绝了 Konado 选项。")
+		return false
+	preset.notify_property_list_changed()
+	var preset_section := _find_current_preset_section(preset.get_preset_name())
+	if preset_section.is_empty():
+		push_error("[Konado] 无法写回剧本密钥：找不到当前导出预设。")
+		return false
+	var credentials := ConfigFile.new()
+	if (
+		FileAccess.file_exists(EXPORT_CREDENTIALS_PATH)
+		and credentials.load(EXPORT_CREDENTIALS_PATH) != OK
+	):
+		push_error("[Konado] 无法读取 Godot 导出凭据文件。")
+		return false
+	credentials.set_value(preset_section + ".options", EXPORT_KEY_OPTION, key_hex)
+	var save_error := credentials.save(EXPORT_CREDENTIALS_PATH)
+	if save_error != OK:
+		push_error("[Konado] 无法保存 Godot 导出凭据：%s" % error_string(save_error))
+		return false
+	return true
+
+
+func _find_current_preset_section(preset_name: String) -> String:
+	var presets := ConfigFile.new()
+	if presets.load(EXPORT_PRESETS_PATH) != OK:
+		return ""
+	for section: String in presets.get_sections():
+		if not section.begins_with("preset.") or section.ends_with(".options"):
+			continue
+		if presets.get_value(section, "name", "") == preset_name:
+			return section
+	return ""
+
+
+func _is_valid_key_hex(key_hex: String) -> bool:
+	var normalized := key_hex.strip_edges()
+	return normalized.length() == EXPORT_KEY_HEX_LENGTH and normalized.is_valid_hex_number(false)
+
+
+func _ensure_export_key() -> bool:
+	return _build_key.size() == KND_ScriptProtection.KEY_SIZE
 
 
 func _announce_key() -> void:
