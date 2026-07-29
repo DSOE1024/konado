@@ -29,7 +29,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 10
+          version: 11
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -51,4 +51,4 @@ jobs:
           path: docs/.vitepress/dist
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1
