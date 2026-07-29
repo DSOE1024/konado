@@ -52,6 +52,11 @@ jobs:
         with:
           lfs: true
 
+      - name: Install test dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3
+
       - name: Install export templates
         shell: bash
         run: |
@@ -74,10 +79,41 @@ jobs:
         run: |
           output="${{ matrix.output }}"
           mkdir -p "$(dirname "$output")"
-          godot --headless --verbose \
-            ${{ matrix.export_mode }} \
-            "${{ matrix.preset }}" \
-            "$output"
+          python3 .github/scripts/run_godot_export.py \
+            --cleanup "$(dirname "$output")" \
+            -- \
+            godot --headless --verbose \
+              ${{ matrix.export_mode }} \
+              "${{ matrix.preset }}" \
+              "$output"
+
+      - name: Verify encrypted KS export
+        if: matrix.target == 'linux'
+        shell: bash
+        run: |
+          verification_pack="build/linux/konado-script-protection.pck"
+          expected_script_paths="$(
+            find sample -type f -name '*.ks' -print | sort | paste -sd ';' -
+          )"
+          python3 .github/scripts/run_godot_export.py \
+            --cleanup "$verification_pack" \
+            -- \
+            godot --headless \
+              --export-pack "${{ matrix.preset }}" "$verification_pack"
+          verification_workdir="$(mktemp -d)"
+          (
+            cd "$verification_workdir"
+            KONADO_EXPECTED_KS_PATHS="$expected_script_paths" \
+              python3 "$GITHUB_WORKSPACE/.github/scripts/run_godot_export.py" \
+                -- \
+                godot --headless \
+                  --main-pack "$GITHUB_WORKSPACE/$verification_pack" \
+                  --script \
+                    "$GITHUB_WORKSPACE/tests/dialogue/test_exported_script_protection.gd"
+          )
+          find "$verification_workdir" -type f -delete
+          rmdir "$verification_workdir"
+          rm -f "$verification_pack"
 
       - name: Upload build
         uses: actions/upload-artifact@v4
