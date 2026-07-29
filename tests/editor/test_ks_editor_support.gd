@@ -1,10 +1,11 @@
 extends SceneTree
 
+const SCRIPT_PATH := "res://tests/editor/fixtures/native_editor.ks"
+const INVALID_SCRIPT_PATH := "user://invalid_editor_document.ks"
+const CARET_MARKER := "\uFFFF"
+
 var _failures := 0
-var _test_paths := [
-	"user://konado_editor_support_a.ks",
-	"user://konado_editor_support_b.ks",
-]
+var _invalid_document: KND_Shot
 
 
 func _init() -> void:
@@ -12,28 +13,44 @@ func _init() -> void:
 
 
 func _run() -> void:
+	if Engine.is_editor_hint():
+		await EditorInterface.get_resource_filesystem().filesystem_changed
+		await process_frame
+		while (
+			EditorInterface.get_resource_filesystem().is_scanning()
+			or EditorInterface.get_resource_filesystem().is_importing()
+		):
+			await process_frame
 	_test_language_catalog()
-	_test_imported_resource_type()
+	_test_documentation_routes()
+	_test_script_resource()
 	_test_source_line_numbers()
 	_test_diagnostic_service()
+	_test_language_validation()
+	_test_language_completion_and_outline()
+	_test_language_indent_lookup_and_hints()
+	_test_project_resource_completion()
+	_test_symbol_index()
+	_test_invalid_source_document()
+	_test_create_script_template()
+	_test_script_tooltip_support()
+	_test_source_saver()
 	_test_highlighter_cache()
 	_test_highlighter_lexical_boundaries()
-	await _test_editor_document_workflow()
-	_cleanup_test_files()
+	if Engine.is_editor_hint():
+		await _test_native_script_editor()
+		_test_branch_refactor_ui()
 	if _failures == 0:
 		print("PASS: KonadoScript editor support tests")
+	await process_frame
+	await process_frame
 	quit(_failures)
-
-
-func _test_imported_resource_type() -> void:
-	var path := "res://sample/demo/demo_01.ks"
-	_expect(ResourceLoader.load(path) is KND_Shot, "imported KonadoScript files load as KND_Shot")
 
 
 func _test_language_catalog() -> void:
 	_expect(
 		KS_LanguageCatalog.validate_catalog().is_empty(),
-		"editor catalog contains only parser-supported keywords",
+		"language catalog contains only parser-supported keywords",
 	)
 	_expect(
 		not KS_LanguageCatalog.ROOT_KEYWORDS.has("shot_id"), "obsolete shot_id is not suggested"
@@ -66,19 +83,74 @@ func _test_language_catalog() -> void:
 		)
 
 
+func _test_documentation_routes() -> void:
+	_expect(
+		(
+			KS_ScriptEditorIntegration.get_docs_url("2.6.2", "zh_CN")
+			== "https://godothub.com/oss/konado/zh/2.6/"
+		),
+		"documentation URL follows the active Konado major/minor version",
+	)
+	_expect(
+		(
+			KS_ScriptEditorIntegration.get_docs_url("2.6.2", "zh_Hant")
+			== "https://godothub.com/oss/konado/tc/2.6/"
+		),
+		"traditional Chinese editors open the matching documentation locale",
+	)
+	_expect(
+		(
+			(
+				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "ja_JP")
+				== "https://godothub.com/oss/konado/ja/2.6/"
+			)
+			and (
+				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "ko_KR")
+				== "https://godothub.com/oss/konado/ko/2.6/"
+			)
+			and (
+				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "fr_FR")
+				== "https://godothub.com/oss/konado/en/2.6/"
+			)
+		),
+		"documentation URL resolves supported locales and falls back to English",
+	)
+
+
+func _test_script_resource() -> void:
+	_expect(
+		not FileAccess.file_exists(SCRIPT_PATH + ".import"),
+		"KonadoScript source is not marked as a read-only imported resource",
+	)
+	var shot := ResourceLoader.load(SCRIPT_PATH) as KND_Shot
+	_expect(shot != null, "KonadoScript files load as KND_Shot")
+	if shot == null:
+		return
+	_expect(shot is ScriptExtension, "KND_Shot is a native Script Editor document")
+	_expect(
+		shot.resource_path == SCRIPT_PATH,
+		"imported script keeps its source resource path: %s" % shot.resource_path,
+	)
+	_expect(
+		shot._get_language()._get_name() == "KonadoScript",
+		"KND_Shot exposes its language",
+	)
+	_expect(shot.ks_path == SCRIPT_PATH, "imported script retains its source path")
+
+
 func _test_source_line_numbers() -> void:
 	var compiler := KS_Compiler.new()
 	compiler.set_console_output_enabled(false)
 	var shot := compiler.compile_string("unknown_command", "line-number-test.ks")
 	_expect(shot == null, "invalid first-line command is rejected")
 	_expect(
-		not compiler.get_errors().is_empty() and "[行：1]" in compiler.get_errors()[0],
+		not compiler.get_errors().is_empty() and "[行：1" in compiler.get_errors()[0],
 		"first source line is reported as line 1",
 	)
 
 
 func _test_diagnostic_service() -> void:
-	var diagnostics := KS_EditorDiagnostics.new()
+	var diagnostics := KS_Diagnostics.new()
 	var results := diagnostics.analyze("actor move missing 2", "diagnostic-test.ks")
 	_expect(not results.is_empty(), "semantic warnings are exposed to the editor")
 	if not results.is_empty():
@@ -87,8 +159,11 @@ func _test_diagnostic_service() -> void:
 
 	results = diagnostics.analyze("background room unknown_effect", "diagnostic-test.ks")
 	_expect(
-		results.size() == 1 and "unknown_effect" in results[0]["message"],
-		"emission constraints are exposed by live diagnostics",
+		(
+			_has_diagnostic_containing(results, "unknown_effect")
+			and _has_diagnostic_containing(results, "room")
+		),
+		"live diagnostics combine language constraints with unresolved project resources",
 	)
 
 	results = (
@@ -96,6 +171,7 @@ func _test_diagnostic_service() -> void:
 		. analyze(
 			'if %love == 0:\n    "Kona" "Hello"\nendif1',
 			"diagnostic-test.ks",
+			"zh_CN",
 		)
 	)
 	_expect(
@@ -114,11 +190,69 @@ func _test_diagnostic_service() -> void:
 		. analyze(
 			'if %love == 0:\n    "Kona" "Hello"',
 			"diagnostic-test.ks",
+			"zh_CN",
 		)
 	)
 	_expect(
 		results.size() == 1 and "缺少 endif" in results[0]["message"],
 		"unterminated condition blocks report a diagnostic",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:1\n    "Kona" "Hello"\nendif',
+			"diagnostic-test.ks",
+			"zh_CN",
+		)
+	)
+	_expect(
+		(
+			results.size() == 1
+			and results[0]["severity"] == "error"
+			and results[0]["line"] == 1
+			and "冒号后不允许其他内容" in results[0]["message"]
+		),
+		"unexpected content after an if condition is never silently ignored",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"\nelse:garbage\n    "Kona" "Fallback"\nendif',
+			"diagnostic-test.ks",
+			"en",
+		)
+	)
+	_expect(
+		(
+			results.size() == 1
+			and results[0]["line"] == 3
+			and results[0]["message"] == "Nothing is allowed after the else colon."
+		),
+		"unexpected content after else is reported in the editor language",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"',
+			"diagnostic-test.ks",
+			"en",
+		)
+	)
+	_expect(
+		results.size() == 1 and results[0]["message"] == "The if block requires endif.",
+		"editor diagnostics follow a non-Chinese editor locale",
+	)
+	for message: String in KS_DiagnosticMessages.EXACT_ENGLISH:
+		_expect(
+			KS_DiagnosticMessages.localize(message, "en") != "KonadoScript: " + message,
+			"static compiler diagnostic has an English translation: %s" % message,
+		)
+	_expect(
+		(
+			KS_DiagnosticMessages.localize("期望 IDENTIFIER，实际为 EOF", "en")
+			== "Expected IDENTIFIER; got EOF."
+		),
+		"dynamic parser-context diagnostics are translated",
 	)
 
 	results = (
@@ -132,22 +266,365 @@ func _test_diagnostic_service() -> void:
 		results.size() == 1 and "screentext" in results[0]["message"],
 		"malformed screen text blocks report a diagnostic without stalling the editor",
 	)
-
 	results = (
 		diagnostics
 		. analyze(
-			'screentext {\n    "Hello"',
+			"jump res://missing/story.ks",
 			"diagnostic-test.ks",
+			"en",
 		)
 	)
 	_expect(
-		results.size() == 1 and "缺少结束符 }" in results[0]["message"],
-		"unterminated screen text blocks report a diagnostic",
+		(
+			results.size() == 1
+			and results[0]["severity"] == "warning"
+			and (
+				results[0]["message"]
+				== "Target KonadoScript 'res://missing/story.ks' does not exist."
+			)
+		),
+		"missing jump targets are reported instead of becoming clickable dead links",
 	)
+
+
+func _test_language_validation() -> void:
+	var language := KND_KonadoScriptLanguage.new()
+	var result := (
+		language
+		. _validate(
+			'if %love == 0:\n    "Kona" "Hello"\nendif_bad',
+			"validation-test.ks",
+			true,
+			true,
+			true,
+			true,
+		)
+	)
+	_expect(not result["valid"], "language bridge rejects invalid scripts")
+	_expect(
+		result["errors"].size() == 1 and result["errors"][0]["line"] == 3,
+		"language bridge returns native Script Editor error positions",
+	)
+	result = (
+		language
+		. _validate(
+			'branch intro\n"Kona" "Hello"',
+			"validation-test.ks",
+			true,
+			true,
+			true,
+			true,
+		)
+	)
+	_expect(result["valid"], "language bridge accepts valid scripts")
+	_expect(
+		result["functions"] == PackedStringArray(["intro:1"]),
+		"branch declarations populate the native member outline",
+	)
+
+
+func _test_language_completion_and_outline() -> void:
+	var language := KND_KonadoScriptLanguage.new()
+	var result := language._complete_code("actor %s" % CARET_MARKER, "completion.ks", null)
+	_expect(
+		_completion_displays(result).has("show"),
+		"root command context offers actor subcommands",
+	)
+	result = (
+		language
+		. _complete_code(
+			"branch intro\njump_branch in%s" % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		_completion_displays(result).has("intro"),
+		"branch names are completed from the current document",
+	)
+	result = (
+		language
+		. _complete_code(
+			"actor show Kona happy 5\nactor move Ko%s" % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		_completion_displays(result).has("Kona"),
+		"actor names are completed from the current document",
+	)
+	_expect(
+		language._find_function("intro", "branch intro\njump_branch intro") == 0,
+		"native symbol navigation resolves branch declarations",
+	)
+	var script_lookup := (
+		language
+		. _lookup_code(
+			"jump res://sample/demo/demo_04_%schoice_branch.ks" % CARET_MARKER,
+			"demo_04_choice_branch",
+			"res://source.ks",
+			null,
+		)
+	)
+	_expect(
+		(
+			script_lookup.get("result") == OK
+			and (
+				script_lookup.get("type")
+				== ScriptLanguageExtension.LookupResultType.LOOKUP_RESULT_SCRIPT_LOCATION
+			)
+			and script_lookup.get("script_path") == "res://sample/demo/demo_04_choice_branch.ks"
+			and script_lookup.get("script") is KND_Shot
+			and script_lookup.get("location") == 1
+		),
+		"Ctrl-click lookup returns the target KonadoScript resource for cross-file opening",
+	)
+	script_lookup = (
+		language
+		. _lookup_code(
+			"jump res://missing/%sscript.ks" % CARET_MARKER,
+			"script",
+			"res://source.ks",
+			null,
+		)
+	)
+	_expect(
+		script_lookup.get("result") == ERR_UNAVAILABLE,
+		"Ctrl-click lookup never advertises a missing KonadoScript target",
+	)
+
+
+func _test_language_indent_lookup_and_hints() -> void:
+	var language := KND_KonadoScriptLanguage.new()
+	var unindented := 'if %love == 0:\n"Kona" "Hello"\nelse:\nscreentext {\n"Fallback"\n}\nendif'
+	var expected := (
+		'if %love == 0:\n\t"Kona" "Hello"\nelse:\n\tscreentext {\n' + '\t\t"Fallback"\n\t}\nendif'
+	)
+	var indented := language._auto_indent_code(unindented, 0, 6)
+	_expect(
+		indented == expected,
+		"automatic indentation handles nested conditions, else blocks, and screentext",
+	)
+	var source := "branch intro\njump_branch intro"
+	var lookup := language._lookup_code(source, "intro", "res://lookup.ks", null)
+	_expect(
+		(
+			lookup.get("result") == OK
+			and lookup.get("location") == 1
+			and lookup.get("script_path") == "res://lookup.ks"
+		),
+		"hover/navigation lookup resolves a branch declaration",
+	)
+	var completion := (
+		language
+		. _complete_code(
+			"actor show %s" % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		"actor show <actor_name> <state_name>" in completion.get("call_hint", ""),
+		"completion displays the contextual command signature",
+	)
+	completion = language._complete_code("ac%s" % CARET_MARKER, "completion.ks", null)
+	_expect(
+		_completion_insertions(completion).has('achievement unlock "achievement_id"'),
+		"root completion includes insertable command snippets",
+	)
+
+
+func _test_project_resource_completion() -> void:
+	var language := KND_KonadoScriptLanguage.new()
+	var cases := [
+		{"source": "background bg_%s", "expected": "bg_para"},
+		{"source": "play bgm ec%s", "expected": "echo"},
+		{"source": "actor show Ko%s", "expected": "Kona"},
+		{"source": "actor show Kona 正%s", "expected": "正常"},
+		{"source": "actor motion Kona ju%s", "expected": "jump"},
+		{"source": "asyncam move ca%s", "expected": "cam2"},
+		{"source": "jump res://sample/demo/demo_0%s", "expected": "res://sample/demo/demo_02.ks"},
+	]
+	for test_case: Dictionary in cases:
+		var result := (
+			language
+			. _complete_code(
+				test_case["source"] % CARET_MARKER,
+				"completion.ks",
+				null,
+			)
+		)
+		_expect(
+			_completion_displays(result).has(test_case["expected"]),
+			"project resource completion offers %s" % test_case["expected"],
+		)
+	var voice_result := (
+		language
+		. _complete_code(
+			'"Kona" "Hello world" vo%s' % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		_completion_displays(voice_result).has("voice_01"),
+		"dialogue voice completion handles quoted text containing spaces",
+	)
+
+
+func _test_symbol_index() -> void:
+	var source := (
+		"branch intro\n"
+		+ 'choice "Go" -> intro\n'
+		+ "jump_branch intro\n"
+		+ '"Kona" "intro"\n'
+		+ "# intro\n"
+	)
+	var references := KS_SymbolIndex.get_branch_references(source)
+	_expect(references.size() == 3, "branch reference query ignores dialogue text and comments")
+	var renamed := KS_SymbolIndex.rename_branch(source, "intro", "opening-scene")
+	_expect(
+		(
+			"branch opening-scene" in renamed
+			and "jump_branch opening-scene" in renamed
+			and '"Kona" "intro"' in renamed
+			and "# intro" in renamed
+		),
+		"branch rename changes only structural declarations and references",
+	)
+	_expect(
+		KS_SymbolIndex.find_branch_definition(renamed, "opening-scene") == 1,
+		"branch identifiers ending in non-word characters remain navigable",
+	)
+	var jump_line := "jump res://sample/demo/demo_04_choice_branch.ks"
+	var jump_span := KS_SymbolIndex.find_script_jump_span(jump_line, jump_line.find("sample"))
+	_expect(
+		(
+			jump_span.get("path") == "res://sample/demo/demo_04_choice_branch.ks"
+			and jump_span.get("start") == jump_line.find("res://")
+			and jump_span.get("end") == jump_line.length()
+		),
+		"script jump links cover the complete res:// path",
+	)
+	_expect(
+		KS_SymbolIndex.find_script_jump_span(jump_line, jump_line.find("jump")).is_empty(),
+		"script jump links do not extend over the command keyword",
+	)
+	var local_source := (
+		"set $score 0\n"
+		+ "add $score 1\n"
+		+ "if $score >= 1:\n"
+		+ "endif\n"
+		+ "signal scene_ready\n"
+		+ "waitsignal scene_ready"
+	)
+	_expect(
+		(
+			KS_SymbolIndex.find_local_definition(local_source, "variables", "$score") == 1
+			and (
+				(
+					KS_SymbolIndex
+					. get_local_symbol_references(
+						local_source,
+						"variables",
+						"$score",
+					)
+					. size()
+				)
+				== 3
+			)
+			and KS_SymbolIndex.find_local_definition(local_source, "signals", "scene_ready") == 5
+		),
+		"variables and signals expose declarations and references",
+	)
+	var renamed_local := (
+		KS_SymbolIndex
+		. rename_local_symbol(
+			local_source,
+			"variables",
+			"$score",
+			"$points",
+		)
+	)
+	_expect(
+		"$score" not in renamed_local and renamed_local.count("$points") == 3,
+		"local variable rename updates only semantic references",
+	)
+
+
+func _test_invalid_source_document() -> void:
+	var source := "endif_invalid"
+	var file := FileAccess.open(INVALID_SCRIPT_PATH, FileAccess.WRITE)
+	file.store_string(source)
+	file.close()
+	var loaded: Variant = (
+		KS_ResourceLoader
+		. new()
+		. _load(
+			INVALID_SCRIPT_PATH,
+			INVALID_SCRIPT_PATH,
+			false,
+			0,
+		)
+	)
+	_expect(loaded is KND_Shot, "invalid KonadoScript remains an editable script document")
+	if loaded is KND_Shot:
+		_expect(loaded.get_source_code() == source, "invalid editor document preserves its source")
+		_invalid_document = loaded
+
+
+func _test_create_script_template() -> void:
+	var source := KS_CreateMenu.new()._get_template()
+	var compiler := KS_Compiler.new()
+	compiler.set_console_output_enabled(false)
+	_expect(
+		compiler.compile_string(source, "new-script-template.ks") != null,
+		"FileSystem create menu produces a valid KonadoScript template",
+	)
+
+
+func _test_script_tooltip_support() -> void:
+	var tooltip := preload("res://addons/konado/ks/ks_tooltip_plugin.gd").new()
+	_expect(tooltip._handles("Script"), "KonadoScript retains its FileSystem tooltip")
+
+
+func _test_source_saver() -> void:
+	var path := "user://konado_script_source_saver.ks"
+	var shot := KND_Shot.new()
+	shot.ks_path = path
+	shot.set_source_code('branch saved\n"Kona" "Saved"\n')
+	_expect(ResourceSaver.save(shot, path) == OK, "source saver writes .ks files")
+	var file := FileAccess.open(path, FileAccess.READ)
+	_expect(
+		file != null and file.get_as_text() == shot.get_source_code(),
+		"source saver preserves the complete editor buffer",
+	)
+	_expect(
+		not shot.dialogues.is_empty(),
+		"source saver refreshes the cached compiled KND_Shot after a valid save",
+	)
+	var compiled_start_node := shot.start_node_id
+	shot.set_source_code("endif_invalid")
+	_expect(ResourceSaver.save(shot, path) == OK, "invalid editor source can still be saved")
+	_expect(
+		_read_text(path) == "endif_invalid",
+		"invalid save preserves the exact source for repair",
+	)
+	_expect(
+		not shot.dialogues.is_empty() and shot.start_node_id == compiled_start_node,
+		"invalid save does not replace the last valid compiled KND_Shot data",
+	)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _test_highlighter_cache() -> void:
 	var highlighter := KND_KsHighlighter.new()
+	_expect(
+		highlighter._get_supported_languages() == PackedStringArray(["KonadoScript"]),
+		"syntax highlighter targets the KonadoScript language",
+	)
 	var first_count := highlighter.get_compiled_rule_count()
 	var second_count := highlighter.get_compiled_rule_count()
 	_expect(first_count > 0, "syntax highlighter compiles rules")
@@ -181,133 +658,304 @@ func _test_highlighter_lexical_boundaries() -> void:
 	)
 
 
-func _test_editor_document_workflow() -> void:
-	_write_test_file(_test_paths[0], 'branch first\n"Kona" "First"\n')
-	_write_test_file(_test_paths[1], 'branch second\n"Kona" "Second"\n')
-	for path: String in _test_paths:
-		KS_EditorDraftStore.remove(path)
-
-	var editor_scene := load("res://addons/konado/editor/ks_editor/ks_editor.tscn") as PackedScene
-	var editor := editor_scene.instantiate() as KsEditorWindow
-	get_root().add_child(editor)
-	editor._initialize_editor()
+func _test_native_script_editor() -> void:
 	await process_frame
-
-	editor.edit(_test_paths[0])
-	await process_frame
-	var code_edit := editor.get_node("%CodeEdit") as CodeEdit
-	var tabs := editor.get_node("%DocumentTabs") as TabBar
-	code_edit.text += "# unsaved\n"
-	await process_frame
-	editor.edit(_test_paths[1])
-	await process_frame
-	_expect(tabs.tab_count == 2, "opening another script creates a second document tab")
-	_write_test_file(_test_paths[1], 'branch second\n"Kona" "Changed externally"\n')
-	editor._check_external_changes()
-	await process_frame
-	_expect("Changed externally" in code_edit.text, "clean documents reload external changes")
-	tabs.current_tab = 0
-	await process_frame
-	_expect("# unsaved" in code_edit.text, "switching tabs preserves unsaved content")
-
-	code_edit.text = "branch first\njump_branch first\n"
-	editor.get_node("%FindText").text = "first"
-	editor.get_node("%ReplaceText").text = "renamed"
-	editor._replace_all()
 	await process_frame
 	_expect(
-		code_edit.text.count("renamed") == 2,
-		"find and replace updates every match in the current document",
+		EditorInterface.get_resource_filesystem().get_file_type(SCRIPT_PATH) == "Script",
+		"FileSystem advertises KonadoScript as a Script resource",
 	)
-
-	code_edit.text = "unknown_command"
-	await create_timer(0.5).timeout
-	var diagnostics_tree := editor.get_node("%DiagnosticsTree") as Tree
+	var shot := ResourceLoader.load(SCRIPT_PATH) as KND_Shot
+	if shot == null:
+		_expect(false, "native editor test can load the imported script")
+		return
+	EditorInterface.edit_script(shot)
+	await process_frame
+	await process_frame
+	await create_timer(0.15).timeout
+	await process_frame
+	await process_frame
+	await process_frame
+	var script_editor := EditorInterface.get_script_editor()
+	var editor := script_editor.get_current_editor()
+	_expect(editor != null, "double-click target opens in Godot's Script workspace")
+	if editor == null:
+		return
+	var code_edit := editor.get_base_editor() as CodeEdit
+	_expect(code_edit != null, "native Script Editor exposes its CodeEdit")
+	var palette := script_editor.find_child("KonadoInstructionPalette", true, false) as Control
+	var palette_title := script_editor.find_child("InstructionPaletteTitle", true, false) as Label
+	var palette_toggle := (
+		script_editor.find_child("InstructionPaletteToggle", true, false) as CheckButton
+	)
+	var instruction_tree := script_editor.find_child("InstructionTree", true, false) as Tree
+	var docs_button := script_editor.find_child("KonadoOnlineDocs", true, false) as Button
+	var jump_link_overlay := code_edit.find_child("KonadoJumpLinkOverlay", false, false) as Control
+	var godot_docs_button: Button
+	var godot_help_button: Button
 	_expect(
-		diagnostics_tree.get_root() != null and diagnostics_tree.get_root().get_child_count() > 0,
-		"debounced diagnostics are rendered in the editor",
+		palette != null and palette.visible,
+		"KonadoScript replaces the upper document list with the instruction palette",
 	)
-	var first_diagnostic := diagnostics_tree.get_root().get_first_child()
-	var diagnostic_rect := diagnostics_tree.get_item_area_rect(first_diagnostic, 2)
-	var severity_rect := diagnostics_tree.get_item_area_rect(first_diagnostic, 0)
-	var severity_font := diagnostics_tree.get_theme_font("font")
-	var severity_text_width := (
-		severity_font
-		. get_string_size(
-			first_diagnostic.get_text(0),
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			diagnostics_tree.get_theme_font_size("font_size"),
+	_expect(
+		instruction_tree != null and instruction_tree.get_root() != null,
+		"the native Script Editor displays the complete component and command tree",
+	)
+	_expect(
+		palette_title != null and not palette_title.text.is_empty(),
+		"the component and command region has a visible title",
+	)
+	_expect(
+		palette_toggle != null and palette_toggle.button_pressed,
+		"the palette header provides an enabled sliding expansion toggle",
+	)
+	if palette_toggle != null and instruction_tree != null:
+		palette_toggle.set_pressed_no_signal(false)
+		palette_toggle.toggled.emit(false)
+		_expect(
+			_all_top_level_groups_collapsed(instruction_tree),
+			"disabling the palette toggle retains and collapses all top-level groups",
 		)
-		. x
-	)
-	var severity_padding := (
-		diagnostics_tree.get_theme_constant("item_margin")
-		+ diagnostics_tree.get_theme_constant("inner_item_margin_left")
-		+ diagnostics_tree.get_theme_constant("inner_item_margin_right")
-	)
-	_expect(diagnostics_tree.visible, "diagnostics list expands when problems are found")
+		palette_toggle.set_pressed_no_signal(true)
+		palette_toggle.toggled.emit(true)
+		_expect(
+			not _all_top_level_groups_collapsed(instruction_tree),
+			"enabling the palette toggle expands the component and command groups",
+		)
+	if palette != null:
+		var left_split := palette.get_parent()
+		_expect(
+			(
+				left_split.get_child_count() >= 3
+				and not (left_split.get_child(1) as Control).visible
+				and (left_split.get_child(2) as Control).visible
+			),
+			"the document list is hidden while the lower branch outline remains visible",
+		)
+		var lower_region := left_split.get_child(2) as Control
+		var visible_height := palette.size.y + lower_region.size.y
+		var ratio_is_available := visible_height / 3.0 >= lower_region.get_combined_minimum_size().y
+		var ratio_is_correct := (
+			visible_height > 0.0 and absf(palette.size.y / visible_height - 2.0 / 3.0) < 0.03
+		)
+		var ratio_is_minimum_clamped := (
+			not ratio_is_available
+			and is_equal_approx(
+				lower_region.size.y,
+				lower_region.get_combined_minimum_size().y,
+			)
+		)
+		var layout_cannot_fit_minimums := (
+			visible_height
+			< (palette.get_combined_minimum_size().y + lower_region.get_combined_minimum_size().y)
+		)
+		_expect(
+			ratio_is_correct or ratio_is_minimum_clamped or layout_cannot_fit_minimums,
+			(
+				"the initial component-to-branch height ratio is two to one "
+				+ "or respects the native branch region's minimum height "
+				+ (
+					"(component: %.1f, branch: %.1f, lower minimum: %.1f)"
+					% [
+						palette.size.y,
+						lower_region.size.y,
+						lower_region.get_combined_minimum_size().y,
+					]
+				)
+			),
+		)
 	_expect(
-		diagnostic_rect.end.y <= diagnostics_tree.size.y,
-		"the first diagnostic row remains visible inside the bottom panel",
+		docs_button != null and docs_button.visible,
+		"KonadoScript replaces Godot's global documentation action",
 	)
 	_expect(
-		severity_rect.size.x >= severity_text_width + severity_padding,
-		"the complete localized severity label remains visible",
+		jump_link_overlay != null,
+		"KonadoScript installs a complete-path link layer in the native CodeEdit",
 	)
+	if docs_button != null and docs_button.get_index() > 0:
+		godot_docs_button = (
+			docs_button.get_parent().get_child(docs_button.get_index() - 1) as Button
+		)
+		_expect(
+			godot_docs_button != null and not godot_docs_button.visible,
+			"the Godot documentation action is hidden only while editing KonadoScript",
+		)
+		if docs_button.get_index() + 1 < docs_button.get_parent().get_child_count():
+			godot_help_button = (
+				docs_button.get_parent().get_child(docs_button.get_index() + 1) as Button
+			)
+		_expect(
+			godot_help_button != null and not godot_help_button.visible,
+			"Godot API help search is hidden while editing KonadoScript",
+		)
+	if code_edit != null:
+		var original_source := code_edit.text
+		_expect(
+			original_source.begins_with("branch intro"),
+			"native Script Editor displays the original .ks source",
+		)
+		_expect(
+			code_edit.syntax_highlighter is KND_KsHighlighter,
+			"native Script Editor selects the KonadoScript highlighter",
+		)
+		if instruction_tree != null:
+			var instruction := _find_first_instruction(instruction_tree.get_root())
+			if instruction != null:
+				var insertion_line := code_edit.get_line_count() - 1
+				code_edit.set_caret_line(insertion_line)
+				code_edit.set_caret_column(code_edit.get_line(insertion_line).length())
+				instruction.select(0)
+				await process_frame
+				_expect(
+					code_edit.text != original_source,
+					"selecting an instruction inserts its KonadoScript snippet",
+				)
+				code_edit.select_all()
+				code_edit.insert_text_at_caret(original_source)
+		var last_line := code_edit.get_line_count() - 1
+		code_edit.set_caret_line(last_line)
+		code_edit.set_caret_column(code_edit.get_line(last_line).length())
+		code_edit.insert_text_at_caret("\n# native save integration")
+		script_editor.save_all_scripts()
+		await process_frame
+		_expect(
+			_read_text(SCRIPT_PATH).strip_edges().ends_with("# native save integration"),
+			"native Script Editor saves back to the original .ks file",
+		)
+		code_edit.select_all()
+		code_edit.insert_text_at_caret(original_source)
+		script_editor.save_all_scripts()
+		await process_frame
+		_expect(
+			_read_text(SCRIPT_PATH) == original_source,
+			"native save integration restores the tracked fixture",
+		)
+	script_editor.close_file(SCRIPT_PATH)
+	var gd_script := load("res://tests/dotnet/custom_dialogue.gd") as Script
+	if gd_script != null:
+		EditorInterface.edit_script(gd_script)
+		await process_frame
+		await process_frame
+		_expect(
+			palette != null and not palette.visible,
+			"switching to GDScript restores the native document list",
+		)
+		if palette != null:
+			_expect(
+				(palette.get_parent().get_child(1) as Control).visible,
+				"the native document list is visible for non-Konado scripts",
+			)
+		_expect(
+			docs_button != null and not docs_button.visible,
+			"switching to GDScript restores Godot's documentation action",
+		)
+		_expect(
+			not is_instance_valid(jump_link_overlay),
+			"switching to GDScript removes the KonadoScript path link layer",
+		)
+		_expect(
+			(
+				godot_docs_button != null
+				and godot_docs_button.visible
+				and godot_help_button != null
+				and godot_help_button.visible
+			),
+			"switching to GDScript restores both native Godot help controls",
+		)
+		script_editor.close_file(gd_script.resource_path)
+	if _invalid_document != null:
+		EditorInterface.edit_script(_invalid_document)
+		await process_frame
+		await process_frame
+		editor = script_editor.get_current_editor()
+		code_edit = editor.get_base_editor() as CodeEdit if editor != null else null
+		_expect(
+			code_edit != null and code_edit.text == "endif_invalid",
+			"native Script Editor opens malformed KonadoScript for repair",
+		)
+		script_editor.close_file(INVALID_SCRIPT_PATH)
+	_invalid_document = null
+	if FileAccess.file_exists(INVALID_SCRIPT_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(INVALID_SCRIPT_PATH))
 
-	editor.prepare_for_shutdown()
-	_expect(
-		FileAccess.file_exists(KS_EditorDraftStore.get_draft_path(_test_paths[0])),
-		"unsaved documents receive a recovery draft",
+
+func _test_branch_refactor_ui() -> void:
+	var code_edit := CodeEdit.new()
+	code_edit.text = (
+		"branch intro\n" + 'choice "Go" -> intro\n' + "jump_branch intro\n" + '"Kona" "intro"'
 	)
-	await _test_draft_recovery_decisions(editor)
-	editor.queue_free()
-	await process_frame
+	var menu := KS_CodeContextMenu.new()
+	menu._active_code_edit = code_edit
+	menu._active_symbol = "intro"
+	menu._find_references(null)
+	_expect(menu._reference_list.item_count == 3, "branch reference dialog lists structural uses")
+	menu._ensure_rename_dialog()
+	menu._rename_input.text = "opening"
+	menu._apply_rename()
+	_expect(
+		(
+			"branch opening" in code_edit.text
+			and "jump_branch opening" in code_edit.text
+			and '"Kona" "intro"' in code_edit.text
+		),
+		"branch rename dialog performs one undoable structural edit",
+	)
+	menu.cleanup()
+	code_edit.free()
 
 
-func _test_draft_recovery_decisions(editor: KsEditorWindow) -> void:
-	var disk_content := 'branch first\n"Kona" "First"\n'
-	var dirty_document := KS_EditorDocument.new(_test_paths[0], disk_content)
-	dirty_document.update_content(disk_content + "# recovered content\n")
-	_expect(KS_EditorDraftStore.save(dirty_document) == OK, "recovery test draft can be saved")
+func _completion_displays(result: Dictionary) -> PackedStringArray:
+	var displays := PackedStringArray()
+	for option: Dictionary in result.get("options", []):
+		displays.append(option["display"])
+	return displays
 
-	var disk_document := KS_EditorDocument.new(_test_paths[0], disk_content)
-	var draft := KS_EditorDraftStore.load_for_path(_test_paths[0], disk_content)
-	var dialog := editor._create_draft_recovery_dialog(disk_document, draft)
-	editor.add_child(dialog)
-	await process_frame
-	_expect(dialog != null, "draft recovery dialog is displayed")
-	dialog.canceled.emit()
-	await process_frame
-	_expect(
-		FileAccess.file_exists(KS_EditorDraftStore.get_draft_path(_test_paths[0])),
-		"closing draft recovery keeps the recovery draft",
-	)
 
-	dialog = editor._create_draft_recovery_dialog(disk_document, draft)
-	editor.add_child(dialog)
-	dialog.confirmed.emit()
-	await process_frame
-	_expect(
-		disk_document.content == dirty_document.content,
-		"recovering a draft restores its content",
-	)
-	_expect(
-		FileAccess.file_exists(KS_EditorDraftStore.get_draft_path(_test_paths[0])),
-		"recovering keeps the draft until the restored content is saved or discarded",
-	)
+func _find_first_instruction(item: TreeItem) -> TreeItem:
+	if item == null:
+		return null
+	if item.get_metadata(0) != null:
+		return item
+	var child := item.get_first_child()
+	while child != null:
+		var result := _find_first_instruction(child)
+		if result != null:
+			return result
+		child = child.get_next()
+	return null
 
-	dialog = editor._create_draft_recovery_dialog(disk_document, draft)
-	editor.add_child(dialog)
-	await process_frame
-	_expect(dialog != null, "draft recovery can be offered again after postponing")
-	dialog.custom_action.emit(&"discard_draft")
-	await process_frame
-	_expect(
-		not FileAccess.file_exists(KS_EditorDraftStore.get_draft_path(_test_paths[0])),
-		"only the explicit discard action removes a recovery draft",
-	)
+
+func _all_top_level_groups_collapsed(tree: Tree) -> bool:
+	var root := tree.get_root()
+	if root == null or root.get_first_child() == null:
+		return false
+	var group := root.get_first_child()
+	while group != null:
+		if not group.is_collapsed():
+			return false
+		group = group.get_next()
+	return true
+
+
+func _completion_insertions(result: Dictionary) -> PackedStringArray:
+	var insertions := PackedStringArray()
+	for option: Dictionary in result.get("options", []):
+		insertions.append(option["insert_text"])
+	return insertions
+
+
+func _read_text(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return ""
+	return file.get_as_text()
+
+
+func _has_diagnostic_containing(diagnostics: Array[Dictionary], fragment: String) -> bool:
+	for diagnostic: Dictionary in diagnostics:
+		if fragment in String(diagnostic.get("message", "")):
+			return true
+	return false
 
 
 func _color_at(highlighting: Dictionary, column: int, default_color: Color) -> Color:
@@ -319,22 +967,6 @@ func _color_at(highlighting: Dictionary, column: int, default_color: Color) -> C
 			break
 		color = highlighting[transition]["color"]
 	return color
-
-
-func _write_test_file(path: String, content: String) -> void:
-	var file := FileAccess.open(path, FileAccess.WRITE)
-	if file == null:
-		_expect(false, "test file can be created: %s" % path)
-		return
-	file.store_string(content)
-	file.close()
-
-
-func _cleanup_test_files() -> void:
-	for path: String in _test_paths:
-		KS_EditorDraftStore.remove(path)
-		if FileAccess.file_exists(path):
-			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _expect(condition: bool, message: String) -> void:
