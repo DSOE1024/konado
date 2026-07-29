@@ -36,7 +36,14 @@ func _popup_menu(paths: PackedStringArray) -> void:
 		return
 	var line := code_edit.get_caret_line()
 	var column := code_edit.get_caret_column()
-	var reference := KS_SymbolIndex.get_semantic_reference_at(code_edit.get_line(line), column)
+	var reference := (
+		KS_SymbolIndex
+		. get_semantic_reference_at(
+			code_edit.get_line(line),
+			column,
+			KS_SymbolIndex.is_screentext_content_line(code_edit.text, line),
+		)
+	)
 	var kind := String(reference.get("kind", ""))
 	if kind not in LOCAL_KINDS and kind not in RESOURCE_KINDS:
 		return

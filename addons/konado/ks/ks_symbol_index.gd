@@ -77,24 +77,33 @@ static func find_script_jump_span(line: String, column: int) -> Dictionary:
 	}
 
 
-static func get_semantic_reference_at(line: String, column: int) -> Dictionary:
+static func get_semantic_reference_at(
+	line: String,
+	column: int,
+	screentext_content: bool = false,
+) -> Dictionary:
 	var reference := find_script_jump_span(line, column)
 	if not reference.is_empty():
 		return reference
-	var references := get_line_semantic_references(line)
+	var references := get_line_semantic_references(line, screentext_content)
 	for candidate: Dictionary in references:
 		if column >= int(candidate["start"]) and column < int(candidate["end"]):
 			return candidate
 	return {}
 
 
-static func get_line_semantic_references(line: String) -> Array[Dictionary]:
+static func get_line_semantic_references(
+	line: String,
+	screentext_content: bool = false,
+) -> Array[Dictionary]:
 	var tokens := _tokenize_line_spans(line)
 	var references: Array[Dictionary] = []
 	if tokens.is_empty():
 		return references
 	var first := String(tokens[0]["text"])
 	if bool(tokens[0]["quoted"]):
+		if screentext_content:
+			return _get_string_variable_references(line, tokens[0])
 		_append_quoted_token_reference(references, tokens[0], "actors", "reference")
 		if tokens.size() >= 3:
 			_append_quoted_token_reference(references, tokens[2], "voices", "reference")
@@ -177,12 +186,36 @@ static func get_dialogue_variable_references(line: String) -> Array[Dictionary]:
 static func get_semantic_references(source: String) -> Array[Dictionary]:
 	var references: Array[Dictionary] = []
 	var lines := source.split("\n")
+	var inside_screentext := false
 	for line_index: int in lines.size():
-		for reference: Dictionary in get_line_semantic_references(String(lines[line_index])):
+		var line := String(lines[line_index])
+		for reference: Dictionary in get_line_semantic_references(line, inside_screentext):
 			reference["line"] = line_index + 1
 			reference["column"] = int(reference["start"]) + 1
 			references.append(reference)
+		if inside_screentext:
+			if _is_screentext_close_line(line):
+				inside_screentext = false
+		elif _is_screentext_open_line(line):
+			inside_screentext = true
 	return references
+
+
+static func is_screentext_content_line(source: String, target_line: int) -> bool:
+	if target_line < 0:
+		return false
+	var lines := source.split("\n")
+	var inside_screentext := false
+	for line_index: int in mini(target_line + 1, lines.size()):
+		var line := String(lines[line_index])
+		if line_index == target_line:
+			return inside_screentext
+		if inside_screentext:
+			if _is_screentext_close_line(line):
+				inside_screentext = false
+		elif _is_screentext_open_line(line):
+			inside_screentext = true
+	return false
 
 
 static func get_local_symbol_references(
@@ -378,21 +411,42 @@ static func _get_dialogue_variable_references(
 	line: String,
 	tokens: Array[Dictionary],
 ) -> Array[Dictionary]:
-	var references: Array[Dictionary] = []
 	if tokens.size() < 2 or not bool(tokens[0]["quoted"]) or not bool(tokens[1]["quoted"]):
-		return references
+		return []
+	return _get_string_variable_references(line, tokens[1])
+
+
+static func _get_string_variable_references(
+	line: String,
+	token: Dictionary,
+) -> Array[Dictionary]:
+	var references: Array[Dictionary] = []
 	_ensure_regexes()
-	var content_start := int(tokens[1]["start"])
-	var content_end := int(tokens[1]["end"])
+	var content_start := int(token["start"])
+	var content_end := int(token["end"])
 	for match_result: RegExMatch in _variable_regex.search_all(line, content_start, content_end):
-		var token := {
+		var variable_token := {
 			"text": match_result.get_string(),
 			"start": match_result.get_start(),
 			"end": match_result.get_end(),
 		}
-		_append_token_reference(references, token, "variables", "reference")
+		_append_token_reference(references, variable_token, "variables", "reference")
 		references[-1]["inside_string"] = true
 	return references
+
+
+static func _is_screentext_open_line(line: String) -> bool:
+	var tokens := _tokenize_line_spans(line)
+	return (
+		tokens.size() >= 2
+		and tokens[0].get("text") == "screentext"
+		and tokens[1].get("text") == "{"
+	)
+
+
+static func _is_screentext_close_line(line: String) -> bool:
+	var tokens := _tokenize_line_spans(line)
+	return tokens.size() == 1 and tokens[0].get("text") == "}"
 
 
 static func _append_remaining_reference(

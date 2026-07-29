@@ -38,6 +38,7 @@ static var _shared_instance: KS_ProjectIndex
 var _symbols := {}
 var _definitions := {}
 var _file_cache := {}
+var _script_default_cache := {}
 var _seen_paths := {}
 var _dirty := true
 var _filesystem_connected := false
@@ -228,6 +229,7 @@ func _connect_filesystem_signal() -> void:
 func _invalidate_paths(paths: PackedStringArray) -> void:
 	for path: String in paths:
 		_file_cache.erase(path)
+		_script_default_cache.erase(path)
 	_dirty = true
 
 
@@ -322,17 +324,18 @@ func _parse_text_resource(path: String, source: String, extension: String) -> Di
 					external_resources,
 				)
 			_append_definition(definitions, definition)
-		for kind: String in SCOPED_PROPERTY_SCHEMAS:
-			var name_match := _find_property(
+		for scoped_kind: String in SCOPED_PROPERTY_SCHEMAS:
+			var name_match := _find_property_or_script_default(
 				block_source,
-				String(SCOPED_PROPERTY_SCHEMAS[kind]),
+				String(SCOPED_PROPERTY_SCHEMAS[scoped_kind]),
+				external_resources,
 			)
 			if name_match.is_empty():
 				continue
 			_append_definition(
 				definitions,
 				_make_definition(
-					kind,
+					scoped_kind,
 					String(name_match["value"]),
 					path,
 					_line_at(source, int(block["start"]) + int(name_match["start"])),
@@ -401,6 +404,59 @@ func _find_property(block_source: String, property_name: String) -> Dictionary:
 		"value": match_result.get_string(1),
 		"start": match_result.get_start(1),
 	}
+
+
+func _find_property_or_script_default(
+	block_source: String,
+	property_name: String,
+	external_resources: Dictionary,
+) -> Dictionary:
+	var property := _find_property(block_source, property_name)
+	if not property.is_empty():
+		return property
+	var script_path := _resolve_property_target(block_source, "script", external_resources)
+	var defaults := _get_script_string_defaults(script_path)
+	if not defaults.has(property_name):
+		return {}
+	return {
+		"value": String(defaults[property_name]),
+		"start": 0,
+	}
+
+
+func _get_script_string_defaults(path: String) -> Dictionary:
+	if path.get_extension().to_lower() != "gd" or not FileAccess.file_exists(path):
+		return {}
+	var modified_time := FileAccess.get_modified_time(path)
+	var file_size := FileAccess.get_size(path)
+	var cached: Dictionary = _script_default_cache.get(path, {})
+	if cached.get("modified_time") == modified_time and cached.get("file_size") == file_size:
+		return cached.get("defaults", {})
+	if file_size > MAX_TEXT_RESOURCE_BYTES:
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var regex := RegEx.new()
+	if (
+		regex.compile(
+			(
+				"(?m)^\\s*(?:@export(?:_[A-Za-z0-9_]+)?(?:\\([^\\n]*\\))?\\s+)?"
+				+ 'var\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?::[^=\\n]+)?=\\s*"([^"]*)"'
+			)
+		)
+		!= OK
+	):
+		return {}
+	var defaults := {}
+	for match_result: RegExMatch in regex.search_all(file.get_as_text()):
+		defaults[match_result.get_string(1)] = match_result.get_string(2)
+	_script_default_cache[path] = {
+		"modified_time": modified_time,
+		"file_size": file_size,
+		"defaults": defaults,
+	}
+	return defaults
 
 
 func _resolve_property_target(

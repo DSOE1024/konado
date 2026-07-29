@@ -129,6 +129,11 @@ func _test_project_index() -> void:
 		project_index.get_actor_scoped_values("Kona", "states").has("正常"),
 		"state completion is scoped to the selected actor scene",
 	)
+	var default_camera := project_index.get_definition("cameras", "cam1")
+	_expect(
+		default_camera.get("target_path") == "res://sample/demo/backgrounds/bg_para.tscn",
+		"camera IDs include exported defaults omitted from serialized scenes",
+	)
 
 
 func _test_semantic_navigation() -> void:
@@ -227,6 +232,25 @@ func _test_semantic_navigation() -> void:
 		),
 		"quoted actor links include their quotes and dialogue variable links use exact spans",
 	)
+	var screentext_source := 'screentext {\n    "Full-screen text with $score"\n}'
+	var screentext_references := KS_SymbolIndex.get_semantic_references(screentext_source)
+	var has_screentext_actor := false
+	var has_screentext_variable := false
+	for screentext_reference: Dictionary in screentext_references:
+		has_screentext_actor = (
+			has_screentext_actor or screentext_reference.get("kind") == "actors"
+		)
+		has_screentext_variable = (
+			has_screentext_variable
+			or (
+				screentext_reference.get("kind") == "variables"
+				and screentext_reference.get("name") == "$score"
+			)
+		)
+	_expect(
+		not has_screentext_actor and has_screentext_variable,
+		"full-screen text is not treated as an actor while interpolated variables remain semantic",
+	)
 	var highlighter := KND_KsHighlighter.new()
 	var highlighting := highlighter._highlight_line_text(dialogue_line, Color.WHITE)
 	_expect(
@@ -319,6 +343,13 @@ func _test_project_diagnostics() -> void:
 			and missing[0]["message"] == "Unknown sound effect: 'missing_effect'."
 		),
 		"unknown resource IDs are reported in the editor locale",
+	)
+	var valid_screentext_and_camera := (
+		'screentext {\n    "这是全屏文本"\n}\n' + "asyncam move cam1 linear 1.0"
+	)
+	_expect(
+		diagnostics.analyze(valid_screentext_and_camera, "semantic.ks", "en").is_empty(),
+		"screentext content and default camera IDs do not produce false diagnostics",
 	)
 
 

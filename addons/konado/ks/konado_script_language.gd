@@ -282,7 +282,16 @@ func _get_reference_at_caret(code: String) -> Dictionary:
 	var marked_line := code.substr(line_start, line_end - line_start)
 	var caret_column := marked_line.find(CARET_MARKER)
 	var line := marked_line.replace(CARET_MARKER, "")
-	return KS_SymbolIndex.get_semantic_reference_at(line, caret_column)
+	var source := code.replace(CARET_MARKER, "")
+	var line_index := source.left(line_start).count("\n")
+	return (
+		KS_SymbolIndex
+		. get_semantic_reference_at(
+			line,
+			caret_column,
+			KS_SymbolIndex.is_screentext_content_line(source, line_index),
+		)
+	)
 
 
 func _local_kind_label(kind: String) -> String:

@@ -240,6 +240,7 @@ func _update_reference(mouse_position: Vector2, modifier_pressed: bool) -> void:
 		. get_semantic_reference_at(
 			_code_edit.get_line(position.y),
 			position.x,
+			KS_SymbolIndex.is_screentext_content_line(_code_edit.text, position.y),
 		)
 	)
 	if not reference.is_empty():
