@@ -1,6 +1,8 @@
 @tool
 extends EditorImportPlugin
 
+const FORMAT_VERSION := 1
+
 
 func _get_importer_name() -> String:
 	return "konado.scripts"
@@ -27,7 +29,14 @@ func _get_save_extension() -> String:
 
 
 func _get_resource_type() -> String:
-	return "KND_Shot"
+	# Script global classes are not registered in ClassDB, so Godot's binary
+	# resource loader cannot resolve a `.res` import advertised as KND_Shot.
+	# The saved resource still loads as KND_Shot through its script metadata.
+	return "Resource"
+
+
+func _get_format_version() -> int:
+	return FORMAT_VERSION
 
 
 func _get_preset_count() -> int:

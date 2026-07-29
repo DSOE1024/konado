@@ -1,6 +1,7 @@
 [remap]
 
 importer="konado.scripts"
+importer_version=1
 type="Resource"
 uid="uid://b4m7xfmrvqn5f"
 path="res://.godot/imported/basic_dialogue.ks-d24040ee8aff4542dafe26b3757b8d69.res"

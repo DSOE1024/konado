@@ -1,6 +1,7 @@
 [remap]
 
 importer="konado.scripts"
+importer_version=1
 type="Resource"
 uid="uid://ble8bpbma0sdj"
 path="res://.godot/imported/demo_03_variable.ks-959e7af4be08762a4fc9bce6585cf9c7.res"
