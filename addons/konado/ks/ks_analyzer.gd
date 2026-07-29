@@ -118,7 +118,10 @@ func _walk(statements: Array, state: Dictionary, context: String) -> bool:
 			_error(statement.line, "信号指令内容为空")
 		elif statement is KS_AST.AchievementNode and statement.target_id.is_empty():
 			_error(statement.line, "achievement 目标ID为空")
-		elif statement is KS_AST.JumpNode or statement is KS_AST.EndNode:
+		elif statement is KS_AST.JumpNode:
+			_validate_script_jump(statement)
+			return false
+		elif statement is KS_AST.EndNode:
 			return false
 	return true
 
@@ -126,6 +129,11 @@ func _walk(statements: Array, state: Dictionary, context: String) -> bool:
 func _validate_background(node: KS_AST.BackgroundNode) -> void:
 	if not node.effect.is_empty() and not KS_Emitter.BACKGROUND_EFFECTS_MAP.has(node.effect):
 		_warning(node.line, "目标效果 '%s' 未找到" % node.effect)
+
+
+func _validate_script_jump(node: KS_AST.JumpNode) -> void:
+	if not FileAccess.file_exists(node.target_path):
+		_warning(node.line, "jump 目标剧本 '%s' 不存在" % node.target_path)
 
 
 func _walk_branch(branch_id: String, state: Dictionary) -> void:

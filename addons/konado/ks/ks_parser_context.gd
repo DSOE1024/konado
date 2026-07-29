@@ -10,6 +10,7 @@ var _tokens: Array[KS_Token] = []
 var _pos: int = 0
 var _path: String = ""
 var _errors: Array[String] = []
+var _last_error_line := 0
 
 
 ## 查看当前 Token（不消费）
@@ -71,6 +72,41 @@ func _skip_to_next_line() -> void:
 		_pos += 1
 
 
+## 拒绝固定语法语句后的多余参数，并始终恢复到下一行。
+func _finish_statement_line(trailing_message: String) -> bool:
+	if not _at_line_end():
+		_error(trailing_message)
+		_skip_to_next_line()
+		return false
+	_skip_to_next_line()
+	return true
+
+
+func _skip_screen_text_remainder() -> void:
+	while not _at_end():
+		if _check(KS_Token.Type.INDENT):
+			_advance()
+		if _check(KS_Token.Type.RBRACE):
+			_advance()
+			_skip_to_next_line()
+			return
+		_skip_to_next_line()
+
+
+func _skip_condition_remainder() -> void:
+	var depth := 1
+	while not _at_end():
+		if _check_keyword_on_line(KS_Token.Type.KW_IF):
+			depth += 1
+		elif _check_keyword_on_line(KS_Token.Type.KW_ENDIF):
+			depth -= 1
+			_skip_to_next_line()
+			if depth == 0:
+				return
+			continue
+		_skip_to_next_line()
+
+
 ## 是否到达 Token 流末尾
 func _at_end() -> bool:
 	return _pos >= _tokens.size() or _peek().type == KS_Token.Type.EOF
@@ -95,15 +131,58 @@ func _skip_past_keyword(kw: KS_Token.Type) -> void:
 	_skip_to_next_line()
 
 
+## 消费块头的必需冒号，并拒绝冒号后的尾随内容。
+func _consume_required_colon_line(missing_message: String, trailing_message: String) -> bool:
+	if not _check(KS_Token.Type.COLON):
+		_error(missing_message)
+		return false
+	_advance()
+	if not _at_line_end():
+		_error(trailing_message)
+		return false
+	_skip_to_next_line()
+	return true
+
+
+## 消费 else/endif 等块关键字所在行，并严格检查冒号及尾随内容。
+func _consume_keyword_line(
+	keyword: KS_Token.Type,
+	require_colon: bool,
+	missing_colon_message: String,
+	trailing_message: String,
+) -> bool:
+	if _check(KS_Token.Type.INDENT):
+		_advance()
+	if not _check(keyword):
+		return false
+	var keyword_token := _advance()
+	var has_colon := str(keyword_token.value).ends_with(":")
+	if require_colon and not has_colon and _check(KS_Token.Type.COLON):
+		_advance()
+		has_colon = true
+	if require_colon and not has_colon:
+		_error(missing_colon_message)
+		return false
+	if not _at_line_end():
+		_error(trailing_message)
+		return false
+	_skip_to_next_line()
+	return true
+
+
 ## 错误记录
 func _error(msg: String) -> void:
-	var line_num := _peek().line if _peek() else 0
-	_error_at(line_num, msg)
+	var token := _peek()
+	_error_at(token.line, msg, token.column)
 
 
 ## 在指定源码行记录错误，用于文件结尾处发现的未闭合结构。
-func _error_at(line_num: int, msg: String) -> void:
-	var err := "语法错误：%s [行：%d] %s" % [_path, line_num, msg]
+func _error_at(line_num: int, msg: String, column: int = 0) -> void:
+	_last_error_line = line_num
+	var location := "[行：%d]" % line_num
+	if column > 0:
+		location = "[行：%d, 列：%d]" % [line_num, column]
+	var err := "语法错误：%s %s %s" % [_path, location, msg]
 	_errors.append(err)
 	if console_output_enabled:
 		push_error(err)

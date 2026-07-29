@@ -7,6 +7,7 @@ class_name KS_Lexer
 var console_output_enabled := true
 var _errors: Array[String] = []
 var _path: String = ""
+var _column_offset := 0
 
 
 func _init() -> void:
@@ -26,7 +27,7 @@ func tokenize(source: String, path: String = "") -> Array[KS_Token]:
 	var lines := source.split("\n")
 
 	for i in range(lines.size()):
-		var raw_line := lines[i]
+		var raw_line := String(lines[i])
 		var line_num := i + 1
 		var stripped := raw_line.strip_edges()
 
@@ -40,13 +41,19 @@ func tokenize(source: String, path: String = "") -> Array[KS_Token]:
 			tokens.append(KS_Token.new(KS_Token.Type.INDENT, indent_level, line_num, 1))
 
 		# 对该行内容进行词法分析
-		var line_tokens := _tokenize_line(stripped, line_num)
-		if line_tokens.is_empty() and not _errors.is_empty():
-			return []
+		var content := raw_line.strip_edges(true, false)
+		var leading_columns := raw_line.length() - content.length()
+		_column_offset = leading_columns
+		var error_count := _errors.size()
+		var line_tokens := _tokenize_line(content, line_num)
+		if _errors.size() > error_count:
+			continue
+		for token: KS_Token in line_tokens:
+			token.column += leading_columns
 		tokens.append_array(line_tokens)
 
 		# 行结束标记
-		tokens.append(KS_Token.new(KS_Token.Type.NEWLINE, "", line_num, stripped.length() + 1))
+		tokens.append(KS_Token.new(KS_Token.Type.NEWLINE, "", line_num, raw_line.length() + 1))
 
 	tokens.append(KS_Token.new(KS_Token.Type.EOF, "", 0, 0))
 	return tokens
@@ -56,12 +63,16 @@ func tokenize(source: String, path: String = "") -> Array[KS_Token]:
 func tokenize_line(line: String, line_number: int) -> Array[KS_Token]:
 	_errors.clear()
 	_path = ""
-	var stripped := line.strip_edges()
+	var stripped := line.strip_edges(true, false)
 	if stripped.is_empty():
 		return [KS_Token.new(KS_Token.Type.EOF, "", line_number, 0)]
 
+	var leading_columns := line.length() - stripped.length()
+	_column_offset = leading_columns
 	var tokens := _tokenize_line(stripped, line_number)
-	tokens.append(KS_Token.new(KS_Token.Type.NEWLINE, "", line_number, stripped.length() + 1))
+	for token: KS_Token in tokens:
+		token.column += leading_columns
+	tokens.append(KS_Token.new(KS_Token.Type.NEWLINE, "", line_number, line.length() + 1))
 	tokens.append(KS_Token.new(KS_Token.Type.EOF, "", line_number, 0))
 	return tokens
 
@@ -101,6 +112,10 @@ func _tokenize_line(line: String, line_num: int) -> Array[KS_Token]:
 			break
 
 		var ch := line[pos]
+
+		# 行内注释（字符串内部由字符串读取器处理）
+		if ch == "#":
+			break
 
 		# 字符串字面量
 		if ch == '"':
@@ -175,10 +190,9 @@ func _tokenize_line(line: String, line_num: int) -> Array[KS_Token]:
 				tokens.append(ref_tok)
 				pos += 1 + ref_tok.value.name.length()  # prefix + name
 				continue
-			# 如果 % 或 $ 后无标识符，当作标识符的一部分处理
-			var word_tok := _read_word(line, pos, line_num)
-			tokens.append(word_tok)
-			pos += word_tok.value.length()
+			# 孤立的 %/$ 必须至少消费一个字符，避免编辑器实时检查进入死循环。
+			tokens.append(KS_Token.new(KS_Token.Type.IDENTIFIER, ch, line_num, pos + 1))
+			pos += 1
 			continue
 
 		# 数字字面量（含负号开头）
@@ -345,13 +359,14 @@ func _is_ident_char(ch: String) -> bool:
 		or (code >= 97 and code <= 122)
 		or (code >= 48 and code <= 57)
 		or code == 95
+		or code == 45
 		or code >= 0x80
 	)
 
 
 ## 错误记录
 func _error(line_num: int, col: int, msg: String) -> void:
-	var err := "词法错误：%s [行：%d, 列：%d] %s" % [_path, line_num, col, msg]
+	var err := "词法错误：%s [行：%d, 列：%d] %s" % [_path, line_num, col + _column_offset, msg]
 	_errors.append(err)
 	if console_output_enabled:
 		push_error(err)

@@ -81,7 +81,7 @@ func validate_string(source: String, path: String = "") -> bool:
 
 func _parse_and_analyze(source: String, path: String) -> KS_AST.ScriptNode:
 	var tokens := _lexer.tokenize(source, path)
-	if tokens.is_empty() and not _lexer.get_errors().is_empty():
+	if not _lexer.get_errors().is_empty():
 		_errors.append_array(_lexer.get_errors())
 		return null
 

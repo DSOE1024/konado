@@ -597,7 +597,8 @@ func _post_process(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> void:
 			shot.dialogues.append(bd)
 
 	# 10. 设置起始节点
-	if shot.dialogues.size() > 0:
+	# 只有分支而没有主线语句的脚本没有可执行入口，不能索引空的主线数组。
+	if not main_dialogues.is_empty():
 		shot.start_node_id = main_dialogues[0].node_id
 
 

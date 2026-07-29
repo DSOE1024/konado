@@ -16,6 +16,7 @@ func parse(tokens: Array[KS_Token], path: String = "") -> KS_AST.ScriptNode:
 	_pos = 0
 	_path = path
 	_errors.clear()
+	_last_error_line = 0
 
 	var script := KS_AST.ScriptNode.new()
 
@@ -31,19 +32,23 @@ func parse(tokens: Array[KS_Token], path: String = "") -> KS_AST.ScriptNode:
 			continue
 
 		var position_before_statement := _pos
+		var error_count := _errors.size()
 		var stmt := _parse_statement()
-		if not _errors.is_empty():
-			return null
+		if _errors.size() > error_count:
+			if _pos <= position_before_statement or _peek().line <= _last_error_line:
+				_skip_to_next_line()
+			continue
 		if stmt == null:
 			_skip_to_next_line()
 			continue
 		if _pos <= position_before_statement:
 			_error("解析器未能消费当前语句")
-			return null
+			_skip_to_next_line()
+			continue
 
 		script.statements.append(stmt)
 
-	return script
+	return null if not _errors.is_empty() else script
 
 
 ## 解析单行 Token 为单个 AST 节点（用于 parse_single_line）
@@ -52,6 +57,7 @@ func parse_single_statement(tokens: Array[KS_Token], path: String = "") -> KS_AS
 	_pos = 0
 	_path = path
 	_errors.clear()
+	_last_error_line = 0
 
 	_skip_newlines()
 	if _at_end():
@@ -169,7 +175,7 @@ func _parse_dialogue() -> KS_AST.DialogueNode:
 		):
 			node.voice_id = str(_advance().value)
 
-	_skip_to_next_line()
+	_finish_statement_line("对话语句后存在多余内容")
 	return node
 
 
@@ -213,6 +219,7 @@ func _parse_screen_text() -> KS_AST.ScreenTextNode:
 
 		_error("screentext 块内仅允许字符串文本或结束符 }")
 		_skip_to_next_line()
+		_skip_screen_text_remainder()
 		return node
 
 	if not is_closed:
@@ -221,37 +228,47 @@ func _parse_screen_text() -> KS_AST.ScreenTextNode:
 	return node
 
 
-## 显示对话框解析：showtextbox <duration>
+## 显示对话框解析：showtextbox [duration]
 func _parse_show_textbox() -> KS_AST.ShowTextBoxNode:
 	var node := KS_AST.ShowTextBoxNode.new()
 	node.line = _peek().line
 	_advance()  # 跳过 showtextbox
 
-	# 读取动画时长
+	if _at_line_end():
+		_skip_to_next_line()
+		return node
 	var dur_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
 	if dur_tok == null:
-		_error("showtextbox 缺少动画时长")
 		return null
 	node.duration = float(str(dur_tok.value))
+	if node.duration < 0.0:
+		_error_at(node.line, "showtextbox 动画时长不能为负数")
+		_skip_to_next_line()
+		return null
 
-	_skip_to_next_line()
+	_finish_statement_line("showtextbox 动画时长后存在多余内容")
 	return node
 
 
-## 隐藏对话框解析：hidetextbox <duration>
+## 隐藏对话框解析：hidetextbox [duration]
 func _parse_hide_textbox() -> KS_AST.HideTextBoxNode:
 	var node := KS_AST.HideTextBoxNode.new()
 	node.line = _peek().line
 	_advance()  # 跳过 hidetextbox
 
-	# 读取动画时长
+	if _at_line_end():
+		_skip_to_next_line()
+		return node
 	var dur_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
 	if dur_tok == null:
-		_error("hidetextbox 缺少动画时长")
 		return null
 	node.duration = float(str(dur_tok.value))
+	if node.duration < 0.0:
+		_error_at(node.line, "hidetextbox 动画时长不能为负数")
+		_skip_to_next_line()
+		return null
 
-	_skip_to_next_line()
+	_finish_statement_line("hidetextbox 动画时长后存在多余内容")
 	return node
 
 
@@ -272,7 +289,7 @@ func _parse_wait_signal() -> KS_AST.WaitSignalNode:
 		_error("waitsignal 缺少信号名称")
 		return null
 
-	_skip_to_next_line()
+	_finish_statement_line("waitsignal 信号名称后存在多余内容")
 	return node
 
 
@@ -294,7 +311,7 @@ func _parse_background() -> KS_AST.BackgroundNode:
 		if effect_tok.type == KS_Token.Type.IDENTIFIER:
 			node.effect = str(_advance().value)
 
-	_skip_to_next_line()
+	_finish_statement_line("background 参数后存在多余内容")
 	return node
 
 
@@ -328,8 +345,8 @@ func _parse_actor() -> KS_AST.ActorNode:
 				is_valid = false
 
 	if is_valid:
-		_skip_to_next_line()
-		return node
+		if _finish_statement_line("actor 参数后存在多余内容"):
+			return node
 	return null
 
 
@@ -348,7 +365,7 @@ func _parse_actor_show(node: KS_AST.ActorNode) -> bool:
 	node.state = str(state_tok.value)
 	if not _at_line_end() and _check(KS_Token.Type.KW_AT):
 		_advance()
-		var pos_tok := _expect_any_value()
+		var pos_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
 		if pos_tok == null:
 			_error("actor show 的 at 缺少位置")
 			return false
@@ -386,7 +403,7 @@ func _parse_actor_move(node: KS_AST.ActorNode) -> bool:
 	if name_tok == null:
 		_error("actor move 缺少角色名")
 		return false
-	var pos_tok := _expect_any_value()
+	var pos_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
 	if pos_tok == null:
 		_error("actor move 缺少目标坐标")
 		return false
@@ -448,7 +465,7 @@ func _parse_play_audio() -> KS_AST.AudioNode:
 		return null
 	node.resource_name = str(name_tok.value)
 
-	_skip_to_next_line()
+	_finish_statement_line("play 参数后存在多余内容")
 	return node
 
 
@@ -465,7 +482,7 @@ func _parse_stop_audio() -> KS_AST.AudioNode:
 	else:
 		node.target = "bgm"  # 默认 stop bgm
 
-	_skip_to_next_line()
+	_finish_statement_line("stop bgm 后存在多余内容")
 	return node
 
 
@@ -479,65 +496,10 @@ func _parse_camera() -> KS_AST.CameraNode:
 	var node := KS_AST.CameraNode.new()
 	node.line = _peek().line
 	_advance()  # 跳过 cam
-
-	var action_tok := _peek()
-	if action_tok == null:
-		_error("cam 缺少操作指令")
+	if not _parse_camera_operation(node, "cam", false):
+		_skip_to_next_line()
 		return null
-
-	match action_tok.type:
-		KS_Token.Type.KW_MOVE:
-			node.action = "move"
-			_advance()
-			var target_tok := _expect_any_value()
-			if target_tok == null:
-				_error("cam move 缺少目标镜头名")
-				return null
-			node.target_cam = str(target_tok.value)
-
-			# 可选的 tween 参数
-			if not _at_line_end():
-				var tween_tok := _peek()
-				if tween_tok.type == KS_Token.Type.IDENTIFIER:
-					node.tween_type = str(_advance().value)
-					if not _at_line_end():
-						var time_tok := _peek()
-						if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
-							node.tween_time = float(str(_advance().value))
-						elif time_tok.type == KS_Token.Type.IDENTIFIER:
-							node.tween_time = float(str(_advance().value))
-
-		KS_Token.Type.KW_RESET:
-			node.action = "reset"
-			_advance()
-
-			if not _at_line_end():
-				var tween_tok := _peek()
-				if tween_tok.type == KS_Token.Type.IDENTIFIER:
-					node.tween_type = str(_advance().value)
-					if not _at_line_end():
-						var time_tok := _peek()
-						if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
-							node.tween_time = float(str(_advance().value))
-						elif time_tok.type == KS_Token.Type.IDENTIFIER:
-							node.tween_time = float(str(_advance().value))
-
-		KS_Token.Type.KW_SHAKE:
-			node.action = "shake"
-			_advance()
-
-			if not _at_line_end():
-				var time_tok := _peek()
-				if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
-					node.shake_time = float(str(_advance().value))
-				elif time_tok.type == KS_Token.Type.IDENTIFIER:
-					node.shake_time = float(str(_advance().value))
-
-		_:
-			_error("未知的 cam 操作: %s（应为 move、reset 或 shake）" % str(action_tok.value))
-			return null
-
-	_skip_to_next_line()
+	_finish_statement_line("cam 参数后存在多余内容")
 	return node
 
 
@@ -547,70 +509,82 @@ func _parse_asyncam() -> KS_AST.AsyncCamNode:
 	var node := KS_AST.AsyncCamNode.new()
 	node.line = _peek().line
 	_advance()  # 跳过 asyncam
-
-	var action_tok := _peek()
-	if action_tok == null:
-		_error("asyncam 缺少操作指令")
+	if not _parse_camera_operation(node, "asyncam", true):
+		_skip_to_next_line()
 		return null
+	_finish_statement_line("asyncam 参数后存在多余内容")
+	return node
 
+
+func _parse_camera_operation(node: Variant, command: String, allow_stop: bool) -> bool:
+	if _at_line_end():
+		_error("%s 缺少操作指令" % command)
+		return false
+	var action_tok := _advance()
+	var valid := true
 	match action_tok.type:
 		KS_Token.Type.KW_MOVE:
 			node.action = "move"
-			_advance()
 			var target_tok := _expect_any_value()
 			if target_tok == null:
-				_error("asyncam move 缺少目标镜头名")
-				return null
-			node.target_cam = str(target_tok.value)
-
-			# 可选的 tween 参数
-			if not _at_line_end():
-				var tween_tok := _peek()
-				if tween_tok.type == KS_Token.Type.IDENTIFIER:
-					node.tween_type = str(_advance().value)
-					if not _at_line_end():
-						var time_tok := _peek()
-						if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
-							node.tween_time = float(str(_advance().value))
-						elif time_tok.type == KS_Token.Type.IDENTIFIER:
-							node.tween_time = float(str(_advance().value))
-
+				_error("%s move 缺少目标镜头名" % command)
+				valid = false
+			else:
+				node.target_cam = str(target_tok.value)
+				valid = _parse_camera_tween(node, command)
 		KS_Token.Type.KW_RESET:
 			node.action = "reset"
-			_advance()
-
-			if not _at_line_end():
-				var tween_tok := _peek()
-				if tween_tok.type == KS_Token.Type.IDENTIFIER:
-					node.tween_type = str(_advance().value)
-					if not _at_line_end():
-						var time_tok := _peek()
-						if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
-							node.tween_time = float(str(_advance().value))
-						elif time_tok.type == KS_Token.Type.IDENTIFIER:
-							node.tween_time = float(str(_advance().value))
-
+			valid = _parse_camera_tween(node, command)
 		KS_Token.Type.KW_SHAKE:
 			node.action = "shake"
-			_advance()
-
-			if not _at_line_end():
-				var time_tok := _peek()
-				if time_tok.type == KS_Token.Type.NUMBER_LITERAL:
-					node.shake_time = float(str(_advance().value))
-				elif time_tok.type == KS_Token.Type.IDENTIFIER:
-					node.shake_time = float(str(_advance().value))
-
+			valid = _parse_camera_shake(node, command)
 		KS_Token.Type.KW_STOP:
-			node.action = "stop"
-			_advance()
-
+			if allow_stop:
+				node.action = "stop"
+			else:
+				valid = false
 		_:
-			_error("asyncam 未知操作: %s（应为 move、reset、shake 或 stop）" % str(action_tok.value))
-			return null
+			valid = false
+	if not valid and _errors.is_empty():
+		var actions := "move、reset、shake 或 stop" if allow_stop else "move、reset 或 shake"
+		_error("%s 未知操作: %s（应为 %s）" % [command, str(action_tok.value), actions])
+	return (
+		valid
+		and _validate_camera_values(
+			node.action,
+			node.tween_type,
+			node.tween_time,
+			node.shake_time,
+		)
+	)
 
-	_skip_to_next_line()
-	return node
+
+func _parse_camera_tween(node: Variant, command: String) -> bool:
+	if _at_line_end():
+		return true
+	var tween_tok := _peek()
+	if tween_tok.type != KS_Token.Type.IDENTIFIER:
+		return true
+	node.tween_type = str(_advance().value)
+	if _at_line_end():
+		return true
+	var time_tok := _peek()
+	if time_tok.type != KS_Token.Type.NUMBER_LITERAL:
+		_error("%s 过渡时长应为数字" % command)
+		return false
+	node.tween_time = float(str(_advance().value))
+	return true
+
+
+func _parse_camera_shake(node: Variant, command: String) -> bool:
+	if _at_line_end():
+		return true
+	var time_tok := _peek()
+	if time_tok.type != KS_Token.Type.NUMBER_LITERAL:
+		_error("%s 震动时长应为数字" % command)
+		return false
+	node.shake_time = float(str(_advance().value))
+	return true
 
 
 ## 选项组解析：合并连续的 choice 行
@@ -664,7 +638,7 @@ func _parse_single_choice_line() -> KS_AST.ChoiceOption:
 		return null
 	option.branch_target = str(target_tok.value)
 
-	_skip_to_next_line()
+	_finish_statement_line("choice 目标分支后存在多余内容")
 	return option
 
 
@@ -680,7 +654,8 @@ func _parse_branch() -> KS_AST.BranchNode:
 		return null
 	node.branch_id = str(id_tok.value)
 
-	_skip_to_next_line()
+	if not _finish_statement_line("branch 标签后存在多余内容"):
+		return null
 
 	# 解析缩进块
 	node.body = _parse_indented_block()
@@ -727,37 +702,47 @@ func _parse_if_else() -> KS_AST.IfElseNode:
 	_advance()
 
 	# 目标值
-	var val_tok := _expect_any_value()
+	var val_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
 	if val_tok == null:
 		_error("if 条件缺少目标值")
 		return null
+	if not str(val_tok.value).is_valid_int():
+		_error("if 条件目标值应为整数")
+		return null
 	node.target_value = int(str(val_tok.value))
 
-	# 可选冒号
-	if _check(KS_Token.Type.COLON):
-		_advance()
-
-	_skip_to_next_line()
-
 	# 解析 if 块（直到遇到 else 或 endif）
-	node.if_body = _parse_condition_block()
+	if _consume_required_colon_line("if 条件末尾缺少冒号", "if 条件冒号后不允许其他内容"):
+		node.if_body = _parse_condition_block()
 
 	# 检查是否有 else
 	if _errors.is_empty():
 		_skip_newlines()
 		if not _at_end() and _check_keyword_on_line(KS_Token.Type.KW_ELSE):
-			_skip_past_keyword(KS_Token.Type.KW_ELSE)
-			# 解析 else 块
-			node.else_body = _parse_condition_block()
+			if _consume_keyword_line(
+				KS_Token.Type.KW_ELSE,
+				true,
+				"else 末尾缺少冒号",
+				"else 冒号后不允许其他内容",
+			):
+				# 解析 else 块
+				node.else_body = _parse_condition_block()
 
 	# 消费 endif
 	if _errors.is_empty():
 		_skip_newlines()
 		if not _at_end() and _check_keyword_on_line(KS_Token.Type.KW_ENDIF):
-			_skip_past_keyword(KS_Token.Type.KW_ENDIF)
+			_consume_keyword_line(
+				KS_Token.Type.KW_ENDIF,
+				false,
+				"",
+				"endif 后不允许其他内容",
+			)
 		else:
 			_error_at(node.line, "if 条件块缺少 endif")
 
+	if not _errors.is_empty():
+		_skip_condition_remainder()
 	return node
 
 
@@ -766,7 +751,6 @@ func _parse_variable() -> KS_AST.VariableNode:
 	var node := KS_AST.VariableNode.new()
 	node.line = _peek().line
 
-	# 操作类型
 	var op_tok := _advance()
 	match op_tok.type:
 		KS_Token.Type.KW_SET:
@@ -780,7 +764,6 @@ func _parse_variable() -> KS_AST.VariableNode:
 		KS_Token.Type.KW_DIV:
 			node.operation = "div"
 
-	# 变量名
 	var var_tok := _expect(KS_Token.Type.VARIABLE_REF)
 	if var_tok == null:
 		_error("%s 缺少变量名（格式：%s %%变量名 值）" % [node.operation, node.operation])
@@ -792,10 +775,11 @@ func _parse_variable() -> KS_AST.VariableNode:
 	if not _at_line_end() and _check(KS_Token.Type.OP_ASSIGN):
 		_advance()
 
-	# 操作数（收集行末所有剩余 token 作为操作数）
 	var operand_parts: PackedStringArray = []
+	var has_operand := false
 	while not _at_line_end():
 		var t := _advance()
+		has_operand = true
 		if t.type == KS_Token.Type.STRING_LITERAL:
 			node.operand = t.value
 			break
@@ -803,8 +787,11 @@ func _parse_variable() -> KS_AST.VariableNode:
 
 	if node.operand.is_empty() and operand_parts.size() > 0:
 		node.operand = " ".join(operand_parts)
+	if not has_operand:
+		_error("%s 缺少变量值" % node.operation)
+		return null
 
-	_skip_to_next_line()
+	_finish_statement_line("%s 变量值后存在多余内容" % node.operation)
 	return node
 
 
@@ -814,7 +801,6 @@ func _parse_jump() -> KS_AST.JumpNode:
 	node.line = _peek().line
 	_advance()  # 跳过 jump
 
-	# 收集行末所有 token 拼成完整路径
 	var parts: PackedStringArray = []
 	while not _at_line_end():
 		var t := _advance()
@@ -823,6 +809,9 @@ func _parse_jump() -> KS_AST.JumpNode:
 
 	if node.target_path.is_empty():
 		_error("jump 缺少目标路径")
+		return null
+	if not node.target_path.begins_with("res://") or node.target_path.get_extension() != "ks":
+		_error("jump 目标必须是 res:// 下的 .ks 文件")
 		return null
 
 	_skip_to_next_line()
@@ -841,7 +830,7 @@ func _parse_jump_branch() -> KS_AST.JumpBranchNode:
 		return null
 	node.target_branch = str(target_tok.value)
 
-	_skip_to_next_line()
+	_finish_statement_line("jump_branch 目标分支后存在多余内容")
 	return node
 
 
@@ -895,22 +884,29 @@ func _parse_achievement() -> KS_AST.AchievementNode:
 		"unlock":
 			pass
 		"increment":
-			var val_tok := _expect_any_value()
+			var val_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
 			if val_tok == null:
 				_error("achievement increment 缺少增量数值")
 				return null
-			node.increment_value = int(str(val_tok.value))
+			if not str(val_tok.value).is_valid_int():
+				_error("achievement increment 增量应为整数")
+			else:
+				node.increment_value = int(str(val_tok.value))
 		"set_flag":
 			var val_tok := _expect_any_value()
 			if val_tok == null:
 				_error("achievement set_flag 缺少布尔值")
 				return null
-			node.flag_value = str(val_tok.value).to_lower() == "true"
+			var bool_value := str(val_tok.value).to_lower()
+			if bool_value not in ["true", "false"]:
+				_error("achievement set_flag 布尔值应为 true 或 false")
+			else:
+				node.flag_value = bool_value == "true"
 		_:
 			_error("未知的 achievement 操作: %s" % action_str)
 			return null
 
-	_skip_to_next_line()
+	_finish_statement_line("achievement 参数后存在多余内容")
 	return node
 
 
@@ -919,13 +915,26 @@ func _parse_end() -> KS_AST.EndNode:
 	var node := KS_AST.EndNode.new()
 	node.line = _peek().line
 	_advance()  # 跳过 end
-	_skip_to_next_line()
+	_finish_statement_line("end 后存在多余内容")
 	return node
 
 
-# ============================================================
-# 块级解析辅助
-# ============================================================
+func _validate_camera_values(
+	action: String,
+	tween_type: String,
+	tween_time: float,
+	shake_time: float,
+) -> bool:
+	if not tween_type.is_empty() and tween_type not in KS_LanguageCatalog.CAMERA_TRANSITIONS:
+		_error("镜头过渡类型无效：%s" % tween_type)
+		return false
+	if action in ["move", "reset"] and tween_time < 0.0:
+		_error("镜头过渡时长不能为负数")
+		return false
+	if action == "shake" and shake_time < 0.0:
+		_error("镜头震动时长不能为负数")
+		return false
+	return true
 
 
 ## 解析缩进块（用于 branch 内部）
@@ -937,13 +946,11 @@ func _parse_indented_block() -> Array:
 		if _at_end():
 			break
 
-		# 检查是否有缩进
 		if not _check(KS_Token.Type.INDENT):
 			break
 
 		_advance()  # 消费 INDENT
 
-		# 解析缩进行内的语句
 		var position_before_statement := _pos
 		var stmt := _parse_statement()
 		if not _errors.is_empty():
