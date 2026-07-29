@@ -12,17 +12,17 @@ order: 5
 ## 语法结构
 
 ```text
-showtextbox <duration>
-hidetextbox <duration>
+showtextbox [duration]
+hidetextbox [duration]
 ```
 
 ## 参数说明
 
 | 参数 | 必需 | 示例 | 说明 |
 |------|------|------|------|
-| duration | 是 | `1.0` | 淡入/淡出动画时长（秒），`0.0` 表示禁用动画，立即显示/隐藏 |
+| duration | 否 | `1.0` | 淡入/淡出动画时长（秒）；省略或设为 `0.0` 时立即显示/隐藏 |
 
-- `duration` 为 `0.0` 时禁用动画，立即显示/隐藏，不会产生等待延迟
+- 省略 `duration` 或设为 `0.0` 时禁用动画，立即显示/隐藏，不会产生等待延迟
 - `duration` 大于 `0.0` 时播放透明度淡入/淡出动画，等待动画完成后自动执行下一句
 
 ## 示例
@@ -39,4 +39,7 @@ showtextbox 0.0
 
 # 禁用动画，立即隐藏对话框
 hidetextbox 0.0
+
+# 省略时长也会立即显示
+showtextbox
 ```
