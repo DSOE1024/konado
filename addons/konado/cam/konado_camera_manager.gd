@@ -38,16 +38,30 @@ func _traverse(node: Node, out_list: Array[KonadoCamera2D]) -> void:
 		_traverse(child, out_list)
 
 
-func move_cam(cam_name: String, time: float, callback: Callable = Callable()) -> void:
+func move_cam(
+	cam_name: String,
+	time: float,
+	callback: Callable = Callable(),
+	transition_type: String = "linear",
+) -> void:
 	for cam in cameras:
 		if cam.camera_setup == cam_name:
-			camera_trans(cam, time, callback)
+			camera_trans(cam, time, callback, transition_type)
+			return
+	if callback.is_valid():
+		callback.call()
 
 
-func camera_trans(next_cam: Camera2D, ft: float = 2.0, callback: Callable = Callable()) -> void:
+func camera_trans(
+	next_cam: Camera2D,
+	ft: float = 2.0,
+	callback: Callable = Callable(),
+	transition_type: String = "linear",
+) -> void:
 	if tween:
 		tween.kill()
 	tween = create_tween()
+	_apply_transition(tween, transition_type)
 	tween.set_parallel(true)
 	tween.tween_property(current, "position", next_cam.position, ft)
 	tween.tween_property(current, "zoom", next_cam.zoom, ft)
@@ -55,12 +69,18 @@ func camera_trans(next_cam: Camera2D, ft: float = 2.0, callback: Callable = Call
 	tween.tween_callback(callback)
 
 
-func reset_cam(use_tween: bool, ft: float = 2.0, callback: Callable = Callable()) -> void:
+func reset_cam(
+	use_tween: bool,
+	ft: float = 2.0,
+	callback: Callable = Callable(),
+	transition_type: String = "linear",
+) -> void:
 	var pos: Vector2 = get_window().size / 2
 	if use_tween:
 		if tween:
 			tween.kill()
 		tween = create_tween()
+		_apply_transition(tween, transition_type)
 		tween.set_parallel(true)
 		tween.tween_property(current, "position", pos, ft)
 		tween.tween_property(current, "zoom", Vector2(1.0, 1.0), ft)
@@ -100,20 +120,20 @@ func shake_cam(duration: float, callback: Callable = Callable()) -> void:
 
 
 ## 异步移动镜头到目标机位，不阻塞对话；返回后 Tween 在后台运行
-func async_move_cam(cam_name: String, time: float) -> void:
+func async_move_cam(cam_name: String, time: float, transition_type: String = "linear") -> void:
 	for cam in cameras:
 		if cam.camera_setup == cam_name:
 			_async_target_pos = cam.position
 			_async_target_zoom = cam.zoom
-			_start_async_tween(cam.position, cam.zoom, time)
+			_start_async_tween(cam.position, cam.zoom, time, transition_type)
 			return
 
 
 ## 异步重置镜头到默认位置，不阻塞对话
-func async_reset_cam(time: float) -> void:
+func async_reset_cam(time: float, transition_type: String = "linear") -> void:
 	_async_target_pos = get_window().size / 2
 	_async_target_zoom = Vector2.ONE
-	_start_async_tween(_async_target_pos, _async_target_zoom, time)
+	_start_async_tween(_async_target_pos, _async_target_zoom, time, transition_type)
 
 
 ## 异步镜头晃动，不阻塞对话
@@ -146,8 +166,14 @@ func async_stop_all() -> void:
 
 
 ## 启动异步 Tween（无回调，不阻塞）
-func _start_async_tween(target_pos: Vector2, target_zoom: Vector2, ft: float) -> void:
+func _start_async_tween(
+	target_pos: Vector2,
+	target_zoom: Vector2,
+	ft: float,
+	transition_type: String,
+) -> void:
 	var async_tween := create_tween()
+	_apply_transition(async_tween, transition_type)
 	async_tween.set_parallel(true)
 	async_tween.tween_property(current, "position", target_pos, ft)
 	async_tween.tween_property(current, "zoom", target_zoom, ft)
@@ -155,6 +181,15 @@ func _start_async_tween(target_pos: Vector2, target_zoom: Vector2, ft: float) ->
 	# Tween 完成后自动从追踪列表移除
 	async_tween.finished.connect(func(): _async_tweens.erase(async_tween))
 	_async_tweens.append(async_tween)
+
+
+func _apply_transition(target_tween: Tween, transition_type: String) -> void:
+	if transition_type == "ease_in_out":
+		target_tween.set_trans(Tween.TRANS_SINE)
+		target_tween.set_ease(Tween.EASE_IN_OUT)
+	else:
+		target_tween.set_trans(Tween.TRANS_LINEAR)
+		target_tween.set_ease(Tween.EASE_IN_OUT)
 
 
 func _apply_shake(progress: float) -> void:

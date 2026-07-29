@@ -403,6 +403,7 @@ func _process(_delta) -> void:
 					print_rich("[color=red]当前节点为空，节点ID: %s[/color]" % cur_node_id)
 					_dialogue_goto_state(DialogState.OFF)
 					return
+				var cam_manager := _konado_cam_manager
 				cur_dialogue_type = dialog.dialog_type
 				dialogue_line_start.emit(cur_node_id)
 				_konado_choice_interface._choice_container.hide()
@@ -498,13 +499,17 @@ func _process(_delta) -> void:
 						print("镜头移动完毕")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
-					_konado_cam_manager.move_cam(dialog.target_cam, dialog.cam_tween_time, callback)
+					cam_manager.move_cam(
+						dialog.target_cam, dialog.cam_tween_time, callback, dialog.cam_tween_type
+					)
 				elif cur_dialogue_type == KND_Dialogue.Type.RESET_CAM:
 					var callback = func():
 						print("镜头重置完毕")
 						_dialogue_goto_state(DialogState.PAUSED)
 						_process_next()
-					_konado_cam_manager.reset_cam(true, dialog.cam_tween_time, callback)
+					cam_manager.reset_cam(
+						true, dialog.cam_tween_time, callback, dialog.cam_tween_type
+					)
 				elif cur_dialogue_type == KND_Dialogue.Type.CAM_SHAKE:
 					var callback = func():
 						print("镜头晃动完毕")
@@ -513,12 +518,14 @@ func _process(_delta) -> void:
 					_konado_cam_manager.shake_cam(dialog.cam_shake_time, callback)
 				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_MOVE_CAM:
 					print("异步移动镜头: %s" % dialog.target_cam)
-					_konado_cam_manager.async_move_cam(dialog.target_cam, dialog.cam_tween_time)
+					cam_manager.async_move_cam(
+						dialog.target_cam, dialog.cam_tween_time, dialog.cam_tween_type
+					)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
 				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_RESET_CAM:
 					print("异步重置镜头")
-					_konado_cam_manager.async_reset_cam(dialog.cam_tween_time)
+					cam_manager.async_reset_cam(dialog.cam_tween_time, dialog.cam_tween_type)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
 				elif cur_dialogue_type == KND_Dialogue.Type.ASYNC_CAM_SHAKE:
