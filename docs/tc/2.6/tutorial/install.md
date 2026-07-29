@@ -7,13 +7,11 @@ order: 1
 
 ## 依賴環境
 
-需要使用 **Godot 4.7.1 或更高版本**
+最低支援 **Godot 4.7.1**。
 
 以下 Godot 版本均經過開發者測試，可以正常使用：
 
 - 4.7.1
-- 4.5.1
-- 4.5
 
 ### 插件下載
 
@@ -21,13 +19,6 @@ order: 1
 請前往 [Konado 最新版本頁面](https://github.com/godothub/konado/releases/latest) 下載最新穩定版插件 ZIP 壓縮包。穩定版經過充分驗證，穩定性和可靠性更有保障，是生產環境的首選。
 
 為提升中國大陸地區使用者的下載體驗，推薦使用此最佳化連結取得資源：[Release 連結](https://atomgit.com/godothub/konado/releases)，此連結可有效改善下載速度。
-
-#### 每日構建版（嘗鮮版）
-我們同步提供每日構建版。如需體驗最新開發特性，可前往 [Konado 全版本頁面](https://github.com/godothub/konado/releases/)，尋找標題標註有 `Konado Daily Build` 的版本下載。
-
-如果你是開發人員，並且希望體驗最新開發特性，可以下載每日構建版，並將使用過程中遇到的問題回饋到 Issues 中。
-
-> Caution：每日構建版僅用於體驗最新開發特性，由於包含未經完整測試的新功能，可能會存在未修復的 Bug，**請不要用於生產環境**，請根據實際需求謹慎選擇。
 
 ## 安裝步驟
 

@@ -7,13 +7,11 @@ order: 1
 
 ## Requirements
 
-Requires **Godot 4.7.1 or higher**.
+The minimum supported version is **Godot 4.7.1**.
 
 The following Godot versions have been tested by the developers and work correctly:
 
 - 4.7.1
-- 4.5.1
-- 4.5
 
 ### Plugin Download
 
@@ -21,13 +19,6 @@ The following Godot versions have been tested by the developers and work correct
 Go to the [latest Konado release page](https://github.com/godothub/konado/releases/latest) and download the latest stable plugin ZIP package. The stable version has been fully verified and provides better stability and reliability, making it the preferred choice for production environments.
 
 To improve the download experience for users in mainland China, we recommend using this optimized resource link: [Release link](https://atomgit.com/godothub/konado/releases), which can effectively improve download speed.
-
-#### Daily Build (Preview Version)
-We also provide daily builds. If you want to try the latest development features, go to the [Konado all releases page](https://github.com/godothub/konado/releases/) and look for releases whose title contains `Konado Daily Build`.
-
-If you are a developer and want to try the latest development features, you can download the daily build and report any issues you encounter to Issues.
-
-> Caution: Daily builds are only for trying the latest development features. Because they contain new features that have not been fully tested, unfixed bugs may exist. **Do not use them in production environments**. Choose carefully based on your actual needs.
 
 ## Installation Steps
 
