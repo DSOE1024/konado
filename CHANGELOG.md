@@ -1,3 +1,17 @@
+## 2.6.2 - Ketchup
+
+### Security
+
+- Added transparent script protection that encrypts compiled KonadoScript data with AES-256
+- Added independently derived encryption and authentication keys, authenticated metadata, integrity verification, and a decompression size limit for encrypted payloads
+- Added exported-package runtime verification to ensure all sample scripts are encrypted, loadable, and free of directly readable story plaintext
+
+### Other Improvements
+
+- Standardized the `KonadoScript` product name
+- Updated documentation and showcase workflows to Node.js 24
+- Removed the duplicated title from the MulanPSL 2.0 license text
+
 ## 2.6.1 - Ketchup
 
 ### Camera and Acting
@@ -47,72 +61,68 @@
 
 ## 2.6 - Ketchup
 
-Konado 2.6 is officially released. Codenamed "Ketchup", this version focuses on live performance enhancement and script expression capability. It introduces a camera system (move, reset, shake), character animation system (slide-in/out), runtime internationalization, NVL full-screen text, dialogue box show/hide control, wait signal, and the Konado Showcase page, further completing the visual novel development pipeline.
+Konado 2.6, codenamed Ketchup, strengthens real-time presentation and scripting. It adds camera controls, character entrance and exit animations, runtime internationalization, full-screen NVL text, dialogue box visibility controls, the ability to wait for external signals, and the Konado Showcase page.
 
 ### Added
 
 #### Camera System
 
-- Added `cam move`, `cam reset`, `cam shake` camera commands for script-level camera control
-- Added `KonadoCameraManager` camera manager node for managing multiple camera targets and transitions
-- Added `cam shake` camera shake with configurable duration
-- Added tween animation type and duration parameters for smooth camera transitions
+- Added the `cam move`, `cam reset`, and `cam shake` commands for script-level camera control
+- Added the `KonadoCameraManager` node to manage multiple camera targets and transitions
+- Added configurable durations to `cam shake`
+- Added tween type and duration parameters for smooth camera transitions
 
 #### Character Animation System
 
-- Refactored character animation system with slide-in/out animations
-- Added `enter_exit_anim_config.gd` animation configuration resource for custom entry/exit duration and curves
+- Refactored the character animation system and added slide-in entrance and exit animations
+- Added the `enter_exit_anim_config.gd` resource for configuring entrance and exit durations and easing curves
 - Centralized character animation logic in `animated_actor_layer.gd`
 
 #### NVL Screen Text (Overlay Text)
 
-- Added `screentext` script command for full-screen NVL text display
-- Added `KND_ScreenText` scene and component with line-by-line fade-in animation
-- Supports independent RichTextLabel per line with custom line spacing, left padding, and top padding
-- Blinking triangle arrow indicator appears after each line completes, prompting click to play next line
-- Provides `display_finished` callback signal for seamless dialogue flow integration
+- Added the `screentext` command for full-screen NVL text
+- Added the `KND_ScreenText` scene and component with line-by-line fade-in animation
+- Rendered each line in a separate `RichTextLabel`, with configurable line spacing and left and top margins
+- Added a blinking triangle indicator after each completed line to prompt the player to advance
+- Added signals such as `display_finished` for seamless integration with dialogue flow
 
-#### Dialogue Box Show/Hide Control
+#### Dialogue Box Visibility
 
-- Added `showtextbox` script command with configurable fade-in duration for dialogue box display
-- Added `hidetextbox` script command with configurable fade-out duration for dialogue box hiding
-- Set duration to `0.0` to disable animation (instant show/hide)
-- Added `show_dialogue_box_with_duration()` and `hide_dialogue_box_with_duration()` methods in `KND_DialogueBox`
+- Added the `showtextbox` command with a configurable fade-in duration
+- Added the `hidetextbox` command with a configurable fade-out duration
+- Allowed a duration of `0.0` to show or hide the dialogue box immediately
+- Added `show_dialogue_box_with_duration()` and `hide_dialogue_box_with_duration()` to `KND_DialogueBox`
 
-#### Wait Signal
+#### Waiting for External Signals
 
-- Added `waitsignal` script command to pause dialogue flow and wait for an external signal
-- Added `emit_wait_signal(signal_name: String)` method for external code to trigger signal continuation
-- Suitable for cutscenes, minigames, custom interactions, and more
+- Added the `waitsignal` command to pause dialogue flow until a specified external signal is received
+- Added `emit_wait_signal(signal_name: String)` so external code can resume the dialogue
+- Supports cutscenes, minigames, custom interactions, and similar use cases
 
 #### Runtime Internationalization
 
-- Added runtime script internationalization support (i18n runtime), enabling dynamic language switching during gameplay
-- Added `KND_I18n` internationalization service node with registration and translation interfaces
-- Dialogue manager supports loading localized dialogue resources
+- Added initial runtime script internationalization support, enabling languages to be switched during gameplay
+- Added the `KND_I18n` internationalization service node with registration and translation APIs
+- Added support for loading localized dialogue resources in the dialogue manager
 
-#### Voice & Audio
+#### Voice and Audio
 
-- Added voice progress display in dialogue box showing voice playback progress
-- Added `voice_progress_display.tscn` progress display template scene
-- Supports toggling progress display via dialogue box node settings
+- Added a voice playback progress indicator to the dialogue box
+- Added the `voice_progress_display.tscn` template scene
+- Added an option on the dialogue box node to disable the progress indicator
 
-#### Documentation & Showcase
+#### Documentation and Showcase
 
-- Added Konado Showcase page generator that automatically fetches and displays games made with Konado
-- Added multi-language (Chinese/English/Japanese/Korean) Konado Showcase pages
-- Added multi-language documentation version management, default documentation version updated to 2.6
-- Added 2.6 camera, text, and other new feature tutorial documentation
-- Added Korean (ko) and Japanese (ja) full documentation translations
+- Added a Konado Showcase page generator that automatically collects and displays games made with Konado
 
 #### Other
 
-- Replaced project license with multi-license, updated documentation
-- Changed `middle` theme to `default` inherited scene for correct inheritance
+- Adopted multiple licenses for the project and updated the documentation
+- Changed the `middle` theme to inherit from the `default` scene, correcting its inheritance hierarchy
 
 ### Syntax Changes
 
-- **New `screentext` command**: NVL full-screen text display
+- **New `screentext` command**: display full-screen NVL text
   ```ks
   screentext {
       "This is the first line of full-screen text"
@@ -120,20 +130,20 @@ Konado 2.6 is officially released. Codenamed "Ketchup", this version focuses on 
   }
   ```
 
-- **New `showtextbox` / `hidetextbox` commands**: Dialogue box show/hide control
+- **New `showtextbox` / `hidetextbox` commands**: control dialogue box visibility
   ```ks
   showtextbox 1.0    # Show dialogue box with 1s fade-in animation
   hidetextbox 0.5    # Hide dialogue box with 0.5s fade-out animation
   showtextbox 0.0    # Disable animation, show instantly
   ```
 
-- **New `waitsignal` command**: Wait for external signal
+- **New `waitsignal` command**: wait for an external signal
   ```ks
   waitsignal "over"        # Wait for signal named "over"
   waitsignal minigame_done # Identifier form
   ```
 
-- **Extended `cam` command**: Camera shake
+- **Extended `cam` command**: add camera shake
   ```ks
   cam shake          # Shake with default duration
   cam shake 2.0      # Shake for 2 seconds
@@ -143,72 +153,72 @@ Konado 2.6 is officially released. Codenamed "Ketchup", this version focuses on 
 
 ### Fixed
 
-- Fixed main menu quit button node path issue in non-editor environments
-- Fixed `middle` theme inheritance scene configuration as default theme
+- Fixed the node path used by the main menu's Quit button outside the editor
+- Fixed the `middle` theme's inheritance from the default theme
 
 ### Improvements
 
-- Refactored character animation system, centralized animation logic for easier extension
-- Voice progress display supports toggle configuration for flexible project adaptation
-- Konado Showcase auto-generation reduces community showcase maintenance cost
+- Centralized the character animation logic to make the system easier to extend
+- Made the voice progress indicator optional to suit different project requirements
+- Automated Konado Showcase generation to reduce community maintenance
 
 ### Compatibility Notes
 
-- Godot 4.7 or later is recommended.
-- Direct upgrade from 2.4 to 2.6 is not supported; project migration is recommended.
-- Runtime internationalization requires additional `KND_I18n` node configuration; it is an optional feature.
+- Godot 4.7 or later is recommended
+- Direct upgrades from 2.4 to 2.6 are not supported; migrate the project instead
+- Runtime internationalization requires additional `KND_I18n` node configuration and remains optional
 
 ## 2.5 - Diguoji
 
-Konado 2.5 is officially released. Codenamed "Diguoji", this version focuses on game flow completeness and development experience enhancement. It introduces quick save/load functionality, a game startup main menu, character scene-based architecture, background transition effects, and launches a VSCode syntax highlighting extension along with editor skill packs, further improving the out-of-the-box development experience.
+Konado 2.5, codenamed Diguoji, rounds out the game flow and improves the developer experience. It adds Quick Save and Quick Load, a main menu, scene-based characters, background transitions, a VS Code syntax-highlighting extension, and an editor skill package.
 
 ### Added
 
 #### Save System
 
-- Added quick save/quick load functionality with QuickSave and QuickLoad buttons in dialogue templates
-- Added quick save indicator in save UI component, slot 0 marked as quick save slot
-- Implemented `_on_quick_save_pressed()` and `_on_quick_load_pressed()` methods in dialogue manager
-- Added confirmation dialog before quick load to prevent accidental loss of unsaved progress
-- Added lightweight toast notifications to display save/load operation results
+- Added Quick Save and Quick Load buttons to the dialogue templates
+- Marked slot 0 as the quick-save slot in the save UI
+- Added `_on_quick_save_pressed()` and `_on_quick_load_pressed()` to the dialogue manager
+- Added a confirmation dialog before Quick Load to prevent accidental loss of unsaved progress
+- Added lightweight toast notifications for save and load results
 
 #### Game Interface
 
-- Added game startup main menu screen (`main.tscn`) with Start Game, Load Save, Settings, and Quit buttons
-- Main menu uses theme background image with unified button styles
-- Quit button automatically hidden on Web platform for browser compatibility
+- Added a main menu (`main.tscn`) with Start Game, Load Game, Settings, and Quit buttons
+- Added a themed background and consistent button styling to the main menu
+- Automatically hid the Quit button on the Web platform
 
 #### Character System
 
-- Added character scenes as an alternative portrait form, supporting any node type for character scenes
-- Added `motion` command for executing stage actions
-- Added custom animation support in `ActorMotionLayer` with sample animations included
-- Centralized motion logic in `actor_motion_layer`, eliminating hardcoded animations
+- Added optional scene-based character portraits, allowing character scenes to use any node type
+- Added the `motion` command for performing stage actions
+- Added custom animation support to `ActorMotionLayer`, including a sample animation
+- Centralized motion logic in `actor_motion_layer` instead of hardcoding animations
 
 #### Background System
 
-- Backgrounds converted to scenes, supporting shaders in scene-based backgrounds
-- Added "blink" background transition visual effect
-- Added background transition demo scene (`demo_06_bg_effects.ks`) and demo images
-- Added warnings when background transition effects are invalid
+- Converted backgrounds to scenes, allowing shaders to be used in them
+- Added the `blink` background transition
+- Added the `demo_06_bg_effects.ks` background-transition demo and supporting images
+- Added warnings for invalid background transitions
 
 #### Development Tools
 
-- Added VSCode Konado script syntax highlighting extension for `.ks` file coloring
-- Added VSCode workspace extension recommendations configuration (`.vscode/extensions.json`)
-- Optimized KS syntax plugin internal configuration structure
-- Added Konado DSL editor enhancement skill pack (`skills/konado-script`)
-- Added `.marketplace.json` configuration file for registering konado-script-skill plugin and its skill paths
+- Added a VS Code extension that provides syntax highlighting for `.ks` files
+- Added VS Code workspace extension recommendations in `.vscode/extensions.json`
+- Improved the internal configuration of the KS syntax extension
+- Added the Konado DSL editor skill package (`skills/konado-script`)
+- Added `.marketplace.json` to register the `konado-script-skill` plugin and its skill paths
 
 #### Documentation
 
-- Added scene-based documentation
+- Added documentation for the scene-based architecture
 - Added versioned documentation structure
-- Updated README documentation links with inline contributor information
+- Updated README documentation links and embedded contributor information
 
 #### Syntax Changes
 
-- **New `actor motion` command**: Execute character stage actions
+- **New `actor motion` command**: perform character stage actions
   ```ks
   # Execute built-in motions
   actor motion Kona shake
@@ -218,7 +228,7 @@ Konado 2.5 is officially released. Codenamed "Diguoji", this version focuses on 
   # Motions defined in AnimationPlayer within actor_motion_layer.tscn
   ```
 
-- **Simplified `actor show` command**: Removed redundant `y` coordinate, `scale`, and `mirror` parameters
+- **Simplified `actor show` command**: removed the redundant `y`, `scale`, and `mirror` parameters
   ```ks
   # 2.5 syntax (simplified)
   actor show Kona 正常 at 3
@@ -227,20 +237,20 @@ Konado 2.5 is officially released. Codenamed "Diguoji", this version focuses on 
   # actor show Kona 正常 at 2 5 scale 0.3 mirror
   ```
 
-- **`actor change` command**: Change character state (expression)
+- **`actor change` command**: change a character's state or expression
   ```ks
   actor change Kona 害羞
   actor change Kona 惊讶
   ```
 
-- **Extended background transition effects**: Added "blink" visual effect
+- **Extended background transitions**: added the `blink` effect
   ```ks
   background bg1 fade    # Fade in/out
   background bg1 windmill # Windmill effect
   background bg1 blink    # Blink effect (new)
   ```
 
-- **Repeated `actor show` compatibility**: Allows reusing `show` command on already displayed characters, reusing existing nodes with new state
+- **Repeated `actor show` support**: reuse an existing character node and switch it to a new state
   ```ks
   actor show Kona 正常 at 3
   actor show Kona 害羞 at 2  # Reuse node, change state and position
@@ -248,182 +258,182 @@ Konado 2.5 is officially released. Codenamed "Diguoji", this version focuses on 
 
 ### Fixed
 
-- Fixed achievement close exception bug
-- Fixed conditional branch continue cleanup issue, correcting if-branch not jumping problem
-- Fixed version switcher selection stability issue
-- Fixed actor show reuse issue, allowing repeated actor show statements that reuse existing nodes with new state
-- Fixed waiting for actor shown signal issue
-- Fixed batch actor stage position updates issue
-- Fixed variable system demo scene not working issue
+- Fixed an error when closing the achievement UI
+- Fixed conditional-branch cleanup after `continue`, which could prevent `if` branches from jumping correctly
+- Fixed unstable selection behavior in the version switcher
+- Fixed repeated `actor show` statements so they reuse the existing node and apply the new state
+- Fixed waiting for the actor's `shown` signal
+- Fixed batch updates to actor stage positions
+- Fixed the variable-system demo becoming unable to continue
 
 ### Improvements
 
-- Improved documentation details, added quick save/load documentation
-- Refactored plugin README with new compatible editor descriptions and optimized installation steps
-- Optimized KS syntax plugin README command descriptions
-- Updated documentation site version configuration with 2.5 version branch
-- Removed redundant y-coordinate parameter, simplified character positioning
-- Optimized Demo scene: updated scripts, assets, and .gitignore
-- Added Tripo acknowledgement logo
-- Updated community projects list with "雨夜重逢" game and Akonado derived project
+- Expanded the documentation with Quick Save and Quick Load instructions
+- Reworked the plugin README with supported editor versions and clearer installation steps
+- Improved command descriptions in the KS syntax extension README
+- Added the 2.5 documentation branch to the documentation site's version configuration
+- Removed the redundant `y` coordinate and simplified character positioning
+- Updated the demo scene, scripts, assets, and `.gitignore`
+- Added the Tripo logo to the acknowledgements
+- Added the game "雨夜重逢" and the Akonado fork to the community projects list
 
 ### Removed
 
-- Removed image-based expression switching compatibility, now using scenes only
-- Removed old image format compatibility, switching to scene-based state transitions
+- Removed support for switching expressions with images; character scenes are now required
+- Removed support for the legacy image format; state changes are now handled in scenes
 
 ### Compatibility Notes
 
-- Godot 4.7 or later is recommended.
-- 2.5 introduces a new main menu scene, ensure correct startup scene configuration in projects.
-- Backgrounds and character portraits are now scene-based, old image formats are no longer compatible and need migration to scene configuration.
-- Removed redundant y-coordinate parameter, character positioning uses horizontal grid positions only.
+- Godot 4.7 or later is recommended
+- 2.5 introduces a new main menu scene; configure it as the project's startup scene where appropriate
+- Backgrounds and character portraits are now scene-based; legacy image formats must be migrated to scene resources
+- Character positioning now uses horizontal grid positions only; the redundant `y` parameter has been removed
 
 ## 2.4.5 LTS - Macaron
 
-Konado 2.4.5 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series, focusing on KS script compiler pipeline refactoring and editor experience enhancement, implementing a complete compilation chain and adding useful editor tool features.
+Konado 2.4.5 is an LTS maintenance release for the 2.4 series. It rebuilds the KS compilation pipeline and adds practical editor tooling.
 
 ### Added
 
 #### KS Compiler
 
-- Refactored KS compiler with complete compilation pipeline including lexer, parser, analyzer, and emitter
-- Added editor tooltip plugin for KS script files, displaying script line count, dialogue count, and dependency characters
+- Rebuilt the KS compiler as a complete pipeline with a lexer, parser, semantic analyzer, and emitter
+- Added editor tooltips for KS files showing the line count, dialogue count, and character dependencies
 
 ### Removed
 
-- Removed deprecated dialogue scene file `konado_dialogue.tscn`, which was a legacy file from the 2.3 dialogue system and is no longer used
+- Removed the unused `konado_dialogue.tscn` scene left over from the 2.3 dialogue system
 
 ### Compatibility Notes
 
-- Removed deprecated dialogue scenes. Please use the new `knd_dialogue_box_middle.tscn` and `knd_dialogue_box_left.tscn` dialogue scene templates. This may cause issues in projects relying on the old dialogue scene. It is recommended to back up before upgrading or manually add missing dialogue scenes after migration.
-- Godot 4.6.2 or later is recommended.
+- Use the new `knd_dialogue_box_middle.tscn` and `knd_dialogue_box_left.tscn` templates in place of the removed legacy dialogue scene. Projects that depend on the old scene may break, so back them up before upgrading and migrate any missing scene references
+- Godot 4.6.2 or later is recommended
 
 ## 2.4.4 LTS - Macaron
 
-Konado 2.4.4 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series, focusing on option parsing fixes in the KS interpreter, resolving branch option display and jump issues, further improving script parsing stability and accuracy.
+Konado 2.4.4 is an LTS maintenance release for the 2.4 series. It fixes option parsing in the KS interpreter, including option display and branch targets.
 
 ### Fixed
 
 #### KS Interpreter
 
-- Fixed legacy option syntax parsing from 2.3, restricting one option per line. Removed the `choice "text1" -> tag1 "text2" -> tag2` format, enforcing the standard `choice "text" -> tag` single-option-per-line format.
-- Fixed branch option jump target parsing, added post-processing step to convert `next_id` from tag names to node IDs within branches, resolving branch option jump failures.
-- Fixed consecutive `choice` line merging logic within branches, allowing multiple `choice` lines in branches to correctly merge into a single option group, resolving single-option display in branches.
+- Removed the legacy 2.3 syntax that allowed multiple options on one line. The unsupported `choice "text1" -> tag1 "text2" -> tag2` form must now be written as separate `choice "text" -> tag` lines
+- Added a post-processing step that resolves branch option `next_id` values from labels to node IDs, fixing failed jumps from options inside branches
+- Fixed consecutive `choice` lines inside branches so they are combined into one option node instead of displaying only one option
 
 ### Added
 
 #### Samples and Assets
 
-- Added `demo_choice_test.ks` option system test script demonstrating main-line multi-option, branch multi-option, and nested option jump scenarios for verifying option parsing functionality.
+- Added `demo_choice_test.ks`, covering multiple main-flow options, options inside branches, and nested option jumps
 
 ### Compatibility Notes
 
-- 2.4.4 enforces one option per line. Old scripts with multiple options on a single line need to be split into multiple lines. This may cause breaking changes.
-- Godot 4.6.2 or later is recommended.
+- 2.4.4 requires one option per line. Existing scripts with multiple options on one line must split them across separate lines; this is a breaking syntax change
+- Godot 4.6.2 or later is recommended
 
 ## 2.4.3 LTS - Macaron
 
-Konado 2.4.3 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series. It focuses on editor interaction fixes, dialogue playback flow improvements, and sample asset completion, further improving out-of-the-box stability and usability.
+Konado 2.4.3 is an LTS maintenance release for the 2.4 series, improving editor interaction, dialogue playback, and bundled sample assets.
 
-### Fixes
+### Fixed
 
-#### Performance System
+#### Acting System
 
-- Removed the ShaderMaterial from the scene and now dynamically creates and assigns it to the background node in the ready function. This unifies material initialization and prevents issues where the material is null and cannot be configured when the scene loads.
+- Removed the `ShaderMaterial` from the scene and created it dynamically in `_ready()` before assigning it to the background node. This centralizes material initialization and prevents null-material errors during scene loading.
 
 
 ## 2.4.2 LTS - Macaron
 
-Konado 2.4.2 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series. It focuses on editor interaction fixes, dialogue playback flow improvements, and sample asset completion, further improving out-of-the-box stability and usability.
+Konado 2.4.2 is an LTS maintenance release for the 2.4 series, improving editor interaction, dialogue playback, and bundled sample assets.
 
-### Fixes
+### Fixed
 
 #### Editor
 
-- Fixed the KS editor display logic so it no longer leaves an abnormal blank area occupying the main screen.
-- Fixed visibility control in the editor `_edit` method by using `ks_dock.make_visible()` instead of the incorrect `ks_editor.show()` approach.
+- Fixed the KS editor occupying the main workspace with a blank panel
+- Fixed visibility handling in `_edit()` by replacing the incorrect `ks_editor.show()` call with `ks_dock.make_visible()`
 
 #### Dialogue System
 
-- Fixed dialogue manager autoplay logic by adjusting the execution flow after typewriter completion and moving `_process_next()` to the correct branch. This resolves incorrect flow jumps in scenes that do not wait for voice playback.
-- Improved voice playback logic by refactoring `_play_voice` to return the audio duration, optimizing the timing coordination between autoplay and waiting for voice playback after typewriter completion.
-- Fixed autoplay settings loading timing so settings are loaded during dialogue manager initialization instead of being read on demand at runtime.
+- Fixed autoplay after typewriter completion by moving `_process_next()` to the correct branch, preventing incorrect advancement when voice playback is not awaited
+- Refactored `_play_voice()` to return the audio duration, coordinating autoplay with voice completion after the typewriter finishes
+- Loaded autoplay settings when the dialogue manager initializes instead of reading them on demand
 
 ### Improvements
 
 #### Dialogue Manager
 
-- Added exception handling for empty current dialogue to avoid blank dialogue causing the flow to stall.
-- Optimized debug log output with clearer runtime status messages to make troubleshooting easier.
+- Added a guard for an empty current dialogue so blank dialogue cannot stall the flow
+- Improved debug logging with clearer runtime state messages
 
 #### Samples and Assets
 
-- Added the missing Demo scene voice list resource `voice_list.tres`, including sample voice entries.
-- Renamed `new_resource.tres` to `character_list.tres` to standardize resource naming.
-- Completed resource references for the character list, background list, BGM list, and voice list in the Demo scene.
+- Added the missing `voice_list.tres` resource and sample voice entries to the demo
+- Renamed `new_resource.tres` to `character_list.tres`
+- Completed the demo's references to its character, background, BGM, and voice lists
 
 ### Compatibility Notes
 
-- 2.4.2 continues the bottom Dock layout introduced in 2.4.1, but adjusts the visibility control logic.
-- Godot 4.6.2 or later is recommended.
+- 2.4.2 retains the bottom dock layout introduced in 2.4.1 but changes its visibility handling
+- Godot 4.6.2 or later is recommended
 
 
 ## 2.4.1 LTS - Macaron
 
-Konado 2.4.1 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series. Compared with version 2.4.0, this update focuses on editor interface experience optimization and core functionality improvements, while comprehensively fixing various issues reported by the community, further enhancing stability and usability.
+Konado 2.4.1 is an LTS maintenance release for the 2.4 series. Compared with 2.4.0, it improves the editor experience and core functionality while addressing issues reported by the community.
 
 ### Changes
 
-- Added the KND_SettingsBridge settings bridge node for dialogue settings access.
-- Added settings listener and settings button functionality to the dialogue manager.
-- Integrated volume synchronization logic in the audio interface.
+- Added the `KND_SettingsBridge` node to expose dialogue settings
+- Added settings change listeners and a Settings button to the dialogue manager
+- Added volume synchronization to the audio interface
 
 ### Fixes
 
 #### Editor
 
-- Fixed theme and button styles, reset the editor position to the bottom, and allowed it to pop up freely for convenient simultaneous preview of game scenes and dialogue editing.
-- Fixed the editor panel minimum height to 300px, ensuring the editor panel is visible during initialization.
-- Fixed compatibility issues with Godot 4.6 API changes.
+- Fixed theme and button styling, moved the editor panel to the bottom dock, and made it detachable so the game preview and dialogue editor can remain visible together
+- Set the editor panel's minimum height to 300 px so it remains visible when initialized
+- Updated the editor for Godot 4.6 API changes
 
 ### Improvements
 
 #### Themes, Samples, and Assets
 
-- Added `NotoSansSC-VF.otf` and `ResourceHanRoundedCN-Medium.ttf` font files and corresponding SIL OFL license documents.
-- Fixed font file paths in `left_theme.tres` and `middle_theme.tres` theme resources.
+- Added the `NotoSansSC-VF.otf` and `ResourceHanRoundedCN-Medium.ttf` fonts and their SIL OFL license files
+- Fixed font paths in `left_theme.tres` and `middle_theme.tres`
 
 #### Documentation
 
-- Added `.gdignore` configuration in the `docs` directory to prevent Godot from abnormally loading unnecessary documentation files.
-- Updated documentation and syntax highlighter instructions.
-- Optimized multilingual Konado project descriptions.
+- Added `docs/.gdignore` to keep Godot from importing documentation files
+- Updated the documentation and syntax-highlighter instructions
+- Improved the multilingual Konado project descriptions
 
 ### Compatibility Notes
 
-- 2.4.1 adjusts the editor panel position to the bottom. It is recommended to disable the old plugin version first, exit the project for a complete update, and then re-enable it to avoid cache issues.
-- Due to Godot 4.6 API changes, older versions of Godot may not work properly and need to be upgraded to Godot 4.6 or later.
-- Since new font files have been imported, if they do not take effect, it is recommended to delete the font resource cache files under the `.godot` directory.
+- 2.4.1 moves the editor panel to the bottom dock. To avoid stale editor caches, disable the old plugin, close the project, update it fully, and then re-enable the plugin
+- Godot 4.6 or later is required because of upstream API changes
+- If the new fonts do not appear, delete the cached font resources under `.godot`
 
 ## 2.4.0 LTS - Macaron
 
-Konado 2.4.0 is a long-term support release. Compared with 2.3, this version focuses on the core dialogue flow, variable and save/load capabilities, reusable plugin ecosystem, template assets, and documentation system, bringing a major improvement in both functionality and stability.
+Konado 2.4.0 is a long-term support release. Compared with 2.3, it significantly expands and stabilizes the core dialogue flow, variable and save systems, reusable plugin ecosystem, templates, and documentation.
 
 ### Highlights
 
 - Added a complete variable system with persistent variables, temporary variables, variable interpolation, and conditional checks.
-- Added a complete save/load system that can store dialogue state, variables, audio, actors, and background state.
+- Added a complete save and load system for dialogue state, variables, audio, actors, and backgrounds.
 - Added a fade-in typewriter text component with BBCode rich text support and GPU-accelerated per-character fade-in rendering.
 - Added three standalone plugins: Konado Achievement, Konado Settings, and Konado WebTool.
-- Reworked the documentation site into Chinese, English, and Traditional Chinese multilingual structures, with 2.4-related tutorials completed.
-- Added the Graph Editor (Beta), which uses visual graph nodes to organize dialogue flow, branches, and jumps.
+- Reworked the documentation site with Simplified Chinese, English, and Traditional Chinese editions, including the 2.4 tutorials.
+- Added a node-based graph editor (Beta) for organizing dialogue flow, branches, and jumps.
 
 ### Changes
 
 #### Dialogue System and Script Capabilities
 
-- Added the `addons/konado/graph_editor` graph editor module:
+- Added the `addons/konado/graph_editor` module:
   - `knd_graph_edit.gd`: visual graph editor.
   - `knd_graph_node_factory.gd`: dialogue node factory.
   - `knd_graph_converter.gd`: converter between KS scripts and graph structures.
@@ -431,9 +441,9 @@ Konado 2.4.0 is a long-term support release. Compared with 2.3, this version foc
 - Added variable operation statements: `set`, `add`, `sub`, `mul`, and `div`.
 - Added dialogue text variable interpolation, allowing variables such as `%love` and `$score` to be displayed directly in dialogue lines.
 - Added `if / else / endif` conditional branches with support for `==`, `!=`, `>`, `<`, `>=`, and `<=`.
-- Improved choice and branch jumps, optimizing parsing and execution for `choice`, `branch`, and `jump_branch`.
-- Added the custom signal instruction `signal <name>`, allowing dialogue scripts to trigger external game logic.
-- Added achievement script instruction examples, including direct unlocks, counter progress, and flag conditions.
+- Improved the parsing and execution of choices and branch jumps for `choice`, `branch`, and `jump_branch`.
+- Added the custom signal command `signal <name>` so dialogue scripts can trigger external game logic.
+- Added achievement command examples for direct unlocks, counter progress, and flag conditions.
 - Added background clearing.
 - Added dialogue visibility checks.
 
@@ -441,33 +451,33 @@ Konado 2.4.0 is a long-term support release. Compared with 2.3, this version foc
 
 - Added `KND_SaveSystem`, providing APIs such as `save_game()`, `load_game()`, `delete_save()`, and `get_save_info()`.
 - Added `KND_SaveData`, which serializes dialogue, variables, audio, actors, background state, and save metadata in one structure.
-- Added automatic save toggle and auto-save interval settings.
-- Added save strategy configuration, allowing projects to choose whether to save dialogue state, variables, audio, actors, and background state.
-- Updated the save UI component with support for save slots, saving, loading, deletion, and preview information.
+- Added an autosave toggle and configurable autosave interval.
+- Added options controlling whether dialogue state, variables, audio, actors, and backgrounds are included in saves.
+- Updated the save UI with save slots, save, load, delete, and metadata preview support.
 
 #### Text Rendering and Audio
 
 - Added the `KND_TypewriterText` fade-in typewriter text component.
-- Added `typewriter_fade.gdshader`, using a CanvasItem shader for per-character fade-in rendering.
+- Added `typewriter_fade.gdshader`, which uses a `CanvasItem` shader for per-character fade-in rendering.
 - Added BBCode parsing support for bold, italic, underline, strikethrough, color, and font size.
 - Added multiline text fade-in support.
-- Added documentation for typewriter sound effects.
+- Added typewriter sound-effect documentation.
 
 #### Plugins
 
 - Added the **Achievement System** plugin (`addons/konado_achievement`):
-  - JSON-based achievement data configuration.
-  - Support for direct unlocks, counters, flag conditions, and hidden achievements.
-  - Achievement popup, achievement panel, progress statistics, and reset APIs.
-  - Support for custom save/load backends and external platform SDK sync callbacks.
+  - Configures achievement data through JSON.
+  - Supports direct unlocks, counters, flag conditions, and hidden achievements.
+  - Provides achievement popups, an achievement panel, progress statistics, and reset APIs.
+  - Supports custom save and load backends and synchronization callbacks for external platform SDKs.
 - Added the **Settings System** plugin (`addons/konado_settings`):
-  - Dynamically generates settings panels from JSON configuration.
-  - Built-in categories for audio, text playback, display, and more.
-  - Support for sliders, toggles, option controls, and other UI items.
-  - Support for filtering settings by platform and build type.
+  - Generates settings panels dynamically from JSON.
+  - Includes built-in categories for audio, text playback, display, and more.
+  - Supports sliders, toggles, option selectors, and other UI controls.
+  - Supports filtering settings by platform and build type.
 - Added the **WebTool** plugin (`addons/konado_webtool`):
-  - Allows common browser shortcuts in Web exports.
-  - Supports configurable F12, F5, F11, Ctrl/Cmd shortcut combinations, and more.
+  - Preserves common browser shortcuts in Web exports.
+  - Supports configurable F12, F5, F11, and Ctrl/Cmd key combinations.
 
 #### Templates, Samples, and Assets
 
@@ -475,48 +485,48 @@ Konado 2.4.0 is a long-term support release. Compared with 2.3, this version foc
 - Added `left_theme.tres` and `middle_theme.tres` theme resources.
 - Added the complete variable system sample `sample/demo/demo_03_variable.ks`.
 - Added the Konado 2.4 startup banner.
-- Added Kona emoji GIF assets.
-- Added updated character portrait assets and supporting materials for portrait import and cropping guides.
+- Added Kona reaction GIFs.
+- Added updated character portraits and guide assets for importing and cropping portraits.
 - Added Chinese font resources: `NotoSansSC-VF.otf` and `ResourceHanRoundedCN-Medium.ttf`.
 
 ### Documentation
 
-- Reworked the VitePress documentation configuration and added the sidebar generation script `genSidebar.ts`.
-- Added Chinese, English, and Traditional Chinese multilingual documentation structures.
+- Reworked the VitePress configuration and added the `genSidebar.ts` sidebar generator.
+- Added Simplified Chinese, English, and Traditional Chinese documentation.
 - Added documentation for the achievement system, settings system, WebTool, and Konado .NET API.
 - Added tutorials for the variable system, conditional branches, custom signals, typewriter effect, and typewriter sound effects.
-- Added core tutorials for the save system, background transitions, script highlighting, logging, shots, and dialogue.
-- Added community contribution, documentation contribution, feedback, resources, and join-us pages.
-- Updated the version roadmap: 2.4 is codenamed Macaron and marked as LTS.
+- Added core tutorials covering the save system, background transitions, script highlighting, logging, shots, and dialogue.
+- Added pages for community and documentation contributions, feedback, resources, and joining the community.
+- Updated the roadmap to mark 2.4, codenamed Macaron, as an LTS release.
 
 ### Improvements
 
 - Updated the main Konado plugin version to `2.4.0`.
-- Refactored `KND_DialogueManager` and the KS interpreter to support variables, conditions, branches, and save state management.
+- Refactored `KND_DialogueManager` and the KS interpreter to support variables, conditions, branches, and saved dialogue state.
 - Improved integration between actor management and the save system.
-- Improved actor layout logic so character images are positioned from their bottom anchor on grid positions.
+- Improved actor layout so portraits are bottom-aligned at their grid positions.
 - Improved highlighting logic and added BBCode syntax definitions.
-- Improved move instructions and sample resources.
+- Improved movement commands and sample assets.
 - Improved the Konado Settings panel UI and cleaned up redundant configuration.
 - Updated the plugin author list.
-- Updated README multilingual links and project description.
-- Updated LICENSE copyright information.
+- Updated the README's multilingual links and project description.
+- Updated the copyright information in `LICENSE`.
 
 ### Fixes
 
-- Fixed texture expand and stretch mode configuration in the character template.
-- Fixed some documentation paths, image import paths, and sidebar generation configuration.
+- Fixed texture expansion and stretch-mode settings in the character template.
+- Fixed documentation paths, image import paths, and sidebar generation settings.
 
 ### Removed
 
-- Removed old unused shots editor plugin files from the Inspector integration.
-- Removed old actor scaling, mirroring, and vertical positioning parameters. Actor display and movement now use horizontal grid positions.
+- Removed unused legacy shot-editor files from the Inspector plugin.
+- Removed legacy actor scaling, mirroring, and vertical-position parameters. Actor display and movement now use horizontal grid positions.
 - Removed outdated documentation directories such as `docs/about`, old `docs/script`, and old `docs/tutorial`.
 - Removed Spanish and French README links and their corresponding README files.
 - Removed old `assets/kona/1.0` portrait assets.
 
 ### Compatibility Notes
 
-- 2.4.0 changes the actor positioning model. Old scripts that rely on `actor show ... at <x> <y> scale <value> [mirror]` need to migrate to the new grid-based positioning approach.
-- The variable system is split into persistent variables (`%`) and temporary variables (`$`). Persistent variables are included in save data, while temporary variables are only used in the current flow.
-- WebTool is only enabled on the Web platform and does not inject browser shortcut handling logic on other platforms.
+- 2.4.0 changes the actor positioning model. Scripts that use `actor show ... at <x> <y> scale <value> [mirror]` must migrate to the new grid-based positioning.
+- The variable system distinguishes persistent variables (`%`) from temporary variables (`$`). Persistent variables are saved; temporary variables exist only for the current dialogue flow.
+- WebTool is enabled only on the Web platform and does not install browser shortcut handling on other platforms.
