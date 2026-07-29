@@ -1,54 +1,53 @@
 ---
-title: Syntax Highlighter
+title: KonadoScript Editor
 order: 5
 ---
 
-# KND_KsHighlighter Editor Syntax Highlighting
+# Built-in Godot KonadoScript Editor
 
-## Preface
+After enabling the Konado plugin, double-click a `.ks` file in the FileSystem dock to open it in the bottom `KonadoEdit` panel. The editor modifies the original KonadoScript file and asks Godot to reimport it after each save.
 
-Syntax highlighting is an important part of an editor. It helps developers visually identify code structure, improving writing efficiency and readability.
-`KND_KsHighlighter` is a highlighter based on Godot's `SyntaxHighlighter`, designed specifically for KS scripts. It centralizes highlighting rules in a single script, making customization and extension very flexible. You can easily adjust existing rules or add entirely new color schemes.
+## Editing Features
 
-## Basic Implementation
+- Edit multiple `.ks` files in tabs while preserving each document's caret and unsaved state
+- Save recovery drafts automatically and offer to restore them after an editor or plugin interruption
+- Detect external file changes, reload clean documents automatically, and ask before resolving conflicts
+- Find and replace text, go to a line, and navigate local branch symbols
+- Insert every currently supported KonadoScript command from the statement catalog
 
-In `KND_KsHighlighter`, highlighting rules are stored as an array. Each array element is a dictionary containing two keys:
+## Highlighting and Completion
 
-- `regex`: Regular expression used to match text (Godot RegEx syntax).
-- `color`: Color for matched text, represented by `Color(r, g, b, a)`, where `a` is opacity (optional, default 1.0).
+`KND_KsHighlighter` is built on Godot's `SyntaxHighlighter`. Highlighting, completion, and statement templates share `KS_LanguageCatalog`, while valid keywords come from the parser's `KS_Token.KEYWORDS`. Automated checks keep both sources aligned whenever a command is added or removed.
 
-Example structure:
-```gdscript
-{
-	"regex": "\\b(if|else|endif)\\b",
-	"color": Color(1.0, 0.8, 0.2)
-}
-```
+Highlighting expressions are compiled once, and each line records only color transitions. This avoids recompiling regular expressions or producing a dictionary entry for every character during editing and scrolling.
 
-The highlighter matches rules in array order. Rules applied later may override earlier matches, so rule order is important. It is recommended to put general commands earlier and strings/comments later, so overriding behaves reasonably.
+The default highlighting resource is located at:
 
-## Custom Color Scheme
-
-You can apply custom highlighting to the editor in two ways:
-
-### Method 1: Modify the Resource File (Recommended)
-
-The default color scheme is stored as a resource file at:
-```
+```text
 res://addons/konado/editor/ks_editor/highlighter.tres
 ```
 
-Editing this resource file directly preserves changes and avoids regenerating it every time.
-Load and use the resource in code:
-```gdscript
-set_syntax_highlighter(load("res://addons/konado/editor/ks_editor/highlighter.tres"))
-```
+Custom editors can also instantiate the highlighter directly:
 
-### Method 2: Create an Instance Dynamically
-
-You can also create a new `KND_KsHighlighter` instance directly in code and set custom rules for it, such as by modifying `highlight_rules` in the script:
 ```gdscript
 set_syntax_highlighter(KND_KsHighlighter.new())
 ```
 
-> **Note**: If you modify the `KND_KsHighlighter.gd` script directly, you may need to regenerate the resource file for changes to take effect. Prefer using the resource file method for clearer color management.
+## Live Diagnostics
+
+After a short typing pause, the editor runs lexical, syntax, and semantic analysis without generating runtime `KND_Shot` resources. Errors and warnings appear in both:
+
+- Gutter markers and line background colors
+- The problem list below the editor
+
+Click a problem or its gutter marker to jump to the relevant location. Saving still runs the normal Godot import, so live diagnostics do not replace the final import result.
+
+## Shortcuts
+
+| Action | Windows / Linux | macOS |
+| --- | --- | --- |
+| Save | `Ctrl+S` | `Command+S` |
+| Close current tab | `Ctrl+W` | `Command+W` |
+| Find | `Ctrl+F` | `Command+F` |
+| Find and replace | `Ctrl+H` | `Command+Option+F` |
+| Go to line | `Ctrl+L` | `Command+L` |

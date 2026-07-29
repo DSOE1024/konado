@@ -1,54 +1,53 @@
 ---
-title: 語法高亮器
+title: KonadoScript 編輯器
 order: 5
 ---
 
-# KND_KsHighlighter 編輯器語法高亮
+# Godot 內建 KonadoScript 編輯器
 
-## 前言
+啟用 Konado 外掛後，在檔案系統面板中雙擊 `.ks` 檔案，即可在底部的 `KonadoEdit` 面板中開啟。編輯器會直接修改原始 KonadoScript 檔案，儲存後自動要求 Godot 重新匯入。
 
-語法高亮是編輯器的重要組成部分，能幫助開發者直觀識別程式碼結構，從而提升編寫效率與可讀性。
-`KND_KsHighlighter` 是基於 Godot 引擎 `SyntaxHighlighter` 實作的高亮器，專門用於 KS 腳本。它將高亮規則集中定義在單一腳本中，使自訂與擴充變得非常靈活——你可以輕鬆調整現有規則，也可以加入全新的配色方案。
+## 編輯功能
 
-## 基本實作
+- 使用分頁同時編輯多個 `.ks` 檔案，並分別保留游標與未儲存狀態
+- 自動儲存復原草稿；編輯器或外掛意外中止後可在再次開啟時復原
+- 偵測外部程式修改；沒有本機修改時自動重新載入，有衝突時交由使用者選擇
+- 支援尋找、取代、跳至指定行及本機分支符號導覽
+- 從陳述式目錄插入目前所有支援的 KonadoScript 指令
 
-在 `KND_KsHighlighter` 中，高亮規則儲存為一個陣列，每個陣列元素都是一個字典，包含兩個鍵：
+## 高亮與補全
 
-- `regex`：用於匹配文字的正規表示式（Godot 的 RegEx 語法）。
-- `color`：匹配文字的顏色，使用 `Color(r, g, b, a)` 表示，其中 `a` 為透明度（可選，預設為 1.0）。
+`KND_KsHighlighter` 以 Godot 的 `SyntaxHighlighter` 實作。高亮、程式碼補全與陳述式範本共同讀取 `KS_LanguageCatalog`，合法關鍵字則以解析器的 `KS_Token.KEYWORDS` 為準。自動化測試會在新增或移除指令時檢查兩者是否一致。
 
-範例結構如下：
-```gdscript
-{
-	"regex": "\\b(if|else|endif)\\b",
-	"color": Color(1.0, 0.8, 0.2)
-}
-```
+高亮規則只會在首次使用時編譯，每一行也只記錄顏色改變的位置，避免編輯或捲動時重複編譯正規表示式，或為每個字元建立字典項目。
 
-高亮器會依照陣列順序依次匹配，後套用的規則可能覆蓋先前的匹配，因此規則順序至關重要（建議將通用命令放在前面，字串和註解放在後面，以確保覆蓋效果合理）。
+預設高亮資源位於：
 
-## 自訂配色方案
-
-你可以透過兩種方式為編輯器套用自訂高亮：
-
-### 方式一：修改資源檔案（推薦）
-
-預設配色方案以資源檔案形式儲存在：
-```
+```text
 res://addons/konado/editor/ks_editor/highlighter.tres
 ```
 
-直接編輯該資源檔案可以保留修改，並避免每次重新生成。
-在程式碼中載入並使用該資源：
-```gdscript
-set_syntax_highlighter(load("res://addons/konado/editor/ks_editor/highlighter.tres"))
-```
+自訂編輯器也可以直接建立高亮器：
 
-### 方式二：動態建立實例
-
-你也可以在程式碼中直接建立新的 `KND_KsHighlighter` 實例，並為其設定自訂規則（例如透過修改腳本中的 `highlight_rules`）：
 ```gdscript
 set_syntax_highlighter(KND_KsHighlighter.new())
 ```
 
-> **注意**：如果直接修改了 `KND_KsHighlighter.gd` 腳本，可能需要重新生成資源檔案才能使變更生效。推薦優先使用資源檔案方式，以便更清晰地管理配色。
+## 即時診斷
+
+停止輸入片刻後，編輯器會執行詞法、語法與語意分析，但不會產生執行階段 `KND_Shot` 資源。錯誤與警告會同時顯示在：
+
+- 程式碼行的診斷標記與背景色
+- 編輯器下方的問題清單
+
+點選問題或其行號槽標記即可跳至相關位置。儲存時仍會執行正常的 Godot 匯入，因此即時診斷不會取代正式匯入結果。
+
+## 快速鍵
+
+| 功能 | Windows / Linux | macOS |
+| --- | --- | --- |
+| 儲存 | `Ctrl+S` | `Command+S` |
+| 關閉目前分頁 | `Ctrl+W` | `Command+W` |
+| 尋找 | `Ctrl+F` | `Command+F` |
+| 尋找與取代 | `Ctrl+H` | `Command+Option+F` |
+| 跳至指定行 | `Ctrl+L` | `Command+L` |

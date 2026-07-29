@@ -1,54 +1,53 @@
 ---
-title: 语法高亮器
+title: KonadoScript 编辑器
 order: 5
 ---
 
-# KND_KsHighlighter 编辑器语法高亮
+# Godot 内置 KonadoScript 编辑器
 
-## 前言
+启用 Konado 插件后，在文件系统面板中双击 `.ks` 文件即可在底部的 `KonadoEdit` 面板中打开。编辑器直接修改原始 KonadoScript 文件，保存后会自动触发 Godot 重新导入。
 
-语法高亮是编辑器的重要组成部分，它能帮助开发者直观地识别代码结构，从而提升编写效率和可读性。
-`KND_KsHighlighter` 是基于 Godot 引擎的 `SyntaxHighlighter` 实现的一款高亮器，专门用于 KS 脚本。它将高亮规则集中定义在单个脚本中，使得自定义和扩展变得非常灵活——你可以轻松调整现有规则，也可以添加全新的配色方案。
+## 编辑能力
 
-## 基本实现
+- 使用标签页同时编辑多个 `.ks` 文件，并分别保留光标与未保存状态
+- 自动保存恢复草稿；编辑器或插件意外退出后，再次打开文件时可以恢复
+- 检测外部程序对文件的修改；无本地修改时自动重载，存在冲突时由用户选择
+- 支持查找、替换、跳转行和分支符号导航
+- 左侧语句目录可以插入所有当前支持的 KonadoScript 指令
 
-在 `KND_KsHighlighter` 中，高亮规则存储为一个数组，每个数组元素都是一个字典，包含两个键：
+## 高亮与补全
 
-- `regex`：用于匹配文本的正则表达式（Godot 的 RegEx 语法）。
-- `color`：匹配文本的颜色，使用 `Color(r, g, b, a)` 表示，其中 `a` 为透明度（可选，默认为 1.0）。
+`KND_KsHighlighter` 基于 Godot 的 `SyntaxHighlighter` 实现。高亮、代码补全和语句目录共同读取 `KS_LanguageCatalog`，而合法关键字以解析器中的 `KS_Token.KEYWORDS` 为准。自动化测试会检查二者是否一致，因此新增或移除指令时不会只更新解析器而遗漏编辑器。
 
-示例结构如下：
-```gdscript
-{
-	"regex": "\\b(if|else|endif)\\b",
-	"color": Color(1.0, 0.8, 0.2)
-}
-```
+高亮规则只在首次使用时编译，并且每行只记录颜色变化的位置，避免在输入或滚动时重复编译正则表达式和生成逐字符字典。
 
-高亮器会按数组顺序依次匹配，后应用的规则可能覆盖先前的匹配，因此规则的顺序至关重要（建议将通用命令放在前面，字符串和注释放在后面，以保证覆盖效果合理）。
+默认高亮资源位于：
 
-## 自定义配色方案
-
-你可以通过两种方式为编辑器应用自定义高亮：
-
-### 方式一：修改资源文件（推荐）
-
-默认的配色方案以资源文件形式存储在：
-```
+```text
 res://addons/konado/editor/ks_editor/highlighter.tres
 ```
 
-直接编辑该资源文件可以保留修改，并避免每次重新生成。
-在代码中加载并使用该资源：
-```gdscript
-set_syntax_highlighter(load("res://addons/konado/editor/ks_editor/highlighter.tres"))
-```
+自定义编辑器也可以直接使用高亮器：
 
-### 方式二：动态创建实例
-
-你也可以在代码中直接创建一个新的 `KND_KsHighlighter` 实例，并为其设置自定义规则（例如通过修改脚本中的 `highlight_rules`）：
 ```gdscript
 set_syntax_highlighter(KND_KsHighlighter.new())
 ```
 
-> **注意**：如果直接修改了 `KND_KsHighlighter.gd` 脚本，可能需要重新生成资源文件才能使更改生效。推荐优先使用资源文件方式，以便更清晰地管理配色。
+## 实时诊断
+
+停止输入片刻后，编辑器会执行词法、语法和语义分析，但不会生成运行时 `KND_Shot` 资源。错误和警告会同时显示在：
+
+- 代码行的诊断标记与背景色
+- 编辑器底部的问题列表
+
+点击问题或对应行号槽标记即可跳转到相关位置。保存文件时仍会执行正常的 Godot 导入，因此编辑器诊断不能替代正式导入结果。
+
+## 快捷键
+
+| 功能 | Windows / Linux | macOS |
+| --- | --- | --- |
+| 保存 | `Ctrl+S` | `Command+S` |
+| 关闭当前标签 | `Ctrl+W` | `Command+W` |
+| 查找 | `Ctrl+F` | `Command+F` |
+| 查找与替换 | `Ctrl+H` | `Command+Option+F` |
+| 跳转到行 | `Ctrl+L` | `Command+L` |

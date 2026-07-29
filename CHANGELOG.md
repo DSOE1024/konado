@@ -1,5 +1,15 @@
 ## 2.6.2 - Ketchup
 
+### Editor
+
+- Rebuilt the Godot editor integration around a shared language catalog used by syntax highlighting, completion, and statement templates, with complete coverage of current KonadoScript commands
+- Added multi-document tabs, unsaved-change protection, crash-recovery drafts, and external-file change detection so switching or closing scripts cannot silently lose work
+- Added debounced syntax and semantic diagnostics with gutter markers, a problem list, and click-to-navigate support
+- Added find and replace, go to line, branch navigation, and editor shortcuts compatible with Windows, Linux, and macOS
+- Cached syntax-highlighting rules and added an analysis-only validation path so live checks do not repeatedly compile regular expressions or generate runtime resources
+- Fixed source-line offsets and removed stale highlighting and completion suggestions such as `shot_id`, `start`, and `play sound`
+- Added KonadoScript editor integration tests covering language metadata, diagnostics, multi-document state, external changes, find and replace, and draft recovery
+
 ### Security
 
 - Added transparent script protection that encrypts compiled KonadoScript data with AES-256
