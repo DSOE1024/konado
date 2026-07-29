@@ -3,7 +3,7 @@ extends RefCounted
 class_name KND_ActorStateTransitionController
 
 ## 角色状态转场控制器。
-## 只操作当前视觉节点的透明度，不复制角色场景，避免脚本、音频和动态媒体被重复实例化。
+## 交叉淡入淡出：旧状态淡出的同时新状态淡入，中间不留空隙。
 
 signal transition_started(status_name: String)
 signal status_applied(status_name: String)
@@ -15,6 +15,7 @@ var _visual_provider: Callable
 var _status_applier: Callable
 var _active_tween: Tween
 var _active_visual: CanvasItem
+var _overlay_visual: CanvasItem
 var _active_status_name := ""
 var _active_completion: Callable
 var _active_target_alpha := 1.0
@@ -29,7 +30,7 @@ func _init(host: Node, visual_provider: Callable, status_applier: Callable) -> v
 	_status_applier = status_applier
 
 
-## 请求切换状态。duration 表示淡出和淡入的总时长。
+## 请求切换状态。duration 表示交叉淡入淡出的总时长。
 ## 新请求会先取消旧请求；每个请求的 completion 都保证只调用一次。
 func request(status_name: String, duration: float, completion: Callable = Callable()) -> void:
 	cancel()
@@ -51,7 +52,20 @@ func request(status_name: String, duration: float, completion: Callable = Callab
 
 	_active_visual = visual
 	_active_target_alpha = visual.modulate.a
-	_start_fade_out(request_id, maxf(duration, 0.0) * 0.5)
+
+	# 创建旧状态快照作为覆盖层，用于交叉淡入淡出
+	_create_overlay(visual)
+
+	# 先应用新状态（会替换 visual 的子节点）
+	_apply_succeeded = _apply_status(status_name)
+	if _apply_succeeded:
+		status_applied.emit(status_name)
+
+	# 新视觉节点初始 alpha 为 0
+	_set_alpha(visual, 0.0)
+
+	# 同时执行：旧快照淡出 + 新视觉淡入
+	_start_crossfade(request_id, maxf(duration, 0.0))
 
 
 ## 取消当前请求并恢复视觉透明度。取消请求会以失败状态完成。
@@ -62,6 +76,7 @@ func cancel() -> void:
 	var completion := _active_completion
 	_active_request_id += 1
 	_stop_tween()
+	_remove_overlay()
 	_restore_visual()
 	_clear_active_state()
 	transition_cancelled.emit(status_name)
@@ -73,62 +88,83 @@ func is_transitioning() -> bool:
 	return _has_active_request
 
 
-func _start_fade_out(request_id: int, duration: float) -> void:
+## 创建旧视觉内容的快照覆盖层，作为交叉淡入淡出的淡出对象。
+func _create_overlay(visual: CanvasItem) -> void:
+	if visual.get_child_count() == 0:
+		return
+	var parent := visual.get_parent()
+	if parent == null:
+		return
+
+	var overlay := Control.new()
+	overlay.name = "_CrossfadeOverlay"
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if visual is Control:
+		var vc := visual as Control
+		overlay.anchor_left = vc.anchor_left
+		overlay.anchor_top = vc.anchor_top
+		overlay.anchor_right = vc.anchor_right
+		overlay.anchor_bottom = vc.anchor_bottom
+		overlay.offset_left = vc.offset_left
+		overlay.offset_top = vc.offset_top
+		overlay.offset_right = vc.offset_right
+		overlay.offset_bottom = vc.offset_bottom
+		overlay.grow_horizontal = vc.grow_horizontal
+		overlay.grow_vertical = vc.grow_vertical
+		overlay.size = vc.size
+		overlay.position = vc.position
+
+	overlay.modulate = visual.modulate
+
+	# 复制所有子节点（旧状态的视觉内容，如 TextureRect 等）
+	for child in visual.get_children():
+		var dup := child.duplicate(Node.DUPLICATE_GROUPS)
+		overlay.add_child(dup)
+
+	parent.add_child(overlay)
+	parent.move_child(overlay, visual.get_index())
+	_overlay_visual = overlay
+
+
+## 启动交叉淡入淡出：旧快照淡出 + 新视觉淡入。
+func _start_crossfade(request_id: int, duration: float) -> void:
 	if duration <= 0.0:
-		_on_fade_out_finished(request_id, duration)
-		return
-	_active_tween = _host.create_tween()
-	_active_tween.set_trans(Tween.TRANS_SINE)
-	_active_tween.set_ease(Tween.EASE_IN)
-	_active_tween.tween_property(_active_visual, "modulate:a", 0.0, duration)
-	_active_tween.finished.connect(
-		_on_fade_out_finished.bind(request_id, duration), ConnectFlags.CONNECT_ONE_SHOT
-	)
-
-
-func _on_fade_out_finished(request_id: int, fade_in_duration: float) -> void:
-	if not _is_current_request(request_id):
-		return
-	_active_tween = null
-	var previous_visual := _active_visual
-	var previous_target_alpha := _active_target_alpha
-	_apply_succeeded = _apply_status(_active_status_name)
-	if _apply_succeeded:
-		status_applied.emit(_active_status_name)
-
-	var next_visual := _get_visual()
-	if next_visual == null or not _can_animate():
-		_restore_canvas_item(previous_visual, previous_target_alpha)
-		_finish(request_id)
-		return
-
-	_active_visual = next_visual
-	_active_target_alpha = (
-		previous_target_alpha if next_visual == previous_visual else next_visual.modulate.a
-	)
-	_set_alpha(next_visual, 0.0)
-	if fade_in_duration <= 0.0:
+		_remove_overlay()
 		_restore_visual()
 		_finish(request_id)
 		return
 
 	_active_tween = _host.create_tween()
+	_active_tween.set_parallel(true)
 	_active_tween.set_trans(Tween.TRANS_SINE)
-	_active_tween.set_ease(Tween.EASE_OUT)
-	_active_tween.tween_property(
-		_active_visual, "modulate:a", _active_target_alpha, fade_in_duration
-	)
+	_active_tween.set_ease(Tween.EASE_IN_OUT)
+
+	# 旧快照淡出
+	if _overlay_visual and is_instance_valid(_overlay_visual):
+		_active_tween.tween_property(_overlay_visual, "modulate:a", 0.0, duration)
+
+	# 新视觉淡入
+	_active_tween.tween_property(_active_visual, "modulate:a", _active_target_alpha, duration)
+
 	_active_tween.finished.connect(
-		_on_fade_in_finished.bind(request_id), ConnectFlags.CONNECT_ONE_SHOT
+		_on_crossfade_finished.bind(request_id), ConnectFlags.CONNECT_ONE_SHOT
 	)
 
 
-func _on_fade_in_finished(request_id: int) -> void:
+func _on_crossfade_finished(request_id: int) -> void:
 	if not _is_current_request(request_id):
 		return
 	_active_tween = null
+	_remove_overlay()
 	_restore_visual()
 	_finish(request_id)
+
+
+func _remove_overlay() -> void:
+	if _overlay_visual and is_instance_valid(_overlay_visual):
+		_overlay_visual.queue_free()
+	_overlay_visual = null
 
 
 func _finish(request_id: int) -> void:
@@ -138,6 +174,7 @@ func _finish(request_id: int) -> void:
 	var completion := _active_completion
 	var succeeded := _apply_succeeded
 	_stop_tween()
+	_remove_overlay()
 	_restore_visual()
 	_clear_active_state()
 	transition_finished.emit(status_name, succeeded)
@@ -196,6 +233,7 @@ func _clear_active_state() -> void:
 	_active_visual = null
 	_active_target_alpha = 1.0
 	_apply_succeeded = false
+	_overlay_visual = null
 
 
 func _call_completion(completion: Callable, succeeded: bool) -> void:
