@@ -57,6 +57,38 @@ public sealed partial class KonadoRuntimeTests : Node
 		Check(
 			wrapper.SourceResource == customDialogue,
 			"Wrappers must accept GDScript subclasses of their source resource.");
+		var rejectedMismatchedShot = false;
+		try
+		{
+			_ = new KndShot(customDialogue);
+		}
+		catch (InvalidOperationException)
+		{
+			rejectedMismatchedShot = true;
+		}
+		Check(
+			rejectedMismatchedShot,
+			"KndShot must reject resources with a different source script.");
+
+		var interpreter = new KonadoScriptsInterpreter();
+		var compiledShot = interpreter.ProcessScriptsToData(
+			"res://sample/demo/demo_01.ks");
+		Check(
+			compiledShot != null,
+			"Konado.NET must wrap compiler-produced KND_Shot script resources.");
+		if (compiledShot != null)
+		{
+			Check(
+				compiledShot.Dialogues.Count > 0,
+				"Compiler-produced KND_Shot wrappers must expose dialogue nodes.");
+			var easingDialogue = interpreter.ParseSingleLine(
+				"asyncam move cam1 ease_in_out 1.0",
+				1,
+				"res://tests/dotnet/easing.ks");
+			Check(
+				easingDialogue?.CamTweenType == "ease_in_out",
+				"Konado.NET must expose named camera easing modes.");
+		}
 
 		var protectedDialogue = new Dialogue
 		{
@@ -91,6 +123,13 @@ public sealed partial class KonadoRuntimeTests : Node
 		Check(
 			i18n.NormalizeLocale("zh-TW") == "zh_Hant",
 			"Internationalization API must normalize legacy locale codes.");
+		var localizedShot = i18n.LoadLocalizedScript(
+			"res://sample/demo/demo_01.ks",
+			"en",
+			false);
+		Check(
+			localizedShot != null && localizedShot.Dialogues.Count > 0,
+			"Internationalization API must wrap localized KND_Shot script resources.");
 	}
 
 	private void Check(bool condition, string message)

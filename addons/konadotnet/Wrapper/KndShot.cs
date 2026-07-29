@@ -8,20 +8,12 @@ public partial class KndShot : KndData
 	private static GDScript? _sourceScript;
 	private const string SourceScriptPath = "res://addons/konado/scripts/dialogue/knd_shot.gd";
 
-	public KndShot(GodotObject source) : base(source)
+	public KndShot(GodotObject source) : base(source, LoadSourceScript(), "KND_Shot")
 	{
-		var sourceScript = LoadSourceScript();
-		if (!InheritsSourceScript(source, sourceScript))
-		{
-			throw new System.InvalidOperationException("Source object is not a KND_Shot resource!");
-		}
-
-		SourceObject = source;
 	}
 
-	public KndShot()
+	public KndShot() : this(LoadSourceScript().New().AsGodotObject())
 	{
-		SourceObject = LoadSourceScript().New().AsGodotObject();
 	}
 
 	private static GDScript LoadSourceScript()
