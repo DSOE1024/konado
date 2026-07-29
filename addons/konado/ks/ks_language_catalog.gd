@@ -1,7 +1,7 @@
 extends RefCounted
 class_name KS_LanguageCatalog
 
-## KonadoScript 编辑器功能使用的统一语言目录。
+## KonadoScript 语言功能使用的统一语言目录。
 ##
 ## 解析器仍以 KS_Token.KEYWORDS 作为合法关键字的唯一来源。本目录只描述
 ## 编辑器展示所需的分组、补全关系和可插入模板，并通过测试确保目录中的
@@ -45,6 +45,148 @@ const CONTEXT_COMPLETIONS: Dictionary = {
 }
 
 const STRUCTURAL_KEYWORDS: PackedStringArray = ["at"]
+const CAMERA_TRANSITIONS: PackedStringArray = ["none", "linear", "ease_in_out"]
+
+const SIGNATURES: Dictionary = {
+	"screentext": "screentext { ... }",
+	"showtextbox": "showtextbox [duration]",
+	"hidetextbox": "hidetextbox [duration]",
+	"waitsignal": "waitsignal <signal_name>",
+	"background": "background <background_name> [transition]",
+	"actor": "actor <show|exit|change|move|motion> ...",
+	"actor show": "actor show <actor_name> <state_name> [at <position>]",
+	"actor exit": "actor exit <actor_name>",
+	"actor change": "actor change <actor_name> <state_name>",
+	"actor move": "actor move <actor_name> <position>",
+	"actor motion": "actor motion <actor_name> <motion_name>",
+	"play": "play <bgm|sfx> <resource_name>",
+	"play bgm": "play bgm <bgm_name>",
+	"play sfx": "play sfx <sound_effect_name>",
+	"stop": "stop bgm",
+	"choice": 'choice "<option>" -> <branch_name>',
+	"branch": "branch <branch_name>",
+	"if": "if <%variable|$variable> <operator> <value>:",
+	"else": "else:",
+	"endif": "endif",
+	"set": "set <%variable|$variable> [=] <value>",
+	"add": "add <%variable|$variable> <value>",
+	"sub": "sub <%variable|$variable> <value>",
+	"mul": "mul <%variable|$variable> <value>",
+	"div": "div <%variable|$variable> <value>",
+	"jump": "jump <res://path/to/script.ks>",
+	"jump_branch": "jump_branch <branch_name>",
+	"signal": "signal <signal_name>",
+	"achievement": "achievement <unlock|increment|set_flag> ...",
+	"achievement unlock": 'achievement unlock "<achievement_id>"',
+	"achievement increment": 'achievement increment "<achievement_id>" <amount>',
+	"achievement set_flag": 'achievement set_flag "<flag_id>" <true|false>',
+	"cam": "cam <move|reset|shake> ...",
+	"cam move": "cam move <camera_name> [transition] [duration]",
+	"cam reset": "cam reset [transition] [duration]",
+	"cam shake": "cam shake [duration]",
+	"asyncam": "asyncam <move|reset|shake|stop> ...",
+	"asyncam move": "asyncam move <camera_name> [transition] [duration]",
+	"asyncam reset": "asyncam reset [transition] [duration]",
+	"asyncam shake": "asyncam shake [duration]",
+	"asyncam stop": "asyncam stop",
+	"end": "end",
+}
+
+const COMMAND_DESCRIPTIONS: Dictionary = {
+	"screentext":
+	{
+		"en": "Display a full-screen text block.",
+		"zh": "显示全屏文本块。",
+	},
+	"showtextbox":
+	{
+		"en": "Show the dialogue box.",
+		"zh": "显示对话框。",
+	},
+	"hidetextbox":
+	{
+		"en": "Hide the dialogue box.",
+		"zh": "隐藏对话框。",
+	},
+	"waitsignal":
+	{
+		"en": "Pause dialogue until an external signal is emitted.",
+		"zh": "暂停剧情并等待外部信号。",
+	},
+	"background":
+	{
+		"en": "Switch the active background.",
+		"zh": "切换当前背景。",
+	},
+	"actor":
+	{
+		"en": "Control an actor on the stage.",
+		"zh": "控制舞台上的演员。",
+	},
+	"play":
+	{
+		"en": "Play background music or a sound effect.",
+		"zh": "播放背景音乐或音效。",
+	},
+	"stop":
+	{
+		"en": "Stop the active background music.",
+		"zh": "停止当前背景音乐。",
+	},
+	"choice":
+	{
+		"en": "Add a choice that targets a branch.",
+		"zh": "添加跳转到分支的选项。",
+	},
+	"branch":
+	{
+		"en": "Declare a branch in the current script.",
+		"zh": "声明当前剧本中的分支。",
+	},
+	"if":
+	{
+		"en": "Start a conditional block.",
+		"zh": "开始条件块。",
+	},
+	"else":
+	{
+		"en": "Start the fallback section of a conditional block.",
+		"zh": "开始条件块的备用分支。",
+	},
+	"endif":
+	{
+		"en": "End a conditional block.",
+		"zh": "结束条件块。",
+	},
+	"set":
+	{
+		"en": "Assign a persistent or temporary variable.",
+		"zh": "设置持久变量或临时变量。",
+	},
+	"add": {"en": "Add to a variable.", "zh": "对变量执行加法或追加。"},
+	"sub": {"en": "Subtract from a variable.", "zh": "对变量执行减法。"},
+	"mul": {"en": "Multiply a variable.", "zh": "对变量执行乘法。"},
+	"div": {"en": "Divide a variable.", "zh": "对变量执行除法。"},
+	"jump": {"en": "Load another KonadoScript.", "zh": "跳转到另一个 KonadoScript。"},
+	"jump_branch":
+	{
+		"en": "Jump to a branch in the current script.",
+		"zh": "跳转到当前剧本中的分支。",
+	},
+	"signal": {"en": "Emit a dialogue signal.", "zh": "发送剧情信号。"},
+	"achievement":
+	{
+		"en": "Update an achievement or flag.",
+		"zh": "更新成就或标记。",
+	},
+	"cam": {"en": "Run a blocking camera operation.", "zh": "执行阻塞式镜头操作。"},
+	"asyncam":
+	{
+		"en": "Run a non-blocking camera operation.",
+		"zh": "执行非阻塞式镜头操作。",
+	},
+	"end": {"en": "End the current dialogue.", "zh": "结束当前对话。"},
+}
 
 const SNIPPETS: Array[Dictionary] = [
 	{
@@ -259,7 +401,7 @@ const SNIPPETS: Array[Dictionary] = [
 		"group": "condition",
 		"label": "Conditional block",
 		"label_zh": "条件块",
-		"snippet": "if %variable_name == value:\n    \nelse:\n    \nendif",
+		"snippet": "if %variable_name == 0:\n    \nelse:\n    \nendif",
 		"description": "Insert an if/else conditional block",
 		"description_zh": "插入 if/else 条件块",
 	},
@@ -352,8 +494,8 @@ const GROUP_LABELS: Dictionary = {
 }
 
 
-static func is_chinese_locale(locale: String = OS.get_locale()) -> bool:
-	return locale.to_lower().begins_with("zh")
+static func is_chinese_locale(locale: String = "") -> bool:
+	return KS_EditorLocale.is_chinese(locale)
 
 
 static func get_group_label(group: String, chinese: bool) -> String:
@@ -373,6 +515,39 @@ static func get_snippet_description(snippet: Dictionary, chinese: bool) -> Strin
 
 static func get_context_completions(root_keyword: String) -> PackedStringArray:
 	return PackedStringArray(CONTEXT_COMPLETIONS.get(root_keyword, []))
+
+
+static func get_signature(command: String) -> String:
+	return String(SIGNATURES.get(command, ""))
+
+
+static func get_command_description(command: String, locale: String = "") -> String:
+	var description: Dictionary = COMMAND_DESCRIPTIONS.get(command, {})
+	if description.is_empty():
+		return ""
+	return String(description["zh"] if KS_EditorLocale.is_chinese(locale) else description["en"])
+
+
+static func get_snippet_completions(partial: String, locale: String = "") -> Array[Dictionary]:
+	var completions: Array[Dictionary] = []
+	var chinese := KS_EditorLocale.is_chinese(locale)
+	for snippet: Dictionary in SNIPPETS:
+		var source := String(snippet["snippet"])
+		var first_word := source.get_slice(" ", 0)
+		if not partial.is_empty() and not first_word.to_lower().begins_with(partial.to_lower()):
+			continue
+		(
+			completions
+			. append(
+				{
+					"text": get_snippet_label(snippet, chinese),
+					"insert_text": source,
+					"description": get_snippet_description(snippet, chinese),
+					"kind": CodeEdit.CodeCompletionKind.KIND_PLAIN_TEXT,
+				}
+			)
+		)
+	return completions
 
 
 static func get_background_effects() -> PackedStringArray:
