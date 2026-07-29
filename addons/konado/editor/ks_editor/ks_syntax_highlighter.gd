@@ -1,5 +1,5 @@
 @tool
-extends SyntaxHighlighter
+extends EditorSyntaxHighlighter
 class_name KND_KsHighlighter
 
 ## KonadoScript 语法高亮器。
@@ -17,6 +17,18 @@ const OPERATOR_COLOR := Color(0.75, 0.75, 0.75)
 const COMMENT_COLOR := Color(0.5, 0.5, 0.5, 0.8)
 
 var _compiled_rules: Array[Dictionary] = []
+
+
+func _create() -> EditorSyntaxHighlighter:
+	return KND_KsHighlighter.new()
+
+
+func _get_name() -> String:
+	return "KonadoScript"
+
+
+func _get_supported_languages() -> PackedStringArray:
+	return PackedStringArray(["KonadoScript"])
 
 
 func _get_line_syntax_highlighting(line: int) -> Dictionary:
@@ -45,6 +57,7 @@ func _highlight_line_text(line_text: String, default_color: Color) -> Dictionary
 				column_colors[column] = rule["color"]
 
 	_apply_string_and_comment_colors(line_text, column_colors)
+	_apply_dialogue_variable_colors(line_text, column_colors)
 
 	var highlighting := {}
 	var previous_color := default_color
@@ -72,7 +85,7 @@ func _ensure_rules() -> void:
 	_add_rule("\\b(%s)\\b" % root_keywords, ROOT_COLOR)
 	_add_rule("\\b(%s)\\b" % "|".join(subcommands), SUBCOMMAND_COLOR)
 	_add_rule("\\b(%s)\\b" % "|".join(KS_LanguageCatalog.STRUCTURAL_KEYWORDS), OPERATOR_COLOR)
-	_add_rule("(%|\\$)[\\p{L}_][\\p{L}\\p{N}_]*", VARIABLE_COLOR)
+	_add_rule("(%|\\$)[\\p{L}_][\\p{L}\\p{N}_-]*", VARIABLE_COLOR)
 	_add_rule("(?<![\\p{L}\\p{N}_])-?\\d+(?:\\.\\d+)?", NUMBER_COLOR)
 	_add_rule("(==|!=|>=|<=|->|=|>|<|:|\\{|\\})", OPERATOR_COLOR)
 
@@ -98,6 +111,13 @@ func _apply_string_and_comment_colors(line_text: String, column_colors: Array[Co
 				column_colors[comment_column] = COMMENT_COLOR
 			return
 		column += 1
+
+
+func _apply_dialogue_variable_colors(line_text: String, column_colors: Array[Color]) -> void:
+	for reference: Dictionary in KS_SymbolIndex.get_dialogue_variable_references(line_text):
+		for column: int in range(int(reference["start"]), int(reference["end"])):
+			if column >= 0 and column < column_colors.size():
+				column_colors[column] = VARIABLE_COLOR
 
 
 func _add_rule(pattern: String, color: Color) -> void:

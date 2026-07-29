@@ -3,7 +3,7 @@ extends EditorResourceTooltipPlugin
 
 
 func _handles(type: String) -> bool:
-	return type == "Resource" or type == "KND_Shot"
+	return type in ["Resource", "Script", "KND_Shot"]
 
 
 func _make_tooltip_for_path(path: String, _metadata: Dictionary, base: Control) -> Control:
