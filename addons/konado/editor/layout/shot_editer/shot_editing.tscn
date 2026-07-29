@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://dga5qsts51yjl"]
 
 [ext_resource type="Script" uid="uid://b04pryoxytbhb" path="res://addons/konado/editor/layout/shot_editer/ui_shot_edit.gd" id="2_n68jt"]
-[ext_resource type="PackedScene" uid="uid://x8t7cxfhviko" path="res://addons/konado/editor/ks_editor/ks_editor.tscn" id="4_2nmgn"]
 
 [node name="shot_editing" type="SplitContainer" unique_id=1792887019]
 anchors_preset = 15
@@ -119,10 +118,6 @@ mouse_target = true
 handle_input_locally = false
 size = Vector2i(1920, 1080)
 render_target_update_mode = 0
-
-[node name="文本编辑" parent="SplitContainer2" unique_id=979762480 instance=ExtResource("4_2nmgn")]
-layout_mode = 2
-size_flags_stretch_ratio = 3.0
 
 [node name="Panel" type="Panel" parent="." unique_id=439736306]
 custom_minimum_size = Vector2(0, 40)
