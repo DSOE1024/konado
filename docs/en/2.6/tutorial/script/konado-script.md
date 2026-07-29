@@ -45,6 +45,8 @@ Make sure the script file is encoded as UTF-8, otherwise garbled text may appear
 
 ### 3. Protecting scripts in exported builds
 
-When a project is exported, Konado generates a random 256-bit key for that build and automatically encrypts the compiled `.ks` story data. Developers do not need to configure a key or rebuild Godot export templates.
+When a project is exported, Konado reads `Konado -> Script Encryption Key` from the current export preset and automatically encrypts the compiled `.ks` story data. If the key is empty or malformed, Konado generates a random 256-bit key for the build. Later exports reuse this key unless a developer changes it manually.
+
+For patches or hot updates, the base build and update must use the same export preset and key. The key is stored in `.godot/export_credentials.cfg`; back it up separately if it needs to be retained.
 
 For local exports, the Godot terminal prints the complete build key for developer records and diagnostics. This protection prevents generic extraction tools from reading story text directly from a PCK; it is not dedicated DRM, and targeted analysis of exported resources, client code, or runtime memory may still recover the content.

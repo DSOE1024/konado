@@ -8,6 +8,7 @@
 - Added find and replace, go to line, branch navigation, and editor shortcuts compatible with Windows, Linux, and macOS
 - Cached syntax-highlighting rules and added an analysis-only validation path so live checks do not repeatedly compile regular expressions or generate runtime resources
 - Fixed source-line offsets and removed stale highlighting and completion suggestions such as `shot_id`, `start`, and `play sound`
+- Removed synchronous resource loading from file tooltips so large scripts cannot block the editor UI
 - Added KonadoScript editor integration tests covering language metadata, diagnostics, multi-document state, external changes, find and replace, and draft recovery
 
 ### Security
