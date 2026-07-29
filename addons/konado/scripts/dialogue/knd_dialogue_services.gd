@@ -6,7 +6,7 @@ extends RefCounted
 ## that do not advance the dialogue graph, keeping the manager focused on flow.
 
 var _host: Variant
-var _variable_pattern := RegEx.create_from_string("([%$])(\\w+)")
+var _variable_pattern := RegEx.create_from_string("([%$])([\\p{L}_][\\p{L}\\p{N}_-]*)")
 
 
 func _init(host: Variant) -> void:
