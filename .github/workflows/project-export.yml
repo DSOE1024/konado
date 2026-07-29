@@ -92,6 +92,7 @@ jobs:
         shell: bash
         run: |
           verification_pack="build/linux/konado-script-protection.pck"
+          verification_log="$(mktemp)"
           expected_script_paths="$(
             find sample -type f -name '*.ks' -print | sort | paste -sd ';' -
           )"
@@ -99,7 +100,9 @@ jobs:
             --cleanup "$verification_pack" \
             -- \
             godot --headless \
-              --export-pack "${{ matrix.preset }}" "$verification_pack"
+              --export-pack "${{ matrix.preset }}" "$verification_pack" \
+            | tee "$verification_log"
+          grep -Fq "已复用预设剧本密钥" "$verification_log"
           verification_workdir="$(mktemp -d)"
           (
             cd "$verification_workdir"
@@ -113,7 +116,7 @@ jobs:
           )
           find "$verification_workdir" -type f -delete
           rmdir "$verification_workdir"
-          rm -f "$verification_pack"
+          rm -f "$verification_pack" "$verification_log"
 
       - name: Upload build
         uses: actions/upload-artifact@v4
