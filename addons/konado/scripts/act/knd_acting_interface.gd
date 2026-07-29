@@ -58,7 +58,7 @@ const BACKGROUND_EFFECT_NAMES := {
 
 ## 启用演员状态切换淡入淡出过渡
 @export var enable_actor_state_fade: bool = true
-## 演员状态切换淡入淡出总时长（秒），淡出和淡入各占一半
+## 演员状态切换交叉淡入淡出总时长（秒），旧状态淡出与新状态淡入同时进行
 @export_range(0.0, 5.0, 0.01, "or_greater") var actor_state_fade_duration: float = 0.3:
 	set(value):
 		actor_state_fade_duration = maxf(value, 0.0)
@@ -382,11 +382,12 @@ func show_character(
 	temp_node.set_stage_position(h_division, pos_h)
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
-	apply_background_tint_to_characters()
 	temp_node.actor_motion_started.connect(_on_character_motion_started.bind(chara_id))
 	temp_node.actor_motion_finished.connect(_on_character_motion_finished.bind(chara_id))
 	temp_node.set_motion_layer_scene(motion_layer_scene)
 	temp_node.set_character_scene(character_scene, state)
+	# 角色场景创建完成后应用色调混合，确保新角色在显示前就已带有正确的色调
+	apply_background_tint_to_characters()
 	# 添加到演员节点字典
 	actor_nodes[chara_id] = temp_node
 	# 移动信号
@@ -432,6 +433,8 @@ func _update_existing_character(
 	if position_changed:
 		chara_node.set_stage_position(next_h_division, next_pos_h)
 	if state_changed:
+		# 先刷新色调混合，确保角色显示前带有正确的当前色调
+		apply_background_tint_to_characters()
 		chara_node.apply_character_status(state)
 	if (
 		position_changed
@@ -469,6 +472,9 @@ func change_actor_state(actor_id: String, state_id: String) -> void:
 	else:
 		actor_dict[actor_id] = {"id": actor_id}
 	actor_dict[actor_id]["state"] = state_id
+
+	# 在切换前刷新色调混合，确保旧状态快照带有正确的当前色调
+	apply_background_tint_to_characters()
 
 	var transition_duration := actor_state_fade_duration if enable_actor_state_fade else 0.0
 	chara_node.apply_character_status(
