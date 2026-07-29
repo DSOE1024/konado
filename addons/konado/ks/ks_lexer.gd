@@ -4,6 +4,7 @@ class_name KS_Lexer
 ## KS 词法分析器
 ## 将 .ks 源代码文本转换为 Token 流
 
+var console_output_enabled := true
 var _errors: Array[String] = []
 var _path: String = ""
 
@@ -26,7 +27,7 @@ func tokenize(source: String, path: String = "") -> Array[KS_Token]:
 
 	for i in range(lines.size()):
 		var raw_line := lines[i]
-		var line_num := i + 2  # 与原解释器保持一致的行号偏移
+		var line_num := i + 1
 		var stripped := raw_line.strip_edges()
 
 		# 空行与注释行跳过
@@ -352,4 +353,5 @@ func _is_ident_char(ch: String) -> bool:
 func _error(line_num: int, col: int, msg: String) -> void:
 	var err := "词法错误：%s [行：%d, 列：%d] %s" % [_path, line_num, col, msg]
 	_errors.append(err)
-	push_error(err)
+	if console_output_enabled:
+		push_error(err)

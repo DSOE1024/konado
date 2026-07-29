@@ -17,6 +17,7 @@ const BACKGROUND_EFFECTS_MAP: Dictionary = {
 	"blink": KND_ActingInterface.BackgroundTransitionEffectsType.BlinkEffect,
 }
 
+var console_output_enabled := true
 var _node_counter: int = 0
 var _ifelse_counter: int = 0
 var _path: String = ""
@@ -150,7 +151,6 @@ func _emit_background(node: KS_AST.BackgroundNode) -> KND_Dialogue:
 			node.effect, KND_ActingInterface.BackgroundTransitionEffectsType.NULL
 		)
 		if d.background_toggle_effects == KND_ActingInterface.BackgroundTransitionEffectsType.NULL:
-			push_warning("警告：%s [行：%d] 目标效果 '%s' 未找到" % [_path, d.source_file_line, node.effect])
 			d.background_toggle_effects = (
 				KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT
 			)
@@ -608,7 +608,7 @@ func _resolve_choice_targets(dialogs: Array, tag_map: Dictionary) -> void:
 			for choice in d.choices:
 				if tag_map.has(choice.next_id):
 					choice.next_id = tag_map[choice.next_id]
-				else:
+				elif console_output_enabled:
 					push_warning(
 						(
 							"警告：%s [行：%d] 选项跳转标签 '%s' 未找到对应分支"
@@ -624,7 +624,7 @@ func _resolve_jump_branch_targets(dialogs: Array, tag_map: Dictionary) -> void:
 			var target: String = d.jump_branch_target
 			if tag_map.has(target):
 				d.next_id = tag_map[target]
-			else:
+			elif console_output_enabled:
 				push_warning(
 					"警告：%s [行：%d] jump_branch 目标分支 '%s' 未找到" % [_path, d.source_file_line, target]
 				)

@@ -5,6 +5,7 @@ class_name KS_Analyzer
 ## 演员生命周期使用控制流状态分析：must 表示所有可达路径都存在，
 ## may 表示至少一条可达路径存在，分支之间不会再互相污染状态。
 
+var console_output_enabled := true
 var _errors: Array[String] = []
 var _warnings: Array[String] = []
 var _branch_ids: Array[String] = []
@@ -90,6 +91,8 @@ func _walk(statements: Array, state: Dictionary, context: String) -> bool:
 			continue
 		if statement is KS_AST.ActorNode:
 			_apply_actor(statement, state)
+		elif statement is KS_AST.BackgroundNode:
+			_validate_background(statement)
 		elif statement is KS_AST.ChoiceGroupNode:
 			if statement.options.is_empty():
 				_error(statement.line, "选项行没有有效的选项")
@@ -118,6 +121,11 @@ func _walk(statements: Array, state: Dictionary, context: String) -> bool:
 		elif statement is KS_AST.JumpNode or statement is KS_AST.EndNode:
 			return false
 	return true
+
+
+func _validate_background(node: KS_AST.BackgroundNode) -> void:
+	if not node.effect.is_empty() and not KS_Emitter.BACKGROUND_EFFECTS_MAP.has(node.effect):
+		_warning(node.line, "目标效果 '%s' 未找到" % node.effect)
 
 
 func _walk_branch(branch_id: String, state: Dictionary) -> void:
@@ -205,7 +213,8 @@ func _error(line_num: int, message: String) -> void:
 	if _errors.has(error):
 		return
 	_errors.append(error)
-	push_error(error)
+	if console_output_enabled:
+		push_error(error)
 
 
 func _warning(line_num: int, message: String) -> void:
@@ -213,4 +222,5 @@ func _warning(line_num: int, message: String) -> void:
 	if _warnings.has(warning):
 		return
 	_warnings.append(warning)
-	push_warning(warning)
+	if console_output_enabled:
+		push_warning(warning)

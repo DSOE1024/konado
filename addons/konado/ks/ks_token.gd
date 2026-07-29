@@ -48,7 +48,6 @@ enum Type {
 	KW_UNLOCK,
 	KW_INCREMENT,
 	KW_SET_FLAG,
-	KW_SCALE,
 	KW_RESET,
 	KW_SHAKE,
 	# 定界符
@@ -106,7 +105,6 @@ const KEYWORDS: Dictionary = {
 	"unlock": Type.KW_UNLOCK,
 	"increment": Type.KW_INCREMENT,
 	"set_flag": Type.KW_SET_FLAG,
-	"scale": Type.KW_SCALE,
 	"reset": Type.KW_RESET,
 	"shake": Type.KW_SHAKE,
 	"showtextbox": Type.KW_SHOWTEXTBOX,

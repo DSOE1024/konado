@@ -5,6 +5,7 @@ extends RefCounted
 ## Keeping stream traversal here lets KS_Parser focus on grammar rules while
 ## preserving a single source of truth for position tracking and error output.
 
+var console_output_enabled := true
 var _tokens: Array[KS_Token] = []
 var _pos: int = 0
 var _path: String = ""
@@ -99,4 +100,5 @@ func _error(msg: String) -> void:
 	var line_num := _peek().line if _peek() else 0
 	var err := "语法错误：%s [行：%d] %s" % [_path, line_num, msg]
 	_errors.append(err)
-	push_error(err)
+	if console_output_enabled:
+		push_error(err)
