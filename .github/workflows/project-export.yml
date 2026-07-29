@@ -55,7 +55,7 @@ jobs:
       - name: Install test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3
+          apt-get install -y --no-install-recommends python3 libfontconfig1
 
       - name: Install export templates
         shell: bash
