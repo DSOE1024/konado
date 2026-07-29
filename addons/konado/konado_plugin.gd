@@ -3,8 +3,8 @@ extends EditorPlugin
 class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
-const VERSION: String = "2.6.2"
 const CODENAME: String = "Ketchup"
+const PLUGIN_CONFIG_PATH := "res://addons/konado/plugin.cfg"
 const I18N_AUTOLOAD_NAME := "KND_I18n"
 const I18N_AUTOLOAD_PATH := "res://addons/konado/i18n/knd_i18n.gd"
 
@@ -39,6 +39,7 @@ var filesystem_dock: FileSystemDock
 var ks_tooltip_plugin: EditorResourceTooltipPlugin
 
 var inspector_plugin: EditorInspectorPlugin = null
+var _plugin_version := ""
 
 
 func _has_main_screen() -> bool:
@@ -46,6 +47,10 @@ func _has_main_screen() -> bool:
 
 
 func _enter_tree() -> void:
+	_plugin_version = _read_plugin_version()
+	if _plugin_version.is_empty():
+		push_error("Konado failed to read its version from %s" % PLUGIN_CONFIG_PATH)
+		return
 	if not ProjectSettings.has_setting("autoload/" + I18N_AUTOLOAD_NAME):
 		add_autoload_singleton(I18N_AUTOLOAD_NAME, I18N_AUTOLOAD_PATH)
 	_setup_script_resources()
@@ -99,7 +104,7 @@ func _setup_script_editor() -> void:
 	ks_highlighter = KS_HIGHLIGHTER_SCRIPT.new()
 	script_editor.register_syntax_highlighter(ks_highlighter)
 	ks_script_editor_integration = KS_SCRIPT_EDITOR_INTEGRATION_SCRIPT.new()
-	ks_script_editor_integration.setup(script_editor, VERSION)
+	ks_script_editor_integration.setup(script_editor, _plugin_version)
 	ks_create_menu = KS_CREATE_MENU_SCRIPT.new()
 	add_context_menu_plugin(
 		EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM_CREATE,
@@ -174,5 +179,12 @@ func _cleanup_export_plugin() -> void:
 
 ## 打印加载信息
 func _print_loading_message() -> void:
-	print("Konado %s %s" % [VERSION, CODENAME])
+	print("Konado %s %s" % [_plugin_version, CODENAME])
 	print("Konado loaded")
+
+
+static func _read_plugin_version() -> String:
+	var config := ConfigFile.new()
+	if config.load(PLUGIN_CONFIG_PATH) != OK:
+		return ""
+	return String(config.get_value("plugin", "version", "")).strip_edges()
