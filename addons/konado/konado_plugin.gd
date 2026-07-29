@@ -3,7 +3,7 @@ extends EditorPlugin
 class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
-const VERSION: String = "2.6.1"
+const VERSION: String = "2.6.2"
 const CODENAME: String = "Ketchup"
 const I18N_AUTOLOAD_NAME := "KND_I18n"
 const I18N_AUTOLOAD_PATH := "res://addons/konado/i18n/knd_i18n.gd"
@@ -11,10 +11,12 @@ const I18N_AUTOLOAD_PATH := "res://addons/konado/i18n/knd_i18n.gd"
 ## 自定义EditorImportPlugin脚本
 const KS_IMPORTER_SCRIPT := preload("uid://rp35gse7j4sv")
 const KDIC_IMPORTER_SCRIPT := preload("uid://b7a8r75oh165c")
+const KS_EXPORT_PLUGIN_SCRIPT := preload("res://addons/konado/export/knd_script_export_plugin.gd")
 
 ## 插件实例变量
 var ks_import_plugin: EditorImportPlugin
 var kdic_import_plugin: EditorImportPlugin
+var ks_export_plugin: EditorExportPlugin
 
 # 文件系统dock
 var filesystem_dock: FileSystemDock
@@ -34,6 +36,7 @@ func _enter_tree() -> void:
 	if not ProjectSettings.has_setting("autoload/" + I18N_AUTOLOAD_NAME):
 		add_autoload_singleton(I18N_AUTOLOAD_NAME, I18N_AUTOLOAD_PATH)
 	_setup_import_plugins()
+	_setup_export_plugin()
 	_print_loading_message()
 
 	filesystem_dock = get_editor_interface().get_file_system_dock()
@@ -66,6 +69,7 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
+	_cleanup_export_plugin()
 	_cleanup_import_plugins()
 
 	if filesystem_dock:
@@ -118,6 +122,17 @@ func _cleanup_import_plugins() -> void:
 	if kdic_import_plugin:
 		remove_import_plugin(kdic_import_plugin)
 		kdic_import_plugin = null
+
+
+func _setup_export_plugin() -> void:
+	ks_export_plugin = KS_EXPORT_PLUGIN_SCRIPT.new()
+	add_export_plugin(ks_export_plugin)
+
+
+func _cleanup_export_plugin() -> void:
+	if ks_export_plugin:
+		remove_export_plugin(ks_export_plugin)
+		ks_export_plugin = null
 
 
 ## 打印加载信息

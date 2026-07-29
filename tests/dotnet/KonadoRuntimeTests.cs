@@ -58,6 +58,33 @@ public sealed partial class KonadoRuntimeTests : Node
 			wrapper.SourceResource == customDialogue,
 			"Wrappers must accept GDScript subclasses of their source resource.");
 
+		var protectedDialogue = new Dialogue
+		{
+			DialogueContent = "Konado.NET must transparently restore protected dialogue.",
+		};
+		var protectedShot = new KndShot
+		{
+			KsPath = "res://tests/dotnet/protected.ks",
+			Dialogues = new Godot.Collections.Array<Dialogue> { protectedDialogue },
+		};
+		var buildKey = new byte[32];
+		for (var index = 0; index < buildKey.Length; index++)
+			buildKey[index] = (byte)index;
+		Check(
+			protectedShot.SourceResource.Call("protect_script_for_export", buildKey).AsBool(),
+			"Konado.NET test shot must accept export-time protection.");
+		Check(
+			protectedShot.SourceResource.Call("is_script_protected").AsBool(),
+			"Konado.NET test shot must enter the protected state.");
+		Check(
+			protectedShot.Dialogues.Count == 1
+				&& protectedShot.Dialogues[0].DialogueContent
+					== protectedDialogue.DialogueContent,
+			"Konado.NET wrappers must transparently restore protected dialogue.");
+		Check(
+			!protectedShot.SourceResource.Call("is_script_protected").AsBool(),
+			"Konado.NET wrappers must release protected buffers after restoration.");
+
 		var i18n = new InternationalizationAPI();
 		AddChild(i18n);
 		Check(i18n.IsReady, "Internationalization API must bind the KND_I18n autoload.");

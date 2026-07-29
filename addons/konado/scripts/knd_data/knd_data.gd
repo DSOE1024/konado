@@ -1,3 +1,4 @@
+@tool
 extends Resource
 class_name KND_Data
 

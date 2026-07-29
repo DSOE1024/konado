@@ -26,6 +26,7 @@ func _init() -> void:
 func _run() -> void:
 	_test_actor_commands()
 	_test_analyzer_control_flow()
+	_test_script_protection()
 	_test_dialogue_services()
 	_test_acting_interface_state_change()
 	_test_save_system_contract()
@@ -263,6 +264,163 @@ func _test_dialogue_services() -> void:
 	manager.free()
 
 
+func _test_script_protection() -> void:
+	var dialogue := KND_Dialogue.new()
+	dialogue.node_id = "opening"
+	dialogue.dialog_type = KND_Dialogue.Type.ORDINARY_DIALOG
+	dialogue.character_id = "Kona"
+	dialogue.dialog_content = "Only the runtime should recover this dialogue."
+	var dialogues: Array[KND_Dialogue] = [dialogue]
+	var key := PackedByteArray()
+	key.resize(KND_ScriptProtection.KEY_SIZE)
+	for index in range(key.size()):
+		key[index] = index
+
+	var protected := KND_ScriptProtection.protect(
+		dialogues, key, "res://tests/dialogue/protected.ks"
+	)
+	_expect(protected.get("ok", false), "script protection encrypts compiled dialogue nodes")
+	if not protected.get("ok", false):
+		return
+	_expect(
+		not _contains_bytes(protected["ciphertext"], dialogue.dialog_content.to_utf8_buffer()),
+		"protected payload does not contain plaintext dialogue bytes"
+	)
+	var encryption_key := KND_ScriptProtection._derive_subkey(
+		key,
+		KND_ScriptProtection.ENCRYPTION_KEY_CONTEXT,
+		protected["iv"],
+		"res://tests/dialogue/protected.ks"
+	)
+	var authentication_key := KND_ScriptProtection._derive_subkey(
+		key,
+		KND_ScriptProtection.AUTHENTICATION_KEY_CONTEXT,
+		protected["iv"],
+		"res://tests/dialogue/protected.ks"
+	)
+	_expect(
+		encryption_key != authentication_key,
+		"script protection derives independent encryption and authentication keys"
+	)
+
+	var restored := KND_ScriptProtection.unprotect(
+		protected["version"],
+		protected["serialized_size"],
+		protected["iv"],
+		protected["wrapped_key"],
+		protected["ciphertext"],
+		protected["mac"],
+		"res://tests/dialogue/protected.ks"
+	)
+	_expect(restored.get("ok", false), "script protection restores valid dialogue payloads")
+	if restored.get("ok", false):
+		var restored_dialogues: Array[KND_Dialogue] = restored["dialogues"]
+		_expect_equal(restored_dialogues.size(), 1, "script protection preserves node count")
+		_expect_equal(
+			restored_dialogues[0].dialog_content,
+			dialogue.dialog_content,
+			"script protection preserves dialogue content"
+		)
+
+	var tampered_mac: PackedByteArray = protected["mac"].duplicate()
+	tampered_mac[0] ^= 1
+	var tampered := KND_ScriptProtection.unprotect(
+		protected["version"],
+		protected["serialized_size"],
+		protected["iv"],
+		protected["wrapped_key"],
+		protected["ciphertext"],
+		tampered_mac,
+		"res://tests/dialogue/protected.ks"
+	)
+	_expect(not tampered.get("ok", false), "script protection rejects modified payloads")
+
+	var tampered_size := KND_ScriptProtection.unprotect(
+		protected["version"],
+		protected["serialized_size"] + 1,
+		protected["iv"],
+		protected["wrapped_key"],
+		protected["ciphertext"],
+		protected["mac"],
+		"res://tests/dialogue/protected.ks"
+	)
+	_expect(
+		not tampered_size.get("ok", false), "script protection authenticates serialized metadata"
+	)
+
+	var tampered_ciphertext: PackedByteArray = protected["ciphertext"].duplicate()
+	tampered_ciphertext[0] ^= 1
+	var tampered_payload := KND_ScriptProtection.unprotect(
+		protected["version"],
+		protected["serialized_size"],
+		protected["iv"],
+		protected["wrapped_key"],
+		tampered_ciphertext,
+		protected["mac"],
+		"res://tests/dialogue/protected.ks"
+	)
+	_expect(not tampered_payload.get("ok", false), "script protection rejects modified ciphertext")
+
+	var wrong_path := KND_ScriptProtection.unprotect(
+		protected["version"],
+		protected["serialized_size"],
+		protected["iv"],
+		protected["wrapped_key"],
+		protected["ciphertext"],
+		protected["mac"],
+		"res://tests/dialogue/renamed.ks"
+	)
+	_expect(not wrong_path.get("ok", false), "script protection authenticates the source path")
+
+	var wrong_version := KND_ScriptProtection.unprotect(
+		protected["version"] + 1,
+		protected["serialized_size"],
+		protected["iv"],
+		protected["wrapped_key"],
+		protected["ciphertext"],
+		protected["mac"],
+		"res://tests/dialogue/protected.ks"
+	)
+	_expect(not wrong_version.get("ok", false), "script protection rejects unsupported formats")
+
+	var oversized_payload := KND_ScriptProtection.unprotect(
+		protected["version"],
+		KND_ScriptProtection.MAX_SERIALIZED_SIZE + 1,
+		protected["iv"],
+		protected["wrapped_key"],
+		protected["ciphertext"],
+		protected["mac"],
+		"res://tests/dialogue/protected.ks"
+	)
+	_expect(
+		not oversized_payload.get("ok", false),
+		"script protection rejects oversized serialized metadata"
+	)
+
+	var invalid_padding := PackedByteArray()
+	invalid_padding.resize(KND_ScriptProtection.BLOCK_SIZE)
+	invalid_padding[invalid_padding.size() - 2] = 1
+	invalid_padding[invalid_padding.size() - 1] = 2
+	_expect(
+		KND_ScriptProtection._remove_pkcs7_padding(invalid_padding).is_empty(),
+		"script protection rejects malformed PKCS#7 padding"
+	)
+
+	var shot := KND_Shot.new()
+	shot.ks_path = "res://tests/dialogue/protected.ks"
+	shot.dialogues = dialogues
+	_expect(shot.protect_script_for_export(key), "KND_Shot accepts export-time protection")
+	_expect(shot.is_script_protected(), "KND_Shot records protected export state")
+	var runtime_dialogues := shot.dialogues
+	_expect_equal(runtime_dialogues.size(), 1, "KND_Shot decrypts on first runtime access")
+	_expect_equal(
+		runtime_dialogues[0].dialog_content,
+		dialogue.dialog_content,
+		"KND_Shot transparently restores dialogue content"
+	)
+	_expect(not shot.is_script_protected(), "KND_Shot clears encrypted buffers after restoration")
+
+
 func _test_analyzer_control_flow() -> void:
 	var script := KS_AST.ScriptNode.new()
 	var show_actor := _actor_node("show", "kona", 1)
@@ -353,3 +511,20 @@ func _expect_approx(actual: float, expected: float, message: String) -> void:
 		return
 	_failures += 1
 	printerr("FAIL: %s\n  expected: %s\n  actual:   %s" % [message, expected, actual])
+
+
+func _contains_bytes(haystack: PackedByteArray, needle: PackedByteArray) -> bool:
+	if needle.is_empty():
+		return true
+	if needle.size() > haystack.size():
+		return false
+	for start in range(haystack.size() - needle.size() + 1):
+		var matches := true
+		for offset in range(needle.size()):
+			if haystack[start + offset] == needle[offset]:
+				continue
+			matches = false
+			break
+		if matches:
+			return true
+	return false
