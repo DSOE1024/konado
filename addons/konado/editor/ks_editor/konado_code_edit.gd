@@ -2,356 +2,181 @@
 extends CodeEdit
 class_name KonadoCodeEdit
 
-## 已知的角色列表
-#var known_characters := ["alice", "bob", "eve", "narrator"]
-## 已知的背景列表
-#var known_backgrounds := ["forest_bg", "village_bg", "castle_bg", "cave_bg"]
-## 已知的状态列表
-#var known_states := ["happy", "sad", "angry", "neutral", "surprised"]
-## 已知的音频列表
-#var known_bgms := ["main_theme", "battle_theme", "peaceful"]
-#var known_sounds := ["click", "door_open", "footsteps"]
-## 已知的镜头ID列表
-#var known_shot_ids := ["opening_scene", "forest_path", "village_stay"]
+signal save_requested
+signal close_requested
+signal find_requested(show_replace: bool)
+signal goto_line_requested
+
+const COMPLETION_DELAY := 0.08
+
+var _completion_timer: Timer
 
 
-func _ready():
-	#print(self.get_path())
-	# 启用代码补全
-	self.code_completion_enabled = true
-	# 设置触发补全的前缀（空格和引号）
-	code_completion_prefixes = [" ", '"']
+func _ready() -> void:
+	code_completion_enabled = true
+	code_completion_prefixes = [" ", '"', "%", "$"]
 
 	clear_string_delimiters()
-	# 添加字符串分隔符（双引号）
 	add_string_delimiter('"', '"', false)
-
-	text_changed.connect(_on_text_changed)
-
-	# 连接信号
-	#code_completion_requested.connect(_on_code_completion_requested)
-
-	# 添加高亮
 	set_syntax_highlighter(load("res://addons/konado/editor/ks_editor/highlighter.tres"))
-	#set_syntax_highlighter(KND_KsHighlighter.new())
+
+	_completion_timer = Timer.new()
+	_completion_timer.one_shot = true
+	_completion_timer.wait_time = COMPLETION_DELAY
+	_completion_timer.timeout.connect(request_code_completion)
+	add_child(_completion_timer)
+	text_changed.connect(_schedule_completion)
 
 
-func _on_text_changed():
-	# print("Text changed")
-	self.request_code_completion()
+func _schedule_completion() -> void:
+	if not editable or _completion_timer == null:
+		return
+	_completion_timer.start()
 
 
-func _request_code_completion(_force: bool):
-	var current_line = get_caret_line()
-	var current_column = get_caret_column()
-	var line_text = get_line(current_line)
+func _request_code_completion(_force: bool) -> void:
+	var line := get_caret_line()
+	var column := get_caret_column()
+	var line_prefix := get_line(line).left(column)
+	var candidates := _get_completion_candidates(line_prefix)
 
-	# 获取当前单词（光标前的部分）
-	var current_word := ""
-	for i in range(current_column - 1, -1, -1):
-		if line_text[i] in [" ", "\t", "\n", '"']:
-			break
-		current_word = line_text[i] + current_word
-
-	# 根据上下文提供补全建议
-	var candidates = _get_completion_candidates(current_line, line_text, current_word)
-
-	# 清除现有补全选项
 	cancel_code_completion()
-
-	# 添加新的补全选项
-	for candidate in candidates:
+	for candidate: Dictionary in candidates:
 		add_code_completion_option(
 			candidate.get("kind", CodeCompletionKind.KIND_PLAIN_TEXT),
-			candidate.display_text,
-			candidate.insert_text,
-			candidate.get("color", Color(1, 1, 1)),
-			candidate.get("icon", null),
+			candidate["text"],
+			candidate.get("insert_text", candidate["text"]),
+			candidate.get("color", Color.WHITE),
+			null,
 			candidate.get("value", null),
-			candidate.get("location", CodeCompletionLocation.LOCATION_LOCAL)
+			CodeCompletionLocation.LOCATION_LOCAL
 		)
-
-	# 更新补全选项
 	update_code_completion_options(false)
 
 
-func _get_completion_candidates(line: int, line_text: String, current_word: String) -> Array:
-	var candidates := []
-
-	## 第一行应该是shot_id
-	if line == 0 and line_text.strip_edges().is_empty():
-		candidates.append(
-			{
-				"kind": CodeCompletionKind.KIND_CONSTANT,
-				"display_text": "shot_id",
-				"insert_text": "shot_id your_shot_name",
-				"color": Color(0.8, 0.5, 1.0)
-			}
-		)
-		return candidates
-
-	# 分析当前行已输入的内容
-	var tokens = line_text.strip_edges().split(" ", false)
-
-	# 空行或只有部分内容
-	if tokens.size() == 0:
-		return _get_root_commands()
-
-	# 根据第一个token决定补全类型
-	match tokens[0]:
-		"shot_id":
-			if tokens.size() == 1:
-				# 补全已知的镜头ID
-				#for shot_id in known_shot_ids:
-				#candidates.append({
-				#"kind": CodeCompletionKind.KIND_CONSTANT,
-				#"display_text": shot_id,
-				#"insert_text": shot_id,
-				#"color": Color(0.6, 0.8, 1.0)
-				#})
-				pass
-		"background":
-			if tokens.size() == 1:
-				# 补全背景名称
-				#for bg in known_backgrounds:
-				#candidates.append({
-				#"kind": CodeCompletionKind.KIND_CONSTANT,
-				#"display_text": bg,
-				#"insert_text": bg + " ",
-				#"color": Color(0.8, 0.8, 0.6)
-				#})
-				pass
-			elif tokens.size() == 2:
-				# 补全效果类型
-				var effects = [
-					"none",
-					"erase",
-					"blinds",
-					"wave",
-					"fade",
-					"vortex",
-					"windmill",
-					"cyberglitch",
-					"blink"
-				]
-				for effect in effects:
-					candidates.append(
-						{
-							"kind": CodeCompletionKind.KIND_CONSTANT,
-							"display_text": effect,
-							"insert_text": effect,
-							"color": Color(0.7, 0.9, 0.7)
-						}
-					)
-		"actor":
-			if tokens.size() == 1:
-				# 补全actor子命令
-				var subcommands = ["show", "exit", "change", "move"]
-				for cmd in subcommands:
-					candidates.append(
-						{
-							"kind": CodeCompletionKind.KIND_FUNCTION,
-							"display_text": cmd,
-							"insert_text": cmd + " ",
-							"color": Color(0.9, 0.7, 0.7)
-						}
-					)
-			elif tokens.size() >= 2:
-				match tokens[1]:
-					"show", "change", "exit", "move":
-						if tokens.size() == 2:
-							# 补全角色名称
-							#for char_name in known_characters:
-							#candidates.append({
-							#"kind": CodeCompletionKind.KIND_VARIABLE,
-							#"display_text": char_name,
-							#"insert_text": char_name + " ",
-							#"color": Color(0.7, 0.8, 0.9)
-							#})
-							pass
-						elif tokens.size() == 3 and tokens[1] == "show":
-							# 补全角色状态
-							#for state in known_states:
-							#candidates.append({
-							#"kind": CodeCompletionKind.KIND_CONSTANT,
-							#"display_text": state,
-							#"insert_text": state + " ",
-							#"color": Color(0.8, 0.9, 0.7)
-							#})
-							pass
-						elif tokens.size() == 4 and tokens[1] == "show" and tokens[3] == "at":
-							# 补全坐标和scale关键字
-							candidates.append(
-								{
-									"kind": CodeCompletionKind.KIND_PLAIN_TEXT,
-									"display_text": "x y scale",
-									"insert_text": "x y scale ",
-									"color": Color(0.8, 0.8, 0.8)
-								}
-							)
-		"play":
-			if tokens.size() == 1:
-				# 补全play子命令
-				var subcommands = ["bgm", "sound"]
-				for cmd in subcommands:
-					candidates.append(
-						{
-							"kind": CodeCompletionKind.KIND_FUNCTION,
-							"display_text": cmd,
-							"insert_text": cmd + " ",
-							"color": Color(0.7, 0.9, 0.9)
-						}
-					)
-			elif tokens.size() == 2:
-				match tokens[1]:
-					"bgm":
-						# 补全BGM名称
-						#for bgm in known_bgms:
-						#candidates.append({
-						#"kind": CodeCompletionKind.KIND_CONSTANT,
-						#"display_text": bgm,
-						#"insert_text": bgm,
-						#"color": Color(0.9, 0.8, 0.6)
-						#})
-						pass
-					"sound":
-						# 补全音效名称
-						#for sound in known_sounds:
-						#candidates.append({
-						#"kind": CodeCompletionKind.KIND_CONSTANT,
-						#"display_text": sound,
-						#"insert_text": sound,
-						#"color": Color(0.8, 0.6, 0.9)
-						#})
-						pass
-		"stop":
-			if tokens.size() == 1:
-				candidates.append(
-					{
-						"kind": CodeCompletionKind.KIND_FUNCTION,
-						"display_text": "bgm",
-						"insert_text": "bgm",
-						"color": Color(0.9, 0.7, 0.7)
-					}
+func _get_completion_candidates(line_prefix: String) -> Array[Dictionary]:
+	var stripped := line_prefix.strip_edges()
+	var candidates: Array[Dictionary] = []
+	var ends_with_space := line_prefix.ends_with(" ") or line_prefix.ends_with("\t")
+	var tokens := stripped.replace("\t", " ").split(" ", false)
+	if tokens.is_empty():
+		candidates = _make_candidates(KS_LanguageCatalog.ROOT_KEYWORDS, "")
+	else:
+		var root_keyword := tokens[0]
+		var partial := "" if ends_with_space else tokens[-1]
+		var context_values := KS_LanguageCatalog.get_context_completions(root_keyword)
+		if stripped.is_empty():
+			candidates = _make_candidates(KS_LanguageCatalog.ROOT_KEYWORDS, "")
+		elif tokens.size() == 1 and not ends_with_space:
+			candidates = _make_candidates(KS_LanguageCatalog.ROOT_KEYWORDS, root_keyword)
+		elif (
+			not context_values.is_empty()
+			and (
+				(tokens.size() == 1 and ends_with_space)
+				or (tokens.size() == 2 and not ends_with_space)
+			)
+		):
+			candidates = _make_candidates(context_values, partial)
+		elif (
+			root_keyword == "background"
+			and tokens.size() >= 2
+			and (tokens.size() >= 3 or ends_with_space)
+		):
+			candidates = _make_candidates(KS_LanguageCatalog.get_background_effects(), partial)
+		elif root_keyword in ["jump_branch", "choice"]:
+			candidates = _make_candidates(_collect_branch_names(), partial)
+		elif root_keyword == "actor" and tokens.size() >= 2:
+			var actor_action := tokens[1]
+			if (
+				actor_action == "show"
+				and (
+					(tokens.size() == 4 and ends_with_space)
+					or (tokens.size() == 5 and not ends_with_space)
 				)
-		"choice":
-			if tokens.size() == 1:
-				candidates.append(
-					{
-						"kind": CodeCompletionKind.KIND_PLAIN_TEXT,
-						"display_text": '"option_text" jump_label ...',
-						"insert_text": '""  "" ',
-						"color": Color(0.8, 0.8, 0.8)
-					}
-				)
-		"branch":
-			if tokens.size() == 1:
-				# 补全分支标签（这里需要从文件中提取已知标签）
-				candidates.append(
-					{
-						"kind": CodeCompletionKind.KIND_CONSTANT,
-						"display_text": "branch_name",
-						"insert_text": "branch_name",
-						"color": Color(0.7, 0.8, 0.9)
-					}
-				)
-		"jump":
-			if tokens.size() == 1:
-				# 补全跳转目标（这里需要从文件中提取已知shot_id）
-				#for shot_id in known_shot_ids:
-				#candidates.append({
-				#"kind": CodeCompletionKind.KIND_CONSTANT,
-				#"display_text": shot_id,
-				#"insert_text": shot_id,
-				#"color": Color(0.6, 0.8, 1.0)
-				#})
-				pass
-		_:
-			# 检查是否以引号开头（对话行）
-			if line_text.begins_with('"') and not line_text.ends_with('"'):
-				var quote_pos = line_text.find('"')
-				var second_quote_pos = line_text.find('"', quote_pos + 1)
-
-				if second_quote_pos == -1:
-					# 第一个引号后没有第二个引号，补全角色ID
-					#for char_name in known_characters:
-					#if char_name.begins_with(current_word):
-					#candidates.append({
-					#"kind": CodeCompletionKind.KIND_VARIABLE,
-					#"display_text": char_name,
-					#"insert_text": char_name + "\" \"",
-					#"color": Color(0.7, 0.8, 0.9)
-					#})
-					pass
-				else:
-					# 已有角色ID，补全语音ID（可选）
-					pass
-
-			# 如果不是以任何关键字开头，提供根命令补全
-			elif tokens.size() == 1 and current_word != "":
-				candidates = _get_root_commands()
-
+			):
+				candidates = _make_candidates(PackedStringArray(["at"]), partial)
+			elif actor_action in ["exit", "change", "move", "motion"]:
+				candidates = _make_candidates(_collect_actor_names(), partial)
+		elif root_keyword in ["set", "add", "sub", "mul", "div", "if"]:
+			candidates = _make_candidates(_collect_variable_names(), partial)
 	return candidates
 
 
-func _get_root_commands() -> Array:
-	var commands := []
-
-	var root_commands = {
-		"shot_id": {"kind": CodeCompletionKind.KIND_CONSTANT, "color": Color(0.8, 0.5, 1.0)},
-		"background": {"kind": CodeCompletionKind.KIND_FUNCTION, "color": Color(0.8, 0.8, 0.6)},
-		"actor": {"kind": CodeCompletionKind.KIND_FUNCTION, "color": Color(0.9, 0.7, 0.7)},
-		"play": {"kind": CodeCompletionKind.KIND_FUNCTION, "color": Color(0.7, 0.9, 0.9)},
-		"stop": {"kind": CodeCompletionKind.KIND_FUNCTION, "color": Color(0.9, 0.7, 0.7)},
-		"choice": {"kind": CodeCompletionKind.KIND_FUNCTION, "color": Color(0.8, 0.9, 0.8)},
-		"branch": {"kind": CodeCompletionKind.KIND_FUNCTION, "color": Color(0.7, 0.8, 0.9)},
-		"jump": {"kind": CodeCompletionKind.KIND_FUNCTION, "color": Color(0.6, 0.8, 1.0)},
-		"start": {"kind": CodeCompletionKind.KIND_CONSTANT, "color": Color(0.5, 0.9, 0.5)},
-		"end": {"kind": CodeCompletionKind.KIND_CONSTANT, "color": Color(0.9, 0.5, 0.5)}
-	}
-
-	for cmd in root_commands:
-		commands.append(
-			{
-				"kind": root_commands[cmd].kind,
-				"display_text": cmd,
-				"insert_text": cmd + " ",
-				"color": root_commands[cmd].color
-			}
+func _make_candidates(values: PackedStringArray, partial: String) -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	var normalized_partial := partial.to_lower()
+	for value: String in values:
+		if (
+			not normalized_partial.is_empty()
+			and not value.to_lower().begins_with(normalized_partial)
+		):
+			continue
+		(
+			candidates
+			. append(
+				{
+					"kind": CodeCompletionKind.KIND_KEYWORD,
+					"text": value,
+					"insert_text": value,
+					"color": Color(0.85, 0.72, 1.0),
+				}
+			)
 		)
+	return candidates
 
-	return commands
+
+func _collect_branch_names() -> PackedStringArray:
+	return _collect_matches("(?m)^\\s*branch\\s+([\\p{L}_][\\p{L}\\p{N}_-]*)")
 
 
-func _confirm_code_completion(replace: bool):
-	# 获取当前选中的补全选项
-	var selected_index = get_code_completion_selected_index()
-	var option = get_code_completion_option(selected_index)
+func _collect_actor_names() -> PackedStringArray:
+	return _collect_matches("(?m)^\\s*actor\\s+show\\s+([\\p{L}_][\\p{L}\\p{N}_-]*)")
 
-	# 插入文本
-	var text_to_insert = option["insert_text"]
 
-	if replace:
-		# 替换当前单词
-		var current_line = get_caret_line()
-		var current_column = get_caret_column()
-		var line_text = get_line(current_line)
+func _collect_variable_names() -> PackedStringArray:
+	return _collect_matches("(?m)(?:%|\\$)([\\p{L}_][\\p{L}\\p{N}_]*)", true)
 
-		# 找到当前单词的起始位置
-		var word_start = current_column - 1
-		while word_start >= 0 and line_text[word_start] not in [" ", "\t", "\n", '"']:
-			word_start -= 1
 
-		# 选择当前单词
-		set_caret_line(current_line)
-		set_caret_column(word_start + 1)
-		select(current_line, word_start + 1, current_line, current_column)
+func _collect_matches(pattern: String, include_prefix: bool = false) -> PackedStringArray:
+	var values := PackedStringArray()
+	var regex := RegEx.new()
+	if regex.compile(pattern) != OK:
+		return values
+	for match_result: RegExMatch in regex.search_all(text):
+		var value := match_result.get_string(0) if include_prefix else match_result.get_string(1)
+		if include_prefix:
+			var prefix_position := maxi(value.find("%"), value.find("$"))
+			value = value.substr(prefix_position)
+		if not values.has(value):
+			values.append(value)
+	values.sort()
+	return values
 
-		# 替换选中文本
-		insert_text_at_caret(text_to_insert)
-	else:
-		# 直接插入文本
-		insert_text_at_caret(text_to_insert)
 
-	# 取消补全
-	cancel_code_completion()
+func _gui_input(event: InputEvent) -> void:
+	if not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo:
+		return
+	var command_pressed := key_event.ctrl_pressed or key_event.meta_pressed
+	if not command_pressed:
+		return
+
+	match key_event.keycode:
+		KEY_S:
+			save_requested.emit()
+			accept_event()
+		KEY_W:
+			close_requested.emit()
+			accept_event()
+		KEY_F:
+			find_requested.emit(key_event.meta_pressed and key_event.alt_pressed)
+			accept_event()
+		KEY_H:
+			if key_event.ctrl_pressed and not key_event.meta_pressed:
+				find_requested.emit(true)
+				accept_event()
+		KEY_L:
+			goto_line_requested.emit()
+			accept_event()

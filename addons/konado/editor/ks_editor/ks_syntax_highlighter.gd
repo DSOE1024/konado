@@ -2,83 +2,121 @@
 extends SyntaxHighlighter
 class_name KND_KsHighlighter
 
-## KS语法高亮
+## KonadoScript 语法高亮器。
+##
+## 关键字来自 KS_LanguageCatalog，正则表达式仅编译一次。字符串和注释
+## 使用轻量词法扫描处理，避免注释标记覆盖字符串内容。每行最终只输出
+## 颜色发生变化的位置，避免为每个字符创建高亮字典项。
 
-@export var highlight_rules := [
-	# 根命令（shot_id/background/actor等）
-	{
-		"regex": "\\b(shot_id|background|actor|play|stop|choice|branch|jump|start|end)\\b",
-		"color": Color(0.85, 0.6, 1.0)  # 紫罗兰色
-	},
-	# actor子命令（show/exit/change/move）
-	{"regex": "\\bactor\\s+(show|exit|change|move)\\b", "color": Color(0.95, 0.7, 0.8)},  # 樱花粉色
-	# play子命令（bgm/sound）
-	{"regex": "\\bplay\\s+(bgm|sound)\\b", "color": Color(0.7, 0.85, 0.95)},  # 天蓝色
-	# 背景特效
-	{
-		"regex":
-		"\\bbackground\\s+\\w+\\s+(none|erase|blinds|wave|fade|vortex|windmill|cyberglitch|blink)\\b",
-		"color": Color(0.7, 0.95, 0.8)  # 薄荷绿
-	},
-	# 字符串
-	{"regex": '".+?"', "color": Color(0.405, 0.842, 0.512, 1.0)},
-	# 坐标关键字（x/y/scale）
-	{"regex": "\\b(x|y|scale)\\b", "color": Color(0.75, 0.75, 0.75)},  # 稍暗的灰色
-	# 流控制语句
-	{"regex": "\\b(if|else|endif)\\b", "color": Color(1.0, 0.725, 0.314, 1.0)},
-	# 注释
-	{"regex": "#.*", "color": Color(0.5, 0.5, 0.5, 0.8)},
-]
+const ROOT_COLOR := Color(0.85, 0.6, 1.0)
+const SUBCOMMAND_COLOR := Color(0.95, 0.7, 0.8)
+const STRING_COLOR := Color(0.405, 0.842, 0.512)
+const NUMBER_COLOR := Color(0.55, 0.78, 1.0)
+const VARIABLE_COLOR := Color(0.96, 0.76, 0.38)
+const OPERATOR_COLOR := Color(0.75, 0.75, 0.75)
+const COMMENT_COLOR := Color(0.5, 0.5, 0.5, 0.8)
+
+var _compiled_rules: Array[Dictionary] = []
 
 
 func _get_line_syntax_highlighting(line: int) -> Dictionary:
-	var highlight_data = {}
-	# 获取绑定的 CodeEdit 文本
-	var text_edit = get_text_edit()
-	if not text_edit:
-		return highlight_data
+	_ensure_rules()
+	var text_edit := get_text_edit()
+	if text_edit == null:
+		return {}
 
-	# 获取当前行文本
-	var line_text = text_edit.get_line(line)
+	var line_text := text_edit.get_line(line)
 	if line_text.is_empty():
-		return highlight_data
+		return {}
 
-	# 遍历所有高亮规则（仅保留有效规则，无空正则）
-	for rule in highlight_rules:
-		var regex = RegEx.new()
-		# 编译正则（提前校验，避免无效正则）
-		var compile_error = regex.compile(rule.regex)
-		if compile_error != OK:
-			print("正则编译错误: ", compile_error, " 规则: ", rule.regex)
-			continue
-
-		# 单次搜索（避免重复编译正则，优化性能）
-		var match_result = regex.search_all(line_text)
-		if not match_result:
-			continue
-
-		# 遍历所有匹配结果（改用search_all，更高效）
-		for match in match_result:
-			var start_col = match.get_start()
-			var end_col = match.get_end()
-			# 为匹配的每一列设置颜色（修复只设置起始列的问题）
-			for col in range(start_col, end_col):
-				highlight_data[col] = {"color": rule.color}
-
-	# 排序并返回（保持原有逻辑）
-	var sorted_cols = highlight_data.keys()
-	sorted_cols.sort()
-
-	var sorted_highlight = {}
-	for col in sorted_cols:
-		sorted_highlight[col] = highlight_data[col]
-
-	return sorted_highlight
+	var default_color := text_edit.get_theme_color("font_color")
+	return _highlight_line_text(line_text, default_color)
 
 
-func _clear_highlighting_cache():
+func _highlight_line_text(line_text: String, default_color: Color) -> Dictionary:
+	var column_colors: Array[Color] = []
+	column_colors.resize(line_text.length())
+	column_colors.fill(default_color)
+
+	for rule: Dictionary in _compiled_rules:
+		var regex: RegEx = rule["regex"]
+		for match_result: RegExMatch in regex.search_all(line_text):
+			for column: int in range(match_result.get_start(), match_result.get_end()):
+				column_colors[column] = rule["color"]
+
+	_apply_string_and_comment_colors(line_text, column_colors)
+
+	var highlighting := {}
+	var previous_color := default_color
+	for column: int in range(column_colors.size()):
+		var color := column_colors[column]
+		if color != previous_color:
+			highlighting[column] = {"color": color}
+			previous_color = color
+	if previous_color != default_color:
+		highlighting[line_text.length()] = {"color": default_color}
+	return highlighting
+
+
+func _ensure_rules() -> void:
+	if not _compiled_rules.is_empty():
+		return
+
+	var root_keywords := "|".join(KS_LanguageCatalog.ROOT_KEYWORDS)
+	var subcommands := PackedStringArray()
+	for root_keyword: String in KS_LanguageCatalog.CONTEXT_COMPLETIONS:
+		for keyword: String in KS_LanguageCatalog.CONTEXT_COMPLETIONS[root_keyword]:
+			if not subcommands.has(keyword):
+				subcommands.append(keyword)
+
+	_add_rule("\\b(%s)\\b" % root_keywords, ROOT_COLOR)
+	_add_rule("\\b(%s)\\b" % "|".join(subcommands), SUBCOMMAND_COLOR)
+	_add_rule("\\b(%s)\\b" % "|".join(KS_LanguageCatalog.STRUCTURAL_KEYWORDS), OPERATOR_COLOR)
+	_add_rule("(%|\\$)[\\p{L}_][\\p{L}\\p{N}_]*", VARIABLE_COLOR)
+	_add_rule("(?<![\\p{L}\\p{N}_])-?\\d+(?:\\.\\d+)?", NUMBER_COLOR)
+	_add_rule("(==|!=|>=|<=|->|=|>|<|:|\\{|\\})", OPERATOR_COLOR)
+
+
+func _apply_string_and_comment_colors(line_text: String, column_colors: Array[Color]) -> void:
+	var column := 0
+	var inside_string := false
+	while column < line_text.length():
+		var character := line_text.substr(column, 1)
+		if inside_string:
+			column_colors[column] = STRING_COLOR
+			if character == "\\" and column + 1 < line_text.length():
+				if line_text.substr(column + 1, 1) == '"':
+					column += 1
+					column_colors[column] = STRING_COLOR
+			elif character == '"':
+				inside_string = false
+		elif character == '"':
+			inside_string = true
+			column_colors[column] = STRING_COLOR
+		elif character == "#":
+			for comment_column: int in range(column, line_text.length()):
+				column_colors[comment_column] = COMMENT_COLOR
+			return
+		column += 1
+
+
+func _add_rule(pattern: String, color: Color) -> void:
+	var regex := RegEx.new()
+	var error := regex.compile(pattern)
+	if error != OK:
+		push_error("KonadoScript 高亮规则无效：%s" % pattern)
+		return
+	_compiled_rules.append({"regex": regex, "color": color})
+
+
+func get_compiled_rule_count() -> int:
+	_ensure_rules()
+	return _compiled_rules.size()
+
+
+func _clear_highlighting_cache() -> void:
 	pass
 
 
-func _update_cache():
-	pass
+func _update_cache() -> void:
+	_ensure_rules()

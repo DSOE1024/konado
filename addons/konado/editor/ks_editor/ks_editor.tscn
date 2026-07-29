@@ -75,12 +75,27 @@ size_flags_horizontal = 10
 theme_override_colors/font_color = Color(0.4857033, 0.4857036, 0.48570347, 1)
 text = "未打开文件"
 
+[node name="SymbolPicker" type="OptionButton" parent="dock/MarginContainer/BoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+tooltip_text = "跳转到分支"
+disabled = true
+
 [node name="DocsLinkButton" type="LinkButton" parent="dock/MarginContainer/BoxContainer" unique_id=1542129966]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 text = "在线文档"
 uri = "https://godothub.com/oss/konado/zh/tutorial/script/konado-script.html"
+
+[node name="DocumentTabs" type="TabBar" parent="dock"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+tab_close_display_policy = 1
+scroll_to_selected = true
 
 [node name="VBoxContainer2" type="SplitContainer" parent="dock" unique_id=1355989015]
 layout_mode = 2
@@ -127,6 +142,55 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.4
 vertical = true
 
+[node name="FindReplaceBar" type="HBoxContainer" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="FindText" type="LineEdit" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+placeholder_text = "查找"
+clear_button_enabled = true
+
+[node name="ReplaceText" type="LineEdit" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+placeholder_text = "替换"
+clear_button_enabled = true
+
+[node name="MatchCase" type="CheckBox" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "区分大小写"
+
+[node name="FindPrevious" type="Button" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "上一个"
+
+[node name="FindNext" type="Button" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "下一个"
+
+[node name="ReplaceOne" type="Button" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "替换"
+
+[node name="ReplaceAll" type="Button" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "全部替换"
+
+[node name="CloseFind" type="Button" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/FindReplaceBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "×"
+
 [node name="CodeEdit" type="CodeEdit" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer" unique_id=902175094]
 unique_name_in_owner = true
 layout_mode = 2
@@ -154,3 +218,22 @@ indent_automatic = true
 auto_brace_completion_enabled = true
 auto_brace_completion_highlight_matching = true
 script = ExtResource("3_43nnm")
+
+[node name="DiagnosticsPanel" type="VBoxContainer" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+
+[node name="DiagnosticsSummary" type="Label" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/DiagnosticsPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "未执行检查"
+
+[node name="DiagnosticsTree" type="Tree" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/DiagnosticsPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+column_titles_visible = true
+hide_root = true
+select_mode = 1

@@ -1,7 +1,5 @@
 [gd_resource type="Theme" format=3 uid="uid://cao2ht3baecs8"]
 
-[ext_resource type="Script" uid="uid://c23lxbcsbwnj" path="res://addons/konado/editor/theme/tab_stylebox.gd" id="2_h172q"]
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3wcps"]
 bg_color = Color(0.09, 0.09, 0.09, 1)
 
@@ -596,14 +594,12 @@ content_margin_top = 5.0
 content_margin_right = 12.0
 content_margin_bottom = 5.0
 
-[sub_resource type="StyleBox" id="StyleBox_5rhlh"]
-resource_local_to_scene = false
-resource_name = ""
+[sub_resource type="StyleBoxFlat" id="StyleBox_5rhlh"]
 content_margin_left = 45.0
-content_margin_top = -1.0
 content_margin_right = 45.0
-content_margin_bottom = -1.0
-script = ExtResource("2_h172q")
+bg_color = Color(0.14, 0.14, 0.16, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_omd5k"]
 content_margin_left = 12.0

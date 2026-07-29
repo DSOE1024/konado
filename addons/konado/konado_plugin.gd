@@ -77,6 +77,8 @@ func _exit_tree() -> void:
 		ks_tooltip_plugin = null
 
 	if ks_dock:
+		if ks_editor:
+			ks_editor.prepare_for_shutdown()
 		remove_dock(ks_dock)
 		ks_dock.queue_free()
 

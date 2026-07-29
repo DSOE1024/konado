@@ -27,7 +27,7 @@ func _get_save_extension() -> String:
 
 
 func _get_resource_type() -> String:
-	return "Resource"
+	return "KND_Shot"
 
 
 func _get_preset_count() -> int:
