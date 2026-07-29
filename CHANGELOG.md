@@ -2,14 +2,13 @@
 
 ### Editor
 
-- Rebuilt the Godot editor integration around a shared language catalog used by syntax highlighting, completion, and statement templates, with complete coverage of current KonadoScript commands
-- Added multi-document tabs, unsaved-change protection, crash-recovery drafts, and external-file change detection so switching or closing scripts cannot silently lose work
-- Added debounced syntax and semantic diagnostics with gutter markers, a problem list, and click-to-navigate support
-- Added find and replace, go to line, branch navigation, and editor shortcuts compatible with Windows, Linux, and macOS
-- Cached syntax-highlighting rules and added an analysis-only validation path so live checks do not repeatedly compile regular expressions or generate runtime resources
-- Fixed source-line offsets and removed stale highlighting and completion suggestions such as `shot_id`, `start`, and `play sound`
-- Removed synchronous resource loading from file tooltips so large scripts cannot block the editor UI
-- Added KonadoScript editor integration tests covering language metadata, diagnostics, multi-document state, external changes, find and replace, and draft recovery
+- Moved `.ks` files into Godot's native Script workspace with tabs, undo and redo, find and replace, bookmarks, and unsaved-state handling
+- Added KonadoScript highlighting, completion, signature hints, automatic indentation, branch outlines, and live syntax and semantic diagnostics
+- Added hover information, resource completion, and Ctrl/Command-click navigation for actors, states, motions, backgrounds, audio, cameras, and script paths
+- Added Go to Definition, Find References, and safe rename for branches, variables, and signals, plus project-wide resource reference search
+- Added the component tree, versioned online documentation entry, and FileSystem action for creating KonadoScript files
+- Improved parser recovery and validation, fixing live-analysis stalls, emitter bounds errors, and camera-transition inconsistencies
+- Completed `.ks` loading, saving, and automated coverage so clean projects work without legacy import caches
 
 ### Security
 
@@ -159,7 +158,7 @@ Konado 2.6, codenamed Ketchup, strengthens real-time presentation and scripting.
   cam shake          # Shake with default duration
   cam shake 2.0      # Shake for 2 seconds
   cam move target linear 1.0  # Linear transition over 1 second
-  cam reset fade 2.0          # Fade transition over 2 seconds
+  cam reset ease_in_out 2.0   # Ease-in-out transition over 2 seconds
   ```
 
 ### Fixed
