@@ -397,7 +397,13 @@ func _detach_jump_link_overlay() -> void:
 		_jump_link_overlay = null
 		return
 	_jump_link_overlay.cleanup()
-	_jump_link_overlay.free()
+	# Opening another script emits editor_script_changed synchronously from the
+	# overlay's navigation callback. The overlay is still locked on that call
+	# stack, so defer destruction until the frame ends.
+	var parent := _jump_link_overlay.get_parent()
+	if parent != null:
+		parent.remove_child(_jump_link_overlay)
+	_jump_link_overlay.call_deferred("free")
 	_jump_link_overlay = null
 
 

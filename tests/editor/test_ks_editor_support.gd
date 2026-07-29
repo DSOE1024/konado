@@ -1,6 +1,7 @@
 extends SceneTree
 
 const SCRIPT_PATH := "res://tests/editor/fixtures/native_editor.ks"
+const NAVIGATION_SCRIPT_PATH := "res://sample/demo/demo_03_variable.ks"
 const INVALID_SCRIPT_PATH := "user://invalid_editor_document.ks"
 const CARET_MARKER := "\uFFFF"
 
@@ -690,7 +691,9 @@ func _test_native_script_editor() -> void:
 	)
 	var instruction_tree := script_editor.find_child("InstructionTree", true, false) as Tree
 	var docs_button := script_editor.find_child("KonadoOnlineDocs", true, false) as Button
-	var jump_link_overlay := code_edit.find_child("KonadoJumpLinkOverlay", false, false) as Control
+	var jump_link_overlay := (
+		code_edit.find_child("KonadoJumpLinkOverlay", false, false) as KS_JumpLinkOverlay
+	)
 	var godot_docs_button: Button
 	var godot_help_button: Button
 	_expect(
@@ -830,7 +833,23 @@ func _test_native_script_editor() -> void:
 			_read_text(SCRIPT_PATH) == original_source,
 			"native save integration restores the tracked fixture",
 		)
+	if jump_link_overlay != null:
+		jump_link_overlay._open_target({"path": NAVIGATION_SCRIPT_PATH, "line": 1})
+		await process_frame
+		await process_frame
+		_expect(
+			(
+				script_editor.get_current_script() != null
+				and script_editor.get_current_script().resource_path == NAVIGATION_SCRIPT_PATH
+			),
+			"semantic navigation safely replaces the active KonadoScript editor",
+		)
+		_expect(
+			not is_instance_valid(jump_link_overlay),
+			"semantic navigation defers destruction of the active link overlay",
+		)
 	script_editor.close_file(SCRIPT_PATH)
+	script_editor.close_file(NAVIGATION_SCRIPT_PATH)
 	var gd_script := load("res://tests/dotnet/custom_dialogue.gd") as Script
 	if gd_script != null:
 		EditorInterface.edit_script(gd_script)
