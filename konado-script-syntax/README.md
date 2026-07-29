@@ -1,4 +1,4 @@
-# Konado Script Syntax
+# KonadoScript Syntax
 为 Konado 引擎自定义 `.ks` 脚本提供 VSCode 语法高亮插件，实现关键字着色、注释识别、语法区分，大幅提升脚本编写开发体验。
 
 # 适用的编辑器
@@ -7,7 +7,7 @@
 # 插件市场安装(推荐)
 1. 打开编辑器,点击扩展图标
 2. 搜索 "Konado"
-3. 点击安装 Konado Script Syntax 插件
+3. 点击安装 KonadoScript Syntax 插件
 4. 重启编辑器即可生效
 5. 有的编辑器的插件市场还没同步，可以下载插件手动安装
 

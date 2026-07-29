@@ -1,8 +1,8 @@
 ---
-title: Konado Script
+title: KonadoScript
 order: 5
 ---
 
-# Konado Script
+# KonadoScript
 
 Konado 腳本語言參考

@@ -1,7 +1,7 @@
 {
   "name": "konado-script-syntax",
-  "displayName": "Konado Script Syntax",
-  "description": "Syntax highlighting for Konado Script (.ks) files — visual novel DSL for the Konado engine.",
+  "displayName": "KonadoScript Syntax",
+  "description": "Syntax highlighting for KonadoScript (.ks) files — visual novel DSL for the Konado engine.",
   "version": "1.0.2",
   "publisher": "shanewu",
   "author": {
@@ -38,7 +38,7 @@
       {
         "id": "konado-script",
         "aliases": [
-          "Konado Script",
+          "KonadoScript",
           "ks"
         ],
         "extensions": [

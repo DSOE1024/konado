@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "Konado Script",
+  "name": "KonadoScript",
   "scopeName": "source.ks",
   "patterns": [
     { "include": "#comment" },

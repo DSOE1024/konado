@@ -7,15 +7,15 @@ tags: [visual-novel, dsl, konado]
 license: MIT
 ---
 
-# Konado Script Skill
+# KonadoScript Skill
 
-Konado Script Skill是Konado项目的一部分。
+KonadoScript Skill 是 Konado 项目的一部分。
 
-用于视觉小说引擎框架 **Konado** 的 DSL（`.ks` 文件）编辑器增强技能包，为支持 Konado Script 语法高亮、代码补全、静态诊断和代码格式化的工具提供配置参考。
+用于视觉小说引擎框架 **Konado** 的 DSL（`.ks` 文件）编辑器增强技能包，为支持 KonadoScript 语法高亮、代码补全、静态诊断和代码格式化的工具提供配置参考。
 
 ## 适用 DSL
 
-- **语言名称**：Konado Script
+- **语言名称**：KonadoScript
 - **文件扩展名**：`.ks`
 - **编码**：UTF-8
 - **设计理念**：将故事内容与程序逻辑分离，编剧无需编程知识即可创作

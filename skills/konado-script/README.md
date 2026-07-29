@@ -1,8 +1,8 @@
-# Konado Script Skill Plugin
+# KonadoScript Skill Plugin
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-视觉小说引擎 **Konado** DSL（`.ks` 文件）的编辑器增强技能包。提供 Konado Script 的语法高亮、代码补全、静态诊断和代码格式化配置参考。
+视觉小说引擎 **Konado** DSL（`.ks` 文件）的编辑器增强技能包。提供 KonadoScript 的语法高亮、代码补全、静态诊断和代码格式化配置参考。
 
 ## AtomCode Plugin 安装
 

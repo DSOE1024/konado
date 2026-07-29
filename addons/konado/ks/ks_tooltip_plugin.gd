@@ -13,7 +13,7 @@ func _make_tooltip_for_path(path: String, _metadata: Dictionary, base: Control) 
 		var vbox = VBoxContainer.new()
 		# 显示文件类型信息
 		var type_label = Label.new()
-		type_label.text = "Konado Script"
+		type_label.text = "KonadoScript"
 		vbox.add_child(type_label)
 
 		# 获取并显示文件行数

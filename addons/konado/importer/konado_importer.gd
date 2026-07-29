@@ -15,7 +15,7 @@ func _get_priority() -> float:
 
 
 func _get_visible_name() -> String:
-	return "Konado Scripts"
+	return "KonadoScript"
 
 
 func _get_recognized_extensions() -> PackedStringArray:
