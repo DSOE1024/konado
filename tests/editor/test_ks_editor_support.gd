@@ -91,6 +91,60 @@ func _test_diagnostic_service() -> void:
 		"emission constraints are exposed by live diagnostics",
 	)
 
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"\nendif1',
+			"diagnostic-test.ks",
+		)
+	)
+	_expect(
+		(
+			results.size() == 1
+			and results[0]["severity"] == "error"
+			and results[0]["line"] == 3
+			and "endif1" in results[0]["message"]
+			and "应为 endif" in results[0]["message"]
+		),
+		"malformed endif reports a diagnostic without stalling the editor",
+	)
+
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"',
+			"diagnostic-test.ks",
+		)
+	)
+	_expect(
+		results.size() == 1 and "缺少 endif" in results[0]["message"],
+		"unterminated condition blocks report a diagnostic",
+	)
+
+	results = (
+		diagnostics
+		. analyze(
+			"screentext {\n    invalid_content\n}",
+			"diagnostic-test.ks",
+		)
+	)
+	_expect(
+		results.size() == 1 and "screentext" in results[0]["message"],
+		"malformed screen text blocks report a diagnostic without stalling the editor",
+	)
+
+	results = (
+		diagnostics
+		. analyze(
+			'screentext {\n    "Hello"',
+			"diagnostic-test.ks",
+		)
+	)
+	_expect(
+		results.size() == 1 and "缺少结束符 }" in results[0]["message"],
+		"unterminated screen text blocks report a diagnostic",
+	)
+
 
 func _test_highlighter_cache() -> void:
 	var highlighter := KND_KsHighlighter.new()

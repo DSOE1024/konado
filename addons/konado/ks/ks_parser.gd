@@ -30,12 +30,16 @@ func parse(tokens: Array[KS_Token], path: String = "") -> KS_AST.ScriptNode:
 			_skip_to_next_line()
 			continue
 
+		var position_before_statement := _pos
 		var stmt := _parse_statement()
+		if not _errors.is_empty():
+			return null
 		if stmt == null:
-			if not _errors.is_empty():
-				return null
 			_skip_to_next_line()
 			continue
+		if _pos <= position_before_statement:
+			_error("解析器未能消费当前语句")
+			return null
 
 		script.statements.append(stmt)
 
@@ -53,7 +57,14 @@ func parse_single_statement(tokens: Array[KS_Token], path: String = "") -> KS_AS
 	if _at_end():
 		return null
 
-	return _parse_statement()
+	var position_before_statement := _pos
+	var statement := _parse_statement()
+	if not _errors.is_empty():
+		return null
+	if statement != null and _pos <= position_before_statement:
+		_error("解析器未能消费当前语句")
+		return null
+	return statement
 
 
 # ============================================================
@@ -90,8 +101,11 @@ func _parse_statement() -> KS_AST.ASTNode:
 			statement = _parse_branch()
 		KS_Token.Type.KW_IF:
 			statement = _parse_if_else()
-		KS_Token.Type.KW_ELSE, KS_Token.Type.KW_ENDIF:
-			_advance()
+		KS_Token.Type.KW_ELSE:
+			_error("意外的 else：当前没有等待结束的 if 条件块")
+			_skip_to_next_line()
+		KS_Token.Type.KW_ENDIF:
+			_error("意外的 endif：当前没有等待结束的 if 条件块")
 			_skip_to_next_line()
 		KS_Token.Type.KW_SET:
 			statement = _parse_variable()
@@ -118,7 +132,10 @@ func _parse_statement() -> KS_AST.ASTNode:
 		KS_Token.Type.KW_END:
 			statement = _parse_end()
 		_:
-			_error("无法识别的语法：%s" % str(tok))
+			if tok.type == KS_Token.Type.IDENTIFIER and str(tok.value).begins_with("endif"):
+				_error("无法识别的语法：%s；条件块结束关键字应为 endif" % str(tok.value))
+			else:
+				_error("无法识别的语法：%s" % str(tok.value))
 
 	return statement
 
@@ -170,26 +187,36 @@ func _parse_screen_text() -> KS_AST.ScreenTextNode:
 	_skip_to_next_line()
 
 	# 读取花括号内的文本行
+	var is_closed := false
 	while not _at_end():
 		_skip_newlines()
 		if _at_end():
-			break
-
-		# 遇到 } 结束
-		if _check(KS_Token.Type.RBRACE):
-			_advance()
-			_skip_to_next_line()
 			break
 
 		# 跳过可能的缩进
 		if _check(KS_Token.Type.INDENT):
 			_advance()
 
+		# 遇到 } 结束
+		if _check(KS_Token.Type.RBRACE):
+			_advance()
+			_skip_to_next_line()
+			is_closed = true
+			break
+
 		# 读取文本行
 		if _check(KS_Token.Type.STRING_LITERAL):
 			var text_tok := _advance()
 			node.lines.append(text_tok.value)
+			_skip_to_next_line()
+			continue
+
+		_error("screentext 块内仅允许字符串文本或结束符 }")
 		_skip_to_next_line()
+		return node
+
+	if not is_closed:
+		_error_at(node.line, "screentext 缺少结束符 }")
 
 	return node
 
@@ -716,16 +743,20 @@ func _parse_if_else() -> KS_AST.IfElseNode:
 	node.if_body = _parse_condition_block()
 
 	# 检查是否有 else
-	_skip_newlines()
-	if not _at_end() and _check_keyword_on_line(KS_Token.Type.KW_ELSE):
-		_skip_past_keyword(KS_Token.Type.KW_ELSE)
-		# 解析 else 块
-		node.else_body = _parse_condition_block()
+	if _errors.is_empty():
+		_skip_newlines()
+		if not _at_end() and _check_keyword_on_line(KS_Token.Type.KW_ELSE):
+			_skip_past_keyword(KS_Token.Type.KW_ELSE)
+			# 解析 else 块
+			node.else_body = _parse_condition_block()
 
 	# 消费 endif
-	_skip_newlines()
-	if not _at_end() and _check_keyword_on_line(KS_Token.Type.KW_ENDIF):
-		_skip_past_keyword(KS_Token.Type.KW_ENDIF)
+	if _errors.is_empty():
+		_skip_newlines()
+		if not _at_end() and _check_keyword_on_line(KS_Token.Type.KW_ENDIF):
+			_skip_past_keyword(KS_Token.Type.KW_ENDIF)
+		else:
+			_error_at(node.line, "if 条件块缺少 endif")
 
 	return node
 
@@ -913,9 +944,16 @@ func _parse_indented_block() -> Array:
 		_advance()  # 消费 INDENT
 
 		# 解析缩进行内的语句
+		var position_before_statement := _pos
 		var stmt := _parse_statement()
+		if not _errors.is_empty():
+			return stmts
 		if stmt:
 			stmts.append(stmt)
+		if _pos <= position_before_statement:
+			_error("解析器未能消费当前语句")
+			_skip_to_next_line()
+			return stmts
 
 	return stmts
 
@@ -940,8 +978,15 @@ func _parse_condition_block() -> Array:
 		if _check(KS_Token.Type.INDENT):
 			_advance()
 
+		var position_before_statement := _pos
 		var stmt := _parse_statement()
+		if not _errors.is_empty():
+			return stmts
 		if stmt:
 			stmts.append(stmt)
+		if _pos <= position_before_statement:
+			_error("解析器未能消费当前语句")
+			_skip_to_next_line()
+			return stmts
 
 	return stmts

@@ -98,6 +98,11 @@ func _skip_past_keyword(kw: KS_Token.Type) -> void:
 ## 错误记录
 func _error(msg: String) -> void:
 	var line_num := _peek().line if _peek() else 0
+	_error_at(line_num, msg)
+
+
+## 在指定源码行记录错误，用于文件结尾处发现的未闭合结构。
+func _error_at(line_num: int, msg: String) -> void:
 	var err := "语法错误：%s [行：%d] %s" % [_path, line_num, msg]
 	_errors.append(err)
 	if console_output_enabled:
