@@ -783,10 +783,14 @@ func _test_native_script_editor() -> void:
 			godot_docs_button != null and not godot_docs_button.visible,
 			"the Godot documentation action is hidden only while editing KonadoScript",
 		)
-		if docs_button.get_index() + 1 < docs_button.get_parent().get_child_count():
-			godot_help_button = (
-				docs_button.get_parent().get_child(docs_button.get_index() + 1) as Button
-			)
+		var help_button_index := docs_button.get_index() + 1
+		if (
+			help_button_index < docs_button.get_parent().get_child_count()
+			and docs_button.get_parent().get_child(help_button_index) is OptionButton
+		):
+			help_button_index += 1
+		if help_button_index < docs_button.get_parent().get_child_count():
+			godot_help_button = (docs_button.get_parent().get_child(help_button_index) as Button)
 		_expect(
 			godot_help_button != null and not godot_help_button.visible,
 			"Godot API help search is hidden while editing KonadoScript",

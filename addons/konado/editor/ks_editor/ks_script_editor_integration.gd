@@ -13,8 +13,20 @@ const DOCS_ORIGIN := "https://godothub.com/oss/konado"
 const JUMP_LINK_OVERLAY_SCRIPT := preload(
 	"res://addons/konado/editor/ks_editor/ks_jump_link_overlay.gd"
 )
+const LOCALE_CATALOG_SCRIPT := preload("res://addons/konado/i18n/knd_locale_catalog.gd")
+const LOCALIZED_SCRIPT_LOADER_SCRIPT := preload(
+	"res://addons/konado/i18n/knd_localized_script_loader.gd"
+)
+const LANGUAGE_DISPLAY_NAMES := {
+	"zh_Hans": "简体中文",
+	"zh_Hant": "繁體中文",
+	"en": "English",
+	"ja": "日本語",
+	"ko": "한국어",
+}
 
 var _script_editor: ScriptEditor
+var _resource_filesystem: EditorFileSystem
 var _list_split: VSplitContainer
 var _document_list: Control
 var _palette: VBoxContainer
@@ -24,6 +36,7 @@ var _instruction_tree: Tree
 var _site_search: Button
 var _help_search: Button
 var _docs_button: Button
+var _locale_selector: OptionButton
 var _jump_link_overlay: Control
 var _plugin_version := ""
 var _is_konado_active := false
@@ -47,8 +60,17 @@ func setup(script_editor: ScriptEditor, plugin_version: String) -> bool:
 		return false
 	_create_instruction_palette()
 	_create_docs_button()
+	_create_locale_selector()
 	if not _script_editor.editor_script_changed.is_connected(_on_editor_script_changed):
 		_script_editor.editor_script_changed.connect(_on_editor_script_changed)
+	_resource_filesystem = EditorInterface.get_resource_filesystem()
+	if (
+		_resource_filesystem != null
+		and not _resource_filesystem.filesystem_changed.is_connected(
+			_on_resource_filesystem_changed
+		)
+	):
+		_resource_filesystem.filesystem_changed.connect(_on_resource_filesystem_changed)
 	_on_editor_script_changed(_script_editor.get_current_script())
 	return true
 
@@ -59,21 +81,30 @@ func cleanup() -> void:
 		and _script_editor.editor_script_changed.is_connected(_on_editor_script_changed)
 	):
 		_script_editor.editor_script_changed.disconnect(_on_editor_script_changed)
+	if (
+		_resource_filesystem != null
+		and _resource_filesystem.filesystem_changed.is_connected(_on_resource_filesystem_changed)
+	):
+		_resource_filesystem.filesystem_changed.disconnect(_on_resource_filesystem_changed)
 	_restore_native_controls()
 	_detach_jump_link_overlay()
 	if is_instance_valid(_palette):
 		_palette.free()
 	if is_instance_valid(_docs_button):
 		_docs_button.free()
+	if is_instance_valid(_locale_selector):
+		_locale_selector.free()
 	_palette = null
 	_palette_title = null
 	_palette_toggle = null
 	_instruction_tree = null
 	_docs_button = null
+	_locale_selector = null
 	_site_search = null
 	_help_search = null
 	_document_list = null
 	_list_split = null
+	_resource_filesystem = null
 	_script_editor = null
 
 
@@ -87,6 +118,10 @@ func get_document_list() -> Control:
 
 func get_docs_button() -> Button:
 	return _docs_button
+
+
+func get_locale_selector() -> OptionButton:
+	return _locale_selector
 
 
 func is_konado_active() -> bool:
@@ -123,6 +158,68 @@ static func get_docs_url(plugin_version: String, locale: String) -> String:
 			get_docs_version(plugin_version),
 		]
 	)
+
+
+static func get_language_display_name(locale: String) -> String:
+	var locale_catalog := LOCALE_CATALOG_SCRIPT.new()
+	var normalized: String = locale_catalog.normalize_locale(locale)
+	if LANGUAGE_DISPLAY_NAMES.has(normalized):
+		return LANGUAGE_DISPLAY_NAMES[normalized]
+	var language_name := TranslationServer.get_locale_name(normalized)
+	return normalized if language_name.is_empty() else language_name
+
+
+static func get_script_variants(script_path: String) -> Array[Dictionary]:
+	var variants: Array[Dictionary] = []
+	if script_path.is_empty():
+		return variants
+	var locale_catalog := LOCALE_CATALOG_SCRIPT.new()
+	var loader := LOCALIZED_SCRIPT_LOADER_SCRIPT.new(locale_catalog)
+	var base_path: String = loader.get_base_script_path(script_path)
+	if FileAccess.file_exists(base_path):
+		variants.append({"locale": "", "path": base_path})
+
+	var directory := base_path.get_base_dir()
+	var files := DirAccess.get_files_at(directory)
+	var localized_paths := {}
+	for file: String in files:
+		if file.get_extension().to_lower() != "ks":
+			continue
+		var candidate := directory.path_join(file)
+		if candidate == base_path or loader.get_base_script_path(candidate) != base_path:
+			continue
+		var locale: String = loader.get_script_locale(candidate)
+		if locale.is_empty():
+			continue
+		if (
+			not localized_paths.has(locale)
+			or candidate == script_path
+			or file == "%s.%s.ks" % [base_path.get_basename().get_file(), locale]
+		):
+			localized_paths[locale] = candidate
+
+	var localized_variants: Array[Dictionary] = []
+	for locale: String in localized_paths:
+		(
+			localized_variants
+			. append(
+				{
+					"locale": locale,
+					"path": localized_paths[locale],
+				}
+			)
+		)
+	localized_variants.sort_custom(
+		func(left: Dictionary, right: Dictionary) -> bool:
+			return (
+				get_language_display_name(left["locale"]).naturalnocasecmp_to(
+					get_language_display_name(right["locale"])
+				)
+				< 0
+			)
+	)
+	variants.append_array(localized_variants)
+	return variants
 
 
 func _find_script_editor_controls() -> bool:
@@ -272,6 +369,23 @@ func _create_docs_button() -> void:
 	_sync_docs_button_appearance()
 
 
+func _create_locale_selector() -> void:
+	_locale_selector = OptionButton.new()
+	_locale_selector.name = "KonadoScriptLocaleSelector"
+	_locale_selector.fit_to_longest_item = false
+	_locale_selector.visible = false
+	_locale_selector.accessibility_name = (KS_EditorLocale.text(
+		"KonadoScript language version", "KonadoScript 语言版本"
+	))
+	_locale_selector.tooltip_text = (KS_EditorLocale.text(
+		"Switch KonadoScript language version.", "切换 KonadoScript 语言版本。"
+	))
+	_locale_selector.item_selected.connect(_on_locale_selected)
+	var menu_bar := _docs_button.get_parent()
+	menu_bar.add_child(_locale_selector)
+	menu_bar.move_child(_locale_selector, _docs_button.get_index() + 1)
+
+
 func _sync_docs_button_appearance() -> void:
 	if not is_instance_valid(_site_search) or not is_instance_valid(_docs_button):
 		return
@@ -289,6 +403,12 @@ func _sync_docs_button_appearance() -> void:
 
 func _on_editor_script_changed(script: Script) -> void:
 	_set_konado_active(script is KND_Shot)
+	_sync_locale_selector(script if script is KND_Shot else null)
+
+
+func _on_resource_filesystem_changed() -> void:
+	if _is_konado_active and _script_editor != null:
+		_sync_locale_selector(_script_editor.get_current_script())
 
 
 func _set_konado_active(active: bool) -> void:
@@ -324,6 +444,8 @@ func _restore_native_controls() -> void:
 		_palette.visible = false
 	if is_instance_valid(_docs_button):
 		_docs_button.visible = false
+	if is_instance_valid(_locale_selector):
+		_locale_selector.visible = false
 	if not _is_konado_active:
 		return
 	if is_instance_valid(_document_list):
@@ -449,3 +571,71 @@ func _open_versioned_docs() -> void:
 	var open_error := OS.shell_open(url)
 	if open_error != OK:
 		push_error("Unable to open Konado documentation: %s" % url)
+
+
+func _sync_locale_selector(script: Script) -> void:
+	if not is_instance_valid(_locale_selector):
+		return
+	_locale_selector.clear()
+	_locale_selector.visible = false
+	if not _is_konado_active or not script is KND_Shot:
+		return
+	var shot := script as KND_Shot
+	var script_path := shot.resource_path
+	if script_path.is_empty():
+		script_path = shot.ks_path
+	var variants := get_script_variants(script_path)
+	if variants.size() <= 1:
+		return
+	var selected_index := 0
+	for index in range(variants.size()):
+		var variant: Dictionary = variants[index]
+		var locale := String(variant["locale"])
+		var label := (
+			KS_EditorLocale.text("Default", "默认")
+			if locale.is_empty()
+			else get_language_display_name(locale)
+		)
+		_locale_selector.add_item(label)
+		_locale_selector.set_item_metadata(index, variant["path"])
+		if variant["path"] == script_path:
+			selected_index = index
+	_locale_selector.select(selected_index)
+	_locale_selector.visible = true
+
+
+func _on_locale_selected(index: int) -> void:
+	if not is_instance_valid(_locale_selector) or index < 0 or index >= _locale_selector.item_count:
+		return
+	var path := String(_locale_selector.get_item_metadata(index))
+	var current_script := _script_editor.get_current_script() if _script_editor != null else null
+	if current_script != null and current_script.resource_path == path:
+		return
+	if not FileAccess.file_exists(path):
+		push_error("Unable to open KonadoScript language version: %s" % path)
+		_sync_locale_selector(current_script)
+		return
+	var line_number := 1
+	if _script_editor != null:
+		var current_editor := _script_editor.get_current_editor()
+		var code_edit := (
+			current_editor.get_base_editor() as CodeEdit if current_editor != null else null
+		)
+		if code_edit != null:
+			line_number = code_edit.get_caret_line() + 1
+	_open_locale_script.call_deferred(path, line_number)
+
+
+func _open_locale_script(path: String, line_number: int) -> void:
+	if not FileAccess.file_exists(path):
+		push_error("Unable to open KonadoScript language version: %s" % path)
+		return
+	var target_script := ResourceLoader.load(path, "Script") as Script
+	if target_script == null:
+		push_error("Unable to load KonadoScript language version: %s" % path)
+		_sync_locale_selector(_script_editor.get_current_script() if _script_editor else null)
+		return
+	EditorInterface.edit_script(target_script, line_number)
+	var filesystem_dock := EditorInterface.get_file_system_dock()
+	if filesystem_dock != null:
+		Callable(filesystem_dock, "navigate_to_path").call_deferred(path)

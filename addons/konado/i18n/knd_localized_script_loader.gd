@@ -10,7 +10,7 @@ func _init(locale_catalog: RefCounted) -> void:
 
 func get_script_candidates(script_path: String, locale: String) -> PackedStringArray:
 	var normalized: String = _locale_catalog.normalize_locale(locale)
-	var base_path := _get_base_script_path(script_path)
+	var base_path := get_base_script_path(script_path)
 	var extension := base_path.get_extension()
 	var stem := base_path.trim_suffix("." + extension) if not extension.is_empty() else base_path
 	var candidates := PackedStringArray()
@@ -82,7 +82,7 @@ func choose_restore_node_id(
 	return ""
 
 
-func _get_base_script_path(script_path: String) -> String:
+func get_base_script_path(script_path: String) -> String:
 	var extension := script_path.get_extension()
 	if extension.is_empty():
 		return script_path
@@ -91,6 +91,16 @@ func _get_base_script_path(script_path: String) -> String:
 	if not _looks_like_locale_suffix(suffix):
 		return script_path
 	return without_extension.trim_suffix("." + suffix) + "." + extension
+
+
+func get_script_locale(script_path: String) -> String:
+	var base_path := get_base_script_path(script_path)
+	if base_path == script_path:
+		return ""
+	var extension := script_path.get_extension()
+	var without_extension := script_path.trim_suffix("." + extension)
+	var suffix := without_extension.get_file().get_extension()
+	return _locale_catalog.normalize_locale(suffix)
 
 
 func _looks_like_locale_suffix(suffix: String) -> bool:
