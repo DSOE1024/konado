@@ -7,6 +7,8 @@ const DRAFT_DELAY := 0.8
 const EXTERNAL_CHECK_INTERVAL := 2.0
 const ERROR_COLOR := Color(1.0, 0.28, 0.28)
 const WARNING_COLOR := Color(1.0, 0.72, 0.2)
+const DIAGNOSTICS_COLLAPSED_HEIGHT := 40.0
+const DIAGNOSTICS_EXPANDED_HEIGHT := 170.0
 
 var _documents: Array[KS_EditorDocument] = []
 var _current_index := -1
@@ -118,13 +120,50 @@ func _localize_interface() -> void:
 	%FindNext.text = _ui("下一个", "Next")
 	%ReplaceOne.text = _ui("替换", "Replace")
 	%ReplaceAll.text = _ui("全部替换", "Replace all")
-	diagnostics_tree.set_column_title(0, _ui("级别", "Severity"))
-	diagnostics_tree.set_column_title(1, _ui("行", "Line"))
+	var severity_title := _ui("级别", "Severity")
+	var line_title := _ui("行", "Line")
+	diagnostics_tree.set_column_title(0, severity_title)
+	diagnostics_tree.set_column_title(1, line_title)
 	diagnostics_tree.set_column_title(2, _ui("问题", "Problem"))
 	diagnostics_tree.set_column_expand(0, false)
-	diagnostics_tree.set_column_custom_minimum_width(0, 72)
+	(
+		diagnostics_tree
+		. set_column_custom_minimum_width(
+			0,
+			_diagnostic_column_width(
+				PackedStringArray([severity_title, _ui("错误", "Error"), _ui("警告", "Warning")])
+			),
+		)
+	)
 	diagnostics_tree.set_column_expand(1, false)
-	diagnostics_tree.set_column_custom_minimum_width(1, 48)
+	(
+		diagnostics_tree
+		. set_column_custom_minimum_width(
+			1,
+			_diagnostic_column_width(PackedStringArray([line_title, "0000"])),
+		)
+	)
+
+
+func _diagnostic_column_width(labels: PackedStringArray) -> int:
+	var font := diagnostics_tree.get_theme_font("font")
+	var font_size := maxi(
+		diagnostics_tree.get_theme_font_size("font_size"),
+		diagnostics_tree.get_theme_font_size("title_button_font_size"),
+	)
+	var text_width := 0.0
+	for label: String in labels:
+		text_width = maxf(
+			text_width,
+			font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x,
+		)
+	var content_padding := (
+		diagnostics_tree.get_theme_constant("item_margin")
+		+ diagnostics_tree.get_theme_constant("inner_item_margin_left")
+		+ diagnostics_tree.get_theme_constant("inner_item_margin_right")
+		+ 8
+	)
+	return ceili(text_width) + content_padding
 
 
 func _ui(chinese_text: String, english_text: String) -> String:
@@ -367,6 +406,7 @@ func _reset_empty_state() -> void:
 	symbol_picker.add_item(_ui("无符号", "No symbols"))
 	symbol_picker.disabled = true
 	_clear_diagnostics()
+	_set_diagnostics_expanded(false)
 	diagnostics_summary.text = _ui("未执行检查", "Not checked")
 
 
@@ -578,11 +618,20 @@ func _render_diagnostics(results: Array[Dictionary]) -> void:
 		_marked_diagnostic_lines.append(line_index)
 
 	if results.is_empty():
+		_set_diagnostics_expanded(false)
 		diagnostics_summary.text = _ui("未发现问题", "No problems found")
 	else:
+		_set_diagnostics_expanded(true)
 		diagnostics_summary.text = (
 			_ui("%d 个错误，%d 个警告", "%d errors, %d warnings") % [error_count, warning_count]
 		)
+
+
+func _set_diagnostics_expanded(expanded: bool) -> void:
+	diagnostics_tree.visible = expanded
+	diagnostics_panel.custom_minimum_size.y = (
+		DIAGNOSTICS_EXPANDED_HEIGHT if expanded else DIAGNOSTICS_COLLAPSED_HEIGHT
+	)
 
 
 func _clear_diagnostics() -> void:

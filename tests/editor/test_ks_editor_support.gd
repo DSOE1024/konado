@@ -227,6 +227,34 @@ func _test_editor_document_workflow() -> void:
 		diagnostics_tree.get_root() != null and diagnostics_tree.get_root().get_child_count() > 0,
 		"debounced diagnostics are rendered in the editor",
 	)
+	var first_diagnostic := diagnostics_tree.get_root().get_first_child()
+	var diagnostic_rect := diagnostics_tree.get_item_area_rect(first_diagnostic, 2)
+	var severity_rect := diagnostics_tree.get_item_area_rect(first_diagnostic, 0)
+	var severity_font := diagnostics_tree.get_theme_font("font")
+	var severity_text_width := (
+		severity_font
+		. get_string_size(
+			first_diagnostic.get_text(0),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			diagnostics_tree.get_theme_font_size("font_size"),
+		)
+		. x
+	)
+	var severity_padding := (
+		diagnostics_tree.get_theme_constant("item_margin")
+		+ diagnostics_tree.get_theme_constant("inner_item_margin_left")
+		+ diagnostics_tree.get_theme_constant("inner_item_margin_right")
+	)
+	_expect(diagnostics_tree.visible, "diagnostics list expands when problems are found")
+	_expect(
+		diagnostic_rect.end.y <= diagnostics_tree.size.y,
+		"the first diagnostic row remains visible inside the bottom panel",
+	)
+	_expect(
+		severity_rect.size.x >= severity_text_width + severity_padding,
+		"the complete localized severity label remains visible",
+	)
 
 	editor.prepare_for_shutdown()
 	_expect(

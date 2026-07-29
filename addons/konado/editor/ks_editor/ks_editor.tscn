@@ -221,7 +221,7 @@ script = ExtResource("3_43nnm")
 
 [node name="DiagnosticsPanel" type="VBoxContainer" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 110)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
 [node name="DiagnosticsSummary" type="Label" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/DiagnosticsPanel"]
@@ -231,6 +231,7 @@ text = "未执行检查"
 
 [node name="DiagnosticsTree" type="Tree" parent="dock/VBoxContainer2/editor/HBoxContainer/BoxContainer/DiagnosticsPanel"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 columns = 3
