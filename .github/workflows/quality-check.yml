@@ -71,9 +71,10 @@ jobs:
           tests/dialogue/test_gdscript_architecture.gd
 
       - name: Test KonadoScript editor integration
-        run: >-
-          python3 .github/scripts/run_godot_test.py
-          tests/editor/test_ks_editor_support.gd
+        run: |
+          python3 .github/scripts/run_godot_test.py tests/editor/test_ks_runtime_loader.gd
+          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_ks_editor_support.gd
+          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_ks_language_service.gd
 
       - name: Test internationalization
         run: |
