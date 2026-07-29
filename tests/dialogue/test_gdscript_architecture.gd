@@ -225,12 +225,19 @@ func _test_dialogue_services() -> void:
 	var manager := KND_DialogueManager.new()
 	manager.variable_store = KND_VariableStore.new()
 	manager.variable_store.set_value("score", 10)
+	manager.variable_store.set_value("好感度", 42)
 	manager._temp_variables["speaker"] = "Kona"
+	manager._temp_variables["奖金"] = 100
 
 	_expect_equal(
 		manager._interpolate_variables("Score: %score / $speaker"),
 		"Score: 10 / Kona",
 		"dialogue service interpolates persistent and temporary variables"
+	)
+	_expect_equal(
+		manager._interpolate_variables("好感：%好感度 / 奖金：$奖金"),
+		"好感：42 / 奖金：100",
+		"dialogue service interpolates Unicode variable names"
 	)
 	_expect(not manager.save_game(1), "save facade fails safely without a save system")
 
