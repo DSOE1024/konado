@@ -324,6 +324,7 @@ func _open_target(target: Dictionary) -> void:
 			var script := ResourceLoader.load(path, "Script") as Script
 			if script != null:
 				EditorInterface.edit_script(script, maxi(1, int(target.get("line", 1))))
+				_schedule_filesystem_selection(path)
 		"tscn":
 			EditorInterface.open_scene_from_path(path)
 			_focus_open_scene_editor.call_deferred()
@@ -331,6 +332,18 @@ func _open_target(target: Dictionary) -> void:
 			var resource := ResourceLoader.load(path)
 			if resource != null:
 				EditorInterface.edit_resource(resource)
+
+
+func _schedule_filesystem_selection(
+	path: String,
+	navigator: Callable = Callable(),
+) -> void:
+	if not navigator.is_valid():
+		var filesystem_dock := EditorInterface.get_file_system_dock()
+		if filesystem_dock == null:
+			return
+		navigator = Callable(filesystem_dock, "navigate_to_path")
+	navigator.call_deferred(path)
 
 
 func _focus_open_scene_editor() -> void:

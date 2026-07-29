@@ -3,6 +3,7 @@ extends SceneTree
 const CARET_MARKER := "\uFFFF"
 
 var _failures := 0
+var _selected_filesystem_path := ""
 
 
 func _init() -> void:
@@ -19,7 +20,7 @@ func _run() -> void:
 			await process_frame
 	_test_parser_strictness()
 	_test_project_index()
-	_test_semantic_navigation()
+	await _test_semantic_navigation()
 	await _test_link_geometry()
 	_test_project_diagnostics()
 	_test_project_scripts_compile()
@@ -212,6 +213,19 @@ func _test_semantic_navigation() -> void:
 			not case_targets.is_empty() and case_targets[0].get("path") == test_case["target"],
 			"semantic navigation resolves %s" % test_case["token"],
 		)
+	_selected_filesystem_path = ""
+	(
+		link_controller
+		. _schedule_filesystem_selection(
+			"res://sample/demo/demo_03_variable.ks",
+			_record_filesystem_selection,
+		)
+	)
+	await process_frame
+	_expect(
+		_selected_filesystem_path == "res://sample/demo/demo_03_variable.ks",
+		"KonadoScript navigation synchronizes the FileSystem dock selection",
+	)
 	var dialogue_line := '"Kona" "回合=$score，奖励=%bonus"'
 	var speaker_reference := KS_SymbolIndex.get_semantic_reference_at(dialogue_line, 1)
 	var dialogue_variable := (
@@ -396,6 +410,10 @@ func _expect(condition: bool, message: String) -> void:
 		return
 	_failures += 1
 	push_error("FAIL: %s" % message)
+
+
+func _record_filesystem_selection(path: String) -> void:
+	_selected_filesystem_path = path
 
 
 func _has_diagnostic_line(diagnostics: Array[Dictionary], line: int) -> bool:
