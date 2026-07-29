@@ -58,4 +58,3 @@ background bg_end fade
 
 # 结束语句，是关闭对话框的作用
 end
-

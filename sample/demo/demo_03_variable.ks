@@ -122,44 +122,44 @@ actor change Kona 介绍正常
 # --- == 等于 ---
 set %love = 5
 if %love == 5:
-    "Kona" "== 等于判断：好感度正好是 5！"
+	"Kona" "== 等于判断：好感度正好是 5！"
 else:
-    "Kona" "== 判断失败"
+	"Kona" "== 判断失败"
 endif
 
 # --- != 不等于 ---
 if %love != 10:
-    "Kona" "!= 不等于判断：好感度确实不是 10。"
+	"Kona" "!= 不等于判断：好感度确实不是 10。"
 else:
-    "Kona" "!= 判断失败"
+	"Kona" "!= 判断失败"
 endif
 
 # --- > 大于 ---
 if %love > 3:
-    "Kona" "> 大于判断：好感度大于 3，关系不错！"
+	"Kona" "> 大于判断：好感度大于 3，关系不错！"
 else:
-    "Kona" "> 判断失败"
+	"Kona" "> 判断失败"
 endif
 
 # --- < 小于 ---
 if %love < 10:
-    "Kona" "< 小于判断：好感度小于 10，还有提升空间。"
+	"Kona" "< 小于判断：好感度小于 10，还有提升空间。"
 else:
-    "Kona" "< 判断失败"
+	"Kona" "< 判断失败"
 endif
 
 # --- >= 大于等于 ---
 if %love >= 5:
-    "Kona" ">= 大于等于判断：好感度至少是 5。"
+	"Kona" ">= 大于等于判断：好感度至少是 5。"
 else:
-    "Kona" ">= 判断失败"
+	"Kona" ">= 判断失败"
 endif
 
 # --- <= 小于等于 ---
 if %love <= 5:
-    "Kona" "<= 小于等于判断：好感度不超过 5。"
+	"Kona" "<= 小于等于判断：好感度不超过 5。"
 else:
-    "Kona" "<= 判断失败"
+	"Kona" "<= 判断失败"
 endif
 
 # ============================================================
@@ -173,19 +173,19 @@ actor change Kona 介绍说话
 set $score = 85
 
 if $score >= 90:
-    "Kona" "优秀！"
+	"Kona" "优秀！"
 endif
 
 if $score >= 80:
-    "Kona" "良好！$score 分，不错哦。"
+	"Kona" "良好！$score 分，不错哦。"
 endif
 
 if $score >= 60:
-    "Kona" "及格，继续努力。"
+	"Kona" "及格，继续努力。"
 endif
 
 if $score < 60:
-    "Kona" "需要加油了。"
+	"Kona" "需要加油了。"
 endif
 
 # ============================================================
@@ -200,14 +200,14 @@ set %unlocked true
 set $visited false
 
 if %unlocked == 1:
-    "Kona" "布尔变量 %unlocked 为 true，功能已解锁！"
+	"Kona" "布尔变量 %unlocked 为 true，功能已解锁！"
 else:
-    "Kona" "功能未解锁。"
+	"Kona" "功能未解锁。"
 endif
 
 set $visited true
 if $visited == 1:
-    "Kona" "临时布尔变量 $visited 已设为 true。"
+	"Kona" "临时布尔变量 $visited 已设为 true。"
 endif
 
 # ============================================================
@@ -225,49 +225,49 @@ choice "聊天（好感+5）" -> chat_choice
 choice "无视（好感-5）" -> ignore_choice
 
 branch gift_choice
-    add %love 10
-    set $choice_made = 1
-    actor change Kona 害羞
-    "Kona" "谢谢你！好感度提升到 %love！"
-    jump_branch after_choice
+	add %love 10
+	set $choice_made = 1
+	actor change Kona 害羞
+	"Kona" "谢谢你！好感度提升到 %love！"
+	jump_branch after_choice
 
 branch chat_choice
-    add %love 5
-    set $choice_made = 2
-    actor change Kona 介绍说话
-    "Kona" "和你聊天很开心，好感度现在是 %love。"
-    jump_branch after_choice
+	add %love 5
+	set $choice_made = 2
+	actor change Kona 介绍说话
+	"Kona" "和你聊天很开心，好感度现在是 %love。"
+	jump_branch after_choice
 
 branch ignore_choice
-    sub %love 5
-    set $choice_made = 3
-    actor change Kona 惊讶
-    "Kona" "......好感度降到了 %love。"
-    jump_branch after_choice
+	sub %love 5
+	set $choice_made = 3
+	actor change Kona 惊讶
+	"Kona" "......好感度降到了 %love。"
+	jump_branch after_choice
 
 branch after_choice
-    background 00 fade
-    actor change Kona 正常
-    "Kona" "你的选择已被记录。"
+	background 00 fade
+	actor change Kona 正常
+	"Kona" "你的选择已被记录。"
 
-    # 根据选择给出不同反馈
-    if $choice_made == 1:
-        "Kona" "你选择了送礼物，真是个温柔的人呢。"
-    endif
+	# 根据选择给出不同反馈
+	if $choice_made == 1:
+		"Kona" "你选择了送礼物，真是个温柔的人呢。"
+	endif
 
-    if $choice_made == 2:
-        "Kona" "你选择了聊天，沟通很重要。"
-    endif
+	if $choice_made == 2:
+		"Kona" "你选择了聊天，沟通很重要。"
+	endif
 
-    if $choice_made == 3:
-        "Kona" "你选择了无视...也许下次可以试试别的选项。"
-    endif
-    jump_branch final
+	if $choice_made == 3:
+		"Kona" "你选择了无视...也许下次可以试试别的选项。"
+	endif
+	jump_branch final
 
 branch final
-    actor change Kona 害羞
-    "Kona" "变量系统演示到此结束，感谢观看！"
+	actor change Kona 害羞
+	"Kona" "变量系统演示到此结束，感谢观看！"
 
-    actor exit Kona
-    background bg_end fade
-    end
+	actor exit Kona
+	background bg_end fade
+	end
