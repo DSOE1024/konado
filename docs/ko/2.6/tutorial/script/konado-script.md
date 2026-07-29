@@ -22,22 +22,9 @@ KonadoScript의 핵심 설계 철학은 **이야기 내용**과 **프로그램 �
 
 ## 자주 묻는 질문
 
-### 1. 파싱 실패 후 저장해도 다시 파싱되지 않음
+### 1. 파싱 오류 처리
 
-콘솔에는 오류 메시지가 표시되지만, 저장 후 자동으로 다시 파싱되지 않습니다. 이는 재가져오기가 정상적으로 트리거되지 않았기 때문입니다.
-
-```text
-5번째 줄 내용: a1ctor show Kona normal at 2 5 scale 0.3
-  ERROR: core/variant/variant_utility.cpp:1024 - 오류: res://sample/demo/demo_01.ks [줄: 5] 파싱 실패: 인식할 수 없는 문법으로 파싱 중단: a1ctor show Kona normal at 2 5 scale 0.3
-  ERROR: Failed to process scripts
-  ERROR: Error importing 'res://sample/demo/demo_01.ks'.
-  ERROR: Failed loading resource: res://sample/demo/demo_01.ks.
-
-```
-
-해당 스크립트 파일을 찾아 마우스 오른쪽 버튼을 클릭한 뒤 다시 가져오기를 선택하세요.
-
-![스크립트 다시 가져오기](/images/tutorial/script/reimport.png)
+Godot 스크립트 편집기는 입력하는 동안 KonadoScript의 구문 및 의미 문제를 표시합니다. 잘못된 내용도 `.ks` 원본 파일에는 저장할 수 있지만 현재 런타임 `KND_Shot`은 갱신되지 않습니다. 오류를 수정하고 다시 저장하면 리소스 로더가 자동으로 컴파일하므로 수동으로 다시 가져올 필요가 없습니다.
 
 ### 2. 스크립트 파일 인코딩 문제
 

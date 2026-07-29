@@ -22,22 +22,9 @@ The core design philosophy of KonadoScript is to separate **story content** from
 
 ## FAQ
 
-### 1. Saving after a parse failure does not trigger reparsing
+### 1. Handling parse errors
 
-The console will show an error message, but saving the file will not automatically trigger reparsing. This happens because reimport was not triggered successfully.
-
-```text
-Line 5 content: a1ctor show Kona normal at 2 5 scale 0.3
-  ERROR: core/variant/variant_utility.cpp:1024 - Error: res://sample/demo/demo_01.ks [Line: 5] Parse failed: unrecognized syntax, parsing stopped: a1ctor show Kona normal at 2 5 scale 0.3
-  ERROR: Failed to process scripts
-  ERROR: Error importing 'res://sample/demo/demo_01.ks'.
-  ERROR: Failed loading resource: res://sample/demo/demo_01.ks.
-
-```
-
-Find the corresponding script file, right-click it, and select reimport.
-
-![Reimport script](/images/tutorial/script/reimport.png)
+Godot's Script Editor reports KonadoScript syntax and semantic problems as you type. Invalid content can still be saved to the `.ks` source file, but it does not replace the current runtime `KND_Shot`. Fix the errors and save again to let the resource loader compile it automatically; no manual reimport is required.
 
 ### 2. Script file encoding issues
 

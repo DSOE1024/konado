@@ -24,22 +24,9 @@ KonadoScript 的核心设计理念是将**故事内容**与**程序逻辑**分�
 
 ## 常见问题
 
-### 1. 解析失败后保存无法触发重新解析
+### 1. 解析错误如何处理
 
-控制台会提示错误信息，但保存后不会自动重新解析，这个是由于未成功触发重新导入导致的。
-
-```text
-第5行内容：a1ctor show 可娜 正常 at 2 5 scale 0.3
-  ERROR: core/variant/variant_utility.cpp:1024 - 错误：res://sample/demo/demo_01.ks [行：5] 解析失败：无法识别的语法，终止解析: a1ctor show 可娜 正常 at 2 5 scale 0.3 
-  ERROR: Failed to process scripts
-  ERROR: Error importing 'res://sample/demo/demo_01.ks'.
-  ERROR: Failed loading resource: res://sample/demo/demo_01.ks.
-
-```
-
-找到对应的脚本文件，右键选择重新导入即可。
-
-![重新导入脚本](/images/tutorial/script/reimport.png)
+Godot 脚本编辑器会实时显示 KonadoScript 的语法和语义问题。无效内容仍可保存为 `.ks` 源文件，但不会刷新当前的运行时 `KND_Shot`；修复错误并再次保存后，资源加载器会自动重新编译，无需手动重新导入。
 
 ### 2. 脚本文件编码问题
 

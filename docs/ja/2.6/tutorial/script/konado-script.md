@@ -22,22 +22,9 @@ KonadoScript の中核となる設計理念は、**物語内容**と**プログ�
 
 ## よくある質問
 
-### 1. 解析失敗後に保存しても再解析が実行されない
+### 1. 解析エラーの処理
 
-コンソールにはエラーメッセージが表示されますが、保存しても自動的に再解析されません。これは再インポートが正常にトリガーされなかったためです。
-
-```text
-5 行目の内容：a1ctor show Kona normal at 2 5 scale 0.3
-  ERROR: core/variant/variant_utility.cpp:1024 - エラー：res://sample/demo/demo_01.ks [行：5] 解析失敗：認識できない構文のため解析を終了: a1ctor show Kona normal at 2 5 scale 0.3
-  ERROR: Failed to process scripts
-  ERROR: Error importing 'res://sample/demo/demo_01.ks'.
-  ERROR: Failed loading resource: res://sample/demo/demo_01.ks.
-
-```
-
-該当するスクリプトファイルを見つけ、右クリックして再インポートを選択してください。
-
-![スクリプトを再インポート](/images/tutorial/script/reimport.png)
+Godot のスクリプトエディターは、KonadoScript の構文・意味上の問題を入力中に表示します。無効な内容も `.ks` ソースには保存できますが、現在の実行時用 `KND_Shot` は更新されません。エラーを修正して再度保存すると、リソースローダーが自動的にコンパイルするため、手動で再インポートする必要はありません。
 
 ### 2. スクリプトファイルのエンコーディング問題
 
