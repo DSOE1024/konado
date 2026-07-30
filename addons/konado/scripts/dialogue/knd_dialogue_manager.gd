@@ -26,6 +26,7 @@ signal custom_signal(content: String)
 enum DialogState { OFF = 0, PLAYING = 1, PAUSED = 2 }
 
 const DIALOGUE_SERVICES := preload("res://addons/konado/scripts/dialogue/knd_dialogue_services.gd")
+const KS_RUNTIME_DEBUGGER := preload("res://addons/konado/ks/ks_runtime_debugger.gd")
 
 @export_category("Playback Settings")
 
@@ -393,7 +394,6 @@ func _process(_delta) -> void:
 		# 播放状态
 		DialogState.PLAYING:
 			if justenter:
-				justenter = false
 				print_rich("[color=cyan][b]当前状态：[/b][/color][color=orange]播放状态[/color]")
 				if cur_dialogue_shot == null:
 					print_rich("[color=red]对话为空[/color]")
@@ -403,6 +403,9 @@ func _process(_delta) -> void:
 					print_rich("[color=red]当前节点为空，节点ID: %s[/color]" % cur_node_id)
 					_dialogue_goto_state(DialogState.OFF)
 					return
+				if KS_RUNTIME_DEBUGGER.before_line(self, dialog):
+					return
+				justenter = false
 				var cam_manager := _konado_cam_manager
 				cur_dialogue_type = dialog.dialog_type
 				dialogue_line_start.emit(cur_node_id)

@@ -7,6 +7,8 @@ class_name KS_SourceSaver
 ## The format loader owns compilation and export remapping. Restricting this saver
 ## to the .ks extension keeps normal KND_Shot serialization untouched.
 
+const ATOMIC_FILE_SCRIPT := preload("res://addons/konado/ks/ks_atomic_file.gd")
+
 
 func _recognize(resource: Resource) -> bool:
 	return resource is KND_Shot
@@ -21,14 +23,11 @@ func _get_recognized_extensions(resource: Resource) -> PackedStringArray:
 func _save(resource: Resource, path: String, _flags: int) -> Error:
 	if not resource is KND_Shot or path.get_extension().to_lower() != "ks":
 		return ERR_UNAVAILABLE
-	var file := FileAccess.open(path, FileAccess.WRITE)
-	if file == null:
-		return FileAccess.get_open_error()
-	file.store_string((resource as KND_Shot).get_source_code())
-	var error := file.get_error()
-	file.close()
-	if error != OK and error != ERR_FILE_EOF:
-		return error
+	var save_error := ATOMIC_FILE_SCRIPT.replace_text(
+		path, (resource as KND_Shot).get_source_code()
+	)
+	if save_error != OK:
+		return save_error
 	_refresh_compiled_data(resource as KND_Shot, path)
 	return OK
 

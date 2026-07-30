@@ -8,6 +8,7 @@ class_name KS_Analyzer
 var console_output_enabled := true
 var _errors: Array[String] = []
 var _warnings: Array[String] = []
+var _diagnostics: Array[Dictionary] = []
 var _branch_ids: Array[String] = []
 var _branch_nodes: Dictionary = {}
 var _dep_characters: Array[String] = []
@@ -24,6 +25,10 @@ func get_warnings() -> Array[String]:
 	return _warnings
 
 
+func get_diagnostics() -> Array[Dictionary]:
+	return _diagnostics
+
+
 func get_dep_characters() -> Array[String]:
 	return _dep_characters
 
@@ -31,6 +36,7 @@ func get_dep_characters() -> Array[String]:
 func analyze(script: KS_AST.ScriptNode, path: String = "") -> bool:
 	_errors.clear()
 	_warnings.clear()
+	_diagnostics.clear()
 	_branch_ids.clear()
 	_branch_nodes.clear()
 	_dep_characters.clear()
@@ -221,6 +227,7 @@ func _error(line_num: int, message: String) -> void:
 	if _errors.has(error):
 		return
 	_errors.append(error)
+	_append_diagnostic("error", line_num, message)
 	if console_output_enabled:
 		push_error(error)
 
@@ -230,5 +237,27 @@ func _warning(line_num: int, message: String) -> void:
 	if _warnings.has(warning):
 		return
 	_warnings.append(warning)
+	_append_diagnostic("warning", line_num, message)
 	if console_output_enabled:
 		push_warning(warning)
+
+
+func _append_diagnostic(severity: String, line_num: int, message: String) -> void:
+	var description := KS_DiagnosticMessages.describe(message, "zh_CN")
+	(
+		_diagnostics
+		. append(
+			{
+				"severity": severity,
+				"stage": "analyzer",
+				"path": _path,
+				"line": maxi(1, line_num),
+				"column": 1,
+				"end_line": maxi(1, line_num),
+				"end_column": 2,
+				"code": description["code"],
+				"arguments": description["arguments"],
+				"raw_message": message,
+			}
+		)
+	)

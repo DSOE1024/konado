@@ -6,6 +6,7 @@ class_name KS_Lexer
 
 var console_output_enabled := true
 var _errors: Array[String] = []
+var _diagnostics: Array[Dictionary] = []
 var _path: String = ""
 var _column_offset := 0
 
@@ -19,9 +20,14 @@ func get_errors() -> Array[String]:
 	return _errors
 
 
+func get_diagnostics() -> Array[Dictionary]:
+	return _diagnostics
+
+
 ## 对完整源代码进行词法分析，返回 Token 数组；出错返回空数组
 func tokenize(source: String, path: String = "") -> Array[KS_Token]:
 	_errors.clear()
+	_diagnostics.clear()
 	_path = path
 	var tokens: Array[KS_Token] = []
 	var lines := source.split("\n")
@@ -62,6 +68,7 @@ func tokenize(source: String, path: String = "") -> Array[KS_Token]:
 ## 对单行进行词法分析（用于 parse_single_line）
 func tokenize_line(line: String, line_number: int) -> Array[KS_Token]:
 	_errors.clear()
+	_diagnostics.clear()
 	_path = ""
 	var stripped := line.strip_edges(true, false)
 	if stripped.is_empty():
@@ -366,7 +373,26 @@ func _is_ident_char(ch: String) -> bool:
 
 ## 错误记录
 func _error(line_num: int, col: int, msg: String) -> void:
-	var err := "词法错误：%s [行：%d, 列：%d] %s" % [_path, line_num, col + _column_offset, msg]
+	var column := col + _column_offset
+	var err := "词法错误：%s [行：%d, 列：%d] %s" % [_path, line_num, column, msg]
 	_errors.append(err)
+	var description := KS_DiagnosticMessages.describe(msg, "zh_CN")
+	(
+		_diagnostics
+		. append(
+			{
+				"severity": "error",
+				"stage": "lexer",
+				"path": _path,
+				"line": maxi(1, line_num),
+				"column": maxi(1, column),
+				"end_line": maxi(1, line_num),
+				"end_column": maxi(2, column + 1),
+				"code": description["code"],
+				"arguments": description["arguments"],
+				"raw_message": msg,
+			}
+		)
+	)
 	if console_output_enabled:
 		push_error(err)

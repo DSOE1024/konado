@@ -16,6 +16,7 @@ func parse(tokens: Array[KS_Token], path: String = "") -> KS_AST.ScriptNode:
 	_pos = 0
 	_path = path
 	_errors.clear()
+	_diagnostics.clear()
 	_last_error_line = 0
 
 	var script := KS_AST.ScriptNode.new()
@@ -57,6 +58,7 @@ func parse_single_statement(tokens: Array[KS_Token], path: String = "") -> KS_AS
 	_pos = 0
 	_path = path
 	_errors.clear()
+	_diagnostics.clear()
 	_last_error_line = 0
 
 	_skip_newlines()
@@ -71,11 +73,6 @@ func parse_single_statement(tokens: Array[KS_Token], path: String = "") -> KS_AS
 		_error("解析器未能消费当前语句")
 		return null
 	return statement
-
-
-# ============================================================
-# 语句分发
-# ============================================================
 
 
 func _parse_statement() -> KS_AST.ASTNode:
@@ -144,11 +141,6 @@ func _parse_statement() -> KS_AST.ASTNode:
 				_error("无法识别的语法：%s" % str(tok.value))
 
 	return statement
-
-
-# ============================================================
-# 各语句解析
-# ============================================================
 
 
 ## 对话解析：  "角色" "内容" [voice_id]
@@ -363,14 +355,19 @@ func _parse_actor_show(node: KS_AST.ActorNode) -> bool:
 		return false
 	node.actor_name = str(name_tok.value)
 	node.state = str(state_tok.value)
-	if not _at_line_end() and _check(KS_Token.Type.KW_AT):
-		_advance()
-		var pos_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
-		if pos_tok == null:
-			_error("actor show 的 at 缺少位置")
-			return false
-		node.position = float(str(pos_tok.value))
-		node.has_position = true
+	if _at_line_end():
+		_error("actor show 缺少 at 和位置")
+		return false
+	if not _check(KS_Token.Type.KW_AT):
+		_error("actor show 状态后应为 at")
+		return false
+	_advance()
+	var pos_tok := _expect(KS_Token.Type.NUMBER_LITERAL)
+	if pos_tok == null:
+		_error("actor show 的 at 缺少位置")
+		return false
+	node.position = float(str(pos_tok.value))
+	node.has_position = true
 	return true
 
 

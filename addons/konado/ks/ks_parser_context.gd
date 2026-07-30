@@ -10,6 +10,7 @@ var _tokens: Array[KS_Token] = []
 var _pos: int = 0
 var _path: String = ""
 var _errors: Array[String] = []
+var _diagnostics: Array[Dictionary] = []
 var _last_error_line := 0
 
 
@@ -184,5 +185,27 @@ func _error_at(line_num: int, msg: String, column: int = 0) -> void:
 		location = "[行：%d, 列：%d]" % [line_num, column]
 	var err := "语法错误：%s %s %s" % [_path, location, msg]
 	_errors.append(err)
+	var description := KS_DiagnosticMessages.describe(msg, "zh_CN")
+	(
+		_diagnostics
+		. append(
+			{
+				"severity": "error",
+				"stage": "parser",
+				"path": _path,
+				"line": maxi(1, line_num),
+				"column": maxi(1, column),
+				"end_line": maxi(1, line_num),
+				"end_column": maxi(2, column + 1),
+				"code": description["code"],
+				"arguments": description["arguments"],
+				"raw_message": msg,
+			}
+		)
+	)
 	if console_output_enabled:
 		push_error(err)
+
+
+func get_diagnostics() -> Array[Dictionary]:
+	return _diagnostics
