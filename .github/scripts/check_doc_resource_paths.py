@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate static Konado resource paths shown in current documentation."""
+"""Validate static add-on resource paths shown in current documentation."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import re
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-RESOURCE_PATTERN = re.compile(r"res://addons/konado/[A-Za-z0-9_./-]+")
+RESOURCE_PATTERN = re.compile(r"res://addons/[A-Za-z0-9_./-]+")
 
 
 def main() -> int:
