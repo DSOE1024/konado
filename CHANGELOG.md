@@ -2,13 +2,11 @@
 
 ### Editor
 
-- Moved `.ks` files into Godot's native Script workspace with tabs, undo and redo, find and replace, bookmarks, and unsaved-state handling
-- Added KonadoScript highlighting, completion, signature hints, automatic indentation, branch outlines, and live syntax and semantic diagnostics
-- Added hover information, resource completion, and Ctrl/Command-click navigation for actors, states, motions, backgrounds, audio, cameras, and script paths
-- Added Go to Definition, Find References, and safe rename for branches, variables, and signals, plus project-wide resource reference search
-- Added the component tree, versioned online documentation entry, and FileSystem action for creating KonadoScript files
-- Improved parser recovery and validation, fixing live-analysis stalls, emitter bounds errors, and camera-transition inconsistencies
-- Completed `.ks` loading, saving, and automated coverage so clean projects work without legacy import caches
+- Integrated `.ks` files into Godot's native Script workspace with a component tree, locale switching, and versioned online documentation
+- Added a shared semantic model and incremental project index for highlighting, diagnostics, completion, hover help, navigation, outlines, reference search, and safe rename
+- Integrated formatting, diagnostic hover fixes, project-symbol navigation, and rollback-safe project rename directly into the active Script Editor
+- Added KonadoScript breakpoint debugging with source navigation, variable inspection, continue, step, and pause-at-next-line controls
+- Improved parser recovery, atomic saving, and automated coverage, fixing live-analysis stalls, compiler bounds errors, and camera-transition inconsistencies
 
 ### Security
 
