@@ -1,0 +1,135 @@
+name: Publish VS Code Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-vscode
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Konado ${{ inputs.version }}
+    runs-on: ubuntu-24.04
+    environment: vscode-plugins
+    defaults:
+      run:
+        working-directory: plugins/vscode
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: plugins/vscode/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: plugins/vscode/pnpm-lock.yaml
+
+      - name: Verify requested version
+        id: version
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$REQUESTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must use the stable major.minor.patch format." >&2
+            exit 1
+          fi
+
+          package_version="$(node -p "require('./package.json').version")"
+          if [ "$REQUESTED_VERSION" != "$package_version" ]; then
+            echo "Requested version $REQUESTED_VERSION does not match package.json version $package_version." >&2
+            exit 1
+          fi
+
+          echo "value=$package_version" >> "$GITHUB_OUTPUT"
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check extension
+        run: pnpm check
+
+      - name: Package extension
+        run: >-
+          pnpm exec vsce package
+          --out "dist/Konado-${{ steps.version.outputs.value }}.vsix"
+
+      - name: Verify packaged version
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          archive="dist/Konado-${EXPECTED_VERSION}.vsix"
+          packaged_version="$(
+            unzip -p "$archive" extension/package.json |
+              node -e "let data=''; process.stdin.on('data', chunk => data += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(data).version));"
+          )"
+          if [ "$packaged_version" != "$EXPECTED_VERSION" ]; then
+            echo "Packaged version $packaged_version does not match expected version $EXPECTED_VERSION." >&2
+            exit 1
+          fi
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: Konado-${{ steps.version.outputs.value }}-VSIX
+          path: plugins/vscode/dist/Konado-${{ steps.version.outputs.value }}.vsix
+          if-no-files-found: error
+          retention-days: 2
+
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Record Marketplace identity
+        id: marketplace
+        shell: bash
+        run: |
+          set -euo pipefail
+          profile_id="$(
+            az rest \
+              --url "https://app.vssps.visualstudio.com/_apis/profile/profiles/me" \
+              --resource "499b84ac-1321-427f-aa17-267ca6975798" \
+              --query id \
+              --output tsv
+          )"
+          if [ -z "$profile_id" ]; then
+            echo "Microsoft Marketplace did not return a profile ID." >&2
+            exit 1
+          fi
+
+          echo "profile_id=$profile_id" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Visual Studio Marketplace identity"
+            echo
+            echo "Profile ID: \`$profile_id\`"
+            echo
+            echo "This identity must be a Contributor of the \`GodotHub\` publisher."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish extension
+        run: >-
+          pnpm exec vsce publish
+          --azure-credential
+          --packagePath "dist/Konado-${{ steps.version.outputs.value }}.vsix"
