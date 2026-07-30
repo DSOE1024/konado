@@ -2,4 +2,3 @@ node_modules/
 dist/
 coverage/
 *.vsix
-images/ks-icon-raw.png
