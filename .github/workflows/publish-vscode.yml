@@ -20,7 +20,7 @@ jobs:
   publish:
     name: Publish Konado ${{ inputs.version }}
     runs-on: ubuntu-24.04
-    environment: vscode-plugins
+    environment: ${{ 'vscode-plugins' }}
     defaults:
       run:
         working-directory: plugins/vscode
