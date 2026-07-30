@@ -119,7 +119,7 @@ jobs:
           rm -f "$verification_pack" "$verification_log"
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact_prefix }}-${{ matrix.target }}
           path: ${{ matrix.artifact_path }}
