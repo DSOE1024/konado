@@ -131,6 +131,37 @@ jobs:
       - name: Run Konado.NET inside Godot
         run: bash .github/scripts/run_dotnet_runtime_tests.sh
 
+  vscode-extension:
+    name: VS Code extension
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: plugins/vscode
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: plugins/vscode/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: plugins/vscode/pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check and package extension
+        run: pnpm package:vsix
+
+      - name: Verify VSIX
+        run: test -s dist/konado.vsix
+
   resource-integrity:
     name: Resource integrity
     runs-on: ubuntu-24.04
