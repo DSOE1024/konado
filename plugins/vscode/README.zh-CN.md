@@ -42,12 +42,8 @@ pnpm package:vsix
 `com.godothub.konado` 是反向域名风格标识，不符合 VS Code Marketplace 使用
 `<publisher>.<name>` 组成扩展 ID 的约定，因此不作为 `name` 使用。
 
-发布由 GitHub Actions 中的 `Publish VS Code Extension` 工作流执行。输入
-`package.json` 中的版本号后，工作流会依次校验、测试和打包，并通过 Microsoft
-Entra ID 工作负载联合身份发布同一个 VSIX。
-
-GitHub 的 `vscode-plugins` 环境只保存非敏感的 Azure 身份标识，不使用
-Marketplace 凭据或长期访问令牌。
+运行 `pnpm package:vsix` 完成检查并生成 `dist/konado.vsix`，然后在 Visual
+Studio Marketplace 发布者管理页面手动上传该文件。
 
 ## 许可证
 

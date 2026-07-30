@@ -9,7 +9,6 @@
 | `docs-build.yml` | 文档 PR、`workflow_call` | 构建 VitePress 并上传站点产物 | 否 |
 | `docs-deploy.yml` | 文档 `main` Push、手动 | 调用文档构建、更新案例并部署 `docs` 分支 | 是，写入 `main` 和 `docs` |
 | `release.yml` | `v*` Tag Push、手动 | 构建发布产物和插件包；仅 Tag Push 使用 `CHANGELOG.md` 对应版本章节创建 GitHub Release | 仅 Tag 发布 |
-| `publish-vscode.yml` | 手动输入扩展版本号 | 校验版本、检查并打包 VS Code 扩展，通过 Entra ID 无密钥发布至 Visual Studio Marketplace | 否（发布 Marketplace） |
 | `update-showcase.yml` | 文档部署调用、手动 | 刷新 README 的 Made by Konado 内容 | 是，写入 `main` |
 
 ## 设计约束
@@ -19,7 +18,6 @@
 - 构建逻辑集中在 `project-export.yml`，CI 与正式发布共用，避免平台配置漂移。
 - 文档部署在案例刷新成功后进行；PR 只触发文档构建工作流。
 - 正式发布只接受 Tag Push；手动运行只生成可下载构建产物。
-- VS Code 扩展仅支持手动发布；输入版本必须与扩展清单完全一致，检查和打包通过后才可发布。
 - 正式发布要求 `CHANGELOG.md` 存在与标签版本一致的二级标题，并将该标题至下一二级标题前的内容作为 Release 描述。
 - 会提交或推送内容的维护任务单独成工作流，并使用最小的写权限。
 - 文档部署使用带租约的强制更新，不先删除远程分支。

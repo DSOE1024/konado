@@ -56,13 +56,9 @@ The Marketplace extension identifier is `GodotHub.Konado`:
 - `name`: `Konado`
 - `displayName`: `Konado`
 
-Publishing is performed by the `Publish VS Code Extension` GitHub Actions
-workflow. Enter the version from `package.json`; the workflow validates, tests,
-packages, and publishes the exact VSIX through Microsoft Entra ID workload
-identity federation.
-
-The `vscode-plugins` GitHub environment contains only non-secret Azure identity
-identifiers. Marketplace credentials and long-lived access tokens are not used.
+Run `pnpm package:vsix` to validate the extension and create
+`dist/konado.vsix`, then upload the file manually in the Visual Studio
+Marketplace publisher portal.
 
 ## License
 

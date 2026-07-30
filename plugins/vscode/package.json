@@ -63,8 +63,7 @@
 		"format:check": "prettier --check .",
 		"test": "vitest run",
 		"check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm compile",
-		"package:vsix": "pnpm check && vsce package --out dist/konado.vsix",
-		"publish:marketplace": "pnpm check && vsce publish --azure-credential"
+		"package:vsix": "pnpm check && vsce package --out dist/konado.vsix"
 	},
 	"contributes": {
 		"languages": [
