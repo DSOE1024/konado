@@ -102,6 +102,26 @@ export default defineConfig({
         const defaultVersion = ${JSON.stringify(DEFAULT_DOC_VERSION)};
         const path = window.location.pathname.replace(/\\/index\\.html$/, '/');
         const base = ${JSON.stringify(docsBase)};
+        const deployedLegacyVersion = path.match(
+          /^\\/oss\\/konado\\/(zh|tc|en|ja|ko)\\/(?:2\\.5|2\\.6)(\\/.*)?$/,
+        );
+        const localLegacyVersion = path.match(
+          /^\\/(zh|tc|en|ja|ko)\\/(?:2\\.5|2\\.6)(\\/.*)?$/,
+        );
+        const legacyVersion = deployedLegacyVersion || localLegacyVersion;
+        if (legacyVersion) {
+          const targetBase = deployedLegacyVersion ? base : '/';
+          window.location.replace(
+            targetBase
+              + legacyVersion[1]
+              + '/'
+              + defaultVersion
+              + (legacyVersion[2] || '/')
+              + window.location.search
+              + window.location.hash,
+          );
+          return;
+        }
         const isRoot = path === '/' || path === base || path === base.slice(0, -1);
         const deployedLocaleRoot = path.match(/^\\/oss\\/konado\\/(zh|tc|en|ja|ko)\\/?$/);
         const localLocaleRoot = path.match(/^\\/(zh|tc|en|ja|ko)\\/?$/);
