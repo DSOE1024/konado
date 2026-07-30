@@ -3,7 +3,7 @@ extends EditorPlugin
 class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
-const CODENAME: String = "Ketchup"
+const CODENAME: String = "Wontons"
 const PLUGIN_CONFIG_PATH := "res://addons/konado/plugin.cfg"
 const I18N_AUTOLOAD_NAME := "KND_I18n"
 const I18N_AUTOLOAD_PATH := "res://addons/konado/i18n/knd_i18n.gd"
@@ -33,6 +33,7 @@ var ks_highlighter: EditorSyntaxHighlighter
 var ks_create_menu: EditorContextMenuPlugin
 var ks_code_context_menu: EditorContextMenuPlugin
 var ks_script_editor_integration: KS_ScriptEditorIntegration
+var ks_debugger_plugin: EditorDebuggerPlugin
 
 # 文件系统dock
 var filesystem_dock: FileSystemDock
@@ -40,6 +41,7 @@ var ks_tooltip_plugin: EditorResourceTooltipPlugin
 
 var inspector_plugin: EditorInspectorPlugin = null
 var _plugin_version := ""
+var _debugger_registered := false
 
 
 func _has_main_screen() -> bool:
@@ -94,6 +96,7 @@ func _disable_plugin() -> void:
 	# Godot clears custom resource handlers before EditorPlugin._exit_tree during
 	# editor shutdown. Remove them here for live plugin disable/re-enable, while
 	# allowing the engine to own shutdown cleanup.
+	_detach_debugger_plugin()
 	_cleanup_script_resources()
 	if ProjectSettings.has_setting("autoload/" + I18N_AUTOLOAD_NAME):
 		remove_autoload_singleton(I18N_AUTOLOAD_NAME)
@@ -105,6 +108,18 @@ func _setup_script_editor() -> void:
 	script_editor.register_syntax_highlighter(ks_highlighter)
 	ks_script_editor_integration = KS_SCRIPT_EDITOR_INTEGRATION_SCRIPT.new()
 	ks_script_editor_integration.setup(script_editor, _plugin_version)
+	# A headless editor has no interactive debugger session UI and may terminate
+	# before EditorDebuggerNode completes its normal detach sequence.
+	if DisplayServer.get_name() != "headless":
+		var debugger_script := (
+			load("res://addons/konado/editor/ks_editor/ks_debugger_plugin.gd") as GDScript
+		)
+		ks_debugger_plugin = debugger_script.new()
+		add_debugger_plugin(ks_debugger_plugin)
+		_debugger_registered = true
+		var base_control := get_editor_interface().get_base_control()
+		if not base_control.tree_exiting.is_connected(_detach_debugger_plugin):
+			base_control.tree_exiting.connect(_detach_debugger_plugin)
 	ks_create_menu = KS_CREATE_MENU_SCRIPT.new()
 	add_context_menu_plugin(
 		EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM_CREATE,
@@ -134,6 +149,7 @@ func _cleanup_script_resources() -> void:
 
 
 func _cleanup_script_editor() -> void:
+	_detach_debugger_plugin()
 	if ks_script_editor_integration:
 		ks_script_editor_integration.cleanup()
 		ks_script_editor_integration = null
@@ -150,6 +166,16 @@ func _cleanup_script_editor() -> void:
 	if ks_highlighter:
 		get_editor_interface().get_script_editor().unregister_syntax_highlighter(ks_highlighter)
 		ks_highlighter = null
+
+
+func _detach_debugger_plugin() -> void:
+	if not _debugger_registered or ks_debugger_plugin == null:
+		return
+	if ks_debugger_plugin.has_method("cleanup"):
+		ks_debugger_plugin.cleanup()
+	remove_debugger_plugin(ks_debugger_plugin)
+	_debugger_registered = false
+	ks_debugger_plugin = null
 
 
 ## 设置导入插件

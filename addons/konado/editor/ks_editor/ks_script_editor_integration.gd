@@ -10,6 +10,8 @@ class_name KS_ScriptEditorIntegration
 ## before touching it, and restores the original controls on cleanup.
 
 const DOCS_ORIGIN := "https://godothub.com/oss/konado"
+const METADATA_SECTION := "konado_script_editor"
+const PALETTE_STATE_KEY := "component_palette"
 const JUMP_LINK_OVERLAY_SCRIPT := preload(
 	"res://addons/konado/editor/ks_editor/ks_jump_link_overlay.gd"
 )
@@ -64,6 +66,8 @@ func setup(script_editor: ScriptEditor, plugin_version: String) -> bool:
 	if not _script_editor.editor_script_changed.is_connected(_on_editor_script_changed):
 		_script_editor.editor_script_changed.connect(_on_editor_script_changed)
 	_resource_filesystem = EditorInterface.get_resource_filesystem()
+	if is_instance_valid(_help_search):
+		_help_search.set_meta("konado_native_help_search", true)
 	if (
 		_resource_filesystem != null
 		and not _resource_filesystem.filesystem_changed.is_connected(
@@ -76,6 +80,7 @@ func setup(script_editor: ScriptEditor, plugin_version: String) -> bool:
 
 
 func cleanup() -> void:
+	_save_palette_state()
 	if (
 		_script_editor != null
 		and _script_editor.editor_script_changed.is_connected(_on_editor_script_changed)
@@ -120,6 +125,10 @@ func get_docs_button() -> Button:
 	return _docs_button
 
 
+func get_help_search_button() -> Button:
+	return _help_search
+
+
 func get_locale_selector() -> OptionButton:
 	return _locale_selector
 
@@ -131,8 +140,9 @@ func is_konado_active() -> bool:
 static func get_docs_version(plugin_version: String) -> String:
 	var parts := plugin_version.split(".")
 	if parts.size() < 2:
-		return plugin_version
-	return "%s.%s" % [parts[0], parts[1]]
+		return "latest"
+	var major_minor := "%s.%s" % [parts[0], parts[1]]
+	return "2.4" if major_minor == "2.4" else "latest"
 
 
 static func get_docs_locale(locale: String) -> String:
@@ -296,7 +306,7 @@ func _create_instruction_palette() -> void:
 
 	_palette_toggle = CheckButton.new()
 	_palette_toggle.name = "InstructionPaletteToggle"
-	_palette_toggle.button_pressed = true
+	_palette_toggle.button_pressed = _get_saved_palette_expansion()
 	_palette_toggle.accessibility_name = (
 		KS_EditorLocale
 		. text(
@@ -333,6 +343,7 @@ func _on_palette_expansion_toggled(expanded: bool) -> void:
 	while group != null:
 		group.set_collapsed(not expanded)
 		group = group.get_next()
+	_save_palette_state()
 
 
 func _build_instruction_tree() -> void:
@@ -487,13 +498,56 @@ func _apply_initial_split() -> void:
 	if available_height <= 0.0:
 		return
 	var lower_minimum_height := ceili(lower_region.get_combined_minimum_size().y)
+	var settings := EditorInterface.get_editor_settings()
+	var ratio := 2.0 / 3.0
+	if settings != null:
+		var state: Dictionary = settings.get_project_metadata(
+			METADATA_SECTION, PALETTE_STATE_KEY, {}
+		)
+		ratio = clampf(float(state.get("height_ratio", ratio)), 0.25, 0.85)
 	var target_height := mini(
-		roundi(available_height * 2.0 / 3.0),
+		roundi(available_height * ratio),
 		maxi(0, roundi(available_height) - lower_minimum_height),
 	)
 	var adjustment := target_height - roundi(_palette.size.y)
 	_list_split.split_offset += adjustment
 	_initial_split_applied = true
+
+
+func _get_saved_palette_expansion() -> bool:
+	var settings := EditorInterface.get_editor_settings()
+	if settings == null:
+		return true
+	var state: Dictionary = settings.get_project_metadata(METADATA_SECTION, PALETTE_STATE_KEY, {})
+	return bool(state.get("expanded", true))
+
+
+func _save_palette_state() -> void:
+	var settings := EditorInterface.get_editor_settings()
+	if settings == null:
+		return
+	var ratio := 2.0 / 3.0
+	if is_instance_valid(_palette) and is_instance_valid(_list_split):
+		var lower_height := 0.0
+		for child: Node in _list_split.get_children():
+			if child != _palette and child is Control and child.visible:
+				lower_height = (child as Control).size.y
+				break
+		var total := _palette.size.y + lower_height
+		if total > 0.0:
+			ratio = clampf(_palette.size.y / total, 0.25, 0.85)
+	(
+		settings
+		. set_project_metadata(
+			METADATA_SECTION,
+			PALETTE_STATE_KEY,
+			{
+				"expanded":
+				_palette_toggle.button_pressed if is_instance_valid(_palette_toggle) else true,
+				"height_ratio": ratio,
+			},
+		)
+	)
 
 
 func _attach_jump_link_overlay() -> void:

@@ -21,6 +21,9 @@ const RESOURCE_KINDS := [
 	"cameras",
 	"scripts",
 ]
+const DIAGNOSTIC_HOVER_DELAY := 0.35
+const DIAGNOSTIC_MIN_CONTENT_WIDTH := 360.0
+const DIAGNOSTIC_MAX_HEIGHT_RATIO := 0.6
 
 var _code_edit: CodeEdit
 var _project_index := KS_ProjectIndex.shared()
@@ -32,6 +35,18 @@ var _original_symbol_lookup_enabled := false
 var _original_symbol_tooltip_enabled := false
 var _target_menu: PopupMenu
 var _menu_targets: Array[Dictionary] = []
+var _diagnostic_hover_timer: Timer
+var _diagnostic_panel: PanelContainer
+var _diagnostic_scroll: ScrollContainer
+var _diagnostic_content: VBoxContainer
+var _diagnostic_wrap_labels: Array[Label] = []
+var _diagnostic_wrap_buttons: Array[Button] = []
+var _diagnostic_source := ""
+var _diagnostics_by_line := {}
+var _fixes_by_line := {}
+var _pending_diagnostic_line := -1
+var _pending_diagnostic_column := -1
+var _pending_diagnostic_position := Vector2.ZERO
 
 
 func setup(code_edit: CodeEdit) -> void:
@@ -49,11 +64,16 @@ func setup(code_edit: CodeEdit) -> void:
 	_code_edit.set_symbol_lookup_on_click_enabled(false)
 	_code_edit.set_symbol_tooltip_on_hover_enabled(false)
 	_code_edit.gui_input.connect(_on_code_edit_gui_input)
-	_code_edit.mouse_exited.connect(_clear_reference)
+	_code_edit.mouse_exited.connect(_on_code_edit_mouse_exited)
 	_code_edit.text_changed.connect(_on_text_changed)
 	_code_edit.get_h_scroll_bar().value_changed.connect(_on_view_changed)
 	_code_edit.get_v_scroll_bar().value_changed.connect(_on_view_changed)
 	_code_edit.resized.connect(_on_view_changed)
+	_diagnostic_hover_timer = Timer.new()
+	_diagnostic_hover_timer.one_shot = true
+	_diagnostic_hover_timer.wait_time = DIAGNOSTIC_HOVER_DELAY
+	_diagnostic_hover_timer.timeout.connect(_show_diagnostic_hover)
+	add_child(_diagnostic_hover_timer)
 
 
 func cleanup() -> void:
@@ -61,13 +81,24 @@ func cleanup() -> void:
 		_target_menu.queue_free()
 	_target_menu = null
 	_menu_targets.clear()
+	_hide_diagnostic_hover()
+	if is_instance_valid(_diagnostic_hover_timer):
+		_diagnostic_hover_timer.stop()
+	_diagnostic_hover_timer = null
+	_diagnostic_panel = null
+	_diagnostic_scroll = null
+	_diagnostic_content = null
+	_diagnostic_wrap_labels.clear()
+	_diagnostic_wrap_buttons.clear()
+	_diagnostics_by_line.clear()
+	_fixes_by_line.clear()
 	if not is_instance_valid(_code_edit):
 		_code_edit = null
 		return
 	if _code_edit.gui_input.is_connected(_on_code_edit_gui_input):
 		_code_edit.gui_input.disconnect(_on_code_edit_gui_input)
-	if _code_edit.mouse_exited.is_connected(_clear_reference):
-		_code_edit.mouse_exited.disconnect(_clear_reference)
+	if _code_edit.mouse_exited.is_connected(_on_code_edit_mouse_exited):
+		_code_edit.mouse_exited.disconnect(_on_code_edit_mouse_exited)
 	if _code_edit.text_changed.is_connected(_on_text_changed):
 		_code_edit.text_changed.disconnect(_on_text_changed)
 	if _code_edit.get_h_scroll_bar().value_changed.is_connected(_on_view_changed):
@@ -83,6 +114,22 @@ func cleanup() -> void:
 	_code_edit = null
 	_hover_span.clear()
 	_hover_reference.clear()
+
+
+func get_diagnostics_for_line(line: int) -> Array[Dictionary]:
+	_refresh_diagnostic_cache()
+	var result: Array[Dictionary] = []
+	for diagnostic: Dictionary in _diagnostics_by_line.get(line, []):
+		result.append(diagnostic.duplicate(true))
+	return result
+
+
+func get_quick_fixes_for_line(line: int) -> Array[Dictionary]:
+	_refresh_diagnostic_cache()
+	var result: Array[Dictionary] = []
+	for fix: Dictionary in _fixes_by_line.get(line, []):
+		result.append(fix.duplicate(true))
+	return result
 
 
 func get_hover_span() -> Dictionary:
@@ -164,24 +211,45 @@ func get_reference_tooltip(reference: Dictionary) -> String:
 		var target := targets[0]
 		var path := String(target.get("path", ""))
 		if path.is_empty():
+			var declaration_line := int(target.get("line", 1))
+			var preview := _source_line_preview(_code_edit.text, declaration_line)
 			return (
 				KS_EditorLocale
 				. text(
 					(
-						"%s '%s', declared on line %d"
-						% [_kind_label(kind, false), name, int(target.get("line", 1))]
+						"%s '%s', declared on line %d\n%s"
+						% [_kind_label(kind, false), name, declaration_line, preview]
 					),
 					(
-						"%s“%s”，声明于第 %d 行"
-						% [_kind_label(kind, true), name, int(target.get("line", 1))]
+						"%s“%s”，声明于第 %d 行\n%s"
+						% [_kind_label(kind, true), name, declaration_line, preview]
 					),
 				)
 			)
+		var owner := String(target.get("owner_path", ""))
+		var details := path
+		if not owner.is_empty() and owner != path:
+			details += "\n" + KS_EditorLocale.text("Declared in: %s" % owner, "声明文件：%s" % owner)
+		if int(target.get("line", 0)) > 0:
+			details += (
+				"\n"
+				+ (
+					KS_EditorLocale
+					. text(
+						"Declaration line: %d" % int(target["line"]),
+						"声明行：%d" % int(target["line"]),
+					)
+				)
+			)
+		if path.get_extension().to_lower() == "ks":
+			var preview := _file_line_preview(path, int(target.get("line", 1)))
+			if not preview.is_empty():
+				details += "\n" + preview
 		return (
 			KS_EditorLocale
 			. text(
-				"%s '%s'\n%s" % [_kind_label(kind, false), name, path],
-				"%s“%s”\n%s" % [_kind_label(kind, true), name, path],
+				"%s '%s'\n%s" % [_kind_label(kind, false), name, details],
+				"%s“%s”\n%s" % [_kind_label(kind, true), name, details],
 			)
 		)
 	return (
@@ -204,7 +272,10 @@ func _on_code_edit_gui_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion:
 		_update_reference(event.position, event.is_command_or_control_pressed())
+		_schedule_diagnostic_hover(event.position)
 		return
+	if event is InputEventMouseButton and event.pressed:
+		_cancel_diagnostic_hover()
 	if event is InputEventKey and event.keycode in [KEY_CTRL, KEY_META]:
 		_update_reference(
 			_code_edit.get_local_mouse_position(),
@@ -273,13 +344,375 @@ func _clear_reference() -> void:
 		queue_redraw()
 
 
+func _on_code_edit_mouse_exited() -> void:
+	_clear_reference()
+	_cancel_hover_if_pointer_left.call_deferred()
+
+
+func _cancel_hover_if_pointer_left() -> void:
+	if (
+		is_instance_valid(_diagnostic_panel)
+		and _diagnostic_panel.visible
+		and Rect2(Vector2.ZERO, _diagnostic_panel.size).has_point(
+			_diagnostic_panel.get_local_mouse_position()
+		)
+	):
+		return
+	_cancel_diagnostic_hover()
+
+
 func _on_text_changed() -> void:
 	_clear_reference()
+	_diagnostic_source = ""
+	_cancel_diagnostic_hover()
 
 
 func _on_view_changed(_value: Variant = null) -> void:
 	if not _hover_span.is_empty():
 		queue_redraw()
+	_cancel_diagnostic_hover()
+
+
+func _schedule_diagnostic_hover(mouse_position: Vector2) -> void:
+	if not is_instance_valid(_code_edit) or not is_instance_valid(_diagnostic_hover_timer):
+		return
+	var position := _code_edit.get_line_column_at_pos(mouse_position, false, false)
+	if position.y < 0 or _get_diagnostics_at_position(position.y, position.x).is_empty():
+		_pending_diagnostic_line = -1
+		_pending_diagnostic_column = -1
+		_diagnostic_hover_timer.stop()
+		_hide_diagnostic_hover()
+		return
+	_code_edit.tooltip_text = ""
+	_pending_diagnostic_position = mouse_position
+	if position.y == _pending_diagnostic_line and position.x == _pending_diagnostic_column:
+		return
+	_pending_diagnostic_line = position.y
+	_pending_diagnostic_column = position.x
+	_hide_diagnostic_hover()
+	_diagnostic_hover_timer.start()
+
+
+func _show_diagnostic_hover() -> void:
+	if (
+		not is_instance_valid(_code_edit)
+		or _pending_diagnostic_line < 0
+		or (
+			_get_diagnostics_at_position(
+				_pending_diagnostic_line,
+				_pending_diagnostic_column,
+			)
+			. is_empty()
+		)
+	):
+		return
+	_ensure_diagnostic_panel()
+	_clear_diagnostic_content()
+	var diagnostics := _get_diagnostics_at_position(
+		_pending_diagnostic_line,
+		_pending_diagnostic_column,
+	)
+	var fixes := get_quick_fixes_for_line(_pending_diagnostic_line)
+	var source_snapshot := _code_edit.text
+	for index: int in diagnostics.size():
+		if index > 0:
+			_diagnostic_content.add_child(HSeparator.new())
+		_add_diagnostic_entry(
+			diagnostics[index],
+			fixes,
+			source_snapshot,
+		)
+	_layout_diagnostic_content()
+	var max_content_height := maxf(80.0, _code_edit.size.y * DIAGNOSTIC_MAX_HEIGHT_RATIO - 24.0)
+	_diagnostic_scroll.custom_minimum_size.y = minf(
+		_diagnostic_content.get_combined_minimum_size().y,
+		max_content_height,
+	)
+	_diagnostic_panel.reset_size()
+	var panel_size := _diagnostic_panel.get_combined_minimum_size()
+	_diagnostic_panel.size = panel_size
+	_diagnostic_panel.position = Vector2(
+		clampf(
+			_pending_diagnostic_position.x + 14.0,
+			0.0,
+			maxf(0.0, _code_edit.size.x - panel_size.x),
+		),
+		clampf(
+			_pending_diagnostic_position.y + 20.0,
+			0.0,
+			maxf(0.0, _code_edit.size.y - panel_size.y),
+		),
+	)
+	_diagnostic_panel.show()
+
+
+func _add_diagnostic_entry(
+	diagnostic: Dictionary,
+	fixes: Array[Dictionary],
+	source_snapshot: String,
+) -> void:
+	var severity := String(diagnostic.get("severity", "error"))
+	var severity_color := Color(1.0, 0.45, 0.4) if severity == "error" else Color(1.0, 0.75, 0.35)
+	var message_row := HBoxContainer.new()
+	message_row.add_theme_constant_override("separation", 8)
+	var severity_icon := Label.new()
+	severity_icon.text = "✕" if severity == "error" else "△"
+	severity_icon.tooltip_text = (
+		KS_EditorLocale.text("Error", "错误")
+		if severity == "error"
+		else KS_EditorLocale.text("Warning", "警告")
+	)
+	severity_icon.accessibility_name = severity_icon.tooltip_text
+	severity_icon.modulate = severity_color
+	severity_icon.mouse_filter = Control.MOUSE_FILTER_PASS
+	message_row.add_child(severity_icon)
+	var message := Label.new()
+	message.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	message.autowrap_mode = TextServer.AUTOWRAP_OFF
+	message.text = String(diagnostic.get("message", ""))
+	message.tooltip_text = String(diagnostic.get("code", ""))
+	message.modulate = severity_color
+	message_row.add_child(message)
+	_diagnostic_wrap_labels.append(message)
+	_diagnostic_content.add_child(message_row)
+
+	var matched_fixes := KS_QuickFixService.rank_fixes_for_diagnostic(fixes, diagnostic)
+	var actions: Array = diagnostic.get("actions", [])
+	if matched_fixes.is_empty() and actions.is_empty():
+		actions = [{"kind": "docs"}]
+	for fix: Dictionary in matched_fixes:
+		var fix_button := Button.new()
+		fix_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		fix_button.autowrap_mode = TextServer.AUTOWRAP_OFF
+		fix_button.clip_text = false
+		fix_button.text = (KS_EditorLocale.text("Try: %s", "尝试：%s") % String(fix.get("title", "")))
+		fix_button.accessibility_name = fix_button.text
+		fix_button.tooltip_text = (
+			KS_EditorLocale
+			. text(
+				"Apply this change to the current KonadoScript.",
+				"将此修改应用到当前 KonadoScript。",
+			)
+		)
+		fix_button.pressed.connect(_apply_hover_fix.bind(fix.duplicate(true), source_snapshot))
+		_diagnostic_content.add_child(fix_button)
+		_diagnostic_wrap_buttons.append(fix_button)
+	for action: Dictionary in actions:
+		var action_button := Button.new()
+		action_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		action_button.autowrap_mode = TextServer.AUTOWRAP_OFF
+		action_button.clip_text = false
+		action_button.text = _diagnostic_action_label(action)
+		action_button.accessibility_name = action_button.text
+		action_button.pressed.connect(_apply_diagnostic_action.bind(action.duplicate(true)))
+		_diagnostic_content.add_child(action_button)
+		_diagnostic_wrap_buttons.append(action_button)
+
+
+func _layout_diagnostic_content() -> void:
+	var max_content_width := maxf(
+		120.0,
+		_code_edit.size.x - 56.0,
+	)
+	_diagnostic_content.custom_minimum_size = Vector2.ZERO
+	_diagnostic_scroll.custom_minimum_size = Vector2.ZERO
+	_diagnostic_content.update_minimum_size()
+	var natural_width := maxf(
+		DIAGNOSTIC_MIN_CONTENT_WIDTH,
+		_diagnostic_content.get_combined_minimum_size().x,
+	)
+	var content_width := minf(natural_width, max_content_width)
+	var should_wrap := natural_width > max_content_width
+	for message: Label in _diagnostic_wrap_labels:
+		message.autowrap_mode = (
+			TextServer.AUTOWRAP_WORD_SMART if should_wrap else TextServer.AUTOWRAP_OFF
+		)
+		message.custom_minimum_size.x = maxf(120.0, content_width - 32.0) if should_wrap else 0.0
+	for button: Button in _diagnostic_wrap_buttons:
+		button.autowrap_mode = (
+			TextServer.AUTOWRAP_WORD_SMART if should_wrap else TextServer.AUTOWRAP_OFF
+		)
+	_diagnostic_content.custom_minimum_size.x = content_width
+	_diagnostic_scroll.custom_minimum_size.x = content_width
+	_diagnostic_content.update_minimum_size()
+	_diagnostic_scroll.update_minimum_size()
+
+
+func _ensure_diagnostic_panel() -> void:
+	if is_instance_valid(_diagnostic_panel):
+		return
+	_diagnostic_panel = PanelContainer.new()
+	_diagnostic_panel.name = "KonadoDiagnosticHover"
+	_diagnostic_panel.accessibility_name = (
+		KS_EditorLocale
+		. text(
+			"KonadoScript diagnostic",
+			"KonadoScript 诊断",
+		)
+	)
+	_diagnostic_panel.z_index = 100
+	_diagnostic_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_diagnostic_panel.mouse_exited.connect(_on_diagnostic_panel_mouse_exited)
+	_diagnostic_panel.add_theme_stylebox_override("panel", _create_diagnostic_panel_style())
+	_diagnostic_panel.hide()
+	_diagnostic_scroll = ScrollContainer.new()
+	_diagnostic_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_diagnostic_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_diagnostic_content = VBoxContainer.new()
+	_diagnostic_content.add_theme_constant_override("separation", 6)
+	_diagnostic_scroll.add_child(_diagnostic_content)
+	_diagnostic_panel.add_child(_diagnostic_scroll)
+	add_child(_diagnostic_panel)
+
+
+func _create_diagnostic_panel_style() -> StyleBoxFlat:
+	var base_color := Color(0.12, 0.12, 0.13)
+	var editor_theme := EditorInterface.get_editor_theme()
+	if editor_theme != null and editor_theme.has_color("base_color", "Editor"):
+		base_color = editor_theme.get_color("base_color", "Editor")
+	base_color.a = 0.8
+	var style := StyleBoxFlat.new()
+	style.bg_color = base_color
+	style.set_corner_radius_all(20)
+	style.content_margin_left = 14.0
+	style.content_margin_top = 12.0
+	style.content_margin_right = 14.0
+	style.content_margin_bottom = 12.0
+	return style
+
+
+func _clear_diagnostic_content() -> void:
+	if not is_instance_valid(_diagnostic_content):
+		return
+	_diagnostic_wrap_labels.clear()
+	_diagnostic_wrap_buttons.clear()
+	_diagnostic_content.custom_minimum_size = Vector2.ZERO
+	_diagnostic_scroll.custom_minimum_size = Vector2.ZERO
+	for child: Node in _diagnostic_content.get_children():
+		_diagnostic_content.remove_child(child)
+		child.free()
+
+
+func _hide_diagnostic_hover() -> void:
+	if is_instance_valid(_diagnostic_panel):
+		_diagnostic_panel.hide()
+
+
+func _on_diagnostic_panel_mouse_exited() -> void:
+	_cancel_hover_if_pointer_left.call_deferred()
+
+
+func _cancel_diagnostic_hover() -> void:
+	_pending_diagnostic_line = -1
+	_pending_diagnostic_column = -1
+	if is_instance_valid(_diagnostic_hover_timer):
+		_diagnostic_hover_timer.stop()
+	_hide_diagnostic_hover()
+
+
+func _apply_hover_fix(fix: Dictionary, expected_source: String) -> void:
+	if not is_instance_valid(_code_edit) or _code_edit.text != expected_source:
+		_hide_diagnostic_hover()
+		return
+	var materialized := KS_QuickFixService.materialize_line_fix(expected_source, fix)
+	if materialized.is_empty():
+		_hide_diagnostic_hover()
+		return
+	var updated := KS_QuickFixService.apply_fix(expected_source, materialized)
+	KS_CodeEditTransaction.replace_text(_code_edit, updated)
+	if _code_edit.is_inside_tree():
+		_code_edit.grab_focus()
+	_hide_diagnostic_hover()
+
+
+func _get_diagnostics_at_position(line: int, column: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for diagnostic: Dictionary in get_diagnostics_for_line(line):
+		var start_column := maxi(0, int(diagnostic.get("column", 1)) - 1)
+		var end_column := maxi(start_column + 1, int(diagnostic.get("end_column", 2)) - 1)
+		if column >= start_column and column < end_column:
+			result.append(diagnostic)
+	return result
+
+
+func _diagnostic_action_label(action: Dictionary) -> String:
+	if action.get("kind") == "open_path":
+		var path := String(action.get("path", ""))
+		if not path.is_empty():
+			return KS_EditorLocale.text("Open: %s" % path.get_file(), "打开：%s" % path.get_file())
+		return KS_EditorLocale.text("Open resource configuration", "打开资源配置")
+	return KS_EditorLocale.text("View documentation", "查看文档")
+
+
+func _apply_diagnostic_action(action: Dictionary) -> void:
+	if action.get("kind") == "open_path":
+		_open_target(
+			{
+				"path": String(action.get("path", "")),
+				"line": int(action.get("line", 1)),
+			}
+		)
+	else:
+		_open_diagnostic_docs()
+	_hide_diagnostic_hover()
+
+
+func _open_diagnostic_docs() -> void:
+	var config := ConfigFile.new()
+	var version := ""
+	if config.load("res://addons/konado/plugin.cfg") == OK:
+		version = String(config.get_value("plugin", "version", ""))
+	var url := (
+		KS_ScriptEditorIntegration
+		. get_docs_url(
+			version,
+			KS_EditorLocale.get_editor_locale(),
+		)
+	)
+	var open_error := OS.shell_open(url)
+	if open_error != OK:
+		push_error("Unable to open KonadoScript documentation: %s" % url)
+
+
+func _refresh_diagnostic_cache() -> void:
+	if not is_instance_valid(_code_edit) or _diagnostic_source == _code_edit.text:
+		return
+	_diagnostic_source = _code_edit.text
+	_diagnostics_by_line.clear()
+	_fixes_by_line.clear()
+	var path := ""
+	var current_script := EditorInterface.get_script_editor().get_current_script()
+	if current_script != null:
+		path = current_script.resource_path
+	var document := KS_DocumentStore.shared().update_buffer(path, _diagnostic_source)
+	var locale := KS_EditorLocale.get_editor_locale()
+	for diagnostic: Dictionary in document.get_diagnostics(locale):
+		var line := maxi(0, int(diagnostic.get("line", 1)) - 1)
+		if not _diagnostics_by_line.has(line):
+			_diagnostics_by_line[line] = []
+		_diagnostics_by_line[line].append(diagnostic)
+	for fix: Dictionary in KS_QuickFixService.get_fixes(document, locale):
+		var line := maxi(0, int(fix.get("line", 1)) - 1)
+		if not _fixes_by_line.has(line):
+			_fixes_by_line[line] = []
+		_fixes_by_line[line].append(fix)
+
+
+func _source_line_preview(source: String, line_number: int) -> String:
+	var lines := source.split("\n")
+	var index := line_number - 1
+	if index < 0 or index >= lines.size():
+		return ""
+	return String(lines[index]).strip_edges()
+
+
+func _file_line_preview(path: String, line_number: int) -> String:
+	if not FileAccess.file_exists(path) or FileAccess.get_size(path) > 8 * 1024 * 1024:
+		return ""
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return ""
+	return _source_line_preview(file.get_as_text(), line_number)
 
 
 func _show_target_menu(targets: Array[Dictionary], global_position: Vector2) -> void:

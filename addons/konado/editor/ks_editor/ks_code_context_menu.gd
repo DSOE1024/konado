@@ -14,6 +14,7 @@ const RESOURCE_KINDS := [
 	"cameras",
 	"scripts",
 ]
+const RENAMABLE_RESOURCE_KINDS := ["actors", "backgrounds", "bgms", "sfx", "voices"]
 
 var _active_symbol := ""
 var _active_kind := "branches"
@@ -28,13 +29,28 @@ var _reference_locations: Array[Dictionary] = []
 var _rename_dialog: ConfirmationDialog
 var _rename_input: LineEdit
 var _rename_error: Label
+var _rename_plan_dialog: ConfirmationDialog
+var _rename_plan_summary: RichTextLabel
+var _pending_plan := {}
 
 
 func _popup_menu(paths: PackedStringArray) -> void:
 	var code_edit := _resolve_code_edit(paths)
 	if not _is_konado_editor(code_edit):
 		return
+	_active_code_edit = code_edit
+	var current_script := EditorInterface.get_script_editor().get_current_script()
+	_active_path = current_script.resource_path if current_script != null else ""
+	add_context_menu_item(
+		KS_EditorLocale.text("Format Document", "格式化文档"),
+		_format_document,
+	)
+	add_context_menu_item(
+		KS_EditorLocale.text("Format Selection", "格式化选区"),
+		_format_selection,
+	)
 	var line := code_edit.get_caret_line()
+	_add_quick_fix_actions(line)
 	var column := code_edit.get_caret_column()
 	var reference := (
 		KS_SymbolIndex
@@ -50,9 +66,6 @@ func _popup_menu(paths: PackedStringArray) -> void:
 	_active_symbol = String(reference.get("name", ""))
 	_active_kind = kind
 	_active_scope = String(reference.get("scope_name", ""))
-	_active_code_edit = code_edit
-	var current_script := EditorInterface.get_script_editor().get_current_script()
-	_active_path = current_script.resource_path if current_script != null else ""
 	add_context_menu_item(
 		KS_EditorLocale.text("Go to Definition", "转到定义"),
 		_go_to_definition,
@@ -61,19 +74,92 @@ func _popup_menu(paths: PackedStringArray) -> void:
 		KS_EditorLocale.text("Find References", "查找引用"),
 		_find_references,
 	)
-	if kind in LOCAL_KINDS:
+	if kind in LOCAL_KINDS or kind in RENAMABLE_RESOURCE_KINDS:
 		add_context_menu_item(
 			KS_EditorLocale.text("Rename Symbol...", "重命名符号……"),
 			_rename_symbol,
 		)
 
 
+func _format_document(_context: Variant) -> void:
+	if _active_code_edit == null:
+		return
+	_replace_editor_source(KS_Formatter.format_document(_active_code_edit.text))
+
+
+func _format_selection(_context: Variant) -> void:
+	if _active_code_edit == null:
+		return
+	var from_line := (
+		_active_code_edit.get_selection_from_line()
+		if _active_code_edit.has_selection()
+		else _active_code_edit.get_caret_line()
+	)
+	var to_line := (
+		_active_code_edit.get_selection_to_line()
+		if _active_code_edit.has_selection()
+		else from_line
+	)
+	_replace_editor_source(KS_Formatter.format_range(_active_code_edit.text, from_line, to_line))
+
+
+func _add_quick_fix_actions(caret_line: int) -> void:
+	if _active_code_edit == null:
+		return
+	var source := _active_code_edit.text
+	var document := KS_DocumentStore.shared().update_buffer(_active_path, source)
+	var fixes := KS_QuickFixService.get_fixes(document)
+	var safe_fix_count := 0
+	for fix: Dictionary in fixes:
+		if bool(fix.get("safe", true)):
+			safe_fix_count += 1
+	var visible_fixes: Array[Dictionary] = []
+	for diagnostic: Dictionary in document.get_diagnostics():
+		if int(diagnostic.get("line", 1)) - 1 != caret_line:
+			continue
+		for fix: Dictionary in KS_QuickFixService.rank_fixes_for_diagnostic(fixes, diagnostic):
+			if not visible_fixes.has(fix):
+				visible_fixes.append(fix)
+	for fix: Dictionary in visible_fixes:
+		add_context_menu_item(
+			KS_EditorLocale.text("Try: %s", "尝试：%s") % String(fix.get("title", "")),
+			_apply_quick_fix.bind(fix.duplicate(true), source),
+		)
+	if safe_fix_count > 1:
+		add_context_menu_item(
+			KS_EditorLocale.text("Apply All Safe Quick Fixes", "应用全部安全快速修复"),
+			_apply_all_quick_fixes.bind(source),
+		)
+
+
+func _apply_quick_fix(_context: Variant, fix: Dictionary, expected_source: String) -> void:
+	if _active_code_edit == null or _active_code_edit.text != expected_source:
+		return
+	var materialized := KS_QuickFixService.materialize_line_fix(expected_source, fix)
+	if materialized.is_empty():
+		return
+	_replace_editor_source(KS_QuickFixService.apply_fix(expected_source, materialized))
+
+
+func _apply_all_quick_fixes(_context: Variant, expected_source: String) -> void:
+	if _active_code_edit == null or _active_code_edit.text != expected_source:
+		return
+	_replace_editor_source(KS_QuickFixService.apply_all_fixes(expected_source, _active_path))
+
+
+func _replace_editor_source(source: String) -> void:
+	if _active_code_edit == null or source == _active_code_edit.text:
+		return
+	KS_CodeEditTransaction.replace_text(_active_code_edit, source)
+
+
 func cleanup() -> void:
-	for dialog: Window in [_reference_dialog, _rename_dialog]:
+	for dialog: Window in [_reference_dialog, _rename_dialog, _rename_plan_dialog]:
 		if dialog != null and is_instance_valid(dialog):
 			dialog.queue_free()
 	_reference_dialog = null
 	_rename_dialog = null
+	_rename_plan_dialog = null
 	_active_code_edit = null
 
 
@@ -166,7 +252,10 @@ func _append_document_references(path: String, source: String) -> void:
 
 
 func _rename_symbol(_context: Variant) -> void:
-	if not _has_active_editor() or _active_kind not in LOCAL_KINDS:
+	if (
+		not _has_active_editor()
+		or (_active_kind not in LOCAL_KINDS and _active_kind not in RENAMABLE_RESOURCE_KINDS)
+	):
 		return
 	_ensure_rename_dialog()
 	_rename_input.text = _active_symbol
@@ -313,6 +402,7 @@ func _validate_rename(new_name: String) -> void:
 	elif (
 		new_name != _active_symbol
 		and _has_active_editor()
+		and _active_kind in LOCAL_KINDS
 		and (
 			(
 				KS_SymbolIndex
@@ -343,6 +433,27 @@ func _apply_rename() -> void:
 	_validate_rename(new_name)
 	if _rename_dialog.get_ok_button().disabled:
 		return
+	if _active_kind in RENAMABLE_RESOURCE_KINDS:
+		_pending_plan = (
+			KS_RefactorService
+			. create_project_resource_rename_plan(
+				_active_kind,
+				_active_symbol,
+				new_name,
+				_active_path,
+				_active_code_edit.text,
+			)
+		)
+		var plan_errors := KS_RefactorService.validate_plan(_pending_plan)
+		if not bool(_pending_plan.get("valid", false)) or not plan_errors.is_empty():
+			_rename_error.text = (
+				"\n".join(plan_errors)
+				if not plan_errors.is_empty()
+				else KS_EditorLocale.text("No safe changes were found.", "未找到可安全应用的修改。")
+			)
+			return
+		_show_rename_plan()
+		return
 	var updated := (
 		KS_SymbolIndex
 		. rename_local_symbol(
@@ -357,6 +468,48 @@ func _apply_rename() -> void:
 	_active_code_edit.insert_text_at_caret(updated)
 	_active_code_edit.end_complex_operation()
 	_active_symbol = new_name
+
+
+func _show_rename_plan() -> void:
+	_ensure_rename_plan_dialog()
+	var lines := PackedStringArray()
+	var total := 0
+	for change: Dictionary in _pending_plan.get("changes", []):
+		var occurrences := int(change.get("occurrences", 0))
+		total += occurrences
+		lines.append("• %s  (%d)" % [change.get("path", ""), occurrences])
+	_rename_plan_summary.text = (
+		KS_EditorLocale
+		. text(
+			"Rename %d occurrences in %d files:\n\n%s" % [total, lines.size(), "\n".join(lines)],
+			"将在 %d 个文件中重命名 %d 处：\n\n%s" % [lines.size(), total, "\n".join(lines)],
+		)
+	)
+	_rename_plan_dialog.popup_centered(Vector2i(720, 440))
+
+
+func _ensure_rename_plan_dialog() -> void:
+	if _rename_plan_dialog != null:
+		return
+	_rename_plan_dialog = ConfirmationDialog.new()
+	_rename_plan_dialog.title = KS_EditorLocale.text("Refactor Preview", "重构预览")
+	_rename_plan_dialog.ok_button_text = KS_EditorLocale.text("Apply", "应用")
+	_rename_plan_dialog.cancel_button_text = KS_EditorLocale.text("Cancel", "取消")
+	_rename_plan_summary = RichTextLabel.new()
+	_rename_plan_summary.fit_content = false
+	_rename_plan_summary.custom_minimum_size = Vector2(680, 360)
+	_rename_plan_dialog.add_child(_rename_plan_summary)
+	_rename_plan_dialog.confirmed.connect(_apply_rename_plan)
+	EditorInterface.get_base_control().add_child(_rename_plan_dialog)
+
+
+func _apply_rename_plan() -> void:
+	var apply_error := KS_RefactorService.apply_plan(_pending_plan)
+	if apply_error != OK:
+		push_error("KonadoScript refactor failed: %s" % error_string(apply_error))
+		return
+	_active_symbol = String(_pending_plan.get("new_name", _active_symbol))
+	_pending_plan.clear()
 
 
 func _read_text(path: String) -> String:
