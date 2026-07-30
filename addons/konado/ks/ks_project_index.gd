@@ -24,7 +24,7 @@ const ANIMATION_PATTERN := '"name"\\s*:\\s*&?"([^"]+)"'
 const MOTION_PATTERN := '(?m)^\\s*resource_name\\s*=\\s*"([^"]+)"'
 const EXT_RESOURCE_HEADER_PATTERN := "(?m)^\\[ext_resource[^\\]]*\\]$"
 const BLOCK_HEADER_PATTERN := "(?m)^\\[(?:sub_resource|resource|node)[^\\]]*\\]$"
-const SCANNED_EXTENSIONS := ["tres", "tscn"]
+const SCANNED_EXTENSIONS := ["ks", "tres", "tscn"]
 const IGNORED_DIRECTORIES := [
 	"node_modules",
 	"build",
@@ -40,7 +40,9 @@ var _definitions := {}
 var _file_cache := {}
 var _script_default_cache := {}
 var _seen_paths := {}
+var _dirty_paths := {}
 var _dirty := true
+var _inventory_dirty := true
 var _filesystem_connected := false
 
 
@@ -175,12 +177,66 @@ func get_actor_scoped_targets(
 
 func invalidate() -> void:
 	_dirty = true
+	_inventory_dirty = true
+
+
+func invalidate_path(path: String) -> void:
+	if path.get_extension().to_lower() not in SCANNED_EXTENSIONS:
+		return
+	_dirty_paths[path] = true
+	_dirty = true
+
+
+func update_document(document: KS_DocumentModel) -> void:
+	if (
+		document == null
+		or not document.path.begins_with("res://")
+		or document.path.get_extension().to_lower() != "ks"
+	):
+		return
+	var path := document.path
+	var cached: Dictionary = _file_cache.get(path, {})
+	if cached.get("revision") == document.revision:
+		return
+	var file_exists := FileAccess.file_exists(path)
+	_file_cache[path] = {
+		"modified_time": FileAccess.get_modified_time(path) if file_exists else 0,
+		"file_size": FileAccess.get_size(path) if file_exists else document.source.length(),
+		"revision": document.revision,
+		"definitions": _collect_script_definitions(document),
+	}
+	_seen_paths[path] = true
+	_dirty_paths.erase(path)
+	if not _inventory_dirty:
+		_rebuild_indexes()
+		_dirty = false
+	else:
+		_dirty = true
 
 
 func _ensure_index() -> void:
 	_connect_filesystem_signal()
 	if not _dirty:
 		return
+	if _inventory_dirty:
+		_seen_paths.clear()
+		_scan_directory("res://")
+		for cached_path: String in _file_cache.keys():
+			if not _seen_paths.has(cached_path):
+				_file_cache.erase(cached_path)
+	else:
+		for path: String in _dirty_paths:
+			if FileAccess.file_exists(path):
+				_scan_file(path)
+			else:
+				_file_cache.erase(path)
+	_dirty_paths.clear()
+	_inventory_dirty = false
+	_rebuild_indexes()
+	_dirty = false
+
+
+func _rebuild_indexes() -> void:
 	_symbols = {}
 	_definitions = {}
 	for kind: String in [
@@ -193,18 +249,18 @@ func _ensure_index() -> void:
 		"motions",
 		"cameras",
 		"scripts",
+		"branches",
+		"variables",
+		"signals",
+		"achievements",
 	]:
 		_symbols[kind] = PackedStringArray()
 		_definitions[kind] = {}
-	_seen_paths.clear()
-	_scan_directory("res://")
-	for cached_path: String in _file_cache.keys():
-		if not _seen_paths.has(cached_path):
-			_file_cache.erase(cached_path)
+	for cached: Dictionary in _file_cache.values():
+		_merge_file_definitions(cached.get("definitions", {}))
 	for kind: String in _symbols:
 		var values: PackedStringArray = _symbols[kind]
 		values.sort()
-	_dirty = false
 
 
 func _connect_filesystem_signal() -> void:
@@ -213,7 +269,7 @@ func _connect_filesystem_signal() -> void:
 	var filesystem := EditorInterface.get_resource_filesystem()
 	if filesystem == null:
 		return
-	var callback := Callable(self, "invalidate")
+	var callback := Callable(self, "_on_filesystem_changed")
 	if not filesystem.filesystem_changed.is_connected(callback):
 		filesystem.filesystem_changed.connect(callback)
 	var paths_callback := Callable(self, "_invalidate_paths")
@@ -226,10 +282,17 @@ func _connect_filesystem_signal() -> void:
 	_filesystem_connected = true
 
 
+func _on_filesystem_changed() -> void:
+	_dirty = true
+	_inventory_dirty = true
+
+
 func _invalidate_paths(paths: PackedStringArray) -> void:
 	for path: String in paths:
 		_file_cache.erase(path)
 		_script_default_cache.erase(path)
+		if path.get_extension().to_lower() in SCANNED_EXTENSIONS:
+			_dirty_paths[path] = true
 	_dirty = true
 
 
@@ -255,25 +318,31 @@ func _scan_directory(path: String) -> void:
 
 func _scan_file(path: String) -> void:
 	var extension := path.get_extension().to_lower()
-	if extension == "ks":
-		_seen_paths[path] = true
-		_merge_file_definitions(
-			{
-				"scripts":
-				[
-					_make_definition("scripts", path, path, 1, path),
-				]
-			}
-		)
-		return
-	if not SCANNED_EXTENSIONS.has(extension):
+	if extension not in SCANNED_EXTENSIONS:
 		return
 	_seen_paths[path] = true
+	if extension == "ks":
+		var modified_time := FileAccess.get_modified_time(path)
+		var file_size := FileAccess.get_size(path)
+		var cached: Dictionary = _file_cache.get(path, {})
+		var document := KS_DocumentStore.shared().get_document(path)
+		if (
+			cached.get("modified_time") == modified_time
+			and cached.get("file_size") == file_size
+			and cached.get("revision") == document.revision
+		):
+			return
+		_file_cache[path] = {
+			"modified_time": modified_time,
+			"file_size": file_size,
+			"revision": document.revision,
+			"definitions": _collect_script_definitions(document),
+		}
+		return
 	var modified_time := FileAccess.get_modified_time(path)
 	var file_size := FileAccess.get_size(path)
 	var cached: Dictionary = _file_cache.get(path, {})
 	if cached.get("modified_time") == modified_time and cached.get("file_size") == file_size:
-		_merge_file_definitions(cached.get("definitions", {}))
 		return
 	if file_size > MAX_TEXT_RESOURCE_BYTES:
 		_file_cache[path] = {
@@ -292,7 +361,33 @@ func _scan_file(path: String) -> void:
 		"file_size": file_size,
 		"definitions": file_definitions,
 	}
-	_merge_file_definitions(file_definitions)
+
+
+func _collect_script_definitions(document: KS_DocumentModel) -> Dictionary:
+	var path := document.path
+	var definitions := {
+		"scripts":
+		[
+			_make_definition("scripts", path, path, 1, path),
+		]
+	}
+	for reference: Dictionary in document.references:
+		var kind := String(reference.get("kind", ""))
+		if reference.get("role") != "definition" and kind != "achievements":
+			continue
+		if kind not in ["branches", "variables", "signals", "achievements"]:
+			continue
+		_append_definition(
+			definitions,
+			_make_definition(
+				kind,
+				String(reference.get("name", "")),
+				path,
+				int(reference.get("line", 1)),
+				path,
+			),
+		)
+	return definitions
 
 
 func _parse_text_resource(path: String, source: String, extension: String) -> Dictionary:

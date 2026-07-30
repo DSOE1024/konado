@@ -46,6 +46,8 @@ const CONTEXT_COMPLETIONS: Dictionary = {
 
 const STRUCTURAL_KEYWORDS: PackedStringArray = ["at"]
 const CAMERA_TRANSITIONS: PackedStringArray = ["none", "linear", "ease_in_out"]
+const POSITION_VALUES: PackedStringArray = ["1", "2", "3", "4", "5"]
+const LIKELY_POSITION_VALUES: PackedStringArray = ["3", "2", "1"]
 
 const SIGNATURES: Dictionary = {
 	"screentext": "screentext { ... }",
@@ -54,7 +56,7 @@ const SIGNATURES: Dictionary = {
 	"waitsignal": "waitsignal <signal_name>",
 	"background": "background <background_name> [transition]",
 	"actor": "actor <show|exit|change|move|motion> ...",
-	"actor show": "actor show <actor_name> <state_name> [at <position>]",
+	"actor show": "actor show <actor_name> <state_name> at <position>",
 	"actor exit": "actor exit <actor_name>",
 	"actor change": "actor change <actor_name> <state_name>",
 	"actor move": "actor move <actor_name> <position>",
@@ -210,16 +212,16 @@ const SNIPPETS: Array[Dictionary] = [
 		"label": "Show dialogue box",
 		"label_zh": "显示对话框",
 		"snippet": "showtextbox 1.0",
-		"description": "Show the dialogue box with an optional duration",
-		"description_zh": "按指定时长显示对话框",
+		"description": "Show the dialogue box, optionally using a fade duration",
+		"description_zh": "显示对话框，可选淡入时长",
 	},
 	{
 		"group": "text",
 		"label": "Hide dialogue box",
 		"label_zh": "隐藏对话框",
 		"snippet": "hidetextbox 1.0",
-		"description": "Hide the dialogue box with an optional duration",
-		"description_zh": "按指定时长隐藏对话框",
+		"description": "Hide the dialogue box, optionally using a fade duration",
+		"description_zh": "隐藏对话框，可选淡出时长",
 	},
 	{
 		"group": "text",

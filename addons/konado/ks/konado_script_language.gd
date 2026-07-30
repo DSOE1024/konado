@@ -2,6 +2,8 @@
 extends ScriptLanguageExtension
 class_name KND_KonadoScriptLanguage
 
+const CALL_HINT_MARKER := "\uFFFF"
+
 ## Godot Script Editor bridge for KonadoScript.
 ##
 ## This object is intentionally not registered as a runtime scripting language:
@@ -15,8 +17,8 @@ const POSITION_VALUES := ["1", "2", "3", "4", "5"]
 const COMPARISON_OPERATORS := ["==", "!=", ">", "<", ">=", "<="]
 const BOOLEAN_VALUES := ["true", "false"]
 
-var _diagnostics := KS_Diagnostics.new()
 var _project_index := KS_ProjectIndex.shared()
+var _document_store := KS_DocumentStore.shared()
 
 
 func _get_name() -> String:
@@ -95,7 +97,9 @@ func _validate(
 	validate_safe_lines: bool,
 ) -> Dictionary:
 	var result := {"valid": true}
-	var diagnostics := _diagnostics.analyze(code, path, KS_EditorLocale.get_editor_locale())
+	var document := _document_store.update_buffer(path, code)
+	_project_index.update_document(document)
+	var diagnostics := document.get_diagnostics(KS_EditorLocale.get_editor_locale())
 	var errors: Array[Dictionary] = []
 	var warnings: Array[Dictionary] = []
 	for diagnostic: Dictionary in diagnostics:
@@ -128,7 +132,7 @@ func _validate(
 			)
 
 	if validate_functions:
-		result["functions"] = _collect_outline(code)
+		result["functions"] = document.get_outline()
 	if validate_errors:
 		result["errors"] = errors
 	if validate_warnings:
@@ -153,17 +157,22 @@ func _complete_code(code: String, _path: String, _owner: Object) -> Dictionary:
 	var line_start := code.rfind("\n", caret - 1) + 1
 	var line_prefix := code.substr(line_start, caret - line_start)
 	var source := code.replace(CARET_MARKER, "")
+	var document := _document_store.update_buffer(_path, source)
+	_project_index.update_document(document)
 	var options: Array[Dictionary] = []
 	for candidate: Dictionary in _get_completion_candidates(source, line_prefix):
+		var kind: CodeEdit.CodeCompletionKind = candidate.get(
+			"kind", CodeEdit.CodeCompletionKind.KIND_KEYWORD
+		)
 		(
 			options
 			. append(
 				{
-					"kind": candidate.get("kind", CodeEdit.CodeCompletionKind.KIND_KEYWORD),
-					"display": candidate["text"],
+					"kind": kind,
+					"display": _completion_display(candidate),
 					"insert_text": candidate["insert_text"],
 					"font_color": COMPLETION_COLOR,
-					"icon": null,
+					"icon": _completion_icon(kind),
 					"default_value": null,
 					"location": CodeEdit.CodeCompletionLocation.LOCATION_LOCAL,
 				}
@@ -180,6 +189,7 @@ func _complete_code(code: String, _path: String, _owner: Object) -> Dictionary:
 func _lookup_code(code: String, symbol: String, path: String, _owner: Object) -> Dictionary:
 	var reference := _get_reference_at_caret(code)
 	var source := code.replace(CARET_MARKER, "")
+	_document_store.update_buffer(path, source)
 	var reference_kind := String(reference.get("kind", ""))
 	var reference_name := String(reference.get("name", symbol))
 	var lookup := {}
@@ -303,29 +313,15 @@ func _empty_lookup() -> Dictionary:
 
 
 func _auto_indent_code(code: String, from_line: int, to_line: int) -> String:
-	var lines := code.split("\n")
-	if lines.is_empty():
-		return code
-	var first_line := clampi(from_line, 0, lines.size() - 1)
-	var last_line := clampi(to_line, first_line, lines.size() - 1)
-	var indent_unit := _detect_indent_unit(lines)
-	var depth := 0
-	for line_index: int in lines.size():
-		var content := _strip_line_comment(String(lines[line_index])).strip_edges()
-		var closes_before := content == "endif" or content == "else:" or content == "}"
-		if closes_before:
-			depth = maxi(0, depth - 1)
-		if line_index >= first_line and line_index <= last_line:
-			var raw_line := String(lines[line_index])
-			var trimmed := raw_line.strip_edges(true, false)
-			lines[line_index] = indent_unit.repeat(depth) + trimmed
-		if content.begins_with("if ") and content.ends_with(":"):
-			depth += 1
-		elif content == "else:":
-			depth += 1
-		elif content.begins_with("screentext") and content.ends_with("{"):
-			depth += 1
-	return "\n".join(lines)
+	return (
+		KS_Formatter
+		. format_range(
+			code,
+			from_line,
+			to_line,
+			_detect_indent_unit(code.split("\n")),
+		)
+	)
 
 
 func _reload_scripts(_scripts: Array, _soft_reload: bool) -> void:
@@ -448,17 +444,25 @@ func _get_completion_candidates(source: String, line_prefix: String) -> Array[Di
 					partial,
 				)
 		elif root_keyword in ["set", "add", "sub", "mul", "div", "if"] and argument_index == 1:
+			var variables := _collect_matches(
+				source,
+				"(?m)((?:%|\\$)[\\p{L}_][\\p{L}\\p{N}_]*)",
+			)
+			if partial.begins_with("%") or partial.is_empty():
+				variables = _merge_values(
+					variables,
+					_filter_values_by_prefix(_project_index.get_values("variables"), "%"),
+				)
 			candidates = _make_candidates(
-				_collect_matches(
-					source,
-					"(?m)((?:%|\\$)[\\p{L}_][\\p{L}\\p{N}_]*)",
-				),
+				variables,
 				partial,
 			)
 		elif root_keyword == "if" and argument_index == 2:
 			candidates = _make_candidates(COMPARISON_OPERATORS, partial)
 		elif root_keyword == "achievement" and tokens.size() >= 2:
-			if String(tokens[1]) == "set_flag" and argument_index == 3:
+			if argument_index == 2:
+				candidates = _make_candidates(_project_index.get_values("achievements"), partial)
+			elif String(tokens[1]) == "set_flag" and argument_index == 3:
 				candidates = _make_candidates(BOOLEAN_VALUES, partial)
 		elif root_keyword == "waitsignal" and argument_index == 1:
 			candidates = _make_candidates(
@@ -474,7 +478,35 @@ func _get_completion_candidates(source: String, line_prefix: String) -> Array[Di
 				or (camera_action == "reset" and argument_index == 2)
 			):
 				candidates = _make_candidates(KS_LanguageCatalog.CAMERA_TRANSITIONS, partial)
+		var inferred_kind := _infer_completion_kind(root_keyword, tokens, argument_index)
+		if inferred_kind != CodeEdit.CodeCompletionKind.KIND_KEYWORD:
+			for candidate: Dictionary in candidates:
+				if candidate.get("kind") == CodeEdit.CodeCompletionKind.KIND_KEYWORD:
+					candidate["kind"] = inferred_kind
 	return candidates
+
+
+func _infer_completion_kind(
+	root_keyword: String,
+	tokens: PackedStringArray,
+	argument_index: int,
+) -> CodeEdit.CodeCompletionKind:
+	var kind := CodeEdit.CodeCompletionKind.KIND_KEYWORD
+	if root_keyword in ["jump_branch", "choice"]:
+		kind = CodeEdit.CodeCompletionKind.KIND_FUNCTION
+	elif root_keyword in ["set", "add", "sub", "mul", "div", "if"] and argument_index == 1:
+		kind = CodeEdit.CodeCompletionKind.KIND_VARIABLE
+	elif root_keyword == "waitsignal":
+		kind = CodeEdit.CodeCompletionKind.KIND_SIGNAL
+	elif root_keyword == "achievement" and argument_index == 2:
+		kind = CodeEdit.CodeCompletionKind.KIND_CONSTANT
+	elif (
+		root_keyword in ["background", "actor", "play", "cam", "asyncam"]
+		and tokens.size() > 1
+		and argument_index > 1
+	):
+		kind = CodeEdit.CodeCompletionKind.KIND_MEMBER
+	return kind
 
 
 func _make_candidates(
@@ -485,13 +517,63 @@ func _make_candidates(
 	var candidates: Array[Dictionary] = []
 	var normalized_partial := partial.to_lower()
 	for value: String in values:
-		if (
-			not normalized_partial.is_empty()
-			and not value.to_lower().begins_with(normalized_partial)
-		):
+		var score := _fuzzy_score(value.to_lower(), normalized_partial)
+		if score < 0:
 			continue
-		candidates.append({"text": value, "insert_text": value, "kind": kind})
+		candidates.append({"text": value, "insert_text": value, "kind": kind, "score": score})
+	candidates.sort_custom(
+		func(left: Dictionary, right: Dictionary) -> bool:
+			if left["score"] == right["score"]:
+				return String(left["text"]).naturalnocasecmp_to(String(right["text"])) < 0
+			return int(left["score"]) > int(right["score"])
+	)
 	return candidates
+
+
+func _fuzzy_score(value: String, partial: String) -> int:
+	if partial.is_empty():
+		return 0
+	if value.begins_with(partial):
+		return 1000 - value.length()
+	var search_from := 0
+	var score := 0
+	var previous := -2
+	for character: String in partial:
+		var found := value.find(character, search_from)
+		if found < 0:
+			return -1
+		score += 12 if found == previous + 1 else 2
+		previous = found
+		search_from = found + 1
+	return score - value.length()
+
+
+func _completion_display(candidate: Dictionary) -> String:
+	return String(candidate["text"])
+
+
+func _completion_icon(kind: CodeEdit.CodeCompletionKind) -> Texture2D:
+	if not Engine.is_editor_hint():
+		return null
+	var theme := EditorInterface.get_editor_theme()
+	if theme == null:
+		return null
+	var icon_name := (
+		{
+			CodeEdit.CodeCompletionKind.KIND_FILE_PATH: "Script",
+			CodeEdit.CodeCompletionKind.KIND_FUNCTION: "MemberMethod",
+			CodeEdit.CodeCompletionKind.KIND_SIGNAL: "Signal",
+			CodeEdit.CodeCompletionKind.KIND_VARIABLE: "MemberProperty",
+			CodeEdit.CodeCompletionKind.KIND_MEMBER: "Resource",
+			CodeEdit.CodeCompletionKind.KIND_CONSTANT: "Enum",
+		}
+		. get(kind, "MemberMethod")
+	)
+	return (
+		theme.get_icon(icon_name, "EditorIcons")
+		if theme.has_icon(icon_name, "EditorIcons")
+		else null
+	)
 
 
 func _get_branch_names(source: String) -> PackedStringArray:
@@ -534,6 +616,14 @@ func _collect_local_symbol_names(source: String, kind: String) -> PackedStringAr
 	return values
 
 
+func _filter_values_by_prefix(values: PackedStringArray, prefix: String) -> PackedStringArray:
+	var filtered := PackedStringArray()
+	for value: String in values:
+		if value.begins_with(prefix):
+			filtered.append(value)
+	return filtered
+
+
 func _empty_completion() -> Dictionary:
 	return {
 		"result": OK,
@@ -548,13 +638,21 @@ func _get_call_hint(line_prefix: String) -> String:
 	if tokens.is_empty():
 		return ""
 	var command := String(tokens[0])
+	var command_word_count := 1
 	if tokens.size() >= 2:
 		var contextual_command := "%s %s" % [tokens[0], tokens[1]]
 		if not KS_LanguageCatalog.get_signature(contextual_command).is_empty():
 			command = contextual_command
+			command_word_count = 2
 	var signature := KS_LanguageCatalog.get_signature(command)
 	if signature.is_empty():
 		return ""
+	signature = _mark_active_call_hint_parameter(
+		signature,
+		line_prefix,
+		tokens.size(),
+		command_word_count,
+	)
 	var root_command := String(tokens[0])
 	var description := (
 		KS_LanguageCatalog
@@ -564,6 +662,43 @@ func _get_call_hint(line_prefix: String) -> String:
 		)
 	)
 	return signature if description.is_empty() else "%s\n%s" % [signature, description]
+
+
+func _mark_active_call_hint_parameter(
+	signature: String,
+	line_prefix: String,
+	token_count: int,
+	command_word_count: int,
+) -> String:
+	var parameter_spans: Array[Vector2i] = []
+	var column := 0
+	while column < signature.length():
+		var opening := signature.substr(column, 1)
+		if opening not in ["<", "["]:
+			column += 1
+			continue
+		var closing := ">" if opening == "<" else "]"
+		var end := signature.find(closing, column + 1)
+		if end < 0:
+			break
+		parameter_spans.append(Vector2i(column, end + 1))
+		column = end + 1
+	if parameter_spans.is_empty():
+		return CALL_HINT_MARKER + signature + CALL_HINT_MARKER
+	var supplied_argument_count := maxi(0, token_count - command_word_count)
+	var ends_with_separator := line_prefix.ends_with(" ") or line_prefix.ends_with("\t")
+	var active_parameter := (
+		supplied_argument_count if ends_with_separator else maxi(0, supplied_argument_count - 1)
+	)
+	active_parameter = mini(active_parameter, parameter_spans.size() - 1)
+	var span := parameter_spans[active_parameter]
+	return (
+		signature.left(span.x)
+		+ CALL_HINT_MARKER
+		+ signature.substr(span.x, span.y - span.x)
+		+ CALL_HINT_MARKER
+		+ signature.substr(span.y)
+	)
 
 
 func _detect_indent_unit(lines: PackedStringArray) -> String:
@@ -583,20 +718,3 @@ func _detect_indent_unit(lines: PackedStringArray) -> String:
 			var indent_size := int(settings.get_setting("text_editor/behavior/indent/size"))
 			return "\t" if indent_type == 0 else " ".repeat(maxi(1, indent_size))
 	return "    "
-
-
-func _strip_line_comment(line: String) -> String:
-	var inside_string := false
-	var escaped := false
-	for column: int in line.length():
-		var character := line.substr(column, 1)
-		if escaped:
-			escaped = false
-			continue
-		if character == "\\" and inside_string:
-			escaped = true
-		elif character == '"':
-			inside_string = not inside_string
-		elif character == "#" and not inside_string:
-			return line.left(column)
-	return line

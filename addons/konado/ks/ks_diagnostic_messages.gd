@@ -25,6 +25,8 @@ const EXACT_ENGLISH: Dictionary = {
 	"actor 缺少操作指令": "actor requires an action.",
 	"actor show 缺少角色名": "actor show requires an actor name.",
 	"actor show 缺少状态": "actor show requires a state.",
+	"actor show 缺少 at 和位置": "actor show requires at followed by a position.",
+	"actor show 状态后应为 at": "actor show expects at after the state.",
 	"actor show 的 at 缺少位置": "actor show requires a position after at.",
 	"actor exit 缺少角色名": "actor exit requires an actor name.",
 	"actor change 缺少角色名": "actor change requires an actor name.",
@@ -90,16 +92,47 @@ const EXACT_ENGLISH: Dictionary = {
 	"信号指令内容为空": "The signal command cannot be empty.",
 	"achievement 目标ID为空": "The achievement target ID cannot be empty.",
 }
+const DYNAMIC_TRANSLATION_SAMPLES := [
+	"无法识别的语法：endif1；条件块结束关键字应为 endif",
+	"无法识别的语法：unknown",
+	"期望 IDENTIFIER，实际为 EOF",
+	"未知的 actor 操作: dance",
+	"play 后应为 bgm 或 sfx，实际为: voice",
+	"play bgm 缺少资源名",
+	"cam 未知操作: fly（应为 move、reset 或 shake）",
+	"asyncam 未知操作: fly（应为 move、reset、shake 或 stop）",
+	"if 条件的比较运算符无效: =",
+	"镜头过渡类型无效：instant",
+	"set 变量值后存在多余内容",
+	"set 缺少变量名（格式：set %变量名 值）",
+	"set 缺少变量值",
+	"achievement unlock 缺少目标ID",
+	"未知的 achievement 操作: reset",
+	"branch 标签 'intro' 重复",
+	"跳转标签 'missing' 不存在（当前可选标签：[intro]）",
+	"jump_branch 目标分支 'missing' 未找到",
+	"jump 目标剧本 'res://missing.ks' 不存在",
+	"目标效果 'unknown' 未找到",
+	"角色 'Kona' 在部分路径上不存在，无法安全移动",
+	"角色 'Kona' 不存在，无法移动",
+	"未找到角色 'Kona'",
+	"角色 'Kona' 存在 2 个重复定义",
+	"角色 'Kona' 未配置目标资源",
+	"角色 'Kona' 的目标资源不存在：res://missing.tscn",
+]
 
 static var _dynamic_rules: Array[Dictionary] = []
 
 
-static func localize(message: String, locale: String = "") -> String:
-	if KS_EditorLocale.is_chinese(locale):
-		return message
-	if EXACT_ENGLISH.has(message):
-		return EXACT_ENGLISH[message]
+static func describe(message: String, locale: String = "") -> Dictionary:
 	_ensure_dynamic_rules()
+	if EXACT_ENGLISH.has(message):
+		return {
+			"code": _exact_code(message),
+			"arguments": [],
+			"message": message if KS_EditorLocale.is_chinese(locale) else EXACT_ENGLISH[message],
+			"raw_message": message,
+		}
 	for rule: Dictionary in _dynamic_rules:
 		var match_result: RegExMatch = (rule["regex"] as RegEx).search(message)
 		if match_result == null:
@@ -107,8 +140,36 @@ static func localize(message: String, locale: String = "") -> String:
 		var values: Array = []
 		for group_index: int in range(1, match_result.get_group_count() + 1):
 			values.append(match_result.get_string(group_index))
-		return String(rule["template"]) % values
-	return "KonadoScript: " + message
+		return {
+			"code": rule["code"],
+			"arguments": values,
+			"message":
+			message if KS_EditorLocale.is_chinese(locale) else String(rule["template"]) % values,
+			"raw_message": message,
+		}
+	return {
+		"code": _fallback_code(message),
+		"arguments": [],
+		"message": message if KS_EditorLocale.is_chinese(locale) else "KonadoScript: " + message,
+		"raw_message": message,
+	}
+
+
+static func localize(message: String, locale: String = "") -> String:
+	return String(describe(message, locale)["message"])
+
+
+static func validate_catalog() -> PackedStringArray:
+	var problems := PackedStringArray()
+	for message: String in EXACT_ENGLISH:
+		if localize(message, "en").begins_with("KonadoScript: "):
+			problems.append("Missing exact English translation: %s" % message)
+	for message: String in DYNAMIC_TRANSLATION_SAMPLES:
+		if localize(message, "en").begins_with("KonadoScript: "):
+			problems.append("Missing dynamic English translation: %s" % message)
+		if localize(message, "zh_CN") != message:
+			problems.append("Chinese diagnostic changed unexpectedly: %s" % message)
+	return problems
 
 
 static func _ensure_dynamic_rules() -> void:
@@ -117,46 +178,101 @@ static func _ensure_dynamic_rules() -> void:
 	_add_rule(
 		"^无法识别的语法：(.+)；条件块结束关键字应为 endif$",
 		"Unrecognized syntax: %s; a conditional block must end with endif.",
+		"syntax.unrecognized_endif",
 	)
-	_add_rule("^无法识别的语法：(.+)$", "Unrecognized syntax: %s.")
-	_add_rule("^期望 (.+)，实际为 (.+)$", "Expected %s; got %s.")
-	_add_rule("^未知的 actor 操作: (.+)$", "Unknown actor action: %s.")
-	_add_rule("^play 后应为 bgm 或 sfx，实际为: (.+)$", "Expected bgm or sfx after play; got %s.")
-	_add_rule("^play (.+) 缺少资源名$", "play %s requires a resource name.")
+	_add_rule("^无法识别的语法：(.+)$", "Unrecognized syntax: %s.", "syntax.unrecognized")
+	_add_rule("^期望 (.+)，实际为 (.+)$", "Expected %s; got %s.", "syntax.unexpected_token")
+	_add_rule("^未知的 actor 操作: (.+)$", "Unknown actor action: %s.", "syntax.actor_action")
 	_add_rule(
-		"^未知的 cam 操作: (.+)（应为 move、reset 或 shake）$",
+		"^play 后应为 bgm 或 sfx，实际为: (.+)$",
+		"Expected bgm or sfx after play; got %s.",
+		"syntax.audio_type",
+	)
+	_add_rule(
+		"^play (.+) 缺少资源名$",
+		"play %s requires a resource name.",
+		"syntax.missing_argument",
+	)
+	_add_rule(
+		"^cam 未知操作: (.+)（应为 move、reset 或 shake）$",
 		"Unknown cam action: %s (expected move, reset, or shake).",
+		"syntax.camera_action",
 	)
 	_add_rule(
 		"^asyncam 未知操作: (.+)（应为 move、reset、shake 或 stop）$",
 		"Unknown asyncam action: %s (expected move, reset, shake, or stop).",
+		"syntax.camera_action",
 	)
-	_add_rule("^if 条件的比较运算符无效: (.+)$", "Invalid if comparison operator: %s.")
-	_add_rule("^镜头过渡类型无效：(.+)$", "Invalid camera transition: %s.")
+	_add_rule(
+		"^if 条件的比较运算符无效: (.+)$",
+		"Invalid if comparison operator: %s.",
+		"syntax.comparison_operator",
+	)
+	_add_rule(
+		"^镜头过渡类型无效：(.+)$",
+		"Invalid camera transition: %s.",
+		"syntax.camera_transition",
+	)
 	_add_rule(
 		"^(set|add|sub|mul|div) 变量值后存在多余内容$",
 		"Unexpected content after the %s value.",
+		"syntax.trailing_content",
 	)
 	_add_rule(
 		"^(.+) 缺少变量名（格式：(.+) %变量名 值）$",
 		"%s requires a variable name (format: %s %%variable value).",
+		"syntax.missing_argument",
 	)
-	_add_rule("^(set|add|sub|mul|div) 缺少变量值$", "%s requires a value.")
-	_add_rule("^achievement (.+) 缺少目标ID$", "achievement %s requires a target ID.")
-	_add_rule("^未知的 achievement 操作: (.+)$", "Unknown achievement action: %s.")
-	_add_rule("^branch 标签 '(.+)' 重复$", "Duplicate branch label '%s'.")
+	_add_rule(
+		"^(set|add|sub|mul|div) 缺少变量值$",
+		"%s requires a value.",
+		"syntax.missing_argument",
+	)
+	_add_rule(
+		"^achievement (.+) 缺少目标ID$",
+		"achievement %s requires a target ID.",
+		"syntax.missing_argument",
+	)
+	_add_rule(
+		"^未知的 achievement 操作: (.+)$",
+		"Unknown achievement action: %s.",
+		"syntax.achievement_action",
+	)
+	_add_rule(
+		"^branch 标签 '(.+)' 重复$",
+		"Duplicate branch label '%s'.",
+		"semantic.duplicate_branch",
+	)
 	_add_rule(
 		"^跳转标签 '(.+)' 不存在（当前可选标签：(.+)）$",
 		"Target branch '%s' does not exist (available branches: %s).",
+		"semantic.missing_branch",
 	)
-	_add_rule("^jump_branch 目标分支 '(.+)' 未找到$", "Target branch '%s' was not found.")
-	_add_rule("^jump 目标剧本 '(.+)' 不存在$", "Target KonadoScript '%s' does not exist.")
-	_add_rule("^目标效果 '(.+)' 未找到$", "Background effect '%s' was not found.")
+	_add_rule(
+		"^jump_branch 目标分支 '(.+)' 未找到$",
+		"Target branch '%s' was not found.",
+		"semantic.missing_branch",
+	)
+	_add_rule(
+		"^jump 目标剧本 '(.+)' 不存在$",
+		"Target KonadoScript '%s' does not exist.",
+		"semantic.missing_script",
+	)
+	_add_rule(
+		"^目标效果 '(.+)' 未找到$",
+		"Background effect '%s' was not found.",
+		"semantic.missing_effect",
+	)
 	_add_rule(
 		"^角色 '(.+)' 在部分路径上不存在，无法安全(.+)$",
 		"Actor '%s' is unavailable on some paths, so it cannot safely perform: %s.",
+		"semantic.actor_maybe_missing",
 	)
-	_add_rule("^角色 '(.+)' 不存在，无法(.+)$", "Actor '%s' does not exist; cannot perform: %s.")
+	_add_rule(
+		"^角色 '(.+)' 不存在，无法(.+)$",
+		"Actor '%s' does not exist; cannot perform: %s.",
+		"semantic.actor_missing",
+	)
 	var resource_kinds := {
 		"角色": "actor",
 		"背景": "background",
@@ -172,22 +288,64 @@ static func _ensure_dynamic_rules() -> void:
 		_add_rule(
 			"^未找到%s '(.+)'$" % chinese_kind,
 			"Unknown %s: '%%s'." % english_kind,
+			"resource.unknown",
 		)
 		_add_rule(
 			"^%s '(.+)' 存在 (\\d+) 个重复定义$" % chinese_kind,
 			"%s '%%s' has %%s duplicate definitions." % english_kind.capitalize(),
+			"resource.duplicate",
 		)
 		_add_rule(
 			"^%s '(.+)' 未配置目标资源$" % chinese_kind,
 			"%s '%%s' has no target resource." % english_kind.capitalize(),
+			"resource.unassigned",
 		)
 		_add_rule(
 			"^%s '(.+)' 的目标资源不存在：(.+)$" % chinese_kind,
 			"%s '%%s' targets a missing resource: %%s." % english_kind.capitalize(),
+			"resource.missing_target",
 		)
 
 
-static func _add_rule(pattern: String, template: String) -> void:
+static func _add_rule(pattern: String, template: String, code: String) -> void:
 	var regex := RegEx.new()
 	if regex.compile(pattern) == OK:
-		_dynamic_rules.append({"regex": regex, "template": template})
+		_dynamic_rules.append({"regex": regex, "template": template, "code": code})
+
+
+static func _exact_code(message: String) -> String:
+	return (
+		{
+			"文件不存在，无法打开脚本文件": "io.script_missing",
+			"无法打开脚本文件": "io.script_unreadable",
+			"字符串字面量未闭合": "lexer.unterminated_string",
+			"意外的 else：当前没有等待结束的 if 条件块": "syntax.unexpected_else",
+			"意外的 endif：当前没有等待结束的 if 条件块": "syntax.unexpected_endif",
+			"screentext 缺少 {": "syntax.screentext_missing_open",
+			"screentext 缺少结束符 }": "syntax.screentext_missing_close",
+			"choice 缺少 -> 运算符": "syntax.choice_missing_arrow",
+			"actor show 缺少 at 和位置": "syntax.actor_position",
+			"actor show 状态后应为 at": "syntax.actor_position",
+			"actor show 的 at 缺少位置": "syntax.actor_position",
+			"if 条件末尾缺少冒号": "syntax.if_missing_colon",
+			"if 条件的比较运算符无效": "syntax.comparison_operator",
+			"else 末尾缺少冒号": "syntax.else_missing_colon",
+			"if 条件块缺少 endif": "syntax.if_missing_endif",
+			"achievement set_flag 布尔值应为 true 或 false": "syntax.boolean_value",
+		}
+		. get(message, _fallback_code(message))
+	)
+
+
+static func _fallback_code(message: String) -> String:
+	if "后存在多余内容" in message or "后不允许其他内容" in message:
+		return "syntax.trailing_content"
+	if "缺少" in message:
+		return "syntax.missing_argument"
+	if "应为" in message or "无效" in message or "不能" in message:
+		return "syntax.invalid_value"
+	if message in ["branch 内不能嵌套 branch", "选项行没有有效的选项"]:
+		return "semantic.invalid_structure"
+	if message in ["信号指令内容为空", "achievement 目标ID为空"]:
+		return "semantic.empty_value"
+	return "compiler.diagnostic"
