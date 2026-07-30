@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { genZhSidebar, genEnSidebar, genTcSidebar, genJaSidebar, genKoSidebar } from './genSidebar'
 import { bbcodeLanguage } from './bbcodeLanguage'
+import { generateLegacyRedirects } from './legacyRedirects'
 import { DEFAULT_DOC_VERSION, DOC_VERSIONS } from './versions'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -63,6 +64,9 @@ function redirectBaseWithoutSlash() {
 export default defineConfig({
 
   lastUpdated: true,
+  async buildEnd(siteConfig) {
+    await generateLegacyRedirects(siteConfig.outDir, docsBase, DEFAULT_DOC_VERSION)
+  },
   appearance: {
     initialValue: 'dark'
   },

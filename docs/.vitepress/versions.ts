@@ -2,11 +2,11 @@ export const DOC_VERSIONS = [
   {
     value: '2.4',
     labels: {
-      zh: '2.4 LTS版',
-      tc: '2.4 LTS版',
+      zh: '2.4 LTS',
+      tc: '2.4 LTS',
       en: '2.4 LTS',
-      ja: '2.4 LTS版',
-      ko: '2.4 LTS판',
+      ja: '2.4 LTS',
+      ko: '2.4 LTS',
     },
   },
   {
