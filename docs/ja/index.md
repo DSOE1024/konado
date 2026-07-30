@@ -10,13 +10,13 @@ hero:
   actions:
     - theme: brand
       text: クイックスタート
-      link: /ja/2.4/tutorial/install
+      link: /ja/latest/tutorial/install
     - theme: alt
       text: スポンサーになる❤
       link: "https://ifdian.net/item/52230b2860a011f083ef52540025c377"
     - theme: alt
       text: 貢献する
-      link: "/ja/2.4/community/code-contribute"
+      link: "/ja/latest/community/code-contribute"
 
 features:
   - title: 自由な配布

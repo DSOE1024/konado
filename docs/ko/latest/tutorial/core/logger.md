@@ -1,0 +1,22 @@
+---
+title: Logger
+order: 4
+---
+
+# 로거 KND_Logger
+
+## 머리말
+
+KND_Logger는 Godot Logger 구현을 기반으로 한 로그 모듈입니다. 로그 레벨, 로그 형식, 로그 출력, 로그 파일 등의 기능을 지원하며 Konado 실행 중의 로그 정보를 기록하는 데 사용됩니다.
+
+## 로그 경로
+
+로그 파일의 논리 경로는 `user://konado_log.log`입니다. 실제 디렉터리는 현재 운영 체제와 프로젝트 이름에 따라 Godot가 결정하며 `OS.get_user_data_dir()`로 확인할 수 있습니다. `LOG_FILE_PATH`는 기본 상수이므로 경로를 변경하려면 사용자 지정 플러그인 버전에서 이 상수를 관리해야 합니다.
+
+## 화면 오버레이 로그
+
+오류가 발생하면 대화 장면은 화면 위에 로그 창을 덮어 표시하여 오류 정보를 보여 주고 게임 실행을 중단합니다. 이 기능을 끄고 싶다면 `KND_DialogueManager`의 `enable_overlay_log` 속성을 `false`로 설정하세요.
+
+## 로그 콜백
+
+`KND_Logger` 인스턴스는 `error_caught(msg)`와 `message_caught(message, error)` 신호를 보냅니다. `KND_DialogueManager`는 씬 트리에 들어갈 때 내부 로거를 만들어 Godot에 등록하고 `error_caught`로 화면 오버레이를 구동합니다. 로거는 전역 자동 로드 객체가 아닙니다. 별도의 `KND_Logger`를 만드는 사용자 지정 연동은 `OS.add_logger()`로 등록하고 해제 전에 `OS.remove_logger()`를 호출하여 중복 기록이나 유효하지 않은 인스턴스가 남지 않게 해야 합니다.

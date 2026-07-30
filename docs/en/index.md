@@ -10,13 +10,13 @@ hero:
   actions:
     - theme: brand
       text: Quick Start
-      link: /en/2.4/tutorial/install
+      link: /en/latest/tutorial/install
     - theme: alt
       text: Sponsor Us ❤
       link: "https://ifdian.net/item/52230b2860a011f083ef52540025c377"
     - theme: alt
       text: Contribute
-      link: "/en/2.4/community/code-contribute"
+      link: "/en/latest/community/code-contribute"
 
 features:
   - title: Free Distribution

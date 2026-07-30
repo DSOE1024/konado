@@ -10,13 +10,13 @@ hero:
   actions:
     - theme: brand
       text: 快速開始
-      link: /tc/2.4/tutorial/install
+      link: /tc/latest/tutorial/install
     - theme: alt
       text: 贊助我們❤
       link: "https://ifdian.net/item/52230b2860a011f083ef52540025c377"
     - theme: alt
       text: 參與貢獻
-      link: "/tc/2.4/community/code-contribute"
+      link: "/tc/latest/community/code-contribute"
 
 features:
   - title: 自由散佈
