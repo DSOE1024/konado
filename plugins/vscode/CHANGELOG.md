@@ -1,3 +1,8 @@
+## 2.7.2
+
+- Refine the KonadoScript file icon to match Visual Studio Code's compact
+  language icon style.
+
 ## 2.7.1
 
 - Correct the Visual Studio Marketplace extension icon.

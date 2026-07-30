@@ -5,7 +5,6 @@
 src/**
 test/**
 scripts/**
-images/ks-icon-raw.png
 node_modules/**
 tsconfig.json
 pnpm-lock.yaml
