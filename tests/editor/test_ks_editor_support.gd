@@ -26,7 +26,6 @@ func _run() -> void:
 	_test_documentation_routes()
 	_test_script_resource()
 	_test_source_line_numbers()
-	_test_diagnostic_service()
 	_test_language_validation()
 	_test_language_completion_and_outline()
 	_test_language_indent_lookup_and_hints()
@@ -88,14 +87,21 @@ func _test_documentation_routes() -> void:
 	_expect(
 		(
 			KS_ScriptEditorIntegration.get_docs_url("2.6.2", "zh_CN")
-			== "https://godothub.com/oss/konado/zh/2.6/"
+			== "https://godothub.com/oss/konado/zh/latest/"
 		),
-		"documentation URL follows the active Konado major/minor version",
+		"maintained Konado releases use the stable latest documentation route",
+	)
+	_expect(
+		(
+			KS_ScriptEditorIntegration.get_docs_url("2.4.9", "zh_CN")
+			== "https://godothub.com/oss/konado/zh/2.4/"
+		),
+		"the supported LTS release keeps its versioned documentation route",
 	)
 	_expect(
 		(
 			KS_ScriptEditorIntegration.get_docs_url("2.6.2", "zh_Hant")
-			== "https://godothub.com/oss/konado/tc/2.6/"
+			== "https://godothub.com/oss/konado/tc/latest/"
 		),
 		"traditional Chinese editors open the matching documentation locale",
 	)
@@ -103,15 +109,15 @@ func _test_documentation_routes() -> void:
 		(
 			(
 				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "ja_JP")
-				== "https://godothub.com/oss/konado/ja/2.6/"
+				== "https://godothub.com/oss/konado/ja/latest/"
 			)
 			and (
 				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "ko_KR")
-				== "https://godothub.com/oss/konado/ko/2.6/"
+				== "https://godothub.com/oss/konado/ko/latest/"
 			)
 			and (
 				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "fr_FR")
-				== "https://godothub.com/oss/konado/en/2.6/"
+				== "https://godothub.com/oss/konado/en/latest/"
 			)
 		),
 		"documentation URL resolves supported locales and falls back to English",
@@ -147,144 +153,6 @@ func _test_source_line_numbers() -> void:
 	_expect(
 		not compiler.get_errors().is_empty() and "[行：1" in compiler.get_errors()[0],
 		"first source line is reported as line 1",
-	)
-
-
-func _test_diagnostic_service() -> void:
-	var diagnostics := KS_Diagnostics.new()
-	var results := diagnostics.analyze("actor move missing 2", "diagnostic-test.ks")
-	_expect(not results.is_empty(), "semantic warnings are exposed to the editor")
-	if not results.is_empty():
-		_expect(results[0]["severity"] == "warning", "diagnostic severity is preserved")
-		_expect(results[0]["line"] == 1, "diagnostic line is structured")
-
-	results = diagnostics.analyze("background room unknown_effect", "diagnostic-test.ks")
-	_expect(
-		(
-			_has_diagnostic_containing(results, "unknown_effect")
-			and _has_diagnostic_containing(results, "room")
-		),
-		"live diagnostics combine language constraints with unresolved project resources",
-	)
-
-	results = (
-		diagnostics
-		. analyze(
-			'if %love == 0:\n    "Kona" "Hello"\nendif1',
-			"diagnostic-test.ks",
-			"zh_CN",
-		)
-	)
-	_expect(
-		(
-			results.size() == 1
-			and results[0]["severity"] == "error"
-			and results[0]["line"] == 3
-			and "endif1" in results[0]["message"]
-			and "应为 endif" in results[0]["message"]
-		),
-		"malformed endif reports a diagnostic without stalling the editor",
-	)
-
-	results = (
-		diagnostics
-		. analyze(
-			'if %love == 0:\n    "Kona" "Hello"',
-			"diagnostic-test.ks",
-			"zh_CN",
-		)
-	)
-	_expect(
-		results.size() == 1 and "缺少 endif" in results[0]["message"],
-		"unterminated condition blocks report a diagnostic",
-	)
-	results = (
-		diagnostics
-		. analyze(
-			'if %love == 0:1\n    "Kona" "Hello"\nendif',
-			"diagnostic-test.ks",
-			"zh_CN",
-		)
-	)
-	_expect(
-		(
-			results.size() == 1
-			and results[0]["severity"] == "error"
-			and results[0]["line"] == 1
-			and "冒号后不允许其他内容" in results[0]["message"]
-		),
-		"unexpected content after an if condition is never silently ignored",
-	)
-	results = (
-		diagnostics
-		. analyze(
-			'if %love == 0:\n    "Kona" "Hello"\nelse:garbage\n    "Kona" "Fallback"\nendif',
-			"diagnostic-test.ks",
-			"en",
-		)
-	)
-	_expect(
-		(
-			results.size() == 1
-			and results[0]["line"] == 3
-			and results[0]["message"] == "Nothing is allowed after the else colon."
-		),
-		"unexpected content after else is reported in the editor language",
-	)
-	results = (
-		diagnostics
-		. analyze(
-			'if %love == 0:\n    "Kona" "Hello"',
-			"diagnostic-test.ks",
-			"en",
-		)
-	)
-	_expect(
-		results.size() == 1 and results[0]["message"] == "The if block requires endif.",
-		"editor diagnostics follow a non-Chinese editor locale",
-	)
-	for message: String in KS_DiagnosticMessages.EXACT_ENGLISH:
-		_expect(
-			KS_DiagnosticMessages.localize(message, "en") != "KonadoScript: " + message,
-			"static compiler diagnostic has an English translation: %s" % message,
-		)
-	_expect(
-		(
-			KS_DiagnosticMessages.localize("期望 IDENTIFIER，实际为 EOF", "en")
-			== "Expected IDENTIFIER; got EOF."
-		),
-		"dynamic parser-context diagnostics are translated",
-	)
-
-	results = (
-		diagnostics
-		. analyze(
-			"screentext {\n    invalid_content\n}",
-			"diagnostic-test.ks",
-		)
-	)
-	_expect(
-		results.size() == 1 and "screentext" in results[0]["message"],
-		"malformed screen text blocks report a diagnostic without stalling the editor",
-	)
-	results = (
-		diagnostics
-		. analyze(
-			"jump res://missing/story.ks",
-			"diagnostic-test.ks",
-			"en",
-		)
-	)
-	_expect(
-		(
-			results.size() == 1
-			and results[0]["severity"] == "warning"
-			and (
-				results[0]["message"]
-				== "Target KonadoScript 'res://missing/story.ks' does not exist."
-			)
-		),
-		"missing jump targets are reported instead of becoming clickable dead links",
 	)
 
 
@@ -425,9 +293,41 @@ func _test_language_indent_lookup_and_hints() -> void:
 			null,
 		)
 	)
+	var call_hint := String(completion.get("call_hint", ""))
 	_expect(
-		"actor show <actor_name> <state_name>" in completion.get("call_hint", ""),
+		(
+			(
+				"actor show <actor_name> <state_name>"
+				in call_hint.replace(language.CALL_HINT_MARKER, "")
+			)
+			and call_hint.count(language.CALL_HINT_MARKER) == 2
+			and (
+				(language.CALL_HINT_MARKER + "<actor_name>" + language.CALL_HINT_MARKER)
+				in call_hint
+			)
+		),
 		"completion displays the contextual command signature",
+	)
+	var root_call_hint := String(
+		(
+			language
+			. _complete_code("actor%s" % CARET_MARKER, "completion.ks", null)
+			. get(
+				"call_hint",
+				"",
+			)
+		)
+	)
+	_expect(
+		(
+			(
+				language.CALL_HINT_MARKER
+				+ "<show|exit|change|move|motion>"
+				+ language.CALL_HINT_MARKER
+			)
+			in root_call_hint
+		),
+		"completion anchors root signatures to the active argument at the line start",
 	)
 	completion = language._complete_code("ac%s" % CARET_MARKER, "completion.ks", null)
 	_expect(
@@ -783,14 +683,13 @@ func _test_native_script_editor() -> void:
 			godot_docs_button != null and not godot_docs_button.visible,
 			"the Godot documentation action is hidden only while editing KonadoScript",
 		)
-		var help_button_index := docs_button.get_index() + 1
-		if (
-			help_button_index < docs_button.get_parent().get_child_count()
-			and docs_button.get_parent().get_child(help_button_index) is OptionButton
+		for child_index: int in range(
+			docs_button.get_index() + 1, docs_button.get_parent().get_child_count()
 		):
-			help_button_index += 1
-		if help_button_index < docs_button.get_parent().get_child_count():
-			godot_help_button = (docs_button.get_parent().get_child(help_button_index) as Button)
+			var child := docs_button.get_parent().get_child(child_index)
+			if child is Button and child.has_meta("konado_native_help_search"):
+				godot_help_button = child
+				break
 		_expect(
 			godot_help_button != null and not godot_help_button.visible,
 			"Godot API help search is hidden while editing KonadoScript",
@@ -968,17 +867,7 @@ func _completion_insertions(result: Dictionary) -> PackedStringArray:
 
 
 func _read_text(path: String) -> String:
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return ""
-	return file.get_as_text()
-
-
-func _has_diagnostic_containing(diagnostics: Array[Dictionary], fragment: String) -> bool:
-	for diagnostic: Dictionary in diagnostics:
-		if fragment in String(diagnostic.get("message", "")):
-			return true
-	return false
+	return FileAccess.get_file_as_string(path)
 
 
 func _color_at(highlighting: Dictionary, column: int, default_color: Color) -> Color:
@@ -993,7 +882,6 @@ func _color_at(highlighting: Dictionary, column: int, default_color: Color) -> C
 
 
 func _expect(condition: bool, message: String) -> void:
-	if condition:
-		return
-	_failures += 1
-	push_error("FAIL: %s" % message)
+	if not condition:
+		_failures += 1
+		push_error("FAIL: %s" % message)

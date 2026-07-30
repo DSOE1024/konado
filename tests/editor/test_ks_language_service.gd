@@ -20,6 +20,7 @@ func _run() -> void:
 			await process_frame
 	_test_parser_strictness()
 	_test_project_index()
+	_test_diagnostic_service()
 	await _test_semantic_navigation()
 	await _test_link_geometry()
 	_test_project_diagnostics()
@@ -109,6 +110,143 @@ func _test_parser_strictness() -> void:
 	)
 
 
+func _test_diagnostic_service() -> void:
+	var diagnostics := KS_Diagnostics.new()
+	var results := diagnostics.analyze("actor move missing 2", "diagnostic-test.ks")
+	_expect(not results.is_empty(), "semantic warnings are exposed to the editor")
+	if not results.is_empty():
+		_expect(results[0]["severity"] == "warning", "diagnostic severity is preserved")
+		_expect(results[0]["line"] == 1, "diagnostic line is structured")
+
+	results = diagnostics.analyze("background room unknown_effect", "diagnostic-test.ks")
+	_expect(
+		(
+			_has_diagnostic_containing(results, "unknown_effect")
+			and _has_diagnostic_containing(results, "room")
+		),
+		"live diagnostics combine language constraints with unresolved project resources",
+	)
+
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"\nendif1',
+			"diagnostic-test.ks",
+			"zh_CN",
+		)
+	)
+	_expect(
+		(
+			results.size() == 1
+			and results[0]["severity"] == "error"
+			and results[0]["line"] == 3
+			and "endif1" in results[0]["message"]
+			and "应为 endif" in results[0]["message"]
+		),
+		"malformed endif reports a diagnostic without stalling the editor",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"',
+			"diagnostic-test.ks",
+			"zh_CN",
+		)
+	)
+	_expect(
+		results.size() == 1 and "缺少 endif" in results[0]["message"],
+		"unterminated condition blocks report a diagnostic",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:1\n    "Kona" "Hello"\nendif',
+			"diagnostic-test.ks",
+			"zh_CN",
+		)
+	)
+	_expect(
+		(
+			results.size() == 1
+			and results[0]["severity"] == "error"
+			and results[0]["line"] == 1
+			and "冒号后不允许其他内容" in results[0]["message"]
+		),
+		"unexpected content after an if condition is never silently ignored",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"\nelse:garbage\n    "Kona" "Fallback"\nendif',
+			"diagnostic-test.ks",
+			"en",
+		)
+	)
+	_expect(
+		(
+			results.size() == 1
+			and results[0]["line"] == 3
+			and results[0]["message"] == "Nothing is allowed after the else colon."
+		),
+		"unexpected content after else is reported in the editor language",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			'if %love == 0:\n    "Kona" "Hello"',
+			"diagnostic-test.ks",
+			"en",
+		)
+	)
+	_expect(
+		results.size() == 1 and results[0]["message"] == "The if block requires endif.",
+		"editor diagnostics follow a non-Chinese editor locale",
+	)
+	for message: String in KS_DiagnosticMessages.EXACT_ENGLISH:
+		_expect(
+			KS_DiagnosticMessages.localize(message, "en") != "KonadoScript: " + message,
+			"static compiler diagnostic has an English translation: %s" % message,
+		)
+	_expect(
+		(
+			KS_DiagnosticMessages.localize("期望 IDENTIFIER，实际为 EOF", "en")
+			== "Expected IDENTIFIER; got EOF."
+		),
+		"dynamic parser-context diagnostics are translated",
+	)
+
+	results = (
+		diagnostics
+		. analyze(
+			"screentext {\n    invalid_content\n}",
+			"diagnostic-test.ks",
+		)
+	)
+	_expect(
+		results.size() == 1 and "screentext" in results[0]["message"],
+		"malformed screen text blocks report a diagnostic without stalling the editor",
+	)
+	results = (
+		diagnostics
+		. analyze(
+			"jump res://missing/story.ks",
+			"diagnostic-test.ks",
+			"en",
+		)
+	)
+	_expect(
+		(
+			results.size() == 1
+			and results[0]["severity"] == "warning"
+			and (
+				results[0]["message"]
+				== "Target KonadoScript 'res://missing/story.ks' does not exist."
+			)
+		),
+		"missing jump targets are reported instead of becoming clickable dead links",
+	)
+
+
 func _test_project_index() -> void:
 	var project_index := KS_ProjectIndex.shared()
 	project_index.invalidate()
@@ -164,6 +302,53 @@ func _test_semantic_navigation() -> void:
 		),
 		"Konado semantic links use a full-size overlay and disable native word links",
 	)
+	var diagnostic_style := link_controller._create_diagnostic_panel_style()
+	_expect(
+		(
+			is_equal_approx(diagnostic_style.bg_color.a, 0.8)
+			and diagnostic_style.corner_radius_top_left == 20
+			and diagnostic_style.corner_radius_top_right == 20
+			and diagnostic_style.corner_radius_bottom_left == 20
+			and diagnostic_style.corner_radius_bottom_right == 20
+		),
+		"diagnostic hover uses a 20-pixel rounded card with an 80% opaque background",
+	)
+	native_lookup_editor.size = Vector2(1200.0, 600.0)
+	link_controller._ensure_diagnostic_panel()
+	(
+		link_controller
+		. _add_diagnostic_entry(
+			{
+				"message": "无法识别的语法：end错字",
+				"actions": [{"kind": "docs"}],
+			},
+			[],
+			native_lookup_editor.text,
+		)
+	)
+	link_controller._layout_diagnostic_content()
+	_expect(
+		(
+			link_controller._diagnostic_wrap_labels[0].autowrap_mode == TextServer.AUTOWRAP_OFF
+			and link_controller._diagnostic_wrap_buttons[0].autowrap_mode == TextServer.AUTOWRAP_OFF
+			and not link_controller._diagnostic_wrap_buttons[0].clip_text
+		),
+		"diagnostic hover keeps fitting messages and complete action labels on one line",
+	)
+	link_controller._clear_diagnostic_content()
+	native_lookup_editor.text = "if %score == 1:\n\tendif_bad"
+	var hover_diagnostics := link_controller.get_diagnostics_for_line(1)
+	var hover_fixes := link_controller.get_quick_fixes_for_line(1)
+	_expect(
+		not hover_diagnostics.is_empty() and not hover_fixes.is_empty(),
+		"diagnostic hover resolves the current native editor line and its quick fixes",
+	)
+	if not hover_fixes.is_empty():
+		link_controller._apply_hover_fix(hover_fixes[0], native_lookup_editor.text)
+		_expect(
+			native_lookup_editor.get_line(1).strip_edges() == "endif",
+			"diagnostic hover fixes edit the active native CodeEdit through its undo history",
+		)
 	var targets := link_controller.resolve_navigation_targets(reference, line)
 	_expect(
 		(
@@ -421,6 +606,13 @@ func _has_diagnostic_line(diagnostics: Array[Dictionary], line: int) -> bool:
 		if diagnostic.get("line") == line:
 			return true
 	return false
+
+
+func _has_diagnostic_containing(diagnostics: Array[Dictionary], fragment: String) -> bool:
+	return diagnostics.any(
+		func(diagnostic: Dictionary) -> bool:
+			return fragment in String(diagnostic.get("message", ""))
+	)
 
 
 func _color_at(highlighting: Dictionary, column: int, default_color: Color) -> Color:
