@@ -148,9 +148,8 @@ func _test_restart_disconnects_stale_typing_callback() -> void:
 	manager.start_dialogue_shot = _make_shot("first")
 	manager.init_dialogue()
 	manager.start_dialogue()
-	await create_timer(0.04).timeout
-	_expect_equal(
-		manager._konado_dialogue_box.typing_completed.get_connections().size(),
+	await _wait_for_typing_connection_count(
+		manager,
 		1,
 		"the active line owns exactly one typing completion callback",
 	)
@@ -164,9 +163,8 @@ func _test_restart_disconnects_stale_typing_callback() -> void:
 	manager.start_dialogue_shot = _make_shot("second")
 	manager.init_dialogue()
 	manager.start_dialogue()
-	await create_timer(0.04).timeout
-	_expect_equal(
-		manager._konado_dialogue_box.typing_completed.get_connections().size(),
+	await _wait_for_typing_connection_count(
+		manager,
 		1,
 		"restarting dialogue does not accumulate typing callbacks",
 	)
@@ -253,6 +251,20 @@ func _wait_for_state(manager: KND_DialogueManager, expected_state: int) -> void:
 			return
 		await process_frame
 	_expect(false, "dialogue manager reaches state %d" % expected_state)
+
+
+func _wait_for_typing_connection_count(
+	manager: KND_DialogueManager, expected_count: int, message: String
+) -> void:
+	for _frame: int in range(60):
+		if manager._konado_dialogue_box.typing_completed.get_connections().size() == expected_count:
+			return
+		await process_frame
+	_expect_equal(
+		manager._konado_dialogue_box.typing_completed.get_connections().size(),
+		expected_count,
+		message,
+	)
 
 
 func _expect(condition: bool, message: String) -> void:
