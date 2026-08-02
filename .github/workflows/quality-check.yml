@@ -66,9 +66,9 @@ jobs:
         run: godot --headless --editor --path . --quit
 
       - name: Test parser and dialogue services
-        run: >-
-          python3 .github/scripts/run_godot_test.py
-          tests/dialogue/test_gdscript_architecture.gd
+        run: |
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_gdscript_architecture.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_lifecycle.gd
 
       - name: Test KonadoScript editor integration
         run: |
