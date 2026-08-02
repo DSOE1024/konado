@@ -20,13 +20,14 @@ signal on_dialogue_hide_completed
 
 ## 打字机模式枚举
 enum TypewriterMode { TRADITIONAL = 0, FADE_IN_TYPEWRITER = 1 }  ## 传统模式  ## 淡入打字机模式
+enum VisibilityState { HIDDEN, SHOWING, VISIBLE, HIDING }
 
 ## 角色对象
 @export_group("名字")
 @export var character_name: String = "":
 	set(value):
 		character_name = value
-		update_dialogue()
+		update_character_name()
 
 @export var name_size: int = 32  ## 名字字体大小
 @export var name_bg: Texture2D  ## 名字标签背景
@@ -93,6 +94,9 @@ var fade_tween: Tween = null
 
 var typing_tween: Tween = null
 var voice_player: AudioStreamPlayer
+var _visibility_state: VisibilityState = VisibilityState.HIDDEN
+var _visibility_transition_id: int = 0
+var _typing_update_id: int = 0
 
 # 动态音频播放器
 @onready var audio_player: AudioStreamPlayer = AudioStreamPlayer.new()
@@ -109,31 +113,38 @@ var voice_player: AudioStreamPlayer
 
 
 func _ready() -> void:
-	self.modulate.a = 0.0
+	self.hide()
+	self.modulate.a = 1.0
+	_visibility_state = VisibilityState.HIDDEN
 	clear_voice_progress()
 	apply_dialogue_text_theme_settings()
 	update_dialogue_box_height()
 
-	if enable_typing_effect_audio:
-		# 将音频播放器添加为子节点，自动完成初始化
-		add_child(audio_player)
-		audio_player.name = "TypingAudioPlayer"
-		# 绑定滴滴音效资源
-		audio_player.stream = typing_effect_audio
-		# 设置音量，关闭自动播放
-		audio_player.volume_db = linear_to_db(audio_volumn)
-		audio_player.autoplay = false
-		# 初始化随机间隔
-		current_random_interval = randf_range(min_audio_interval, max_audio_interval)
+	# 始终由对话框持有播放器，避免关闭音效时留下未入树的孤立对象。
+	add_child(audio_player)
+	audio_player.name = "TypingAudioPlayer"
+	audio_player.stream = typing_effect_audio
+	audio_player.volume_db = linear_to_db(audio_volumn)
+	audio_player.autoplay = false
+	current_random_interval = randf_range(min_audio_interval, max_audio_interval)
 
 	# 根据打字机模式处理 TypewriterText 组件
-	if typewriter_mode == TypewriterMode.FADE_IN_TYPEWRITER:
+	if _uses_fade_typewriter():
 		create_typewriter_text()
 	else:
 		# 如果 TypewriterText 组件存在，则隐藏它并显示传统的 dialogue_label
 		if typewriter_text != null:
 			typewriter_text.hide()
 		dialogue_label.show()
+
+
+func _exit_tree() -> void:
+	_cancel_visibility_transition()
+	_stop_typing_activity()
+	if audio_player != null:
+		audio_player.stream = null
+	if voice_player and voice_player.finished.is_connected(clear_voice_progress):
+		voice_player.finished.disconnect(clear_voice_progress)
 
 
 func bind_voice_player(player: AudioStreamPlayer) -> void:
@@ -183,151 +194,147 @@ func apply_dialogue_text_theme_settings() -> void:
 
 ## 创建 TypewriterText 组件
 func create_typewriter_text() -> void:
-	# 连接信号
-	typewriter_text.typewriter_finished.connect(func(): typing_completed.emit())
-
-	# 隐藏默认的 dialogue_label
+	if typewriter_text == null:
+		return
+	if not typewriter_text.typewriter_finished.is_connected(_on_typewriter_finished):
+		typewriter_text.typewriter_finished.connect(_on_typewriter_finished)
 	dialogue_label.hide()
+	typewriter_text.show()
 
 
-## 隐藏对话框（带透明度过渡动画）
-func hide_dialogue_box() -> void:
-	clear_voice_progress()
-	# 停止原有过渡动画，避免动画冲突
+func _on_typewriter_finished() -> void:
+	typing_completed.emit()
+
+
+func _uses_fade_typewriter() -> bool:
+	return typewriter_mode == TypewriterMode.FADE_IN_TYPEWRITER and typewriter_text != null
+
+
+func _cancel_visibility_transition() -> int:
+	_visibility_transition_id += 1
 	if fade_tween != null and fade_tween.is_running():
 		fade_tween.kill()
-
-	# 创建新的透明度过渡动画
-	fade_tween = get_tree().create_tween()
-	fade_tween.set_trans(fade_trans_type)
-	fade_tween.set_ease(fade_ease_type)
-
-	# 同时过渡所有节点的 modulate:a 从当前值到 0
-	fade_tween.tween_property(self, "modulate:a", 0.0, fade_duration)
-	if character_name_label:
-		fade_tween.tween_property(character_name_label, "modulate:a", 0.0, fade_duration)
-	if dialogue_label:
-		fade_tween.tween_property(dialogue_label, "modulate:a", 0.0, fade_duration)
-	if typewriter_text:
-		fade_tween.tween_property(typewriter_text, "modulate:a", 0.0, fade_duration)
-
-	# 动画结束后隐藏所有节点并重置透明度
-	fade_tween.finished.connect(
-		func():
-			self.hide()
-			self.modulate.a = 1.0
-
-			character_name_label.hide()
-			character_name_label.modulate.a = 1.0
-
-			dialogue_label.hide()
-			dialogue_label.modulate.a = 1.0
-
-			# 发射对话框隐藏完成信号
-			on_dialogue_hide_completed.emit()
-	)
+	fade_tween = null
+	return _visibility_transition_id
 
 
-## 检查对话框是否显示
-func is_dialogue_box_visible() -> bool:
-	if self.modulate.a == 0.0:
-		return false
-	return true
+func _stop_typing_activity() -> void:
+	_typing_update_id += 1
+	if typing_tween != null and typing_tween.is_running():
+		typing_tween.kill()
+	typing_tween = null
+	if typewriter_text != null and typewriter_text.is_playing():
+		typewriter_text.stop()
+	if audio_player.is_inside_tree() and audio_player.is_playing():
+		audio_player.stop()
+	last_audio_play_time = 0.0
 
 
-## 隐藏对话框（自定义动画时长）
-func hide_dialogue_box_with_duration(duration: float) -> void:
-	clear_voice_progress()
-	if fade_tween != null and fade_tween.is_running():
-		fade_tween.kill()
-
-	# 0.0 表示禁用动画，直接隐藏
-	if duration <= 0.0:
-		self.hide()
-		self.modulate.a = 1.0
-		character_name_label.hide()
-		character_name_label.modulate.a = 1.0
+func _restore_content_visibility() -> void:
+	character_name_label.show()
+	character_name_label.modulate.a = 1.0
+	if _uses_fade_typewriter():
 		dialogue_label.hide()
 		dialogue_label.modulate.a = 1.0
-		on_dialogue_hide_completed.emit()
+		typewriter_text.show()
+		typewriter_text.modulate.a = 1.0
+	else:
+		dialogue_label.show()
+		dialogue_label.modulate.a = 1.0
+		if typewriter_text != null:
+			typewriter_text.hide()
+			typewriter_text.modulate.a = 1.0
+
+
+func _complete_show(transition_id: int, callback: Callable) -> void:
+	if transition_id != _visibility_transition_id:
+		return
+	fade_tween = null
+	self.modulate.a = 1.0
+	_visibility_state = VisibilityState.VISIBLE
+	on_dialogue_show_completed.emit()
+	if callback.is_valid():
+		callback.call()
+
+
+func _complete_hide(transition_id: int) -> void:
+	if transition_id != _visibility_transition_id:
+		return
+	fade_tween = null
+	self.hide()
+	self.modulate.a = 1.0
+	_visibility_state = VisibilityState.HIDDEN
+	on_dialogue_hide_completed.emit()
+
+
+func _show_dialogue_box(duration: float, callback: Callable = Callable()) -> void:
+	var was_visible := _visibility_state == VisibilityState.VISIBLE and self.visible
+	var transition_id := _cancel_visibility_transition()
+	_restore_content_visibility()
+	self.show()
+
+	if was_visible:
+		_complete_show(transition_id, callback)
 		return
 
-	# 创建新的透明度过渡动画
-	fade_tween = get_tree().create_tween()
-	fade_tween.set_trans(fade_trans_type)
-	fade_tween.set_ease(fade_ease_type)
-
-	# 同时过渡所有节点的 modulate:a 从当前值到 0
-	fade_tween.tween_property(self, "modulate:a", 0.0, duration)
-	if character_name_label:
-		fade_tween.tween_property(character_name_label, "modulate:a", 0.0, duration)
-	if dialogue_label:
-		fade_tween.tween_property(dialogue_label, "modulate:a", 0.0, duration)
-	if typewriter_text:
-		fade_tween.tween_property(typewriter_text, "modulate:a", 0.0, duration)
-
-	# 动画结束后隐藏所有节点并重置透明度
-	fade_tween.finished.connect(
-		func():
-			self.hide()
-			self.modulate.a = 1.0
-
-			character_name_label.hide()
-			character_name_label.modulate.a = 1.0
-
-			dialogue_label.hide()
-			dialogue_label.modulate.a = 1.0
-
-			# 发射对话框隐藏完成信号
-			on_dialogue_hide_completed.emit()
-	)
-
-
-## 显示对话框（带透明度过渡动画）
-func show_dialogue_box(callback: Callable = Callable()) -> void:
-	# 先显示节点并重置透明度
-	self.show()
-	self.modulate.a = 0.0
-
-	# 停止原有过渡动画，避免动画冲突
-	if fade_tween != null and fade_tween.is_running():
-		fade_tween.kill()
-
-	# 创建新的透明度过渡动画
-	fade_tween = get_tree().create_tween()
-	# 设置动画曲线和缓动类型
-	fade_tween.set_trans(fade_trans_type)
-	fade_tween.set_ease(fade_ease_type)
-	# 过渡modulate的alpha值从0到1
-	fade_tween.tween_property(self, "modulate:a", 1.0, fade_duration)
-	# 动画结束后发射显示完成信号
-	fade_tween.finished.connect(
-		func():
-			on_dialogue_show_completed.emit()
-			callback.call()
-	)
-
-
-## 显示对话框（自定义动画时长）
-func show_dialogue_box_with_duration(duration: float) -> void:
-	self.show()
-	self.modulate.a = 0.0
-
-	if fade_tween != null and fade_tween.is_running():
-		fade_tween.kill()
-
-	# 0.0 表示禁用动画，直接显示
+	_visibility_state = VisibilityState.SHOWING
 	if duration <= 0.0:
-		self.modulate.a = 1.0
-		on_dialogue_show_completed.emit()
+		_complete_show(transition_id, callback)
 		return
 
-	# 创建新的透明度过渡动画
+	self.modulate.a = 0.0
 	fade_tween = get_tree().create_tween()
 	fade_tween.set_trans(fade_trans_type)
 	fade_tween.set_ease(fade_ease_type)
 	fade_tween.tween_property(self, "modulate:a", 1.0, duration)
-	fade_tween.finished.connect(func(): on_dialogue_show_completed.emit())
+	fade_tween.finished.connect(_complete_show.bind(transition_id, callback), CONNECT_ONE_SHOT)
+
+
+func _hide_dialogue_box(duration: float) -> void:
+	var was_hidden := _visibility_state == VisibilityState.HIDDEN and not self.visible
+	var transition_id := _cancel_visibility_transition()
+	clear_voice_progress()
+	_stop_typing_activity()
+
+	if was_hidden:
+		_complete_hide(transition_id)
+		return
+
+	_visibility_state = VisibilityState.HIDING
+	if duration <= 0.0:
+		_complete_hide(transition_id)
+		return
+
+	fade_tween = get_tree().create_tween()
+	fade_tween.set_trans(fade_trans_type)
+	fade_tween.set_ease(fade_ease_type)
+	fade_tween.tween_property(self, "modulate:a", 0.0, duration)
+	fade_tween.finished.connect(_complete_hide.bind(transition_id), CONNECT_ONE_SHOT)
+
+
+## 隐藏对话框（带透明度过渡动画）
+func hide_dialogue_box() -> void:
+	_hide_dialogue_box(fade_duration)
+
+
+## 检查对话框是否显示
+func is_dialogue_box_visible() -> bool:
+	return self.visible and _visibility_state != VisibilityState.HIDING and self.modulate.a > 0.0
+
+
+## 隐藏对话框（自定义动画时长）
+func hide_dialogue_box_with_duration(duration: float) -> void:
+	_hide_dialogue_box(duration)
+
+
+## 显示对话框（带透明度过渡动画）
+func show_dialogue_box(callback: Callable = Callable()) -> void:
+	_show_dialogue_box(fade_duration, callback)
+
+
+## 显示对话框（自定义动画时长）
+func show_dialogue_box_with_duration(duration: float) -> void:
+	_show_dialogue_box(duration)
 
 
 func update_dialogue():
@@ -362,7 +369,17 @@ func update_dialogue_box_height() -> void:
 
 
 func update_dialogue_content() -> void:
-	if not is_inside_tree() or dialogue_text.is_empty():
+	if not is_inside_tree():
+		return
+
+	_stop_typing_activity()
+	var typing_update_id := _typing_update_id
+
+	if dialogue_text.is_empty():
+		dialogue_label.text = ""
+		dialogue_label.visible_ratio = 1.0
+		if typewriter_text != null:
+			typewriter_text.set_bbcode("", false)
 		return
 
 	# 每次更新对话内容时，重新应用主题设置（确保字体大小/颜色生效）
@@ -375,21 +392,16 @@ func update_dialogue_content() -> void:
 	current_random_interval = randf_range(min_audio_interval, max_audio_interval)
 
 	# 根据打字机模式选择不同的更新方式
-	if typewriter_mode == TypewriterMode.FADE_IN_TYPEWRITER:
+	if _uses_fade_typewriter():
 		# 淡入打字机模式
-		if typewriter_text == null:
-			create_typewriter_text()
-		else:
-			typewriter_text.set_bbcode(dialogue_text, true)
+		typewriter_text.set_bbcode(dialogue_text, true)
 	else:
 		# 传统模式
 		dialogue_label.visible_ratio = 0
 		dialogue_label.text = dialogue_text  # 恢复原生text赋值，无需BBCode
 		await get_tree().process_frame
-
-		# 停止原有打字动画
-		if typing_tween != null and typing_tween.is_running():
-			typing_tween.kill()
+		if not is_inside_tree() or typing_update_id != _typing_update_id:
+			return
 
 		# 创建新的打字动画
 		typing_tween = get_tree().create_tween()
@@ -406,9 +418,9 @@ func update_dialogue_content() -> void:
 ## 跳过打字机动画
 func skip_typing_anim() -> void:
 	# 根据打字机模式选择不同的跳过方式
-	if typewriter_mode == TypewriterMode.FADE_IN_TYPEWRITER:
+	if _uses_fade_typewriter():
 		# 淡入打字机模式
-		if typewriter_text != null and typewriter_text.is_playing():
+		if typewriter_text.is_playing():
 			typewriter_text.skip()
 
 			if enable_typing_effect_audio and audio_player.is_playing():
@@ -416,7 +428,6 @@ func skip_typing_anim() -> void:
 			# 重置音效状态
 			last_audio_play_time = 0.0
 			current_random_interval = randf_range(min_audio_interval, max_audio_interval)
-			typing_completed.emit()
 	else:
 		# 传统模式
 		# 如果打字动画正在运行，则中断并跳过
@@ -439,7 +450,7 @@ func _process(_delta: float) -> void:
 
 	# 仅当打字动画运行、文本非空时，处理音效逻辑
 	var is_typing = false
-	if typewriter_mode == TypewriterMode.FADE_IN_TYPEWRITER:
+	if _uses_fade_typewriter():
 		# 淡入打字机模式
 		is_typing = (
 			typewriter_text != null

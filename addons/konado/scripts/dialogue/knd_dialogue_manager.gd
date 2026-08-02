@@ -155,6 +155,7 @@ var _dialog_data_id: int = 0
 var _i18n_service: Node
 var _dialogue_services: RefCounted
 var _logger: KND_Logger
+var _typing_completed_callback: Callable
 
 
 func _services() -> RefCounted:
@@ -267,6 +268,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_disconnect_typing_completed_callback()
 	if _i18n_service != null and is_instance_valid(_i18n_service):
 		_i18n_service.call("unregister_dialogue_manager", self)
 	if _logger != null:
@@ -283,12 +285,15 @@ func _show_error(msg: String) -> void:
 
 ## 初始化对话的方法
 func init_dialogue(callback: Callable = Callable()) -> void:
-	# 如果对话数据为空，则默认为第一个对话数据
 	if start_dialogue_shot == null:
 		push_error("未设置对话镜头")
 		return
-	# 如果不为空，复制一份start_dialogue_shot
-	cur_dialogue_shot = start_dialogue_shot.duplicate()
+	_disconnect_typing_completed_callback()
+	var localized_shot := _load_localized_shot(start_dialogue_shot)
+	if localized_shot != null:
+		start_dialogue_shot = localized_shot
+	if not _services()._set_current_shot(start_dialogue_shot):
+		return
 	# 将角色表传给acting_interface
 	_acting_interface.chara_list = chara_list
 
@@ -297,14 +302,6 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 	justenter = true
 	dialogue_state = DialogState.OFF
-	_temp_variables.clear()
-	_waiting_signal_name = ""
-	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
-		cur_node_id = cur_dialogue_shot.start_node_id
-	elif cur_dialogue_shot.dialogues.size() > 0:
-		cur_node_id = cur_dialogue_shot.dialogues[0].node_id
-	else:
-		cur_node_id = ""
 	print_rich(
 		(
 			"[color=yellow]初始化对话 [/color]"
@@ -323,18 +320,14 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 ## 设置对话数据的方法
 func set_shot(new_shot: KND_Shot) -> void:
+	if new_shot == null:
+		push_error("无法设置空的对话镜头")
+		return
 	var localized_shot := _load_localized_shot(new_shot)
 	if localized_shot != null:
 		new_shot = localized_shot
-	cur_dialogue_shot = new_shot.duplicate()
-	_temp_variables.clear()
-	_waiting_signal_name = ""
-	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
-		cur_node_id = cur_dialogue_shot.start_node_id
-	elif cur_dialogue_shot.dialogues.size() > 0:
-		cur_node_id = cur_dialogue_shot.dialogues[0].node_id
-	else:
-		cur_node_id = ""
+	start_dialogue_shot = new_shot
+	_services()._set_current_shot(start_dialogue_shot)
 
 
 ## 重新加载当前镜头的语言脚本，并尽量保持当前节点。
@@ -433,11 +426,10 @@ func _process(_delta) -> void:
 							if _konado_dialogue_box:
 								_konado_dialogue_box.clear_voice_progress()
 
-						if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
-							_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
-
+						_disconnect_typing_completed_callback()
+						_typing_completed_callback = isfinishtyping.bind(playvoice, voice_wait_time)
 						_konado_dialogue_box.typing_completed.connect(
-							isfinishtyping.bind(playvoice, voice_wait_time)
+							_typing_completed_callback, CONNECT_ONE_SHOT
 						)
 						if actor_auto_highlight:
 							if chara_id:
@@ -449,6 +441,8 @@ func _process(_delta) -> void:
 					if auto_show_dialogue_box:
 						if not _konado_dialogue_box.is_dialogue_box_visible():
 							_konado_dialogue_box.show_dialogue_box(play_dialogue)
+						else:
+							play_dialogue.call()
 					else:
 						if not _konado_dialogue_box.is_dialogue_box_visible():
 							printerr("请先让对话框显示")
@@ -718,6 +712,7 @@ func _process(_delta) -> void:
 
 ## 打字完成回调
 func isfinishtyping(wait_voice: bool, wait_voice_time: float) -> void:
+	_typing_completed_callback = Callable()
 	_dialogue_goto_state(DialogState.PAUSED)
 	if autoplay:
 		if wait_voice:
@@ -818,6 +813,7 @@ func _auto_process_next_from_motion(_actor_id: String, _motion_name: String, s: 
 
 ## 关闭对话的方法
 func stop_dialogue() -> void:
+	_disconnect_typing_completed_callback()
 	_acting_interface.delete_all_actor()
 	_acting_interface.clean_background(
 		KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT
@@ -833,6 +829,16 @@ func stop_dialogue() -> void:
 	_dialogue_goto_state(DialogState.OFF)
 	_konado_dialogue_box.hide_dialogue_box()
 	shot_end.emit()
+
+
+func _disconnect_typing_completed_callback() -> void:
+	if (
+		_konado_dialogue_box != null
+		and _typing_completed_callback.is_valid()
+		and _konado_dialogue_box.typing_completed.is_connected(_typing_completed_callback)
+	):
+		_konado_dialogue_box.typing_completed.disconnect(_typing_completed_callback)
+	_typing_completed_callback = Callable()
 
 
 ## 对话状态切换的方法

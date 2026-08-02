@@ -170,6 +170,18 @@ func cancel_transition(queue_backgrounds: bool = true) -> void:
 		_current_fallback.get_parent().remove_child(_current_fallback)
 
 
+func _exit_tree() -> void:
+	if _transition_tween and _transition_tween.is_valid():
+		_transition_tween.kill()
+	_transition_tween = null
+	if _current_fallback and is_instance_valid(_current_fallback):
+		var fallback_parent := _current_fallback.get_parent()
+		if fallback_parent:
+			fallback_parent.remove_child(_current_fallback)
+		_current_fallback.free()
+	_current_fallback = null
+
+
 func _ensure_nodes() -> void:
 	if _current_viewport == null:
 		_current_viewport = _create_viewport("CurrentViewport")

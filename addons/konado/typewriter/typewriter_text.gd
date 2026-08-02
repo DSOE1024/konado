@@ -189,6 +189,13 @@ func skip() -> void:
 	queue_redraw()
 
 
+## 停止打字机效果并保留当前显示进度。
+func stop() -> void:
+	_playing = false
+	_sync_shader()
+	queue_redraw()
+
+
 ## 隐藏所有文本并停止。
 func reset() -> void:
 	_progress = 0.0

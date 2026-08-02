@@ -294,6 +294,24 @@ func _load_localized_shot(shot: KND_Shot) -> KND_Shot:
 	return service.call("load_localized_script", shot.ks_path) as KND_Shot
 
 
+func _set_current_shot(shot: KND_Shot) -> bool:
+	if shot == null:
+		return false
+	_host.cur_dialogue_shot = shot.duplicate()
+	_host._temp_variables.clear()
+	_host._waiting_signal_name = ""
+	if (
+		_host.cur_dialogue_shot.start_node_id
+		and not _host.cur_dialogue_shot.start_node_id.is_empty()
+	):
+		_host.cur_node_id = _host.cur_dialogue_shot.start_node_id
+	elif not _host.cur_dialogue_shot.dialogues.is_empty():
+		_host.cur_node_id = _host.cur_dialogue_shot.dialogues[0].node_id
+	else:
+		_host.cur_node_id = ""
+	return true
+
+
 func _refresh_current_localized_dialogue() -> void:
 	var dialogue: KND_Dialogue = _host._current_dialogue()
 	if dialogue == null:
