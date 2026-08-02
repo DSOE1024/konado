@@ -28,10 +28,10 @@ public partial class DialogueManagerAPISample : Node
 			return;
 
 		GD.Print("Ready");
-		StartDialogue(dialogueManagerApi);
+		StartDialogue(dialogueManagerApi, shot);
 	}
 
-	private static void StartDialogue(DialogueManagerAPI dialogueManagerApi)
+	private static void StartDialogue(DialogueManagerAPI dialogueManagerApi, KndShot shot)
 	{
 		dialogueManagerApi.ShotStart += () =>
 		{
@@ -55,6 +55,7 @@ public partial class DialogueManagerAPISample : Node
 			return;
 
 		GD.Print("API Ready");
+		dialogueManagerApi.SetShot(shot);
 		dialogueManagerApi.InitDialogue();
 		dialogueManagerApi.StartDialogue();
 	}

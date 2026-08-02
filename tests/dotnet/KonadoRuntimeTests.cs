@@ -38,6 +38,11 @@ public sealed partial class KonadoRuntimeTests : Node
 		AddChild(manager);
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 		Check(api.IsReady, "API must bind a manager added after its own _Ready().");
+		var forwardedShot = new KndShot();
+		api.SetShot(forwardedShot);
+		Check(
+			manager.Get("last_shot").AsGodotObject() == forwardedShot.SourceResource,
+			"DialogueManagerAPI must forward KndShot resources to set_shot().");
 
 		manager.QueueFree();
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);

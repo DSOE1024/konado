@@ -6,13 +6,15 @@ signal dialogue_line_start(node_id: String)
 signal dialogue_line_end(node_id: String)
 signal custom_signal(content: String)
 
+var last_shot: Resource
+
 
 func init_dialogue(_callback: Callable = Callable()) -> void:
 	pass
 
 
-func set_shot(_shot: Resource) -> void:
-	pass
+func set_shot(shot: Resource) -> void:
+	last_shot = shot
 
 
 func start_dialogue() -> void:

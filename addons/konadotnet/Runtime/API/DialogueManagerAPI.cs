@@ -404,6 +404,7 @@ public sealed partial class DialogueManagerAPI : Node
 
 	public void SetShot(Resource shot)
 	{
+		System.ArgumentNullException.ThrowIfNull(shot);
 		GetReadySource()?.Call(GDScriptMethodName.SetShot, shot);
 	}
 
