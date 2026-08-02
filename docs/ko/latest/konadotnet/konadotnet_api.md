@@ -91,7 +91,7 @@ if (shot != null)
 | --- | --- |
 | `bool BindDialogueManager(Node source = null)` | 지정한 대화 관리자에 바인딩합니다. 생략하면 장면 트리를 순회합니다. 성공하면 `true`를 반환합니다. |
 | `void InitDialogue()` | `init_dialogue()`를 호출합니다. 보통 `SetShot()` 뒤, `StartDialogue()` 앞에서 호출합니다. |
-| `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | 현재 샷을 변경합니다. 래퍼를 직접 전달할 수 있습니다. |
+| `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | 현재 샷과 다음 `InitDialogue()`에서 사용할 시작 샷을 설정합니다. 래퍼를 직접 전달할 수 있습니다. |
 | `void StartDialogue()` | `start_dialogue()`를 호출해 재생을 시작합니다. |
 | `void StopDialogue()` | `stop_dialogue()`를 호출해 재생을 중지합니다. |
 | `void StartAutoplay(bool value)` | 자동 재생을 전환합니다. |
@@ -269,7 +269,7 @@ KonadoAPI.DialogueManagerApi.BindDialogueManager(GetNode<Node>("path/to/manager"
 
 ### `SetShot` 후 재생되지 않습니다
 
-`SetShot()`은 샷만 변경합니다. 다음 순서로 호출하세요.
+`SetShot()`은 샷을 저장하고 전환하지만 초기화하거나 재생을 시작하지는 않습니다. 다음 순서로 호출하세요.
 
 ```csharp
 api.SetShot(shot);

@@ -202,7 +202,7 @@ void SetShot(Resource shot)
 void SetShot(KndShot shot)
 ```
 
-调用 `KND_DialogueManager.set_shot()`，切换当前对话镜头。
+调用 `KND_DialogueManager.set_shot()`，同时更新当前镜头及后续 `InitDialogue()` 使用的起始镜头。该方法不会初始化 UI 或开始播放。
 
 | 参数 | 说明 |
 | --- | --- |
@@ -858,7 +858,7 @@ KonadoAPI.DialogueManagerApi?.BindDialogueManager(GetNode<Node>("你的管理器
 
 ### `SetShot` 后没有播放
 
-`SetShot()` 只切换镜头，不会自动初始化或开始播放。一般调用顺序是：
+`SetShot()` 会保存并切换镜头，但不会自动初始化或开始播放。一般调用顺序是：
 
 ```csharp
 api.SetShot(shot);

@@ -91,7 +91,7 @@ if (shot != null)
 | --- | --- |
 | `bool BindDialogueManager(Node source = null)` | 綁定指定對話管理器；省略時自動遍歷場景樹。成功回傳 `true`。 |
 | `void InitDialogue()` | 呼叫 `init_dialogue()`，通常在 `SetShot()` 之後、`StartDialogue()` 之前呼叫。 |
-| `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | 切換目前鏡頭，可直接傳入包裝物件。 |
+| `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | 設定目前鏡頭及下次 `InitDialogue()` 使用的起始鏡頭，可直接傳入包裝物件。 |
 | `void StartDialogue()` | 呼叫 `start_dialogue()` 開始播放。 |
 | `void StopDialogue()` | 呼叫 `stop_dialogue()` 停止播放。 |
 | `void StartAutoplay(bool value)` | 切換自動播放。 |
@@ -269,7 +269,7 @@ KonadoAPI.DialogueManagerApi.BindDialogueManager(GetNode<Node>("path/to/manager"
 
 ### `SetShot` 後沒有播放
 
-`SetShot()` 只會切換鏡頭，請依序呼叫：
+`SetShot()` 會儲存並切換鏡頭，但不會自動初始化或開始播放，請依序呼叫：
 
 ```csharp
 api.SetShot(shot);

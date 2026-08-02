@@ -137,7 +137,7 @@ The API exposes `Locale`, `AvailableLocales`, `SetLocale`, `NormalizeLocale`,
 | --- | --- |
 | `bool BindDialogueManager(Node source = null)` | Bind a specific dialogue manager, or traverse the scene tree when omitted. Returns `true` on success. |
 | `void InitDialogue()` | Calls `init_dialogue()`. Usually called after `SetShot()` and before `StartDialogue()`. |
-| `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | Changes the current shot. Wrappers can be passed directly. |
+| `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | Sets both the current shot and the source used by the next `InitDialogue()` call. Wrappers can be passed directly. |
 | `void StartDialogue()` | Calls `start_dialogue()` and starts playback. |
 | `void StopDialogue()` | Calls `stop_dialogue()` and stops playback. |
 | `void StartAutoplay(bool value)` | Toggles autoplay. |
@@ -453,7 +453,7 @@ Check that dialogue playback has started and that the bound `KND_DialogueManager
 
 ### `SetShot` does not start playback
 
-`SetShot()` only changes the current shot. Use this order:
+`SetShot()` stores and selects the shot, but does not initialize or start playback. Use this order:
 
 ```csharp
 api.SetShot(shot);
