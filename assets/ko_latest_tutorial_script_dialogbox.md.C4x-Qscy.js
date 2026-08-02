@@ -1,0 +1,10 @@
+import{_ as s,o as t,c as e,a5 as n}from"./chunks/framework.C588jwcu.js";const x=JSON.parse('{"title":"대화 상자 표시와 숨기기","description":"","frontmatter":{"title":"대화 상자 표시와 숨기기","order":5},"headers":[],"relativePath":"ko/latest/tutorial/script/dialogbox.md","filePath":"ko/latest/tutorial/script/dialogbox.md","lastUpdated":1785683504000}'),p={name:"ko/latest/tutorial/script/dialogbox.md"};function o(i,a,l,d,c,r){return t(),e("div",null,[...a[0]||(a[0]=[n(`<h1 id="대화-상자-표시와-숨기기" tabindex="-1">대화 상자 표시와 숨기기 <a class="header-anchor" href="#대화-상자-표시와-숨기기" aria-label="Permalink to &quot;대화 상자 표시와 숨기기&quot;">​</a></h1><p>이 명령은 대화 상자의 표시 상태를 제어하고 페이드가 끝난 뒤 다음 문장을 실행합니다.</p><h2 id="문법" tabindex="-1">문법 <a class="header-anchor" href="#문법" aria-label="Permalink to &quot;문법&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>showtextbox [duration]</span></span>
+<span class="line"><span>hidetextbox [duration]</span></span></code></pre></div><p><code>duration</code>은 초 단위의 선택적 값이며 음수일 수 없습니다. 생략하거나 <code>0.0</code>을 사용하면 표시 상태가 즉시 바뀝니다.</p><h2 id="예제" tabindex="-1">예제 <a class="header-anchor" href="#예제" aria-label="Permalink to &quot;예제&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span># 1초 동안 대화 상자를 표시</span></span>
+<span class="line"><span>showtextbox 1.0</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># 0.5초 동안 대화 상자를 숨김</span></span>
+<span class="line"><span>hidetextbox 0.5</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># 표시 상태를 즉시 변경</span></span>
+<span class="line"><span>showtextbox 0.0</span></span>
+<span class="line"><span>hidetextbox 0.0</span></span></code></pre></div>`,7)])])}const u=s(p,[["render",o]]);export{x as __pageData,u as default};

@@ -1,0 +1,10 @@
+import{_ as s,o as t,c as e,a5 as n}from"./chunks/framework.C588jwcu.js";const x=JSON.parse('{"title":"ダイアログボックスの表示と非表示","description":"","frontmatter":{"title":"ダイアログボックスの表示と非表示","order":5},"headers":[],"relativePath":"ja/latest/tutorial/script/dialogbox.md","filePath":"ja/latest/tutorial/script/dialogbox.md","lastUpdated":1785683504000}'),p={name:"ja/latest/tutorial/script/dialogbox.md"};function i(o,a,l,d,c,r){return t(),e("div",null,[...a[0]||(a[0]=[n(`<h1 id="ダイアログボックスの表示と非表示" tabindex="-1">ダイアログボックスの表示と非表示 <a class="header-anchor" href="#ダイアログボックスの表示と非表示" aria-label="Permalink to &quot;ダイアログボックスの表示と非表示&quot;">​</a></h1><p>これらの命令はダイアログボックスの表示状態を制御し、フェードが完了してから次へ進みます。</p><h2 id="構文" tabindex="-1">構文 <a class="header-anchor" href="#構文" aria-label="Permalink to &quot;構文&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>showtextbox [duration]</span></span>
+<span class="line"><span>hidetextbox [duration]</span></span></code></pre></div><p><code>duration</code> は省略可能な秒数で、負の値は指定できません。省略するか <code>0.0</code> を指定すると即時に表示状態を切り替えます。</p><h2 id="例" tabindex="-1">例 <a class="header-anchor" href="#例" aria-label="Permalink to &quot;例&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span># 1 秒かけてダイアログボックスを表示</span></span>
+<span class="line"><span>showtextbox 1.0</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># 0.5 秒かけてダイアログボックスを非表示</span></span>
+<span class="line"><span>hidetextbox 0.5</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># 表示状態を即時に切り替える</span></span>
+<span class="line"><span>showtextbox 0.0</span></span>
+<span class="line"><span>hidetextbox 0.0</span></span></code></pre></div>`,7)])])}const u=s(p,[["render",i]]);export{x as __pageData,u as default};
