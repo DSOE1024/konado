@@ -1,3 +1,18 @@
+## 2.7.1 - Wontons
+
+### Bug Fixes
+
+- Fixed `InitDialogue()` replacing the shot selected by `SetShot()`, aligning the GDScript and Konado.NET shot lifecycles
+- Reworked dialogue-box visibility state management so fades, `hidetextbox`, and dialogue restarts reliably restore visible text
+- Fixed consecutive lines not updating an already visible dialogue box, along with stale text-node and typing-audio state after interrupted transitions
+- Fixed stale typing-completion callbacks after stopping or reinitializing dialogue, plus leaked fallback background nodes and disabled typing-audio players
+- Fixed fade typewriter skipping potentially emitting its completion signal more than once
+
+### Other Improvements
+
+- Added runtime regression coverage for both typewriter modes, immediate and animated visibility changes, consecutive lines, shot switching, and dialogue restarts
+- Updated the Konado.NET sample and localized API documentation to clarify the `SetShot()`, `InitDialogue()`, and `StartDialogue()` lifecycle
+
 ## 2.7 - Wontons
 
 ### Editor
