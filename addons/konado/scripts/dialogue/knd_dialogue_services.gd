@@ -258,6 +258,9 @@ func _reload_localized_script(locale: String) -> bool:
 	var service := _get_i18n_service()
 	if service == null:
 		return false
+	var previous_dialogue: KND_Dialogue = _host._current_dialogue()
+	var was_active: bool = _host._shot_active
+	var was_entering_node: bool = _host.justenter
 	var source_shot = (
 		_host.cur_dialogue_shot if _host.cur_dialogue_shot != null else _host.start_dialogue_shot
 	)
@@ -265,20 +268,109 @@ func _reload_localized_script(locale: String) -> bool:
 		return false
 
 	var localized_shot := (
-		service.call("load_localized_script", source_shot.ks_path, locale) as KND_Shot
+		service.call("load_localized_script", source_shot.ks_path, locale, false) as KND_Shot
 	)
-	if localized_shot == null:
+	var runtime_shot := localized_shot.duplicate() as KND_Shot if localized_shot != null else null
+	if runtime_shot == null:
 		return false
-
 	var restore_node_id: String = service.call(
 		"choose_restore_node_id", _host.cur_dialogue_shot, localized_shot, _host.cur_node_id
 	)
+	# Completion callbacks are scoped to the current node ID. When a localized
+	# graph can only restore the active node by position, keep a runtime alias
+	# with the old ID so the in-flight command can finish exactly once. The
+	# localized node is retained as well, so branches that target its real ID
+	# remain valid.
+	if was_active and not was_entering_node and restore_node_id != _host.cur_node_id:
+		if not _preserve_active_node_identity(runtime_shot, restore_node_id, _host.cur_node_id):
+			push_warning(
+				(
+					(
+						"KND_I18n: unable to restore active node '%s' in localized script; "
+						+ "keeping the current script until the next initialization"
+					)
+					% _host.cur_node_id
+				)
+			)
+			return false
+		restore_node_id = _host.cur_node_id
 	_host.start_dialogue_shot = localized_shot
-	_host.cur_dialogue_shot = localized_shot.duplicate()
+	_host.cur_dialogue_shot = runtime_shot
 	_host.cur_node_id = restore_node_id
-	_host.justenter = true
-	_refresh_current_localized_dialogue()
+	# Locale changes must not re-enter a command that is already running. Its
+	# existing completion callback advances against the newly loaded graph.
+	_host.justenter = was_entering_node
+	if not was_active or was_entering_node:
+		return true
+
+	var localized_dialogue: KND_Dialogue = _host._current_dialogue()
+	if previous_dialogue != null and localized_dialogue != null:
+		if previous_dialogue.dialog_type != localized_dialogue.dialog_type:
+			push_warning(
+				(
+					(
+						"KND_I18n: localized node '%s' changes command type; "
+						+ "the running command will finish before using the localized graph"
+					)
+					% restore_node_id
+				)
+			)
+		else:
+			_refresh_active_localized_dialogue(localized_dialogue)
 	return true
+
+
+func _preserve_active_node_identity(
+	localized_shot: KND_Shot, localized_node_id: String, active_node_id: String
+) -> bool:
+	if localized_node_id.is_empty() or active_node_id.is_empty():
+		return false
+	var target_index := -1
+	for index in range(localized_shot.dialogues.size()):
+		if localized_shot.dialogues[index].node_id == localized_node_id:
+			target_index = index
+			break
+	if target_index < 0:
+		return false
+
+	var localized_node := localized_shot.dialogues[target_index]
+	var active_alias := localized_node.duplicate() as KND_Dialogue
+	if active_alias == null:
+		return false
+	active_alias.node_id = active_node_id
+
+	var runtime_dialogues: Array[KND_Dialogue] = []
+	runtime_dialogues.assign(localized_shot.dialogues)
+	runtime_dialogues[target_index] = active_alias
+	runtime_dialogues.append(localized_node)
+	localized_shot.dialogues = runtime_dialogues
+	return true
+
+
+func _refresh_active_localized_dialogue(dialogue: KND_Dialogue) -> void:
+	match dialogue.dialog_type:
+		KND_Dialogue.Type.ORDINARY_DIALOG:
+			if _host.dialogue_state == _host.DialogState.PAUSED:
+				_refresh_current_localized_dialogue(true)
+			elif _host._typing_completed_callback.is_valid():
+				_refresh_current_localized_dialogue()
+		KND_Dialogue.Type.SHOW_CHOICE:
+			if _host._konado_choice_interface:
+				var choice_interface := _host._konado_choice_interface as KND_ChoiceInterface
+				(
+					choice_interface
+					. display_options(
+						dialogue.choices,
+						_host,
+						32,
+						_host._playback_generation,
+					)
+				)
+		KND_Dialogue.Type.SCREEN_TEXT:
+			if _host._screen_text:
+				_host._screen_text.display(dialogue.text_content)
+		KND_Dialogue.Type.WAIT_SIGNAL:
+			_host._waiting_signal_name = dialogue.wait_signal_name
 
 
 func _get_i18n_service() -> Node:
@@ -291,7 +383,7 @@ func _load_localized_shot(shot: KND_Shot) -> KND_Shot:
 	var service := _get_i18n_service()
 	if service == null or shot == null or shot.ks_path.is_empty() or shot.ks_path == "null":
 		return shot
-	return service.call("load_localized_script", shot.ks_path) as KND_Shot
+	return service.call("load_localized_script", shot.ks_path, "", false) as KND_Shot
 
 
 func _set_current_shot(shot: KND_Shot) -> bool:
@@ -312,7 +404,7 @@ func _set_current_shot(shot: KND_Shot) -> bool:
 	return true
 
 
-func _refresh_current_localized_dialogue() -> void:
+func _refresh_current_localized_dialogue(show_immediately: bool = false) -> void:
 	var dialogue: KND_Dialogue = _host._current_dialogue()
 	if dialogue == null:
 		return
@@ -323,7 +415,11 @@ func _refresh_current_localized_dialogue() -> void:
 	):
 		return
 	_host._konado_dialogue_box.character_name = dialogue.character_id
-	_host._konado_dialogue_box.dialogue_text = _interpolate_variables(dialogue.dialog_content)
+	var content := _interpolate_variables(dialogue.dialog_content)
+	if show_immediately:
+		_host._konado_dialogue_box.set_dialogue_content_immediately(content)
+	else:
+		_host._konado_dialogue_box.dialogue_text = content
 
 
 func _set_character_list(character_list: KND_CharacterList) -> void:

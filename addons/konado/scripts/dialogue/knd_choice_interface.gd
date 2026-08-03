@@ -9,6 +9,8 @@ signal finish_display_options
 ## 对话选项按钮容器
 @export var _choice_container: Container
 
+var _display_generation: int = 0
+
 
 ## 初始化对话框
 func init_dialog_box() -> void:
@@ -16,19 +18,27 @@ func init_dialog_box() -> void:
 
 
 func distroy_options() -> void:
+	_display_generation += 1
 	# 隐藏选项容器
 	_choice_container.hide()
 	# 删除原有选项
 	if _choice_container.get_child_count() != 0:
 		for child in _choice_container.get_children():
+			child.hide()
+			if child is BaseButton:
+				child.disabled = true
 			child.queue_free()
 
 
 ## 显示对话选项的方法
 func display_options(
-	choices: Array[KND_DialogueChoice], manager: KND_DialogueManager, choices_font_size: int = 32
+	choices: Array[KND_DialogueChoice],
+	manager: KND_DialogueManager,
+	choices_font_size: int = 32,
+	playback_generation: int = -1
 ) -> void:
 	distroy_options()
+	var display_generation := _display_generation
 
 	var tmp_list: Array[Button] = []
 
@@ -41,9 +51,18 @@ func display_options(
 		# 选项触发
 		choice_button.pressed.connect(
 			func():
+				if choice_button.disabled or display_generation != _display_generation:
+					return
+				# Claim this presentation synchronously. This invalidates every
+				# other button from the same presentation before the deferred
+				# callback runs.
+				_display_generation += 1
+				var claimed_generation := _display_generation
+				choice_button.disabled = true
 				await get_tree().process_frame
-				manager.on_option_triggered(choice)
-				choice_button.set_disabled(true)
+				if not is_instance_valid(manager) or claimed_generation != _display_generation:
+					return
+				manager.on_option_triggered(choice, playback_generation)
 				print_rich("[color=green]选项被触发: [/color]" + str(choice))
 		)
 		choice_button.gui_input.connect(

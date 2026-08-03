@@ -18,6 +18,9 @@ var _async_tweens: Array[Tween] = []
 var _async_target_pos: Vector2 = Vector2.ZERO
 ## 异步相机最终目标缩放
 var _async_target_zoom: Vector2 = Vector2.ONE
+## 晃动开始前的用户相机偏移，取消或完成后必须恢复。
+var _shake_base_offset: Vector2 = Vector2.ZERO
+var _shake_tweens: Array[Tween] = []
 
 
 func _ready() -> void:
@@ -58,6 +61,7 @@ func camera_trans(
 	callback: Callable = Callable(),
 	transition_type: String = "linear",
 ) -> void:
+	_cancel_pending_shakes()
 	if tween:
 		tween.kill()
 	tween = create_tween()
@@ -76,6 +80,7 @@ func reset_cam(
 	transition_type: String = "linear",
 ) -> void:
 	var pos: Vector2 = get_window().size / 2
+	_cancel_pending_shakes()
 	if use_tween:
 		if tween:
 			tween.kill()
@@ -99,19 +104,16 @@ func shake_cam(duration: float, callback: Callable = Callable()) -> void:
 			callback.call()
 		return
 
+	_cancel_pending_shakes()
 	if tween:
 		tween.kill()
 
-	var original_offset := current.offset
-
-	var shake_tween := create_tween()
-	shake_tween.tween_method(Callable(self, "_apply_shake"), 0.0, 1.0, duration)
-	shake_tween.tween_callback(
-		func():
-			current.offset = original_offset
-			if callback.is_valid():
-				callback.call()
-	)
+	_shake_base_offset = current.offset
+	tween = create_tween()
+	var shake_tween := tween
+	_shake_tweens.append(shake_tween)
+	tween.tween_method(Callable(self, "_apply_shake"), 0.0, 1.0, duration)
+	tween.tween_callback(_complete_shake.bind(shake_tween, callback))
 
 
 # ============================================================
@@ -141,11 +143,12 @@ func async_shake_cam(duration: float) -> void:
 	if duration <= 0:
 		return
 
-	var original_offset := current.offset
-
+	_cancel_pending_shakes()
+	_shake_base_offset = current.offset
 	var shake_tween := create_tween()
+	_shake_tweens.append(shake_tween)
 	shake_tween.tween_method(Callable(self, "_apply_shake"), 0.0, 1.0, duration)
-	shake_tween.tween_callback(func(): current.offset = original_offset)
+	shake_tween.tween_callback(_complete_shake.bind(shake_tween, Callable()))
 	_async_tweens.append(shake_tween)
 	# 将初始偏移也记录为最终目标，以便 stop 时恢复
 	_async_target_pos = current.position
@@ -154,6 +157,7 @@ func async_shake_cam(duration: float) -> void:
 
 ## 强制终止所有异步相机 Tween，瞬间定格到最终目标位置
 func async_stop_all() -> void:
+	_cancel_pending_shakes()
 	for t in _async_tweens:
 		if t and t.is_valid():
 			t.kill()
@@ -161,8 +165,43 @@ func async_stop_all() -> void:
 	# 瞬间定格到最终目标
 	current.position = _async_target_pos
 	current.zoom = _async_target_zoom
-	# 清除晃动偏移
-	current.offset = Vector2.ZERO
+
+
+## 取消当前镜头遗留的同步与异步动画，但保持已经到达的位置和缩放。
+func cancel_pending_operations() -> void:
+	_cancel_pending_shakes()
+	if tween and tween.is_valid():
+		tween.kill()
+	tween = null
+	for pending_tween in _async_tweens:
+		if pending_tween and pending_tween.is_valid():
+			pending_tween.kill()
+	_async_tweens.clear()
+
+
+func _complete_shake(shake_tween: Tween, callback: Callable) -> void:
+	_shake_tweens.erase(shake_tween)
+	_async_tweens.erase(shake_tween)
+	if tween == shake_tween:
+		tween = null
+	if current and _shake_tweens.is_empty():
+		current.offset = _shake_base_offset
+	if callback.is_valid():
+		callback.call()
+
+
+func _cancel_pending_shakes() -> void:
+	if _shake_tweens.is_empty():
+		return
+	for shake_tween in _shake_tweens:
+		if shake_tween and shake_tween.is_valid():
+			shake_tween.kill()
+		_async_tweens.erase(shake_tween)
+		if tween == shake_tween:
+			tween = null
+	_shake_tweens.clear()
+	if current:
+		current.offset = _shake_base_offset
 
 
 ## 启动异步 Tween（无回调，不阻塞）
@@ -203,4 +242,4 @@ func _apply_shake(progress: float) -> void:
 		(cos(time * 17.0) * 0.5 + cos(time * 31.0) * 0.3 + cos(time * 59.0) * 0.2) * shake_intensity
 	)
 
-	current.offset = Vector2(offset_x, offset_y)
+	current.offset = _shake_base_offset + Vector2(offset_x, offset_y)

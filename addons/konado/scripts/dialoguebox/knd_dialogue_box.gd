@@ -97,6 +97,7 @@ var voice_player: AudioStreamPlayer
 var _visibility_state: VisibilityState = VisibilityState.HIDDEN
 var _visibility_transition_id: int = 0
 var _typing_update_id: int = 0
+var _immediate_content_update: bool = false
 
 # 动态音频播放器
 @onready var audio_player: AudioStreamPlayer = AudioStreamPlayer.new()
@@ -257,13 +258,15 @@ func _complete_show(transition_id: int, callback: Callable) -> void:
 		callback.call()
 
 
-func _complete_hide(transition_id: int) -> void:
+func _complete_hide(transition_id: int, clear_content: bool) -> void:
 	if transition_id != _visibility_transition_id:
 		return
 	fade_tween = null
 	self.hide()
 	self.modulate.a = 1.0
 	_visibility_state = VisibilityState.HIDDEN
+	if clear_content:
+		clear_dialogue_content()
 	on_dialogue_hide_completed.emit()
 
 
@@ -290,31 +293,31 @@ func _show_dialogue_box(duration: float, callback: Callable = Callable()) -> voi
 	fade_tween.finished.connect(_complete_show.bind(transition_id, callback), CONNECT_ONE_SHOT)
 
 
-func _hide_dialogue_box(duration: float) -> void:
+func _hide_dialogue_box(duration: float, clear_content: bool = false) -> void:
 	var was_hidden := _visibility_state == VisibilityState.HIDDEN and not self.visible
 	var transition_id := _cancel_visibility_transition()
 	clear_voice_progress()
 	_stop_typing_activity()
 
 	if was_hidden:
-		_complete_hide(transition_id)
+		_complete_hide(transition_id, clear_content)
 		return
 
 	_visibility_state = VisibilityState.HIDING
 	if duration <= 0.0:
-		_complete_hide(transition_id)
+		_complete_hide(transition_id, clear_content)
 		return
 
 	fade_tween = get_tree().create_tween()
 	fade_tween.set_trans(fade_trans_type)
 	fade_tween.set_ease(fade_ease_type)
 	fade_tween.tween_property(self, "modulate:a", 0.0, duration)
-	fade_tween.finished.connect(_complete_hide.bind(transition_id), CONNECT_ONE_SHOT)
+	fade_tween.finished.connect(_complete_hide.bind(transition_id, clear_content), CONNECT_ONE_SHOT)
 
 
 ## 隐藏对话框（带透明度过渡动画）
-func hide_dialogue_box() -> void:
-	_hide_dialogue_box(fade_duration)
+func hide_dialogue_box(clear_content: bool = false) -> void:
+	_hide_dialogue_box(fade_duration, clear_content)
 
 
 ## 检查对话框是否显示
@@ -323,8 +326,25 @@ func is_dialogue_box_visible() -> bool:
 
 
 ## 隐藏对话框（自定义动画时长）
-func hide_dialogue_box_with_duration(duration: float) -> void:
-	_hide_dialogue_box(duration)
+func hide_dialogue_box_with_duration(duration: float, clear_content: bool = false) -> void:
+	_hide_dialogue_box(duration, clear_content)
+
+
+## 清除仅属于当前镜头的文本、角色名、语音进度和打字状态。
+func clear_dialogue_content() -> void:
+	_stop_typing_activity()
+	clear_voice_progress()
+	character_name = ""
+	dialogue_text = ""
+
+
+## 立即恢复为可安全开始新镜头的隐藏状态。
+func reset_dialogue_box() -> void:
+	_cancel_visibility_transition()
+	clear_dialogue_content()
+	self.hide()
+	self.modulate.a = 1.0
+	_visibility_state = VisibilityState.HIDDEN
 
 
 ## 显示对话框（带透明度过渡动画）
@@ -374,6 +394,7 @@ func update_dialogue_content() -> void:
 
 	_stop_typing_activity()
 	var typing_update_id := _typing_update_id
+	var show_immediately := _immediate_content_update
 
 	if dialogue_text.is_empty():
 		dialogue_label.text = ""
@@ -394,11 +415,14 @@ func update_dialogue_content() -> void:
 	# 根据打字机模式选择不同的更新方式
 	if _uses_fade_typewriter():
 		# 淡入打字机模式
-		typewriter_text.set_bbcode(dialogue_text, true)
+		typewriter_text.set_bbcode(dialogue_text, not show_immediately)
 	else:
 		# 传统模式
-		dialogue_label.visible_ratio = 0
 		dialogue_label.text = dialogue_text  # 恢复原生text赋值，无需BBCode
+		if show_immediately:
+			dialogue_label.visible_ratio = 1.0
+			return
+		dialogue_label.visible_ratio = 0
 		await get_tree().process_frame
 		if not is_inside_tree() or typing_update_id != _typing_update_id:
 			return
@@ -413,6 +437,13 @@ func update_dialogue_content() -> void:
 			. tween_property(dialogue_label, "visible_ratio", 1.0, total_typing_time)
 			. set_trans(Tween.TRANS_LINEAR)
 		)
+
+
+## 不播放打字动画，立即替换完整文本，也不发射 typing_completed。
+func set_dialogue_content_immediately(content: String) -> void:
+	_immediate_content_update = true
+	dialogue_text = content
+	_immediate_content_update = false
 
 
 ## 跳过打字机动画
