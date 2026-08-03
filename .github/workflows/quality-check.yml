@@ -69,6 +69,8 @@ jobs:
         run: |
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_gdscript_architecture.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_lifecycle.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_external_reentry.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_localization_lifecycle.gd
 
       - name: Test KonadoScript editor integration
         run: |
