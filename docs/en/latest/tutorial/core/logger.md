@@ -15,7 +15,7 @@ The logical log path is `user://konado_log.log`. Godot resolves its physical dir
 
 ## On-Screen Overlay Log
 
-When an error occurs, the dialogue scene overlays a log window on the screen to show error information and interrupt game execution. If you want to disable this feature, set the `enable_overlay_log` property of `KND_DialogueManager` to `false`.
+When an error occurs, the dialogue scene overlays a log window to show the error and interrupt game execution. Regular warnings are still written to the log file, but they are not presented as runtime failures and do not interrupt the game. To disable the error overlay, set the `enable_overlay_log` property of `KND_DialogueManager` to `false`.
 
 ## Log Callback
 

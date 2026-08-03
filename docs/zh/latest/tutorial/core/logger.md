@@ -15,7 +15,7 @@ KND_Logger 是基于Godot Logger实现的日志模块，支持日志级别、日
 
 ## 屏幕覆盖日志
 
-在报错时，对话场景会在屏幕上覆盖一个日志窗口，用于显示错误信息并中断游戏运行，如果您希望关闭该功能，可以将`KND_DialogueManager`的`enable_overlay_log`属性中设置为`false`。
+发生错误时，对话场景会在屏幕上覆盖一个日志窗口，用于显示错误信息并中断游戏运行。普通警告仍会写入日志文件，但不会显示为运行时错误或中断游戏。如果您希望关闭错误覆盖窗口，可以将 `KND_DialogueManager` 的 `enable_overlay_log` 属性设置为 `false`。
 
 ## 日志回调
 
