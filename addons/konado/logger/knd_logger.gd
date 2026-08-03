@@ -23,8 +23,9 @@ func _log_error(
 	error_type: int,
 	script_backtraces: Array[ScriptBacktrace]
 ) -> void:
+	var is_warning := error_type == Logger.ERROR_TYPE_WARNING
 	var sb := PackedStringArray()
-	sb.append("Something's broken in Konado!")
+	sb.append("Konado runtime warning." if is_warning else "Something's broken in Konado!")
 	sb.append("=============================")
 	sb.append("  Timestamp: " + Time.get_datetime_string_from_system())
 	sb.append("  Function: {0}".format([function]))
@@ -62,7 +63,10 @@ func _log_error(
 		filestream.store_line(msg)
 		filestream.close()
 	_mutex.unlock()
-	error_caught.emit(msg)
+	# Warnings remain available in the persistent log for diagnostics, but must
+	# not be presented to players as fatal runtime failures.
+	if not is_warning:
+		error_caught.emit(msg)
 
 
 func _log_message(message: String, error: bool) -> void:
