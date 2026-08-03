@@ -1,3 +1,19 @@
+## 2.7.2 - Wontons
+
+### Bug Fixes
+
+- Fixed an erroneous runtime warning when falling back to the default KonadoScript because no localized script is available for the current locale
+- Fixed a new shot briefly showing the previous speaker and text while its dialogue box fades in
+- Fixed shots without an explicit `end` entering the off state without full cleanup or a `shot_end` signal
+- Fixed autoplay timers, command completion signals, choice callbacks, and camera animations from a stale node or previous shot advancing or affecting current playback
+- Fixed repeated starts and stops, including stops made from a `shot_end` handler, potentially running lifecycle operations more than once
+- Fixed replacing or stopping a shot from dialogue, audio, variable, achievement, or cleanup signal handlers potentially allowing the previous playback flow to continue, overwrite replacement state, or prevent the replacement shot from stopping
+- Fixed runtime locale changes potentially re-running the active command, binding duplicate completion callbacks, emitting a false typing-completion event, or stalling when the localized script lacks the current node ID
+- Fixed interrupted voice playback emitting a stale completion event after a later voice finishes, playback start failures waiting indefinitely, and repeated BGM playback accumulating loop callbacks; clarified `play_voice()` as non-blocking and added `play_voice_and_wait()` to distinguish natural completion from interruption
+- Fixed stale animations clearing or interfering with replacement screen text, including after a runtime locale change
+- Fixed `dialogue_line_end` being emitted early or more than once when skipping the typewriter animation, and its callbacks being able to re-enter the same advance
+- Fixed disabling autoplay potentially advancing the current dialogue
+
 ## 2.7.1 - Wontons
 
 ### Bug Fixes
