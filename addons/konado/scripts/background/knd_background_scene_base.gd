@@ -73,18 +73,16 @@ func _collect_capture_state(node: Node, is_root: bool, state: Dictionary) -> voi
 		# 不可见分支不参与最终画面，整棵子树直接跳过。
 		if not canvas_item.visible:
 			return
+		# 命中任一"必须走 SubViewport"的条件即标记 capture，
+		# 用 elif 链收敛出口，避免在每个分支里各 return 一次。
 		if canvas_item.material != null:
 			state["capture"] = true
-			return
-		if canvas_item.self_modulate != Color.WHITE:
+		elif canvas_item.self_modulate != Color.WHITE:
 			state["capture"] = true
-			return
 		# 根节点的 modulate 由转场层统一接管，只检查子节点上的染色。
-		if not is_root and canvas_item.modulate != Color.WHITE:
+		elif not is_root and canvas_item.modulate != Color.WHITE:
 			state["capture"] = true
-			return
-
-		if canvas_item is TextureRect:
+		elif canvas_item is TextureRect:
 			var texture_rect := canvas_item as TextureRect
 			if (
 				texture_rect.stretch_mode != TextureRect.STRETCH_SCALE
@@ -92,8 +90,7 @@ func _collect_capture_state(node: Node, is_root: bool, state: Dictionary) -> voi
 				or texture_rect.flip_v
 			):
 				state["capture"] = true
-				return
-			if texture_rect.texture:
+			elif texture_rect.texture:
 				state["drawables"] += 1
 		elif canvas_item is Sprite2D:
 			if (canvas_item as Sprite2D).texture:
@@ -102,18 +99,19 @@ func _collect_capture_state(node: Node, is_root: bool, state: Dictionary) -> voi
 			state["drawables"] += 1
 		elif canvas_item is AnimatedSprite2D or canvas_item is VideoStreamPlayer:
 			state["capture"] = true
-			return
 	elif node is AnimationPlayer:
 		var player := node as AnimationPlayer
 		# shader 转场期间不会调用 play_enter / play_exit，
 		# 只有自动播放或已在播放的动画才会让画面持续变化。
 		if player.is_playing() or not player.autoplay.is_empty():
 			state["capture"] = true
-			return
 	elif node is AnimationTree:
 		if (node as AnimationTree).active:
 			state["capture"] = true
-			return
+
+	# 一旦命中 capture，当前节点不再下探子节点（与原有提前 return 等价）。
+	if bool(state["capture"]):
+		return
 
 	for child in node.get_children():
 		_collect_capture_state(child, false, state)
