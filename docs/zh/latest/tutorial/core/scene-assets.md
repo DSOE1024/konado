@@ -203,9 +203,11 @@ Konado 的内置背景转场 shader 由 `KND_BackgroundTransitionLayer` 统一�
 | `cyberglitch` | 赛博故障 |
 | `blink` | 眨眼 |
 
-图片背景场景会自动递归寻找第一个 `TextureRect` 或 `Sprite2D` 的纹理，并交给内置 shader。视频、Spine、Live2D 等动态场景如果不能提供静态纹理，则由转场层使用 `SubViewport` 渲染成纹理。
+背景转场默认使用 `SubViewport` 捕获完整场景，确保布局、裁剪、染色、材质、相机、动画以及运行时创建的视觉节点都能正确进入转场画面。
 
-如果希望手动指定图片背景用于 shader 的纹理，可以覆写：
+`DIRECT_TEXTURE` 是可选的性能优化，只适用于最终画面与一张原始纹理完全等价的静态背景。使用布局裁剪、节点变换、多个可绘制节点、相机、动画、材质或染色的背景必须保持默认的 `VIEWPORT_CAPTURE`。
+
+确认满足约束后，可以在 Inspector 中将 `transition_render_mode` 改为 `DIRECT_TEXTURE`。系统会递归寻找第一个 `TextureRect` 或 `Sprite2D`；如需手动指定纹理，可以覆写：
 
 ```gdscript
 func get_transition_texture() -> Texture2D:
@@ -246,6 +248,6 @@ ShaderLayer:material:shader_parameter/progress
 - 角色状态由角色场景决定，系统只负责传入状态名。
 - 背景切换由背景场景和转场层决定，系统只负责实例化场景并传入效果名。
 - 旧版图片字段已经不再作为主要配置方式，资源表应配置场景。
-- 图片背景建议使用 `TextureRect`，这样内置 shader 转场可以自动找到纹理。
+- 图片背景建议使用 `TextureRect`；仅在启用 `DIRECT_TEXTURE` 时，转场层才会直接读取其纹理。
 - 视频、Spine、Live2D 等动态背景需要注意自身播放状态，必要时在 `setup_background` 中初始化。
 - `none` 是立即切换，不会播放内置 shader；如果想做自定义无 shader 动画，可以使用自己的效果名，例如 `custom`。
