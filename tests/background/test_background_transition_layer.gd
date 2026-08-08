@@ -1,0 +1,428 @@
+extends SceneTree
+
+const PARALLAX_BACKGROUND_SCENE := preload("res://sample/demo/backgrounds/bg_para.tscn")
+
+var _failures: int = 0
+
+
+func _init() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	_test_safe_capture_contract()
+	await _test_transition_generation_and_viewport_lifecycle()
+	await _test_direct_texture_fast_path()
+	await _test_exit_tree_invalidates_deferred_transition()
+	await _test_acting_interface_transition_lifecycle()
+	await _test_orphan_cleanup()
+	if _failures == 0:
+		print("PASS: background transition layer tests")
+	quit(_failures)
+
+
+func _test_safe_capture_contract() -> void:
+	var default_background := _make_background(false)
+	_expect(
+		default_background.requires_viewport_capture(),
+		"backgrounds use full viewport capture by default",
+	)
+	_expect(
+		not default_background.can_use_direct_transition_texture(),
+		"default backgrounds cannot enter the direct texture path",
+	)
+
+	default_background.transition_render_mode = (
+		KND_BackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
+	)
+	_expect(
+		default_background.can_use_direct_transition_texture(),
+		"backgrounds can explicitly opt into the direct texture contract",
+	)
+
+	var no_texture_background := KND_BackgroundSceneBase.new()
+	no_texture_background.transition_render_mode = (
+		KND_BackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
+	)
+	_expect(
+		not no_texture_background.can_use_direct_transition_texture(),
+		"direct texture mode still requires a valid transition texture",
+	)
+
+	var parallax_background := PARALLAX_BACKGROUND_SCENE.instantiate() as KND_BackgroundSceneBase
+	_expect(
+		parallax_background.requires_viewport_capture(),
+		"the bundled parallax and camera background stays on the safe capture path",
+	)
+
+	default_background.free()
+	no_texture_background.free()
+	parallax_background.free()
+
+
+func _test_transition_generation_and_viewport_lifecycle() -> void:
+	var fixture := await _create_layer_fixture()
+	var host := fixture["host"] as Control
+	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var first_old := _make_background(false)
+	var first_new := _make_background(false)
+	host.add_child(first_old)
+
+	layer.play_transition(first_old, first_new, "fade")
+	var first_generation := layer._transition_generation
+	_expect(
+		layer._current_viewport != null and layer._target_viewport != null,
+		"the safe capture path creates its viewports on demand",
+	)
+	_expect(
+		layer._current_viewport.transparent_bg and layer._target_viewport.transparent_bg,
+		"capture viewports preserve scene transparency",
+	)
+	_expect_equal(
+		layer._current_viewport.render_target_update_mode,
+		SubViewport.UPDATE_ALWAYS,
+		"viewport capture is active while a safe-path transition is staged",
+	)
+
+	var replacement := _make_background(false)
+	layer.play_transition(null, replacement, "wave")
+	var replacement_generation := layer._transition_generation
+	_expect(
+		replacement_generation > first_generation,
+		"starting a replacement transition advances its generation",
+	)
+
+	await process_frame
+	await process_frame
+	await process_frame
+
+	_expect(
+		layer._is_active_generation(replacement_generation),
+		"only the replacement transition remains active after deferred staging",
+	)
+	_expect_equal(
+		layer._new_background,
+		replacement,
+		"a stale deferred transition cannot replace the current background reference",
+	)
+	_expect_equal(
+		layer._shader_material.shader,
+		layer.TRANSITION_CONFIGS["wave"]["shader"],
+		"a stale deferred transition cannot overwrite the replacement effect",
+	)
+	_expect(
+		layer._transition_tween != null and layer._transition_tween.is_valid(),
+		"the replacement transition owns one valid tween",
+	)
+
+	layer.cancel_transition(true)
+	_expect_equal(
+		layer._current_viewport.render_target_update_mode,
+		SubViewport.UPDATE_DISABLED,
+		"cancelling a transition disables the current capture viewport",
+	)
+	_expect_equal(
+		layer._target_viewport.render_target_update_mode,
+		SubViewport.UPDATE_DISABLED,
+		"cancelling a transition disables the target capture viewport",
+	)
+	await _free_node(host)
+
+
+func _test_direct_texture_fast_path() -> void:
+	var fixture := await _create_layer_fixture()
+	var host := fixture["host"] as Control
+	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var old_background := _make_background(true)
+	var new_background := _make_background(true)
+	var completions: Array[Array] = []
+	layer.transition_finished.connect(
+		func(old_value: KND_BackgroundSceneBase, new_value: KND_BackgroundSceneBase) -> void:
+			completions.append([old_value, new_value])
+	)
+	host.add_child(old_background)
+	_expect(
+		layer._current_viewport == null and layer._target_viewport == null,
+		"an idle transition layer does not allocate capture viewports",
+	)
+
+	layer.play_transition(old_background, new_background, "fade")
+	_expect(
+		layer._shader_rect.visible,
+		"an explicitly declared direct texture transition starts immediately",
+	)
+	_expect(
+		layer._current_viewport == null and layer._target_viewport == null,
+		"the direct texture path never allocates capture viewports",
+	)
+
+	layer._finish_shader_transition(layer._transition_generation)
+	_expect_equal(completions.size(), 1, "a completed transition emits exactly one completion")
+	_expect_equal(
+		completions[0],
+		[old_background, new_background],
+		"the completion signal preserves the transition background pair",
+	)
+	_expect(
+		not layer.is_transitioning(),
+		"finishing a direct texture transition clears its active state",
+	)
+	new_background.free()
+	await _free_node(host)
+
+
+func _test_exit_tree_invalidates_deferred_transition() -> void:
+	var fixture := await _create_layer_fixture()
+	var host := fixture["host"] as Control
+	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var staged_background := _make_background(false)
+
+	layer.play_transition(null, staged_background, "fade")
+	var active_generation := layer._transition_generation
+	host.remove_child(layer)
+	_expect(
+		layer._transition_generation > active_generation,
+		"leaving the scene tree invalidates deferred transition work",
+	)
+	_expect(
+		not layer.is_transitioning(),
+		"leaving the scene tree clears the active transition state",
+	)
+	_expect_equal(
+		layer._current_viewport.render_target_update_mode,
+		SubViewport.UPDATE_DISABLED,
+		"leaving the scene tree disables the current capture viewport",
+	)
+	_expect_equal(
+		layer._target_viewport.render_target_update_mode,
+		SubViewport.UPDATE_DISABLED,
+		"leaving the scene tree disables the target capture viewport",
+	)
+
+	await process_frame
+	await process_frame
+	await process_frame
+	_expect(
+		layer._transition_tween == null,
+		"a deferred transition cannot create a tween after leaving the scene tree",
+	)
+	_expect(
+		not is_instance_valid(staged_background),
+		"leaving the scene tree releases the staged capture-path background",
+	)
+
+	host.add_child(layer)
+	var replacement := _make_background(false)
+	layer.play_transition(null, replacement, "wave")
+	await process_frame
+	await process_frame
+	await process_frame
+	_expect(
+		layer._transition_tween != null and layer._transition_tween.is_valid(),
+		"the transition layer remains reusable after being attached again",
+	)
+	layer.cancel_transition(true)
+
+	var direct_background := _make_background(true)
+	layer.play_transition(null, direct_background, "fade")
+	_expect(
+		direct_background.get_parent() == null,
+		"the direct texture background is not mounted before completion",
+	)
+	host.remove_child(layer)
+	await process_frame
+	_expect(
+		not is_instance_valid(direct_background),
+		"leaving the scene tree releases an unparented direct texture background",
+	)
+	layer.free()
+	await _free_node(host)
+
+
+func _test_acting_interface_transition_lifecycle() -> void:
+	var acting := KND_ActingInterface.new()
+	acting.size = Vector2(320.0, 180.0)
+	root.add_child(acting)
+	await process_frame
+
+	var first_modulate := Color(0.25, 0.5, 0.75, 0.45)
+	var first_scene := _make_background_scene(first_modulate)
+	var second_modulate := Color(0.8, 0.35, 0.65, 0.6)
+	var second_scene := _make_background_scene(second_modulate)
+	var no_effect := KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT
+	var fade_effect := KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT
+	acting.change_background_scene(first_scene, "first", no_effect)
+	var old_background := acting._current_background_scene
+	_expect(old_background != null, "the initial background is installed on the acting stage")
+
+	var completions := [0]
+	acting.background_change_finished.connect(func() -> void: completions[0] += 1)
+	acting.change_background_scene(second_scene, "second", fade_effect)
+	var staged_background := acting._pending_shader_background
+	_expect(staged_background != null, "the replacement background is staged for shader capture")
+	_expect_equal(
+		old_background.get_parent(),
+		acting._background_container,
+		"the visible background remains on stage while the replacement is prepared",
+	)
+	_expect_equal(
+		staged_background.get_parent(),
+		acting._background_transition_layer._target_root,
+		"the replacement background is prepared in the target capture viewport",
+	)
+	_expect(
+		not acting._background_transition_layer._shader_rect.visible,
+		"the shader stays hidden until both capture inputs are ready",
+	)
+
+	var shader_started := await _wait_until(
+		func() -> bool:
+			return (
+				is_instance_valid(acting)
+				and acting._background_transition_layer._shader_rect.visible
+			),
+		1000,
+	)
+	_expect(shader_started, "the staged transition starts through the real deferred path")
+	if shader_started:
+		_expect_equal(
+			old_background.get_parent(),
+			acting._background_transition_layer._current_root,
+			"the old background moves into capture only when the shader becomes visible",
+		)
+		_expect_color_equal(
+			old_background.modulate,
+			first_modulate,
+			"viewport capture preserves the outgoing background's current modulate value",
+		)
+
+	var transition_completed := await _wait_until(func() -> bool: return completions[0] == 1, 2500)
+	_expect(transition_completed, "the real tween completes and notifies the acting interface")
+	if transition_completed:
+		var current_background := acting._current_background_scene
+		_expect_equal(
+			current_background,
+			staged_background,
+			"the completed replacement becomes the acting interface's current background",
+		)
+		_expect_equal(
+			current_background.get_parent(),
+			acting._background_container,
+			"the completed background returns to the permanent stage container",
+		)
+		_expect_color_equal(
+			current_background.modulate,
+			second_modulate,
+			"viewport capture preserves the background's authored modulate value",
+		)
+		_expect_equal(
+			acting._background_transition_layer._current_viewport.render_target_update_mode,
+			SubViewport.UPDATE_DISABLED,
+			"the current capture viewport is disabled after acting integration completes",
+		)
+		_expect_equal(
+			acting._background_transition_layer._target_viewport.render_target_update_mode,
+			SubViewport.UPDATE_DISABLED,
+			"the target capture viewport is disabled after acting integration completes",
+		)
+
+	await process_frame
+	_expect(
+		not is_instance_valid(old_background),
+		"the acting interface releases the replaced background after completion",
+	)
+	await _free_node(acting)
+
+
+func _test_orphan_cleanup() -> void:
+	var fixture := await _create_layer_fixture()
+	var host := fixture["host"] as Control
+	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var orphan := Control.new()
+	layer._ensure_capture_nodes()
+	layer._current_root.add_child(orphan)
+
+	layer._prepare_viewport_root(layer._current_root)
+	await process_frame
+	_expect(
+		not is_instance_valid(orphan),
+		"preparing a capture root frees an unowned leftover background",
+	)
+	await _free_node(host)
+
+
+func _create_layer_fixture() -> Dictionary:
+	var host := Control.new()
+	host.size = Vector2(320.0, 180.0)
+	root.add_child(host)
+	var layer := KND_BackgroundTransitionLayer.new()
+	layer.size = host.size
+	host.add_child(layer)
+	await process_frame
+	return {"host": host, "layer": layer}
+
+
+func _make_background(direct_texture: bool) -> KND_BackgroundSceneBase:
+	var background := KND_BackgroundSceneBase.new()
+	background.size = Vector2(320.0, 180.0)
+	if direct_texture:
+		background.transition_render_mode = (
+			KND_BackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
+		)
+	var texture_rect := TextureRect.new()
+	texture_rect.texture = _make_texture()
+	background.add_child(texture_rect)
+	return background
+
+
+func _make_background_scene(background_modulate: Color) -> PackedScene:
+	var background := _make_background(false)
+	background.modulate = background_modulate
+	var texture_rect := background.get_child(0)
+	texture_rect.owner = background
+	var scene := PackedScene.new()
+	_expect_equal(
+		scene.pack(background),
+		OK,
+		"a generated background fixture can be packed",
+	)
+	background.free()
+	return scene
+
+
+func _make_texture() -> Texture2D:
+	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	image.fill(Color("684c9e"))
+	return ImageTexture.create_from_image(image)
+
+
+func _wait_until(predicate: Callable, timeout_ms: int) -> bool:
+	var deadline := Time.get_ticks_msec() + timeout_ms
+	while not bool(predicate.call()) and Time.get_ticks_msec() < deadline:
+		await process_frame
+	return bool(predicate.call())
+
+
+func _free_node(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
+	await process_frame
+	await process_frame
+
+
+func _expect(condition: bool, message: String) -> void:
+	if condition:
+		return
+	printerr("ASSERTION FAILED: " + message)
+	_failures += 1
+
+
+func _expect_equal(actual: Variant, expected: Variant, message: String) -> void:
+	_expect(actual == expected, "%s (expected %s, got %s)" % [message, expected, actual])
+
+
+func _expect_color_equal(actual: Color, expected: Color, message: String) -> void:
+	_expect(
+		actual.is_equal_approx(expected),
+		"%s (expected %s, got %s)" % [message, expected, actual],
+	)

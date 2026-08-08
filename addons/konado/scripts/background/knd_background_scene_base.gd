@@ -10,11 +10,21 @@ class_name KND_BackgroundSceneBase
 signal background_enter_finished
 signal background_exit_finished
 
+enum TransitionRenderMode {
+	VIEWPORT_CAPTURE,
+	DIRECT_TEXTURE,
+}
+
 ## 可选动画播放器。存在 enter_<effect> 或 exit_<effect> 动画时优先播放。
 @export var animation_player: AnimationPlayer
 ## 当没有对应动画时，非 none 效果默认用淡入淡出兜底，避免剧情卡住。
 @export var use_default_fade: bool = true
 @export var default_transition_duration: float = 0.35
+## 内置 shader 转场的渲染方式。
+## 默认使用 SubViewport 捕获完整场景，确保材质、染色、布局、相机和动态节点不会丢失。
+## 只有当背景最终画面与 get_transition_texture() 返回的原始纹理完全等价时，
+## 才能显式选择 DIRECT_TEXTURE 快速路径。
+@export var transition_render_mode: TransitionRenderMode = TransitionRenderMode.VIEWPORT_CAPTURE
 
 ## 场景独立的染色加权系数（1.0 为默认，0 彻底无染色），没有特殊需求不用调整
 @export var scene_tint_intensity: float = 1.0:
@@ -44,79 +54,26 @@ func setup_background(_background_name: String, _params: Dictionary = {}) -> voi
 	pass
 
 
-## 给系统内置 shader 转场使用的静态纹理。
-## 图片背景默认会递归寻找第一个 TextureRect / Sprite2D；视频、Live2D、Spine 等动态场景可保持为空，
-## 交给 KND_BackgroundTransitionLayer 使用 SubViewport 渲染。
-## 注意：这里返回的是原始纹理资源，不包含 modulate、材质 shader 等场景内的表现。
+## 给系统内置 shader 转场的显式快速路径和场景代表色计算使用的静态纹理。
+## 默认会递归寻找第一个 TextureRect / Sprite2D。
+## 注意：这里只返回原始纹理资源，不包含布局、变换、modulate、材质 shader 等场景表现。
 func get_transition_texture() -> Texture2D:
 	return _find_transition_texture(self)
 
 
-## 系统内置 shader 转场是否必须整场景渲染（SubViewport 捕获）。
-## 静态纹理快速通道成立的前提是「整个场景在视觉上等价于那张原始纹理」。
-## 一旦场景里存在 modulate / self_modulate 染色、材质 shader、多个可绘制节点、
-## 自动播放的动画等，就必须走 SubViewport，否则这些表现会在转场期间整体丢失。
+## 是否明确允许转场层绕过场景捕获并直接使用原始纹理。
+## 这是性能优化契约，而不是自动推断：自定义场景如有布局、裁剪、相机、动画、
+## 多个可绘制节点、材质或染色，必须保持默认的 VIEWPORT_CAPTURE。
+func can_use_direct_transition_texture() -> bool:
+	return (
+		transition_render_mode == TransitionRenderMode.DIRECT_TEXTURE
+		and get_transition_texture() != null
+	)
+
+
+## 保留语义明确的查询接口，供转场层和自定义背景使用。
 func requires_viewport_capture() -> bool:
-	var state := {"drawables": 0, "capture": false}
-	_collect_capture_state(self, true, state)
-	if bool(state["capture"]):
-		return true
-	return int(state["drawables"]) > 1
-
-
-func _collect_capture_state(node: Node, is_root: bool, state: Dictionary) -> void:
-	if bool(state["capture"]):
-		return
-
-	if node is CanvasItem:
-		var canvas_item := node as CanvasItem
-		# 不可见分支不参与最终画面，整棵子树直接跳过。
-		if not canvas_item.visible:
-			return
-		# 命中任一"必须走 SubViewport"的条件即标记 capture，
-		# 用 elif 链收敛出口，避免在每个分支里各 return 一次。
-		if canvas_item.material != null:
-			state["capture"] = true
-		elif canvas_item.self_modulate != Color.WHITE:
-			state["capture"] = true
-		# 根节点的 modulate 由转场层统一接管，只检查子节点上的染色。
-		elif not is_root and canvas_item.modulate != Color.WHITE:
-			state["capture"] = true
-		elif canvas_item is TextureRect:
-			var texture_rect := canvas_item as TextureRect
-			if (
-				texture_rect.stretch_mode != TextureRect.STRETCH_SCALE
-				or texture_rect.flip_h
-				or texture_rect.flip_v
-			):
-				state["capture"] = true
-			elif texture_rect.texture:
-				state["drawables"] += 1
-		elif canvas_item is Sprite2D:
-			if (canvas_item as Sprite2D).texture:
-				state["drawables"] += 1
-		elif canvas_item is ColorRect or canvas_item is NinePatchRect:
-			state["drawables"] += 1
-		elif canvas_item is AnimatedSprite2D or canvas_item is VideoStreamPlayer:
-			state["capture"] = true
-	elif node is AnimationPlayer:
-		var player := node as AnimationPlayer
-		# shader 转场期间不会调用 play_enter / play_exit，
-		# 只有自动播放或已在播放的动画才会让画面持续变化。
-		if player.is_playing() or not player.autoplay.is_empty():
-			state["capture"] = true
-	elif node is AnimationTree:
-		if (node as AnimationTree).active:
-			state["capture"] = true
-
-	# 一旦命中 capture，当前节点不再下探子节点（与原有提前 return 等价）。
-	if bool(state["capture"]):
-		return
-
-	for child in node.get_children():
-		_collect_capture_state(child, false, state)
-		if bool(state["capture"]):
-			return
+	return not can_use_direct_transition_texture()
 
 
 func play_enter(effect_name: String = "none", params: Dictionary = {}) -> void:

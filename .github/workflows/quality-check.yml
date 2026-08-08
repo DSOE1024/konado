@@ -72,6 +72,11 @@ jobs:
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_external_reentry.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_localization_lifecycle.gd
 
+      - name: Test background transitions
+        run: >-
+          python3 .github/scripts/run_godot_test.py
+          tests/background/test_background_transition_layer.gd
+
       - name: Test KonadoScript editor integration
         run: |
           python3 .github/scripts/run_godot_test.py tests/editor/test_ks_runtime_loader.gd

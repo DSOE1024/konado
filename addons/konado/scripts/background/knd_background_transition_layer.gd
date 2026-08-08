@@ -4,8 +4,8 @@ class_name KND_BackgroundTransitionLayer
 
 ## 背景场景转场层。
 ## 旧版背景 shader 需要 current_texture / target_texture 两张纹理。
-## 图片场景会优先直接提供纹理；视频、Live2D、Spine 等动态场景则用两个 SubViewport
-## 分别承载旧背景场景和新背景场景，再把两个 ViewportTexture 交给 shader 合成。
+## 默认用两个 SubViewport 分别捕获旧背景和新背景的完整画面，再交给 shader 合成。
+## 只有显式声明 DIRECT_TEXTURE 且能提供有效纹理的简单静态背景才绕过场景捕获。
 
 signal transition_finished(
 	old_background: KND_BackgroundSceneBase, new_background: KND_BackgroundSceneBase
@@ -84,12 +84,13 @@ var _fallback_texture: Texture2D
 var _old_background: KND_BackgroundSceneBase
 var _new_background: KND_BackgroundSceneBase
 var _is_transitioning: bool = false
+var _transition_generation: int = 0
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
-	_ensure_nodes()
+	_ensure_shader_nodes()
 	_sync_viewport_size()
 
 
@@ -119,45 +120,53 @@ func play_transition(
 		cancel_transition(true)
 	else:
 		cancel_transition(false)
-	_ensure_nodes()
+	_ensure_shader_nodes()
 	_sync_viewport_size()
 
 	_old_background = old_background
 	_new_background = new_background
+	var generation := _transition_generation
 	_is_transitioning = true
 	visible = true
 	_shader_rect.visible = false
 
-	# 静态纹理快速通道只有在两边背景都「视觉上等价于一张原始纹理」时才成立。
-	# 否则必须用 SubViewport 整场景渲染，否则背景内部的 modulate 染色、
-	# 子节点的材质 shader 等表现会在转场期间全部丢失，转场结束时又突然跳回来。
+	# 纹理快速路径必须由背景显式声明。默认使用 SubViewport 捕获完整场景，
+	# 避免自动猜测漏掉布局、变换、相机、自定义绘制或运行时生成的视觉节点。
 	if (
-		not _requires_viewport_capture(_old_background)
-		and not _requires_viewport_capture(_new_background)
+		_can_use_direct_transition_texture(_old_background)
+		and _can_use_direct_transition_texture(_new_background)
 	):
 		var current_texture := _get_transition_texture(_old_background)
 		var target_texture := _get_transition_texture(_new_background)
 		if target_texture and (current_texture or _old_background == null):
+			_set_viewport_capture_active(false)
 			_start_shader_transition_with_textures(
 				effect_name,
 				current_texture if current_texture else _get_fallback_texture(),
-				target_texture
+				target_texture,
+				generation
 			)
 			return
 
+	_ensure_capture_nodes()
+	_sync_viewport_size()
+	_set_viewport_capture_active(true)
 	_prepare_viewport_root(_current_root)
 	_prepare_viewport_root(_target_root)
 	# 新背景先进 SubViewport 预热，旧背景此时仍留在舞台上，
 	# 避免转场真正开始前舞台空出来闪几帧黑。
 	_move_background_to_root(_new_background, _target_root)
 
-	call_deferred("_start_shader_transition", effect_name)
+	call_deferred("_start_shader_transition", effect_name, generation)
 
 
 func cancel_transition(queue_backgrounds: bool = true) -> void:
+	# 先使所有已排队或正在 await 的旧任务失效，避免它们误操作下一次转场。
+	_transition_generation += 1
 	if _transition_tween and _transition_tween.is_valid():
 		_transition_tween.kill()
 	_transition_tween = null
+	_set_viewport_capture_active(false)
 	visible = false
 	_is_transitioning = false
 	if _shader_rect:
@@ -174,9 +183,14 @@ func cancel_transition(queue_backgrounds: bool = true) -> void:
 
 
 func _exit_tree() -> void:
-	if _transition_tween and _transition_tween.is_valid():
-		_transition_tween.kill()
-	_transition_tween = null
+	# 节点可能在两帧捕获预热期间离开场景树。统一取消会推进 generation，
+	# 使已经连接到 process_frame 的旧协程在恢复后立即退出。
+	# 待切入背景由转场层持有；直接纹理路径下它尚未挂入场景树，必须显式释放，
+	# 否则销毁表演界面时会留下孤儿节点。旧背景仍属于正式舞台，不在这里处理。
+	var staged_background := _new_background
+	cancel_transition(false)
+	if staged_background and is_instance_valid(staged_background):
+		staged_background.queue_free()
 	if _current_fallback and is_instance_valid(_current_fallback):
 		var fallback_parent := _current_fallback.get_parent()
 		if fallback_parent:
@@ -185,25 +199,13 @@ func _exit_tree() -> void:
 	_current_fallback = null
 
 
-func _ensure_nodes() -> void:
-	if _current_viewport == null:
-		_current_viewport = _create_viewport("CurrentViewport")
-		add_child(_current_viewport)
-	if _current_root == null:
-		_current_root = _create_viewport_root("CurrentRoot")
-		_current_viewport.add_child(_current_root)
-	if _target_viewport == null:
-		_target_viewport = _create_viewport("TargetViewport")
-		add_child(_target_viewport)
-	if _target_root == null:
-		_target_root = _create_viewport_root("TargetRoot")
-		_target_viewport.add_child(_target_root)
-	if _current_fallback == null:
+func _ensure_shader_nodes() -> void:
+	if not is_instance_valid(_current_fallback):
 		_current_fallback = ColorRect.new()
 		_current_fallback.name = "CurrentFallback"
 		_current_fallback.color = Color.BLACK
 		_current_fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if _shader_rect == null:
+	if not is_instance_valid(_shader_rect):
 		_shader_rect = ColorRect.new()
 		_shader_rect.name = "ShaderRect"
 		_shader_rect.color = Color.WHITE
@@ -220,12 +222,28 @@ func _ensure_nodes() -> void:
 			_shader_rect.material = _shader_material
 
 
+func _ensure_capture_nodes() -> void:
+	if _current_viewport == null:
+		_current_viewport = _create_viewport("CurrentViewport")
+		add_child(_current_viewport)
+	if _current_root == null:
+		_current_root = _create_viewport_root("CurrentRoot")
+		_current_viewport.add_child(_current_root)
+	if _target_viewport == null:
+		_target_viewport = _create_viewport("TargetViewport")
+		add_child(_target_viewport)
+	if _target_root == null:
+		_target_root = _create_viewport_root("TargetRoot")
+		_target_viewport.add_child(_target_root)
+
+
 func _create_viewport(node_name: String) -> SubViewport:
 	var viewport := SubViewport.new()
 	viewport.name = node_name
 	viewport.disable_3d = true
-	viewport.transparent_bg = false
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# 保留背景场景的 alpha，让转场结果继续与正式舞台的底色正确合成。
+	viewport.transparent_bg = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	return viewport
 
 
@@ -259,14 +277,18 @@ func _move_background_to_root(background: KND_BackgroundSceneBase, root: Control
 		parent.remove_child(background)
 	root.add_child(background)
 	background.show()
-	background.modulate.a = 1.0
 	_set_full_rect(background, root.size)
 
 
-func _start_shader_transition(effect_name: String) -> void:
+func _start_shader_transition(effect_name: String, generation: int) -> void:
+	# call_deferred 可能在节点离开场景树后才真正调用，读取 process_frame 前先失效。
+	if not _is_active_generation(generation):
+		return
 	await get_tree().process_frame
+	if not _is_active_generation(generation):
+		return
 	await get_tree().process_frame
-	if not _is_transitioning:
+	if not _is_active_generation(generation):
 		return
 
 	# 旧背景拖到最后一刻才移入 SubViewport。SubViewport 会在父视口之前渲染，
@@ -289,26 +311,30 @@ func _start_shader_transition(effect_name: String) -> void:
 	_shader_material.set_shader_parameter("target_texture", _target_viewport.get_texture())
 	_shader_rect.visible = true
 
-	_play_shader_tween(config)
+	_play_shader_tween(config, generation)
 
 
 func _start_shader_transition_with_textures(
-	effect_name: String, current_texture: Texture2D, target_texture: Texture2D
+	effect_name: String, current_texture: Texture2D, target_texture: Texture2D, generation: int
 ) -> void:
+	if not _is_active_generation(generation):
+		return
 	var config: Dictionary = TRANSITION_CONFIGS[effect_name]
 	_shader_material.shader = config["shader"]
 	_shader_material.set_shader_parameter("progress", 0.0)
 	_shader_material.set_shader_parameter("current_texture", current_texture)
 	_shader_material.set_shader_parameter("target_texture", target_texture)
 	_shader_rect.visible = true
-	_play_shader_tween(config)
+	_play_shader_tween(config, generation)
 
 
-func _play_shader_tween(config: Dictionary) -> void:
+func _play_shader_tween(config: Dictionary, generation: int) -> void:
+	if not _is_active_generation(generation):
+		return
 	var duration := float(config["duration"])
 	var progress_target := float(config["progress_target"])
 	if duration <= 0.0:
-		_finish_shader_transition()
+		_finish_shader_transition(generation)
 		return
 	_transition_tween = create_tween()
 	# set_trans 只影响之后创建的 tweener，必须放在 tween_property 之前。
@@ -316,15 +342,18 @@ func _play_shader_tween(config: Dictionary) -> void:
 	_transition_tween.tween_property(
 		_shader_material, "shader_parameter/progress", progress_target, duration
 	)
-	_transition_tween.finished.connect(_finish_shader_transition, ConnectFlags.CONNECT_ONE_SHOT)
+	_transition_tween.finished.connect(
+		_finish_shader_transition.bind(generation), ConnectFlags.CONNECT_ONE_SHOT
+	)
 
 
-func _finish_shader_transition() -> void:
-	if not _is_transitioning:
+func _finish_shader_transition(generation: int) -> void:
+	if not _is_active_generation(generation):
 		return
 	if _transition_tween and _transition_tween.is_valid():
 		_transition_tween.kill()
 	_transition_tween = null
+	_set_viewport_capture_active(false)
 	visible = false
 	_shader_rect.visible = false
 	_is_transitioning = false
@@ -338,18 +367,21 @@ func _finish_shader_transition() -> void:
 
 
 func _sync_viewport_size() -> void:
-	if _current_viewport == null or _target_viewport == null:
-		return
 	var viewport_size := _get_transition_size()
-	_current_viewport.size = viewport_size
-	_target_viewport.size = viewport_size
-	_set_full_rect(_current_root, viewport_size)
-	_set_full_rect(_target_root, viewport_size)
-	for child in _current_root.get_children():
-		_set_full_rect(child as Control, viewport_size)
-	for child in _target_root.get_children():
-		_set_full_rect(child as Control, viewport_size)
-	_set_full_rect(_shader_rect, Vector2(viewport_size))
+	if _current_viewport:
+		_current_viewport.size = viewport_size
+	if _target_viewport:
+		_target_viewport.size = viewport_size
+	if _current_root:
+		_set_full_rect(_current_root, viewport_size)
+		for child in _current_root.get_children():
+			_set_full_rect(child as Control, viewport_size)
+	if _target_root:
+		_set_full_rect(_target_root, viewport_size)
+		for child in _target_root.get_children():
+			_set_full_rect(child as Control, viewport_size)
+	if _shader_rect:
+		_set_full_rect(_shader_rect, Vector2(viewport_size))
 
 
 func _get_transition_size() -> Vector2i:
@@ -368,10 +400,22 @@ func _get_transition_texture(background: KND_BackgroundSceneBase) -> Texture2D:
 	return background.get_transition_texture()
 
 
-func _requires_viewport_capture(background: KND_BackgroundSceneBase) -> bool:
+func _can_use_direct_transition_texture(background: KND_BackgroundSceneBase) -> bool:
 	if background == null:
-		return false
-	return background.requires_viewport_capture()
+		return true
+	return not background.requires_viewport_capture()
+
+
+func _is_active_generation(generation: int) -> bool:
+	return is_inside_tree() and _is_transitioning and generation == _transition_generation
+
+
+func _set_viewport_capture_active(active: bool) -> void:
+	var update_mode := SubViewport.UPDATE_ALWAYS if active else SubViewport.UPDATE_DISABLED
+	if _current_viewport:
+		_current_viewport.render_target_update_mode = update_mode
+	if _target_viewport:
+		_target_viewport.render_target_update_mode = update_mode
 
 
 func _get_fallback_texture() -> Texture2D:
