@@ -34,6 +34,7 @@ func _run() -> void:
 	_test_quick_fixes()
 	_test_code_edit_transaction()
 	_test_adaptive_diagnostic_card()
+	await _test_diagnostic_hover_interaction()
 	_test_refactor_plan()
 	await _test_runtime_debugger_resume()
 	_test_editor_plugin_contracts()
@@ -531,6 +532,83 @@ func _test_adaptive_diagnostic_card() -> void:
 		),
 		"diagnostic cards keep fitting content on one line and wrap only at the editor boundary",
 	)
+	overlay.cleanup()
+	code_edit.remove_child(overlay)
+	overlay.free()
+	root.remove_child(code_edit)
+	code_edit.free()
+
+
+func _test_diagnostic_hover_interaction() -> void:
+	var code_edit := CodeEdit.new()
+	code_edit.size = Vector2(1000, 600)
+	code_edit.text = "if %score == 1:\n\tendif_bad"
+	root.add_child(code_edit)
+	var overlay := KS_JumpLinkOverlay.new()
+	code_edit.add_child(overlay)
+	overlay.setup(code_edit)
+	await process_frame
+	var diagnostics := overlay.get_diagnostics_for_line(1)
+	_expect(not diagnostics.is_empty(), "diagnostic hover test source produces an editor error")
+	if not diagnostics.is_empty():
+		var start_column := maxi(0, int(diagnostics[0].get("column", 1)) - 1)
+		var end_column := maxi(
+			start_column + 1,
+			int(diagnostics[0].get("end_column", start_column + 2)) - 1,
+		)
+		overlay._update_diagnostic_hover_target(1, start_column, Vector2(200, 100))
+		var target_key: String = overlay._pending_diagnostic_key
+		overlay._show_diagnostic_hover()
+		var inside_column := mini(start_column + 1, end_column - 1)
+		overlay._update_diagnostic_hover_target(1, inside_column, Vector2(210, 100))
+		_expect(
+			(
+				not target_key.is_empty()
+				and overlay._pending_diagnostic_key == target_key
+				and overlay._diagnostic_panel.visible
+			),
+			"moving inside one diagnostic range keeps the hover card visible",
+		)
+		overlay._update_diagnostic_hover_target(1, end_column + 1, Vector2(220, 110))
+		_expect(
+			overlay._diagnostic_panel.visible and overlay._diagnostic_dismiss_timer.is_stopped(),
+			"crossing the narrow gap to the hover card does not start dismissal",
+		)
+		overlay._update_diagnostic_hover_target(1, end_column + 1, Vector2(800, 500))
+		_expect(
+			(
+				overlay._diagnostic_panel.visible
+				and not overlay._diagnostic_dismiss_timer.is_stopped()
+			),
+			"leaving the diagnostic starts a grace period without hiding the hover card",
+		)
+		overlay._on_diagnostic_panel_mouse_entered()
+		await create_timer(0.25).timeout
+		_expect(
+			overlay._diagnostic_panel.visible and overlay._diagnostic_dismiss_timer.is_stopped(),
+			"entering the hover card cancels dismissal so its actions remain clickable",
+		)
+		overlay._schedule_diagnostic_dismissal()
+		await create_timer(0.25).timeout
+		_expect(
+			not overlay._diagnostic_panel.visible,
+			"leaving both the diagnostic and hover card dismisses it after the grace period",
+		)
+		overlay._update_diagnostic_hover_target(1, start_column, Vector2(200, 100))
+		overlay._show_diagnostic_hover()
+		_expect(
+			not overlay._diagnostic_wrap_buttons.is_empty(),
+			"diagnostic hover exposes an actionable quick fix",
+		)
+		if not overlay._diagnostic_wrap_buttons.is_empty():
+			overlay._diagnostic_wrap_buttons[0].pressed.emit()
+			_expect(
+				(
+					code_edit.get_line(1).strip_edges() == "endif"
+					and not overlay._diagnostic_panel.visible
+				),
+				"hover-card quick fixes remain clickable and close stale diagnostics",
+			)
 	overlay.cleanup()
 	code_edit.remove_child(overlay)
 	overlay.free()

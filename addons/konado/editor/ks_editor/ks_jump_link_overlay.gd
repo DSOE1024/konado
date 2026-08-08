@@ -22,6 +22,7 @@ const RESOURCE_KINDS := [
 	"scripts",
 ]
 const DIAGNOSTIC_HOVER_DELAY := 0.35
+const DIAGNOSTIC_DISMISS_DELAY := 0.2
 const DIAGNOSTIC_MIN_CONTENT_WIDTH := 360.0
 const DIAGNOSTIC_MAX_HEIGHT_RATIO := 0.6
 
@@ -36,6 +37,7 @@ var _original_symbol_tooltip_enabled := false
 var _target_menu: PopupMenu
 var _menu_targets: Array[Dictionary] = []
 var _diagnostic_hover_timer: Timer
+var _diagnostic_dismiss_timer: Timer
 var _diagnostic_panel: PanelContainer
 var _diagnostic_scroll: ScrollContainer
 var _diagnostic_content: VBoxContainer
@@ -47,6 +49,7 @@ var _fixes_by_line := {}
 var _pending_diagnostic_line := -1
 var _pending_diagnostic_column := -1
 var _pending_diagnostic_position := Vector2.ZERO
+var _pending_diagnostic_key := ""
 
 
 func setup(code_edit: CodeEdit) -> void:
@@ -74,6 +77,11 @@ func setup(code_edit: CodeEdit) -> void:
 	_diagnostic_hover_timer.wait_time = DIAGNOSTIC_HOVER_DELAY
 	_diagnostic_hover_timer.timeout.connect(_show_diagnostic_hover)
 	add_child(_diagnostic_hover_timer)
+	_diagnostic_dismiss_timer = Timer.new()
+	_diagnostic_dismiss_timer.one_shot = true
+	_diagnostic_dismiss_timer.wait_time = DIAGNOSTIC_DISMISS_DELAY
+	_diagnostic_dismiss_timer.timeout.connect(_cancel_diagnostic_hover)
+	add_child(_diagnostic_dismiss_timer)
 
 
 func cleanup() -> void:
@@ -85,6 +93,9 @@ func cleanup() -> void:
 	if is_instance_valid(_diagnostic_hover_timer):
 		_diagnostic_hover_timer.stop()
 	_diagnostic_hover_timer = null
+	if is_instance_valid(_diagnostic_dismiss_timer):
+		_diagnostic_dismiss_timer.stop()
+	_diagnostic_dismiss_timer = null
 	_diagnostic_panel = null
 	_diagnostic_scroll = null
 	_diagnostic_content = null
@@ -350,15 +361,17 @@ func _on_code_edit_mouse_exited() -> void:
 
 
 func _cancel_hover_if_pointer_left() -> void:
+	var mouse_position := (
+		_code_edit.get_local_mouse_position() if is_instance_valid(_code_edit) else Vector2.ZERO
+	)
 	if (
-		is_instance_valid(_diagnostic_panel)
-		and _diagnostic_panel.visible
-		and Rect2(Vector2.ZERO, _diagnostic_panel.size).has_point(
-			_diagnostic_panel.get_local_mouse_position()
-		)
+		_is_pointer_over_diagnostic_panel()
+		or _is_pointer_over_pending_diagnostic()
+		or _is_pointer_in_diagnostic_bridge(mouse_position)
 	):
+		_cancel_diagnostic_dismissal()
 		return
-	_cancel_diagnostic_hover()
+	_schedule_diagnostic_dismissal()
 
 
 func _on_text_changed() -> void:
@@ -377,18 +390,30 @@ func _schedule_diagnostic_hover(mouse_position: Vector2) -> void:
 	if not is_instance_valid(_code_edit) or not is_instance_valid(_diagnostic_hover_timer):
 		return
 	var position := _code_edit.get_line_column_at_pos(mouse_position, false, false)
-	if position.y < 0 or _get_diagnostics_at_position(position.y, position.x).is_empty():
-		_pending_diagnostic_line = -1
-		_pending_diagnostic_column = -1
+	_update_diagnostic_hover_target(position.y, position.x, mouse_position)
+
+
+func _update_diagnostic_hover_target(line: int, column: int, mouse_position: Vector2) -> void:
+	var target := _get_diagnostic_target(line, column)
+	if target.is_empty():
 		_diagnostic_hover_timer.stop()
-		_hide_diagnostic_hover()
+		if is_instance_valid(_diagnostic_panel) and _diagnostic_panel.visible:
+			if _is_pointer_in_diagnostic_bridge(mouse_position):
+				_cancel_diagnostic_dismissal()
+			else:
+				_schedule_diagnostic_dismissal()
+		else:
+			_reset_pending_diagnostic()
 		return
+	_cancel_diagnostic_dismissal()
 	_code_edit.tooltip_text = ""
 	_pending_diagnostic_position = mouse_position
-	if position.y == _pending_diagnostic_line and position.x == _pending_diagnostic_column:
+	_pending_diagnostic_column = column
+	var target_key := String(target.get("key", ""))
+	if target_key == _pending_diagnostic_key:
 		return
-	_pending_diagnostic_line = position.y
-	_pending_diagnostic_column = position.x
+	_pending_diagnostic_line = line
+	_pending_diagnostic_key = target_key
 	_hide_diagnostic_hover()
 	_diagnostic_hover_timer.start()
 
@@ -443,6 +468,7 @@ func _show_diagnostic_hover() -> void:
 			maxf(0.0, _code_edit.size.y - panel_size.y),
 		),
 	)
+	_cancel_diagnostic_dismissal()
 	_diagnostic_panel.show()
 
 
@@ -552,6 +578,7 @@ func _ensure_diagnostic_panel() -> void:
 	)
 	_diagnostic_panel.z_index = 100
 	_diagnostic_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_diagnostic_panel.mouse_entered.connect(_on_diagnostic_panel_mouse_entered)
 	_diagnostic_panel.mouse_exited.connect(_on_diagnostic_panel_mouse_exited)
 	_diagnostic_panel.add_theme_stylebox_override("panel", _create_diagnostic_panel_style())
 	_diagnostic_panel.hide()
@@ -602,27 +629,90 @@ func _on_diagnostic_panel_mouse_exited() -> void:
 	_cancel_hover_if_pointer_left.call_deferred()
 
 
-func _cancel_diagnostic_hover() -> void:
+func _on_diagnostic_panel_mouse_entered() -> void:
+	_cancel_diagnostic_dismissal()
+
+
+func _schedule_diagnostic_dismissal() -> void:
+	if not is_instance_valid(_diagnostic_dismiss_timer):
+		_cancel_diagnostic_hover()
+		return
+	if _diagnostic_dismiss_timer.is_stopped():
+		_diagnostic_dismiss_timer.start()
+
+
+func _cancel_diagnostic_dismissal() -> void:
+	if is_instance_valid(_diagnostic_dismiss_timer):
+		_diagnostic_dismiss_timer.stop()
+
+
+func _is_pointer_over_diagnostic_panel() -> bool:
+	return (
+		is_instance_valid(_diagnostic_panel)
+		and _diagnostic_panel.visible
+		and Rect2(Vector2.ZERO, _diagnostic_panel.size).has_point(
+			_diagnostic_panel.get_local_mouse_position()
+		)
+	)
+
+
+func _is_pointer_over_pending_diagnostic() -> bool:
+	if not is_instance_valid(_code_edit) or _pending_diagnostic_key.is_empty():
+		return false
+	var mouse_position := _code_edit.get_local_mouse_position()
+	if not Rect2(Vector2.ZERO, _code_edit.size).has_point(mouse_position):
+		return false
+	var position := _code_edit.get_line_column_at_pos(mouse_position, false, false)
+	var target := _get_diagnostic_target(position.y, position.x)
+	return String(target.get("key", "")) == _pending_diagnostic_key
+
+
+func _is_pointer_in_diagnostic_bridge(mouse_position: Vector2) -> bool:
+	if not is_instance_valid(_diagnostic_panel) or not _diagnostic_panel.visible:
+		return false
+	var panel_rect := Rect2(_diagnostic_panel.position, _diagnostic_panel.size)
+	var closest_panel_point := Vector2(
+		clampf(_pending_diagnostic_position.x, panel_rect.position.x, panel_rect.end.x),
+		clampf(_pending_diagnostic_position.y, panel_rect.position.y, panel_rect.end.y),
+	)
+	var bridge_start := Vector2(
+		minf(_pending_diagnostic_position.x, closest_panel_point.x),
+		minf(_pending_diagnostic_position.y, closest_panel_point.y),
+	)
+	var bridge_end := Vector2(
+		maxf(_pending_diagnostic_position.x, closest_panel_point.x),
+		maxf(_pending_diagnostic_position.y, closest_panel_point.y),
+	)
+	return Rect2(bridge_start, bridge_end - bridge_start).grow(8.0).has_point(mouse_position)
+
+
+func _reset_pending_diagnostic() -> void:
 	_pending_diagnostic_line = -1
 	_pending_diagnostic_column = -1
+	_pending_diagnostic_key = ""
+
+
+func _cancel_diagnostic_hover() -> void:
+	_reset_pending_diagnostic()
 	if is_instance_valid(_diagnostic_hover_timer):
 		_diagnostic_hover_timer.stop()
+	_cancel_diagnostic_dismissal()
 	_hide_diagnostic_hover()
 
 
 func _apply_hover_fix(fix: Dictionary, expected_source: String) -> void:
 	if not is_instance_valid(_code_edit) or _code_edit.text != expected_source:
-		_hide_diagnostic_hover()
+		_cancel_diagnostic_hover()
 		return
 	var materialized := KS_QuickFixService.materialize_line_fix(expected_source, fix)
 	if materialized.is_empty():
-		_hide_diagnostic_hover()
+		_cancel_diagnostic_hover()
 		return
 	var updated := KS_QuickFixService.apply_fix(expected_source, materialized)
 	KS_CodeEditTransaction.replace_text(_code_edit, updated)
 	if _code_edit.is_inside_tree():
 		_code_edit.grab_focus()
-	_hide_diagnostic_hover()
+	_cancel_diagnostic_hover()
 
 
 func _get_diagnostics_at_position(line: int, column: int) -> Array[Dictionary]:
@@ -633,6 +723,34 @@ func _get_diagnostics_at_position(line: int, column: int) -> Array[Dictionary]:
 		if column >= start_column and column < end_column:
 			result.append(diagnostic)
 	return result
+
+
+func _get_diagnostic_target(line: int, column: int) -> Dictionary:
+	if line < 0 or column < 0:
+		return {}
+	var diagnostics := _get_diagnostics_at_position(line, column)
+	if diagnostics.is_empty():
+		return {}
+	var identity_parts := PackedStringArray()
+	for diagnostic: Dictionary in diagnostics:
+		(
+			identity_parts
+			. append(
+				(
+					"%d:%d:%s:%s"
+					% [
+						int(diagnostic.get("column", 1)),
+						int(diagnostic.get("end_column", 2)),
+						String(diagnostic.get("code", "")),
+						String(diagnostic.get("message", "")),
+					]
+				)
+			)
+		)
+	return {
+		"line": line,
+		"key": "%d|%s" % [line, "|".join(identity_parts)],
+	}
 
 
 func _diagnostic_action_label(action: Dictionary) -> String:
@@ -654,7 +772,7 @@ func _apply_diagnostic_action(action: Dictionary) -> void:
 		)
 	else:
 		_open_diagnostic_docs()
-	_hide_diagnostic_hover()
+	_cancel_diagnostic_hover()
 
 
 func _open_diagnostic_docs() -> void:
