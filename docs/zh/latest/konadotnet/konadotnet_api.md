@@ -5,8 +5,6 @@ order: 2
 
 # Konado .NET API
 
-> Konado .NET 仍属于实验性功能。
-
 ## 简介
 
 Konado.NET 是 Konado 对话系统的 C# API 扩展。它的目标不是替代 Konado 主插件，而是在 Godot C# 项目中提供一层更容易调用的接口，用于：
@@ -45,7 +43,7 @@ res://addons/konadotnet/Konadotnet.cs
 res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd
 ```
 
-除脚本类型外，也会校验节点是否完整实现当前 Konado 的信号和方法协议。如果项目中有多个对话管理器，请用 `BindDialogueManager(Node source)` 手动指定。
+除脚本类型外，也会校验节点是否完整实现当前 Konado 的信号和方法协议。如果项目中有多个对话管理器，请用 `BindDialogueManager(Node? source)` 手动指定。
 
 ## 快速开始
 
@@ -158,7 +156,7 @@ if (shot != null)
 ### BindDialogueManager
 
 ```csharp
-bool BindDialogueManager(Node source = null)
+bool BindDialogueManager(Node? source = null)
 ```
 
 绑定对话管理器节点。

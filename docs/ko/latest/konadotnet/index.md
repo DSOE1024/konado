@@ -12,6 +12,8 @@ Konado .NET API는 Konado의 C# 확장 레이어입니다.
 - `KonadoAPI` 자동 로드 진입점
 - `DialogueManagerAPI` 대화 관리자 제어
 - Konado 대화 흐름 이벤트 구독
+- 언어 전환 및 현지화된 KonadoScript 로드
+- 대화 변수 및 저장 데이터 관리
 - `.ks` 스크립트 파싱
 - `KND_Dialogue`, `KND_Shot`, `KND_DialogueChoice` 같은 GDScript 리소스 래퍼
 

@@ -8,7 +8,7 @@ order: 1
 ## Basic Dependencies
 
 1. Install the Konado plugin (required)
-2. A Godot version that supports C# (Godot 4.7.1 or later recommended)
+2. Godot .NET 4.7.1 or later
 3. Open the project with the Godot .NET editor. The regular Godot editor cannot compile or load C# addon scripts.
 
 ## Installation Steps
@@ -50,5 +50,5 @@ If a scene contains multiple dialogue managers, bind one manually:
 
 ```csharp
 var manager = GetNode<Node>("UI/KonadoDialogueManager");
-Konado.Runtime.API.KonadoAPI.DialogueManagerApi.BindDialogueManager(manager);
+Konado.Runtime.API.KonadoAPI.DialogueManagerApi?.BindDialogueManager(manager);
 ```

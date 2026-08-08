@@ -5,8 +5,6 @@ order: 2
 
 # Konado .NET API
 
-> この機能はまだ実験的です。
-
 ## 概要
 
 Konado.NET は Konado 会話システムの C# API 拡張です。Konado 本体を置き換えるものではなく、C# から `KND_DialogueManager` を制御し、会話シグナルを購読し、`.ks` スクリプトを解析し、Konado の GDScript データリソースを扱うための薄いレイヤーです。
@@ -17,7 +15,7 @@ Konado.NET は Konado 会話システムの C# API 拡張です。Konado 本体�
 
 Konado.NET は C# 対応の Godot プロジェクトでのみ使用できます。Godot 4.7.1 以降の .NET エディターを使用してください。非 .NET プロジェクトで有効化すると、`res://addons/konadotnet/Konadotnet.cs` を読み込めない場合があります。この場合、Konado 本体は使用できますが C# API は使用できません。
 
-先に `Konado` プラグインを有効化し、その後 `Konadotnet` を有効化してください。シーンには `KND_DialogueManager` の公開 API 契約をすべて実装した会話マネージャーが必要です。Konado.NET は現在のシーンツリーを走査し、後から追加された対象ノードも自動的にバインドします。ノード名は検出に影響しません。複数の会話マネージャーがある場合は `BindDialogueManager(Node source)` で明示的に指定してください。
+先に `Konado` プラグインを有効化し、その後 `Konadotnet` を有効化してください。シーンには `KND_DialogueManager` の公開 API 契約をすべて実装した会話マネージャーが必要です。Konado.NET は現在のシーンツリーを走査し、後から追加された対象ノードも自動的にバインドします。ノード名は検出に影響しません。複数の会話マネージャーがある場合は `BindDialogueManager(Node? source)` で明示的に指定してください。
 
 ## クイックスタート
 
@@ -31,6 +29,8 @@ public partial class DialogueExample : Node
     public override void _Ready()
     {
         var dialogueManager = KonadoAPI.DialogueManagerApi;
+        if (dialogueManager == null)
+            return;
 
         dialogueManager.DialogueLineStart += (string nodeId) =>
         {
@@ -44,6 +44,8 @@ public partial class DialogueExample : Node
 
         var interpreter = new KonadoScriptsInterpreter();
         var shot = interpreter.ProcessScriptsToData("res://sample/demo/demo_01.ks");
+        if (shot == null)
+            return;
 
         dialogueManager.SetShot(shot);
         dialogueManager.InitDialogue();
@@ -57,15 +59,15 @@ public partial class DialogueExample : Node
 | メンバー | 型 | 説明 |
 | --- | --- | --- |
 | `IsApiReady` | `bool` | `KonadoAPI` 自動読み込みノードが初期化済みかどうか。`KND_DialogueManager` が見つかったことは保証しません。 |
-| `API` | `static KonadoAPI` | 現在の自動読み込みインスタンスへの静的参照。 |
-| `DialogueManagerApi` | `static DialogueManagerAPI` | 会話マネージャー API インスタンス。主な実行時入口です。 |
-| `InternationalizationApi` | `static InternationalizationAPI` | 言語、翻訳、ローカライズ済みシナリオの API。 |
+| `API` | `static KonadoAPI?` | 現在の自動読み込みインスタンスへの静的参照。未初期化時またはツリー離脱後は `null`。 |
+| `DialogueManagerApi` | `static DialogueManagerAPI?` | 会話マネージャー API。自動読み込みが利用できない間は `null`。 |
+| `InternationalizationApi` | `static InternationalizationAPI?` | 言語、翻訳、ローカライズ済みシナリオの API。自動読み込みが利用できない間は `null`。 |
 
 ## InternationalizationAPI
 
-`Locale`、`AvailableLocales`、`SetLocale`、`NormalizeLocale`、
+`IsReady`、`Source`、`Bind`、`Locale`、`AvailableLocales`、`SetLocale`、`NormalizeLocale`、
 `RegisterTranslation`、`UnregisterTranslation`、`ResolveScriptPath`、
-`LoadLocalizedScript` を提供します。
+`LoadLocalizedScript` を提供します。API が未準備の場合、パス解決は空文字列、シナリオ読み込みは `null` を返します。
 
 ```csharp
 var i18n = KonadoAPI.InternationalizationApi;
@@ -83,23 +85,32 @@ if (shot != null)
 | プロパティ | 型 | 説明 |
 | --- | --- | --- |
 | `IsReady` | `bool` | 使用可能な `KND_DialogueManager` にバインド済みかどうか。 |
-| `Source` | `Node` | バインドされている元の Godot ノード。 |
+| `Source` | `Node?` | バインドされている元の Godot ノード。バインドが利用できない場合は `null`。 |
 
 ### メソッド
 
 | メソッド | 説明 |
 | --- | --- |
-| `bool BindDialogueManager(Node source = null)` | 指定した会話マネージャーへバインドします。省略時はシーンツリーを走査します。成功時は `true`。 |
+| `bool BindDialogueManager(Node? source = null)` | 指定した会話マネージャーへバインドします。省略時はシーンツリーを走査します。成功時は `true`。 |
 | `void InitDialogue()` | `init_dialogue()` を呼び出します。通常は `SetShot()` の後、`StartDialogue()` の前に呼びます。 |
+| `void InitDialogue(Callable callback)` | 会話を初期化し、完了後に `callback` を呼び出します。 |
 | `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | 現在のショットと、次回の `InitDialogue()` で使う開始ショットを設定します。ラッパーを直接渡せます。 |
 | `void StartDialogue()` | `start_dialogue()` を呼び出して再生を開始します。 |
 | `void StopDialogue()` | `stop_dialogue()` を呼び出して再生を停止します。 |
 | `void StartAutoplay(bool value)` | 自動再生を切り替えます。 |
+| `void SetCharaList(Resource charaList)` | キャラクターリソース一覧を設定します。 |
+| `void SetBackgroundList(Resource backgroundList)` | 背景リソース一覧を設定します。 |
+| `void SetBgmList(Resource bgmList)` | BGM リソース一覧を設定します。 |
+| `Dictionary GetDialogueVariable(string key)` | 会話変数を読み取ります。存在しない場合や API 未準備時は空の辞書を返します。 |
 | `bool SaveGame(int saveId)` | 進行状況を保存します。API 未準備または保存失敗時は `false`。 |
 | `bool LoadGame(int saveId)` | 指定セーブを読み込みます。 |
 | `bool DeleteSave(int saveId)` | 指定セーブを削除します。 |
 | `Dictionary GetSaveInfo(int saveId)` | 1 件のセーブ情報を取得します。API 未準備時は空の辞書を返します。 |
 | `Array<Dictionary> GetAllSaveInfo()` | すべてのセーブ情報を取得します。API 未準備時は空配列を返します。 |
+| `void SetSaveStrategy(Dictionary strategy)` | 本体プラグインのセーブ戦略を設定します。 |
+| `Dictionary GetSaveStrategy()` | セーブ戦略を取得します。利用できない場合は空の辞書を返します。 |
+| `bool ReloadLocalizedScript(string locale)` | 現在ノードを可能な限り維持しながらローカライズ済みシナリオを再読み込みします。 |
+| `void EmitWaitSignal(string signalName)` | 名前が一致する `waitsignal` 命令を再開します。 |
 
 標準的な再生順序:
 
@@ -132,6 +143,8 @@ dialogueManager.StartDialogue();
 | `VortexSwapEffect` | 渦巻き切り替え |
 | `WindmillEffect` | 風車効果 |
 | `CyberGlitchEffect` | サイバーグリッチ効果 |
+| `BlinkEffect` | 瞬き切り替え効果 |
+| `Null` | 未指定の効果。底層値 `-1` に対応 |
 
 ## Wrapper クラス
 
@@ -169,6 +182,8 @@ Wrapper クラスは Konado GDScript リソースの軽量 C# ラッパーです
 | `ChangeState` | `string` | 変更先状態 ID。 |
 | `TargetMoveChara` | `string` | 移動するキャラクター ID。 |
 | `TargetMovePos` | `Vector2` | 移動先位置。 |
+| `MotionActor` | `string` | 舞台モーションを再生するキャラクター ID。 |
+| `MotionName` | `string` | 舞台モーション名。 |
 | `Choices` | `Array<DialogueChoice>` | 選択肢リスト。各選択肢は `NextId` で遷移先を指します。 |
 | `JumpShotPath` | `string` | 別の `KND_Shot` へジャンプするリソースパス。 |
 | `JumpBranchTarget` | `string` | 現在ショット内の分岐ラベル。 |
@@ -176,6 +191,13 @@ Wrapper クラスは Konado GDScript リソースの軽量 C# ラッパーです
 | `SoundeffectName` | `string` | 再生する効果音名。 |
 | `BackgroundName` | `string` | 切り替える背景名。 |
 | `BackgroundToggleEffects` | `BackgroundTransitionEffectsType` | 背景切り替え効果。 |
+| `TargetCam` | `string` | カメラ移動ノードの対象カメラ ID。 |
+| `CamTweenTime` | `float` | カメラ移動またはリセットの時間（秒）。 |
+| `CamTweenType` | `string` | 対応する KonadoScript カメラ命令が設定する遷移形式。 |
+| `CamShakeTime` | `float` | カメラ揺れの時間（秒）。 |
+| `TextContent` | `Array<string>` | NVL 画面テキストの行。 |
+| `TextboxDuration` | `float` | 会話ボックスの表示・非表示時間（秒）。`0.0` は即時切り替え。 |
+| `WaitSignalName` | `string` | `WaitSignal` ノードが待機する外部シグナル名。 |
 | `CustomSignalName` | `string` | `CustomSignal` イベントで送られる内容。 |
 | `AchievementId` | `string` | 実績 ID。 |
 | `AchievementValue` | `int` | 実績進捗値。 |
@@ -185,6 +207,11 @@ Wrapper クラスは Konado GDScript リソースの軽量 C# ラッパーです
 | `VariableOperation` | `int` | 変数操作: `0 SET`、`1 ADD`、`2 SUB`、`3 MUL`、`4 DIV`。 |
 | `VariableOperand` | `string` | 文字列として保存され、実行時に本体側で解析される操作値。 |
 | `IsPersistent` | `bool` | 永続変数かどうか。通常 `%` は永続、`$` は一時変数です。 |
+
+| メソッド | 説明 |
+| --- | --- |
+| `void AddChoice(string text, string targetId)` | 遷移先ノード ID を持つ選択肢を追加します。 |
+| `void ClearChoices()` | 現在の会話ノードからすべての選択肢を削除します。 |
 
 ### Dialogue.Type
 
@@ -210,6 +237,18 @@ Wrapper クラスは Konado GDScript リソースの軽量 C# ラッパーです
 | `AchievementFlag` | 実績フラグ設定。 |
 | `SetVariable` | 変数設定または変更。 |
 | `TheEnd` | 終了ノード。 |
+| `ActorMotion` | キャラクターの舞台モーションを再生。 |
+| `MoveCam` | 対象カメラへ移動して完了を待機。 |
+| `ResetCam` | カメラをリセットして完了を待機。 |
+| `CamShake` | カメラを揺らして完了を待機。 |
+| `ScreenText` | NVL 画面テキストを表示。 |
+| `ShowTextbox` | 会話ボックスを表示。 |
+| `HideTextbox` | 会話ボックスを非表示。 |
+| `WaitSignal` | 外部シグナルを待機。 |
+| `AsyncMoveCam` | 非同期で対象カメラへ移動。 |
+| `AsyncResetCam` | 非同期でカメラをリセット。 |
+| `AsyncCamShake` | 非同期でカメラを揺らす。 |
+| `AsyncCamStop` | すべての非同期カメラアニメーションを停止。 |
 
 ## DialogueChoice
 
@@ -217,6 +256,8 @@ Wrapper クラスは Konado GDScript リソースの軽量 C# ラッパーです
 | --- | --- | --- |
 | `ChoiceText` | `string` | プレイヤーに表示する選択肢テキスト。 |
 | `NextId` | `string` | 選択後の遷移先ノード ID。 |
+
+`SerializeToDictionary()` で選択肢を辞書へ変換し、`DeserializeFromDictionary()` で辞書から復元して成否を取得できます。
 
 ## KndData
 
@@ -230,20 +271,21 @@ Wrapper クラスは Konado GDScript リソースの軽量 C# ラッパーです
 | `ShotId` | `string` | ショット ID。 |
 | `StartNodeId` | `string` | 開始ノード ID。空の場合は通常最初のノードを使います。 |
 | `Dialogues` | `Array<Dialogue>` | ショット内のすべての会話ノード。 |
+| `DepCharacters` | `Array<string>` | ショットが依存するキャラクター ID 一覧。 |
 
 | メソッド | 説明 |
 | --- | --- |
-| `Dialogue FindNode(string nodeId)` | `node_id` でノードを検索します。見つからない場合は `null`。 |
-| `Dialogue GetStartNode()` | 開始ノードを取得します。 |
+| `Dialogue? FindNode(string nodeId)` | `node_id` でノードを検索します。見つからない場合は `null`。 |
+| `Dialogue? GetStartNode()` | 開始ノードを取得します。ノードがない場合は `null`。 |
 
 ## KonadoScriptsInterpreter
 
 | メンバー | 説明 |
 | --- | --- |
-| `KonadoScriptsInterpreter(Dictionary<string, Variant> flags = null)` | 新しいインタープリターを作成します。`flags` は互換用に残されています。 |
+| `KonadoScriptsInterpreter()` | 新しいインタープリターを作成します。 |
 | `KonadoScriptsInterpreter(GodotObject source)` | 既存インタープリターをラップします。 |
-| `KndShot ProcessScriptsToData(string path)` | `.ks` ファイルを `KND_Shot` に解析します。 |
-| `Dialogue ParseSingleLine(string line, long lineNumber, string path)` | Konado スクリプトを 1 行解析します。 |
+| `KndShot? ProcessScriptsToData(string path)` | `.ks` ファイルを `KND_Shot` に解析します。読み込みまたは解析失敗時は `null`。 |
+| `Dialogue? ParseSingleLine(string line, long lineNumber, string path)` | Konado スクリプトを 1 行解析します。空または無効な入力では `null`。 |
 
 ## 例
 
@@ -252,6 +294,8 @@ var interpreter = new KonadoScriptsInterpreter();
 var shot = interpreter.ProcessScriptsToData("res://sample/demo/demo_01.ks");
 
 var api = KonadoAPI.DialogueManagerApi;
+if (shot == null || api == null)
+    return;
 api.SetShot(shot);
 api.InitDialogue();
 api.StartDialogue();
@@ -264,7 +308,7 @@ api.StartDialogue();
 `IsApiReady` は Konado.NET 自動読み込みノードの初期化状態だけを示します。現在シーンに `KND_DialogueManager` があるか確認するか、手動でバインドしてください。
 
 ```csharp
-KonadoAPI.DialogueManagerApi.BindDialogueManager(GetNode<Node>("path/to/manager"));
+KonadoAPI.DialogueManagerApi?.BindDialogueManager(GetNode<Node>("path/to/manager"));
 ```
 
 ### `SetShot` 後に再生されない

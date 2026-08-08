@@ -12,6 +12,8 @@ Konado .NET API 是 Konado 的 C# 擴充層。
 - `KonadoAPI` 自動載入入口
 - `DialogueManagerAPI` 對話管理器控制介面
 - Konado 對話流程事件監聽
+- 語言切換與本地化 KonadoScript 載入
+- 對話變數與存檔管理
 - `.ks` 腳本解析介面
 - `KND_Dialogue`、`KND_Shot`、`KND_DialogueChoice` 等 GDScript 資料資源包裝類別
 

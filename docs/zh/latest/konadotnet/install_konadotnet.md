@@ -49,5 +49,5 @@ Konadotnet 依赖 Konado 主插件。推荐顺序是：
 
 ```csharp
 var manager = GetNode<Node>("UI/KonadoDialogueManager");
-Konado.Runtime.API.KonadoAPI.DialogueManagerApi.BindDialogueManager(manager);
+Konado.Runtime.API.KonadoAPI.DialogueManagerApi?.BindDialogueManager(manager);
 ```

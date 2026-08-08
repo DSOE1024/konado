@@ -8,7 +8,7 @@ order: 1
 ## 기본 의존성
 
 1. Konado 플러그인 설치(필수)
-2. C#을 지원하는 Godot 버전(Godot 4.7.1 이상 권장)
+2. Godot .NET 4.7.1 이상
 3. 프로젝트를 Godot .NET 에디터로 열어야 합니다. 일반 Godot 에디터는 C# 애드온 스크립트를 컴파일하거나 로드할 수 없습니다.
 
 ## 설치 단계
@@ -30,6 +30,16 @@ Unable to load addon script from path: 'res://addons/konadotnet/Konadotnet.cs'.
 
 Godot .NET 에디터에서 프로젝트를 빌드한 뒤 다시 열고 플러그인을 활성화하세요.
 
+## 활성화 순서
+
+Konadotnet은 기본 Konado 플러그인에 의존합니다. 다음 순서로 활성화하세요.
+
+1. `Konado` 활성화
+2. C# 프로젝트 빌드
+3. `Konadotnet` 활성화
+
+Konadotnet을 먼저 활성화하면 기본 플러그인의 상태를 확인하며, 기본 플러그인이 비활성화된 동안에는 API 자동 로드 노드를 등록하지 않습니다.
+
 ## 장면 요구 사항
 
 `DialogueManagerAPI`에는 전체 공개 API 계약을 충족하는 `KND_DialogueManager`
@@ -37,3 +47,8 @@ Godot .NET 에디터에서 프로젝트를 빌드한 뒤 다시 열고 플러그
 의존하지 않습니다.
 
 대화 관리자가 여러 개라면 수동으로 바인딩하세요.
+
+```csharp
+var manager = GetNode<Node>("UI/KonadoDialogueManager");
+Konado.Runtime.API.KonadoAPI.DialogueManagerApi?.BindDialogueManager(manager);
+```

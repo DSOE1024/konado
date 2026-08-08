@@ -5,8 +5,6 @@ order: 2
 
 # Konado .NET API
 
-> Konado .NET 仍屬實驗性功能。
-
 ## 簡介
 
 Konado.NET 是 Konado 對話系統的 C# API 擴充。它不會取代 Konado 主插件，而是提供一層 C# 介面，用於尋找並控制 `KND_DialogueManager`、監聽對話流程訊號、解析 `.ks` 腳本，以及操作 Konado 的 GDScript 資料資源。
@@ -17,7 +15,7 @@ Konado.NET 會透過自動載入節點 `KonadoAPI` 提供入口。通常從 `Kon
 
 Konado.NET 只能在支援 C# 的 Godot 專案中使用。請使用 Godot 4.7.1 或更高版本的 .NET 編輯器。若在非 .NET 專案中啟用，編輯器可能無法載入 `res://addons/konadotnet/Konadotnet.cs`，此時 Konado 主插件仍可使用，但 C# API 不可用。
 
-請先啟用 `Konado`，再啟用 `Konadotnet`。場景中需要有完整實作 `KND_DialogueManager` 公開 API 契約的對話管理器。Konado.NET 會掃描目前的場景樹，並自動綁定稍後加入的符合節點；節點名稱不影響偵測。多管理器場景請使用 `BindDialogueManager(Node source)` 手動指定。
+請先啟用 `Konado`，再啟用 `Konadotnet`。場景中需要有完整實作 `KND_DialogueManager` 公開 API 契約的對話管理器。Konado.NET 會掃描目前的場景樹，並自動綁定稍後加入的符合節點；節點名稱不影響偵測。多管理器場景請使用 `BindDialogueManager(Node? source)` 手動指定。
 
 ## 快速開始
 
@@ -31,6 +29,8 @@ public partial class DialogueExample : Node
     public override void _Ready()
     {
         var dialogueManager = KonadoAPI.DialogueManagerApi;
+        if (dialogueManager == null)
+            return;
 
         dialogueManager.DialogueLineStart += (string nodeId) =>
         {
@@ -44,6 +44,8 @@ public partial class DialogueExample : Node
 
         var interpreter = new KonadoScriptsInterpreter();
         var shot = interpreter.ProcessScriptsToData("res://sample/demo/demo_01.ks");
+        if (shot == null)
+            return;
 
         dialogueManager.SetShot(shot);
         dialogueManager.InitDialogue();
@@ -57,15 +59,15 @@ public partial class DialogueExample : Node
 | 成員 | 類型 | 說明 |
 | --- | --- | --- |
 | `IsApiReady` | `bool` | `KonadoAPI` 自動載入節點是否初始化完成。不代表已找到 `KND_DialogueManager`。 |
-| `API` | `static KonadoAPI` | 目前自動載入節點的靜態參照。 |
-| `DialogueManagerApi` | `static DialogueManagerAPI` | 對話管理器 API 實例，也是主要入口。 |
-| `InternationalizationApi` | `static InternationalizationAPI` | 語言、翻譯與本地化劇情 API。 |
+| `API` | `static KonadoAPI?` | 目前自動載入節點的靜態參照；尚未初始化或已離開場景樹時為 `null`。 |
+| `DialogueManagerApi` | `static DialogueManagerAPI?` | 對話管理器 API 實例；自動載入不可用時為 `null`。 |
+| `InternationalizationApi` | `static InternationalizationAPI?` | 語言、翻譯與本地化劇情 API；自動載入不可用時為 `null`。 |
 
 ## InternationalizationAPI
 
-提供 `Locale`、`AvailableLocales`、`SetLocale`、`NormalizeLocale`、
+提供 `IsReady`、`Source`、`Bind`、`Locale`、`AvailableLocales`、`SetLocale`、`NormalizeLocale`、
 `RegisterTranslation`、`UnregisterTranslation`、`ResolveScriptPath` 與
-`LoadLocalizedScript`。
+`LoadLocalizedScript`。API 未就緒時，路徑解析會回傳空字串，劇情載入會回傳 `null`。
 
 ```csharp
 var i18n = KonadoAPI.InternationalizationApi;
@@ -83,23 +85,32 @@ if (shot != null)
 | 屬性 | 類型 | 說明 |
 | --- | --- | --- |
 | `IsReady` | `bool` | 是否已綁定到可用的 `KND_DialogueManager`。 |
-| `Source` | `Node` | 目前綁定的原始 Godot 節點。 |
+| `Source` | `Node?` | 目前綁定的原始 Godot 節點；綁定不可用時為 `null`。 |
 
 ### 方法
 
 | 方法 | 說明 |
 | --- | --- |
-| `bool BindDialogueManager(Node source = null)` | 綁定指定對話管理器；省略時自動遍歷場景樹。成功回傳 `true`。 |
+| `bool BindDialogueManager(Node? source = null)` | 綁定指定對話管理器；省略時自動遍歷場景樹。成功回傳 `true`。 |
 | `void InitDialogue()` | 呼叫 `init_dialogue()`，通常在 `SetShot()` 之後、`StartDialogue()` 之前呼叫。 |
+| `void InitDialogue(Callable callback)` | 初始化對話，完成後呼叫 `callback`。 |
 | `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | 設定目前鏡頭及下次 `InitDialogue()` 使用的起始鏡頭，可直接傳入包裝物件。 |
 | `void StartDialogue()` | 呼叫 `start_dialogue()` 開始播放。 |
 | `void StopDialogue()` | 呼叫 `stop_dialogue()` 停止播放。 |
 | `void StartAutoplay(bool value)` | 切換自動播放。 |
+| `void SetCharaList(Resource charaList)` | 設定角色資源列表。 |
+| `void SetBackgroundList(Resource backgroundList)` | 設定背景資源列表。 |
+| `void SetBgmList(Resource bgmList)` | 設定 BGM 資源列表。 |
+| `Dictionary GetDialogueVariable(string key)` | 讀取對話變數；不存在或 API 未就緒時回傳空字典。 |
 | `bool SaveGame(int saveId)` | 儲存進度。API 未就緒或儲存失敗時回傳 `false`。 |
 | `bool LoadGame(int saveId)` | 讀取指定存檔。 |
 | `bool DeleteSave(int saveId)` | 刪除指定存檔。 |
 | `Dictionary GetSaveInfo(int saveId)` | 取得單一存檔資訊；API 未就緒時回傳空字典。 |
 | `Array<Dictionary> GetAllSaveInfo()` | 取得全部存檔資訊；API 未就緒時回傳空陣列。 |
+| `void SetSaveStrategy(Dictionary strategy)` | 設定主插件的存檔策略。 |
+| `Dictionary GetSaveStrategy()` | 讀取存檔策略；不可用時回傳空字典。 |
+| `bool ReloadLocalizedScript(string locale)` | 重新載入目前語言劇情，並儘量保留目前節點。 |
+| `void EmitWaitSignal(string signalName)` | 讓名稱相符的 `waitsignal` 指令繼續執行。 |
 
 典型播放流程：
 
@@ -132,6 +143,8 @@ dialogueManager.StartDialogue();
 | `VortexSwapEffect` | 漩渦切換效果 |
 | `WindmillEffect` | 風車效果 |
 | `CyberGlitchEffect` | 賽博故障效果 |
+| `BlinkEffect` | 眨眼切換效果 |
+| `Null` | 未指定效果，對應底層值 `-1` |
 
 ## Wrapper 類別
 
@@ -169,6 +182,8 @@ Wrapper 類別是 Konado GDScript 資源的輕量 C# 封裝。包裝已有資源
 | `ChangeState` | `string` | 目標狀態 ID。 |
 | `TargetMoveChara` | `string` | 要移動的角色 ID。 |
 | `TargetMovePos` | `Vector2` | 移動目標位置。 |
+| `MotionActor` | `string` | 要播放舞台動作的角色 ID。 |
+| `MotionName` | `string` | 舞台動作名稱。 |
 | `Choices` | `Array<DialogueChoice>` | 選項列表，每個選項透過 `NextId` 指向目標節點。 |
 | `JumpShotPath` | `string` | 跳轉到其他 `KND_Shot` 的資源路徑。 |
 | `JumpBranchTarget` | `string` | 目前鏡頭內的分支標籤目標。 |
@@ -176,6 +191,13 @@ Wrapper 類別是 Konado GDScript 資源的輕量 C# 封裝。包裝已有資源
 | `SoundeffectName` | `string` | 要播放的音效名稱。 |
 | `BackgroundName` | `string` | 要切換的背景名稱。 |
 | `BackgroundToggleEffects` | `BackgroundTransitionEffectsType` | 背景切換效果。 |
+| `TargetCam` | `string` | 相機移動節點的目標相機 ID。 |
+| `CamTweenTime` | `float` | 相機移動或復位的過渡時間（秒）。 |
+| `CamTweenType` | `string` | 對應 KonadoScript 相機指令寫入的過渡類型。 |
+| `CamShakeTime` | `float` | 相機晃動時間（秒）。 |
+| `TextContent` | `Array<string>` | NVL 螢幕文字內容。 |
+| `TextboxDuration` | `float` | 對話框顯示或隱藏時間（秒）；`0.0` 表示立即切換。 |
+| `WaitSignalName` | `string` | `WaitSignal` 節點等待的外部訊號名稱。 |
 | `CustomSignalName` | `string` | 透過 `CustomSignal` 事件送出的內容。 |
 | `AchievementId` | `string` | 成就 ID。 |
 | `AchievementValue` | `int` | 成就進度值。 |
@@ -185,6 +207,11 @@ Wrapper 類別是 Konado GDScript 資源的輕量 C# 封裝。包裝已有資源
 | `VariableOperation` | `int` | 變數操作：`0 SET`、`1 ADD`、`2 SUB`、`3 MUL`、`4 DIV`。 |
 | `VariableOperand` | `string` | 操作數，以文字儲存並由主插件在執行期解析。 |
 | `IsPersistent` | `bool` | 是否為持久變數。通常 `%` 變數為持久，`$` 變數為臨時。 |
+
+| 方法 | 說明 |
+| --- | --- |
+| `void AddChoice(string text, string targetId)` | 新增一個指向目標節點 ID 的選項。 |
+| `void ClearChoices()` | 清除目前對話節點的全部選項。 |
 
 ### Dialogue.Type
 
@@ -210,6 +237,18 @@ Wrapper 類別是 Konado GDScript 資源的輕量 C# 封裝。包裝已有資源
 | `AchievementFlag` | 設定成就標籤。 |
 | `SetVariable` | 設定或修改變數。 |
 | `TheEnd` | 結束節點。 |
+| `ActorMotion` | 播放角色舞台動作。 |
+| `MoveCam` | 移動至目標相機並等待完成。 |
+| `ResetCam` | 復位相機並等待完成。 |
+| `CamShake` | 晃動相機並等待完成。 |
+| `ScreenText` | 顯示 NVL 螢幕文字。 |
+| `ShowTextbox` | 顯示對話框。 |
+| `HideTextbox` | 隱藏對話框。 |
+| `WaitSignal` | 等待外部訊號。 |
+| `AsyncMoveCam` | 非同步移動至目標相機。 |
+| `AsyncResetCam` | 非同步復位相機。 |
+| `AsyncCamShake` | 非同步晃動相機。 |
+| `AsyncCamStop` | 停止所有非同步相機動畫。 |
 
 ## DialogueChoice
 
@@ -217,6 +256,8 @@ Wrapper 類別是 Konado GDScript 資源的輕量 C# 封裝。包裝已有資源
 | --- | --- | --- |
 | `ChoiceText` | `string` | 顯示給玩家的選項文字。 |
 | `NextId` | `string` | 選擇後跳轉到的目標節點 ID。 |
+
+`SerializeToDictionary()` 可將選項序列化為字典，`DeserializeFromDictionary()` 可從字典還原並回傳是否成功。
 
 ## KndData
 
@@ -230,20 +271,21 @@ Wrapper 類別是 Konado GDScript 資源的輕量 C# 封裝。包裝已有資源
 | `ShotId` | `string` | 鏡頭 ID。 |
 | `StartNodeId` | `string` | 起始節點 ID，為空時通常使用第一個節點。 |
 | `Dialogues` | `Array<Dialogue>` | 此鏡頭包含的全部對話節點。 |
+| `DepCharacters` | `Array<string>` | 此鏡頭依賴的角色 ID 列表。 |
 
 | 方法 | 說明 |
 | --- | --- |
-| `Dialogue FindNode(string nodeId)` | 依 `node_id` 查找節點，找不到時回傳 `null`。 |
-| `Dialogue GetStartNode()` | 取得起始節點。 |
+| `Dialogue? FindNode(string nodeId)` | 依 `node_id` 查找節點，找不到時回傳 `null`。 |
+| `Dialogue? GetStartNode()` | 取得起始節點；鏡頭沒有節點時回傳 `null`。 |
 
 ## KonadoScriptsInterpreter
 
 | 成員 | 說明 |
 | --- | --- |
-| `KonadoScriptsInterpreter(Dictionary<string, Variant> flags = null)` | 建立新的解譯器。`flags` 目前保留作相容用途。 |
+| `KonadoScriptsInterpreter()` | 建立新的解譯器。 |
 | `KonadoScriptsInterpreter(GodotObject source)` | 包裝已有解譯器物件。 |
-| `KndShot ProcessScriptsToData(string path)` | 將 `.ks` 檔案解析為 `KND_Shot`。 |
-| `Dialogue ParseSingleLine(string line, long lineNumber, string path)` | 解析單行 Konado 腳本。 |
+| `KndShot? ProcessScriptsToData(string path)` | 將 `.ks` 檔案解析為 `KND_Shot`；載入或解析失敗時回傳 `null`。 |
+| `Dialogue? ParseSingleLine(string line, long lineNumber, string path)` | 解析單行 Konado 腳本；內容為空或無效時回傳 `null`。 |
 
 ## 範例
 
@@ -252,6 +294,8 @@ var interpreter = new KonadoScriptsInterpreter();
 var shot = interpreter.ProcessScriptsToData("res://sample/demo/demo_01.ks");
 
 var api = KonadoAPI.DialogueManagerApi;
+if (shot == null || api == null)
+    return;
 api.SetShot(shot);
 api.InitDialogue();
 api.StartDialogue();
@@ -264,7 +308,7 @@ api.StartDialogue();
 `IsApiReady` 只代表 Konado.NET 自動載入節點已初始化。請確認目前場景有 `KND_DialogueManager`，或手動綁定：
 
 ```csharp
-KonadoAPI.DialogueManagerApi.BindDialogueManager(GetNode<Node>("path/to/manager"));
+KonadoAPI.DialogueManagerApi?.BindDialogueManager(GetNode<Node>("path/to/manager"));
 ```
 
 ### `SetShot` 後沒有播放

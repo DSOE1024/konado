@@ -12,6 +12,8 @@ It provides:
 - The `KonadoAPI` autoload entry point
 - `DialogueManagerAPI` runtime control
 - Konado dialogue flow event listeners
+- Locale switching and localized KonadoScript loading
+- Dialogue-variable and save management
 - `.ks` script parsing
 - Wrappers for GDScript resources such as `KND_Dialogue`, `KND_Shot`, and `KND_DialogueChoice`
 

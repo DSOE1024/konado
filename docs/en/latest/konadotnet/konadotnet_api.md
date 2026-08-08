@@ -5,8 +5,6 @@ order: 2
 
 # Konado .NET API
 
-> Konado .NET is still experimental.
-
 ## Introduction
 
 Konado.NET is the C# API extension for the Konado dialogue system. It does not replace the main Konado plugin; it provides a C# layer for:
@@ -47,7 +45,7 @@ res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd
 
 Konado.NET scans the current scene tree when the API enters the tree and automatically binds a matching manager added later. The node name does not affect discovery.
 
-If a scene contains multiple dialogue managers, bind one explicitly with `BindDialogueManager(Node source)`.
+If a scene contains multiple dialogue managers, bind one explicitly with `BindDialogueManager(Node? source)`.
 
 ## Quick Start
 
@@ -61,6 +59,8 @@ public partial class DialogueExample : Node
     public override void _Ready()
     {
         var dialogueManager = KonadoAPI.DialogueManagerApi;
+        if (dialogueManager == null)
+            return;
 
         dialogueManager.DialogueLineStart += (string nodeId) =>
         {
@@ -74,6 +74,8 @@ public partial class DialogueExample : Node
 
         var interpreter = new KonadoScriptsInterpreter();
         var shot = interpreter.ProcessScriptsToData("res://sample/demo/demo_01.ks");
+        if (shot == null)
+            return;
 
         dialogueManager.SetShot(shot);
         dialogueManager.InitDialogue();
@@ -91,14 +93,15 @@ public partial class DialogueExample : Node
 | Member | Type | Description |
 | --- | --- | --- |
 | `IsApiReady` | `bool` | Whether the `KonadoAPI` autoload has initialized. This does not guarantee that a `KND_DialogueManager` was found; use `DialogueManagerApi.IsReady` for that. |
-| `API` | `static KonadoAPI` | Static reference to the current autoload instance. Usually not created manually. |
-| `DialogueManagerApi` | `static DialogueManagerAPI` | Dialogue manager API instance and the main entry point for runtime control. |
-| `InternationalizationApi` | `static InternationalizationAPI` | Locale, translation, and localized-story API. |
+| `API` | `static KonadoAPI?` | Static reference to the current autoload instance; `null` before the autoload initializes or after it exits the tree. |
+| `DialogueManagerApi` | `static DialogueManagerAPI?` | Dialogue manager API instance; `null` while the autoload is unavailable. |
+| `InternationalizationApi` | `static InternationalizationAPI?` | Locale, translation, and localized-story API; `null` while the autoload is unavailable. |
 
 ```csharp
-if (KonadoAPI.API.IsApiReady && KonadoAPI.DialogueManagerApi.IsReady)
+if (KonadoAPI.API?.IsApiReady == true
+    && KonadoAPI.DialogueManagerApi is { IsReady: true } dialogueManager)
 {
-    KonadoAPI.DialogueManagerApi.StartDialogue();
+    dialogueManager.StartDialogue();
 }
 ```
 
@@ -116,9 +119,11 @@ if (i18n is { IsReady: true })
 }
 ```
 
-The API exposes `Locale`, `AvailableLocales`, `SetLocale`, `NormalizeLocale`,
-`RegisterTranslation`, `UnregisterTranslation`, `ResolveScriptPath`, and
-`LoadLocalizedScript`.
+The API exposes `IsReady`, `Source`, `Bind`, `Locale`, `AvailableLocales`,
+`SetLocale`, `NormalizeLocale`, `RegisterTranslation`, `UnregisterTranslation`,
+`ResolveScriptPath`, and `LoadLocalizedScript`. `ResolveScriptPath()` returns an
+empty string and `LoadLocalizedScript()` returns `null` when the API is not ready
+or the localized script cannot be loaded.
 
 ## DialogueManagerAPI
 
@@ -129,29 +134,38 @@ The API exposes `Locale`, `AvailableLocales`, `SetLocale`, `NormalizeLocale`,
 | Property | Type | Description |
 | --- | --- | --- |
 | `IsReady` | `bool` | Whether the API is bound to a usable `KND_DialogueManager`. |
-| `Source` | `Node` | The bound source Godot node. Use this only when direct GDScript access is needed. |
+| `Source` | `Node?` | The bound source Godot node, or `null` when the binding is unavailable. Use this only when direct GDScript access is needed. |
 
 ### Methods
 
 | Method | Description |
 | --- | --- |
-| `bool BindDialogueManager(Node source = null)` | Bind a specific dialogue manager, or traverse the scene tree when omitted. Returns `true` on success. |
+| `bool BindDialogueManager(Node? source = null)` | Bind a specific dialogue manager, or traverse the scene tree when omitted. Returns `true` on success. |
 | `void InitDialogue()` | Calls `init_dialogue()`. Usually called after `SetShot()` and before `StartDialogue()`. |
+| `void InitDialogue(Callable callback)` | Initializes the dialogue and invokes `callback` when initialization finishes. |
 | `void SetShot(Resource shot)` / `void SetShot(KndShot shot)` | Sets both the current shot and the source used by the next `InitDialogue()` call. Wrappers can be passed directly. |
 | `void StartDialogue()` | Calls `start_dialogue()` and starts playback. |
 | `void StopDialogue()` | Calls `stop_dialogue()` and stops playback. |
 | `void StartAutoplay(bool value)` | Toggles autoplay. |
+| `void SetCharaList(Resource charaList)` | Sets the character resource list. |
+| `void SetBackgroundList(Resource backgroundList)` | Sets the background resource list. |
+| `void SetBgmList(Resource bgmList)` | Sets the BGM resource list. |
+| `Dictionary GetDialogueVariable(string key)` | Returns a dictionary containing `value`, or an empty dictionary when unavailable. |
 | `bool SaveGame(int saveId)` | Saves progress to a save slot. Returns `false` if the API is not ready or saving fails. |
 | `bool LoadGame(int saveId)` | Loads a save slot. |
 | `bool DeleteSave(int saveId)` | Deletes a save slot. |
 | `Dictionary GetSaveInfo(int saveId)` | Gets one save record. Returns an empty dictionary when the API is not ready. |
 | `Array<Dictionary> GetAllSaveInfo()` | Gets all save records. Returns an empty array when the API is not ready. |
+| `void SetSaveStrategy(Dictionary strategy)` | Sets the main plugin's save strategy. |
+| `Dictionary GetSaveStrategy()` | Gets the save strategy, or an empty dictionary when unavailable. |
+| `bool ReloadLocalizedScript(string locale)` | Reloads the current localized script while preserving the current node when possible. |
+| `void EmitWaitSignal(string signalName)` | Continues a `waitsignal` instruction whose name matches `signalName`. |
 
 Manual binding example:
 
 ```csharp
 var manager = GetNode<Node>("UI/KonadoDialogueManager");
-KonadoAPI.DialogueManagerApi.BindDialogueManager(manager);
+KonadoAPI.DialogueManagerApi?.BindDialogueManager(manager);
 ```
 
 Typical playback order:
@@ -197,6 +211,8 @@ dialogueManager.CustomSignal += (string content) =>
 | `VortexSwapEffect` | Vortex swap transition |
 | `WindmillEffect` | Windmill transition |
 | `CyberGlitchEffect` | Cyber glitch transition |
+| `BlinkEffect` | Blink transition |
+| `Null` | Unspecified effect; maps to the underlying value `-1` |
 
 ## Wrapper Classes
 
@@ -249,6 +265,8 @@ res://addons/konado/scripts/dialogue/knd_dialogue.gd
 | `ChangeState` | `string` | Target state ID. |
 | `TargetMoveChara` | `string` | Actor ID to move. |
 | `TargetMovePos` | `Vector2` | Target movement position. |
+| `MotionActor` | `string` | Actor ID whose stage motion should play. |
+| `MotionName` | `string` | Stage motion name. |
 | `Choices` | `Array<DialogueChoice>` | Choice list. Each choice points to a target node through `NextId`. |
 | `JumpShotPath` | `string` | Resource path for jumping to another `KND_Shot`. |
 | `JumpBranchTarget` | `string` | Branch label target in the current shot. |
@@ -256,6 +274,13 @@ res://addons/konado/scripts/dialogue/knd_dialogue.gd
 | `SoundeffectName` | `string` | Sound effect name to play. |
 | `BackgroundName` | `string` | Background name to switch to. |
 | `BackgroundToggleEffects` | `BackgroundTransitionEffectsType` | Background transition effect. |
+| `TargetCam` | `string` | Target camera ID for camera movement nodes. |
+| `CamTweenTime` | `float` | Camera movement or reset duration in seconds. |
+| `CamTweenType` | `string` | Camera transition type written by the corresponding KonadoScript command. |
+| `CamShakeTime` | `float` | Camera shake duration in seconds. |
+| `TextContent` | `Array<string>` | NVL screen-text lines. |
+| `TextboxDuration` | `float` | Dialogue-box show or hide duration in seconds; `0.0` changes it immediately. |
+| `WaitSignalName` | `string` | External signal name awaited by a `WaitSignal` node. |
 | `CustomSignalName` | `string` | Payload emitted through `CustomSignal`. |
 | `AchievementId` | `string` | Achievement ID. |
 | `AchievementValue` | `int` | Achievement progress value. |
@@ -265,6 +290,11 @@ res://addons/konado/scripts/dialogue/knd_dialogue.gd
 | `VariableOperation` | `int` | Variable operation: `0 SET`, `1 ADD`, `2 SUB`, `3 MUL`, `4 DIV`. |
 | `VariableOperand` | `string` | Operand stored as text and parsed by the main plugin at runtime. |
 | `IsPersistent` | `bool` | Whether the variable is persistent. `%` variables are usually persistent; `$` variables are temporary. |
+
+| Method | Description |
+| --- | --- |
+| `void AddChoice(string text, string targetId)` | Adds a choice that points to the target node ID. |
+| `void ClearChoices()` | Removes every choice from the dialogue node. |
 
 ### Dialogue.Type
 
@@ -290,6 +320,18 @@ res://addons/konado/scripts/dialogue/knd_dialogue.gd
 | `AchievementFlag` | Set achievement flag. |
 | `SetVariable` | Set or modify variable. |
 | `TheEnd` | End node. |
+| `ActorMotion` | Play an actor stage motion. |
+| `MoveCam` | Move to a target camera and wait. |
+| `ResetCam` | Reset the camera and wait. |
+| `CamShake` | Shake the camera and wait. |
+| `ScreenText` | Display NVL screen text. |
+| `ShowTextbox` | Show the dialogue box. |
+| `HideTextbox` | Hide the dialogue box. |
+| `WaitSignal` | Wait for an external signal. |
+| `AsyncMoveCam` | Move to a target camera asynchronously. |
+| `AsyncResetCam` | Reset the camera asynchronously. |
+| `AsyncCamShake` | Shake the camera asynchronously. |
+| `AsyncCamStop` | Stop all asynchronous camera animations. |
 
 ## DialogueChoice
 
@@ -316,6 +358,9 @@ var choice = new DialogueChoice
     ChoiceText = "Continue",
     NextId = "node_004"
 };
+
+Godot.Collections.Dictionary data = choice.SerializeToDictionary();
+choice.DeserializeFromDictionary(data);
 ```
 
 ## KndData
@@ -342,11 +387,12 @@ res://addons/konado/scripts/dialogue/knd_shot.gd
 | `ShotId` | `string` | Shot ID. |
 | `StartNodeId` | `string` | Start node ID. When empty, the first dialogue node is usually used. |
 | `Dialogues` | `Array<Dialogue>` | All dialogue nodes in the shot graph. |
+| `DepCharacters` | `Array<string>` | Actor IDs required by the shot. |
 
 | Method | Description |
 | --- | --- |
-| `Dialogue FindNode(string nodeId)` | Finds a dialogue node by `node_id`. Returns `null` when not found. |
-| `Dialogue GetStartNode()` | Gets the start node using `StartNodeId`, or the first dialogue node when empty. |
+| `Dialogue? FindNode(string nodeId)` | Finds a dialogue node by `node_id`. Returns `null` when not found. |
+| `Dialogue? GetStartNode()` | Gets the start node using `StartNodeId`, or the first dialogue node when empty; returns `null` when the shot has no nodes. |
 
 ## KonadoScriptsInterpreter
 
@@ -358,10 +404,10 @@ res://addons/konado/ks/ks_interpreter.gd
 
 | Member | Description |
 | --- | --- |
-| `KonadoScriptsInterpreter(Dictionary<string, Variant> flags = null)` | Creates a new interpreter. The current interpreter does not require extra flags; the parameter remains for compatibility. |
+| `KonadoScriptsInterpreter()` | Creates a new interpreter. |
 | `KonadoScriptsInterpreter(GodotObject source)` | Wraps an existing interpreter object. |
-| `KndShot ProcessScriptsToData(string path)` | Parses a `.ks` file into a `KND_Shot`. |
-| `Dialogue ParseSingleLine(string line, long lineNumber, string path)` | Parses one Konado script line, mainly for tools and debugging. |
+| `KndShot? ProcessScriptsToData(string path)` | Parses a `.ks` file into a `KND_Shot`; returns `null` when loading or parsing fails. |
+| `Dialogue? ParseSingleLine(string line, long lineNumber, string path)` | Parses one Konado script line; returns `null` for empty or invalid input. |
 
 ## Complete Examples
 
@@ -376,6 +422,8 @@ public partial class DialogueEvents : Node
     public override void _Ready()
     {
         var api = KonadoAPI.DialogueManagerApi;
+        if (api == null)
+            return;
 
         if (!api.IsReady)
         {
@@ -406,6 +454,8 @@ public partial class PlayKsFile : Node
         var shot = interpreter.ProcessScriptsToData("res://sample/demo/demo_01.ks");
 
         var api = KonadoAPI.DialogueManagerApi;
+        if (shot == null || api == null)
+            return;
         api.SetShot(shot);
         api.InitDialogue();
         api.StartDialogue();
@@ -424,6 +474,8 @@ public partial class SaveInfoExample : Node
     public override void _Ready()
     {
         var api = KonadoAPI.DialogueManagerApi;
+        if (api == null)
+            return;
 
         if (api.SaveGame(1))
         {
@@ -444,7 +496,7 @@ public partial class SaveInfoExample : Node
 `IsApiReady` only means the Konado.NET autoload initialized. `DialogueManagerApi.IsReady` means a `KND_DialogueManager` was found. Confirm that the current scene contains a dialogue manager, or bind one manually:
 
 ```csharp
-KonadoAPI.DialogueManagerApi.BindDialogueManager(GetNode<Node>("path/to/manager"));
+KonadoAPI.DialogueManagerApi?.BindDialogueManager(GetNode<Node>("path/to/manager"));
 ```
 
 ### Events do not fire
