@@ -1,3 +1,16 @@
+## 2.7.3 - Wontons
+
+### Bug Fixes
+
+- Fixed complex backgrounds rendering incorrectly during built-in transitions
+- Fixed stale tasks potentially continuing after a background transition was cancelled or replaced
+- Fixed KonadoScript diagnostic popups flickering and making action buttons difficult to click
+
+### Other Improvements
+
+- Made full-scene capture the default for background transitions, with an optional `DIRECT_TEXTURE` fast path for static backgrounds
+- Improved the audio playback API documentation
+
 ## 2.7.2 - Wontons
 
 ### Bug Fixes
