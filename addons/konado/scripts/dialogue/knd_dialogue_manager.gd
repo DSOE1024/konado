@@ -514,7 +514,7 @@ func _process(_delta) -> void:
 
 					var s = _konado_dialogue_box.on_dialogue_hide_completed
 					_playback().connect_auto_advance(s, playback_generation)
-					_konado_dialogue_box.hide_dialogue_box_with_duration(dialog.textbox_duration)
+					_konado_dialogue_box.hide_dialogue_box_with_duration(dialog.textbox_duration, true)
 				elif cur_dialogue_type == KND_Dialogue.Type.WAIT_SIGNAL:
 					_waiting_signal_name = dialog.wait_signal_name
 				elif cur_dialogue_type == KND_Dialogue.Type.SHOW_CHOICE:
