@@ -140,10 +140,8 @@ func _start_crossfade(request_id: int, duration: float) -> void:
 	_active_tween.set_trans(Tween.TRANS_SINE)
 	_active_tween.set_ease(Tween.EASE_IN_OUT)
 
-	# 旧快照淡出
-	if _overlay_visual and is_instance_valid(_overlay_visual):
-		_active_tween.tween_property(_overlay_visual, "modulate:a", 0.0, duration)
-
+	# 新立绘在其上由 0 淡入到目标透明度。这样新旧画面直接交融过渡
+	# 且底图全程不透明，背景不会在过渡中途透过两层半透明叠加而透出
 	# 新视觉淡入
 	_active_tween.tween_property(_active_visual, "modulate:a", _active_target_alpha, duration)
 
