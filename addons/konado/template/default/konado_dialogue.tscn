@@ -41,9 +41,9 @@ _acting_interface = NodePath("KonadoUI/CanvasLayer/ActingInterface")
 _audio_interface = NodePath("KonadoAudioInterface")
 _auto_play_button = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/AutoPlay")
 _settings_button = NodePath("KonadoUI/CanvasLayer2/ColorRect/HBoxContainer/Settings")
-error_tooltip_panel = NodePath("KonadoErrorToolTip")
-error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
-error_skip_btn = NodePath("KonadoErrorToolTip/Skip")
+error_tooltip_panel = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip")
+error_tooltip_label = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer/ErrorText")
+error_skip_btn = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip/Skip")
 save_system = NodePath("KND_SaveSystem")
 _settings_bridge = NodePath("KND_SettingsBridge")
 _konado_cam_manager = NodePath("KonadoUI/CanvasLayer/ActingInterface/KonadoCameraManager")
@@ -51,6 +51,7 @@ _konado_cam_manager = NodePath("KonadoUI/CanvasLayer/ActingInterface/KonadoCamer
 [node name="KonadoUI" type="Node" parent="." unique_id=1314482304]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="KonadoUI" unique_id=2059564566]
+layer = 1
 follow_viewport_enabled = true
 
 [node name="ActingInterface" type="PanelContainer" parent="KonadoUI/CanvasLayer" unique_id=580713454]
@@ -99,6 +100,7 @@ bg_container = NodePath("../BackgroundLayer/BackgroundContainer")
 metadata/_custom_type_script = "uid://caa0f7vr4lmwx"
 
 [node name="CanvasLayer2" type="CanvasLayer" parent="KonadoUI" unique_id=1650226115]
+layer = 10
 
 [node name="DialogueInterface" type="Control" parent="KonadoUI/CanvasLayer2" unique_id=254950114]
 layout_mode = 3
@@ -213,6 +215,7 @@ text = "主菜单"
 flat = true
 
 [node name="CanvasLayer3" type="CanvasLayer" parent="KonadoUI" unique_id=557323700]
+layer = 50
 
 [node name="SaveSystemUI" type="Control" parent="KonadoUI/CanvasLayer3" unique_id=14919090 node_paths=PackedStringArray("root_container", "save_system")]
 visible = false
@@ -276,7 +279,10 @@ _settings_bridge = NodePath("../KND_SettingsBridge")
 
 [node name="SoundEffectPlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=743748580]
 
-[node name="KonadoErrorToolTip" type="ColorRect" parent="." unique_id=1152539807]
+[node name="SystemLayer" type="CanvasLayer" parent="KonadoUI" unique_id=2080642234]
+layer = 120
+
+[node name="KonadoErrorToolTip" type="ColorRect" parent="KonadoUI/SystemLayer" unique_id=1152539807]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -286,7 +292,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.08627451, 0.08627451, 0.08627451, 0.9137255)
 
-[node name="MarginContainer" type="MarginContainer" parent="KonadoErrorToolTip" unique_id=531884272]
+[node name="MarginContainer" type="MarginContainer" parent="KonadoUI/SystemLayer/KonadoErrorToolTip" unique_id=531884272]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -298,13 +304,13 @@ theme_override_constants/margin_top = 66
 theme_override_constants/margin_right = 66
 theme_override_constants/margin_bottom = 66
 
-[node name="ErrorText" type="Label" parent="KonadoErrorToolTip/MarginContainer" unique_id=735988474]
+[node name="ErrorText" type="Label" parent="KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer" unique_id=735988474]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 size_flags_vertical = 1
 autowrap_mode = 3
 
-[node name="Skip" type="Button" parent="KonadoErrorToolTip" unique_id=283867520]
+[node name="Skip" type="Button" parent="KonadoUI/SystemLayer/KonadoErrorToolTip" unique_id=283867520]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0

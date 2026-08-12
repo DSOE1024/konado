@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/template/default/theme/default_theme.tres" id="2_7p3bq"]
 
 [node name="SettingsPanel" type="CanvasLayer" unique_id=1104298021 node_paths=PackedStringArray("_tab_container", "btn_reset", "btn_close", "title_label")]
+layer = 100
 script = ExtResource("1")
 _tab_container = NodePath("PanelContainer/MarginContainer/VBoxContainer/MarginContainer/TabContainer")
 btn_reset = NodePath("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/Reset")

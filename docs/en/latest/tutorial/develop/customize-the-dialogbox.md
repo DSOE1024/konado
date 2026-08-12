@@ -17,6 +17,21 @@ Do not edit files under `res://addons/konado/` directly; plugin upgrades replace
 
 In general, do not modify scripts on nodes. Prefer changing node properties to achieve customization.
 
+## UI Layer Contract
+
+The built-in UI uses the following `CanvasLayer.layer` values so full-screen interfaces do not obscure one another based on scene-tree order:
+
+| Layer | Purpose |
+|-------|---------|
+| `1` | Stage, backgrounds, and acting content |
+| `10` | Dialogue box, choices, and dialogue toolbar |
+| `50` | Save interface |
+| `100` | Modal panels such as settings and achievements |
+| `110` | Short-lived notifications such as achievement unlocks |
+| `120` | Runtime errors that must remain above all built-in UI |
+
+Place custom UI in the range appropriate to its purpose. Avoid layer `120` or higher unless it must cover system error messages. Achievement layers can also be adjusted through `KND_AchievementManager.panel_layer` and `popup_layer`.
+
 ## Customize Voice Progress
 
 When a regular dialogue line has a voice tag and its audio is playing, the dialogue box displays playback progress. It hides the indicator when no voice is assigned, the resource cannot be resolved, or playback ends. Disable `show_voice_progress` on the `KonadoDialogueBox` node if the project does not need it.
