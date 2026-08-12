@@ -17,6 +17,20 @@ order: 4
 
 일반적으로 노드의 스크립트는 수정하지 말고, 노드의 속성을 수정해 사용자 지정 효과를 구현하세요.
 
+## 표시 API
+
+`KND_DialogueBox`는 일시적으로 숨기는 동작과 내용을 폐기하는 동작을 별도 API로 제공합니다.
+
+```gdscript
+dialogue_box.hide_dialogue_box()
+dialogue_box.hide_dialogue_box_with_duration(0.5)
+
+dialogue_box.dismiss_dialogue_box()
+dialogue_box.dismiss_dialogue_box_with_duration(0.5)
+```
+
+`hide_dialogue_box*()`는 나중에 다시 표시할 수 있도록 현재 화자 이름과 대화문을 유지합니다. `dismiss_dialogue_box*()`는 숨기기 애니메이션이 끝난 뒤 해당 내용을 지우며, 현재 대화 내용을 종료할 때 사용합니다. KonadoScript의 `hidetextbox` 명령은 후자의 동작을 사용합니다.
+
 ## UI 레이어 규칙
 
 씬 트리 순서에 따라 전체 화면 UI가 서로 가려지지 않도록 기본 UI는 다음 `CanvasLayer.layer` 값을 사용합니다.

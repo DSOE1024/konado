@@ -17,6 +17,20 @@ order: 4
 
 一般情况下请不要修改节点上的脚本，而是通过修改节点上的属性来达到自定义的效果。
 
+## 显示与隐藏 API
+
+`KND_DialogueBox` 将临时隐藏与关闭清理分为两组接口：
+
+```gdscript
+dialogue_box.hide_dialogue_box()
+dialogue_box.hide_dialogue_box_with_duration(0.5)
+
+dialogue_box.dismiss_dialogue_box()
+dialogue_box.dismiss_dialogue_box_with_duration(0.5)
+```
+
+`hide_dialogue_box*()` 保留当前角色名和文本，适合暂时隐藏后恢复；`dismiss_dialogue_box*()` 会在隐藏动画完成后清除当前内容，适合结束当前对话内容。KonadoScript 的 `hidetextbox` 指令使用后者。
+
 ## 界面层级约定
 
 内置界面使用以下 `CanvasLayer.layer` 层级，避免全屏界面因场景树顺序不同而相互遮挡：

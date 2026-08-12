@@ -34,6 +34,7 @@ func _run() -> void:
 	await _test_destroyed_choice_button_callback_is_safe()
 	await _test_shot_end_can_stop_a_replacement_shot()
 	await _test_hide_then_show_preserves_content()
+	await _test_dismiss_clears_content()
 	if _failures == 0:
 		print("PASS: dialogue lifecycle tests")
 	quit(_failures)
@@ -379,19 +380,46 @@ func _test_stop_fades_and_clears_content_once() -> void:
 func _test_hide_textbox(duration: float) -> void:
 	var manager := await _create_manager()
 	var first := _make_dialogue("first", "first")
+	first.character_id = "First speaker"
 	var hide := KND_Dialogue.new()
 	hide.dialog_type = KND_Dialogue.Type.HIDE_TEXTBOX
 	hide.node_id = "hide"
 	hide.next_id = "second"
 	hide.textbox_duration = duration
 	var second := _make_dialogue("second", "second")
+	second.character_id = "Second speaker"
 	first.next_id = hide.node_id
 	manager.start_dialogue_shot = _make_shot_from_dialogues([first, hide, second])
 	manager.init_dialogue()
 	manager.start_dialogue()
 	await _wait_for_state(manager, KND_DialogueManager.DialogState.PAUSED)
+	var hide_completed := [false]
+	var content_at_hide_completion := ["not observed"]
+	var speaker_at_hide_completion := ["not observed"]
+	manager._konado_dialogue_box.on_dialogue_hide_completed.connect(
+		func() -> void:
+			hide_completed[0] = true
+			content_at_hide_completion[0] = manager._konado_dialogue_box.dialogue_text
+			speaker_at_hide_completion[0] = manager._konado_dialogue_box.character_name,
+		CONNECT_ONE_SHOT,
+	)
 	manager._process_next()
-	await create_timer(0.08).timeout
+	await _wait_for_condition(
+		func() -> bool: return hide_completed[0],
+		"hidetextbox completes its hide transition",
+	)
+
+	_expect_equal(
+		content_at_hide_completion[0],
+		"",
+		"hidetextbox clears the previous dialogue text after hiding",
+	)
+	_expect_equal(
+		speaker_at_hide_completion[0],
+		"",
+		"hidetextbox clears the previous speaker after hiding",
+	)
+	await _wait_for_node_and_state(manager, "second", KND_DialogueManager.DialogState.PAUSED)
 
 	_expect_equal(
 		manager.cur_node_id,
@@ -402,6 +430,11 @@ func _test_hide_textbox(duration: float) -> void:
 		manager._konado_dialogue_box.dialogue_text,
 		"second",
 		"the dialogue following hidetextbox updates its text",
+	)
+	_expect_equal(
+		manager._konado_dialogue_box.character_name,
+		"Second speaker",
+		"the dialogue following hidetextbox updates its speaker",
 	)
 	_expect(
 		manager._konado_dialogue_box.dialogue_label.visible,
@@ -922,11 +955,34 @@ func _test_hide_then_show_preserves_content() -> void:
 	_expect_equal(
 		box.character_name,
 		"Kona",
-		"hiding and showing the dialogue box preserves the current speaker",
+		"the general hide API preserves the current speaker by default",
 	)
 	_expect_equal(
 		box.dialogue_text,
 		"Preserved content",
-		"hiding and showing the dialogue box preserves the current text",
+		"the general hide API preserves the current text by default",
+	)
+	await _free_node(box)
+
+
+func _test_dismiss_clears_content() -> void:
+	var box := DIALOGUE_BOX_SCENE.instantiate() as KND_DialogueBox
+	box.enable_typing_effect_audio = false
+	root.add_child(box)
+	await process_frame
+	box.character_name = "Kona"
+	box.dialogue_text = "Discarded content"
+	box.show_dialogue_box_with_duration(0.0)
+	box.dismiss_dialogue_box_with_duration(0.0)
+
+	_expect_equal(
+		box.character_name,
+		"",
+		"the dismiss API clears the current speaker",
+	)
+	_expect_equal(
+		box.dialogue_text,
+		"",
+		"the dismiss API clears the current text",
 	)
 	await _free_node(box)

@@ -17,6 +17,20 @@ Do not edit files under `res://addons/konado/` directly; plugin upgrades replace
 
 In general, do not modify scripts on nodes. Prefer changing node properties to achieve customization.
 
+## Visibility API
+
+`KND_DialogueBox` separates temporary hiding from dismissing content:
+
+```gdscript
+dialogue_box.hide_dialogue_box()
+dialogue_box.hide_dialogue_box_with_duration(0.5)
+
+dialogue_box.dismiss_dialogue_box()
+dialogue_box.dismiss_dialogue_box_with_duration(0.5)
+```
+
+The `hide_dialogue_box*()` methods preserve the current speaker and text for later restoration. The `dismiss_dialogue_box*()` methods clear that content after the hide animation completes and are appropriate when the current dialogue content has ended. The KonadoScript `hidetextbox` command uses the latter behavior.
+
 ## UI Layer Contract
 
 The built-in UI uses the following `CanvasLayer.layer` values so full-screen interfaces do not obscure one another based on scene-tree order:

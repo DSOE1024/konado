@@ -325,7 +325,7 @@ func stop() -> void:
 		return
 	print_rich("[color=yellow]关闭对话[/color]")
 	if host._konado_dialogue_box:
-		host._konado_dialogue_box.hide_dialogue_box(true)
+		host._konado_dialogue_box.dismiss_dialogue_box()
 	_finish_stop(host, should_emit_shot_end)
 
 
