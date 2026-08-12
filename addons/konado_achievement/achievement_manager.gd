@@ -8,10 +8,23 @@ signal achievement_reset(achievement_id: String)
 signal achievements_reset
 signal achievements_loaded
 
+const DEFAULT_PANEL_LAYER := 100
+const DEFAULT_POPUP_LAYER := 110
+
 @export var config_path: String = "res://addons/konado_achievement/data/achievements.json"
 @export var save_path: String = "user://achievements_save.json"
 @export_range(0.1, 60.0, 0.1, "or_greater") var popup_duration: float = 3.0
 @export var popup_position: String = "top_left"  # top_left, top_right, bottom_left, bottom_right
+@export_range(-128, 127, 1) var panel_layer: int = DEFAULT_PANEL_LAYER:
+	set(value):
+		panel_layer = clampi(value, -128, 127)
+		if _panel_canvas_layer:
+			_panel_canvas_layer.layer = panel_layer
+@export_range(-128, 127, 1) var popup_layer: int = DEFAULT_POPUP_LAYER:
+	set(value):
+		popup_layer = clampi(value, -128, 127)
+		if _popup_canvas_layer:
+			_popup_canvas_layer.layer = popup_layer
 
 ## 覆盖此回调以将解锁同步到外部后端。
 ## func(achievement_id: String, data: Dictionary) -> void
@@ -29,9 +42,15 @@ var _panel_scene: PackedScene = null
 var _active_popup: Control = null
 var _active_panel: Control = null
 var _popup_timer: Timer = null
+var _panel_canvas_layer: CanvasLayer = null
+var _popup_canvas_layer: CanvasLayer = null
+var _previous_focus_owner: Control = null
+var _focus_change_generation: int = 0
 
 
 func _ready() -> void:
+	_panel_canvas_layer = _create_canvas_layer("AchievementPanelLayer", panel_layer)
+	_popup_canvas_layer = _create_canvas_layer("AchievementPopupLayer", popup_layer)
 	_popup_scene = load("res://addons/konado_achievement/achievement_popup.tscn")
 	_panel_scene = load("res://addons/konado_achievement/achievement_panel.tscn")
 	_load_config()
@@ -279,9 +298,7 @@ func _show_popup(ach_data: Dictionary) -> void:
 	# 关闭现有弹出
 	_dismiss_popup()
 	_active_popup = _popup_scene.instantiate()
-	# 添加到场景树的根视口
-	var root := get_tree().root
-	root.add_child(_active_popup)
+	_popup_canvas_layer.add_child(_active_popup)
 	# 设置弹出内容
 	if _active_popup.has_method("setup"):
 		var icon_path: String = ach_data.get("icon", "")
@@ -297,6 +314,7 @@ func _show_popup(ach_data: Dictionary) -> void:
 	if _popup_timer:
 		_popup_timer.queue_free()
 	_popup_timer = Timer.new()
+	_popup_timer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_popup_timer.wait_time = maxf(popup_duration, 0.1)
 	_popup_timer.one_shot = true
 	_popup_timer.timeout.connect(_dismiss_popup)
@@ -316,23 +334,34 @@ func _dismiss_popup() -> void:
 
 # 弹出成就列表
 func show_panel() -> void:
+	_focus_change_generation += 1
 	if _active_panel and is_instance_valid(_active_panel):
+		_remember_focus_owner()
 		_active_panel.visible = true
 		if _active_panel.has_method("refresh"):
 			_active_panel.refresh()
+		if _active_panel.has_method("focus_close_button"):
+			_active_panel.focus_close_button()
 		return
 	if not _panel_scene:
+		push_error("KonadoAchievement 无法显示成就面板：面板场景未加载。")
 		return
 	_active_panel = _panel_scene.instantiate()
-	var root := get_tree().root
-	root.add_child(_active_panel)
+	if _active_panel.has_method("setup"):
+		_active_panel.setup(self)
+	_remember_focus_owner()
+	_panel_canvas_layer.add_child(_active_panel)
 	if _active_panel.has_method("refresh"):
 		_active_panel.refresh()
+	if _active_panel.has_method("focus_close_button"):
+		_active_panel.focus_close_button()
 
 
 func hide_panel() -> void:
 	if _active_panel and is_instance_valid(_active_panel):
 		_active_panel.visible = false
+		_focus_change_generation += 1
+		_restore_focus_owner(_focus_change_generation)
 
 
 func toggle_panel() -> void:
@@ -344,6 +373,40 @@ func toggle_panel() -> void:
 
 func is_panel_visible() -> bool:
 	return _active_panel != null and is_instance_valid(_active_panel) and _active_panel.visible
+
+
+func _create_canvas_layer(layer_name: String, layer_index: int) -> CanvasLayer:
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.name = layer_name
+	canvas_layer.layer = layer_index
+	canvas_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(canvas_layer)
+	return canvas_layer
+
+
+func _remember_focus_owner() -> void:
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	if focus_owner == null:
+		return
+	if focus_owner != _active_panel and not _active_panel.is_ancestor_of(focus_owner):
+		_previous_focus_owner = focus_owner
+
+
+func _restore_focus_owner(generation: int) -> void:
+	await get_tree().process_frame
+	if generation != _focus_change_generation or is_panel_visible():
+		return
+	var current_focus_owner := get_viewport().gui_get_focus_owner()
+	if (
+		current_focus_owner != null
+		and current_focus_owner != _active_panel
+		and not _active_panel.is_ancestor_of(current_focus_owner)
+	):
+		_previous_focus_owner = null
+		return
+	if _previous_focus_owner and is_instance_valid(_previous_focus_owner):
+		_previous_focus_owner.grab_focus()
+	_previous_focus_owner = null
 
 
 ## 判断成就条件

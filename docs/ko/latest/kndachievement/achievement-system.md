@@ -44,10 +44,8 @@ KonadoAchievement는 Konado를 위해 설계된 가볍고 데이터 기반의 �
 - `save_path`: 업적 진행도 저장 경로
 - `popup_duration`: 업적 해금 팝업 알림의 표시 시간
 - `popup_position`: 팝업 알림 위치(top_left, top_right, bottom_left, bottom_right)
-
-::tip
-이 부분은 더 유연한 설정 옵션을 제공하기 위해 향후 리팩터링될 수 있습니다.
-::
+- `panel_layer`: 업적 패널의 CanvasLayer 레이어이며 기본값은 `100`
+- `popup_layer`: 업적 해금 알림의 CanvasLayer 레이어이며 기본값은 `110`
 
 ## 핵심 기능
 

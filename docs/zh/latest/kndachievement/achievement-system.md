@@ -47,10 +47,8 @@ KonadoAchievement 是一款轻量、数据驱动的成就系统插件，为 Kona
 - `save_path`: 成就进度保存路径
 - `popup_duration`: 成就解锁弹出通知的显示时长
 - `popup_position`: 弹出通知的位置（top_left, top_right, bottom_left, bottom_right）
-
-::tip
-这个部分未来可能会重构，以提供更灵活的配置选项。
-::
+- `panel_layer`: 成就面板的 CanvasLayer 层级，默认为 `100`
+- `popup_layer`: 成就解锁通知的 CanvasLayer 层级，默认为 `110`
 
 ## 核心功能
 

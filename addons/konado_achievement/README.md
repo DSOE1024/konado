@@ -102,6 +102,8 @@ KND_AchievementManager.config_path = "res://my_data/achievements.json"
 KND_AchievementManager.save_path = "user://my_save.json"
 KND_AchievementManager.popup_duration = 4.0
 KND_AchievementManager.popup_position = "top_right"  # top_left, top_right, bottom_left, bottom_right
+KND_AchievementManager.panel_layer = 100
+KND_AchievementManager.popup_layer = 110
 ```
 
 ## 外部集成

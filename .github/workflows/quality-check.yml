@@ -92,9 +92,9 @@ jobs:
           python3 .github/scripts/run_godot_test.py tests/i18n/test_knd_i18n_autoload.gd
 
       - name: Test auxiliary plugins
-        run: >-
-          python3 .github/scripts/run_godot_test.py
-          tests/addons/test_auxiliary_plugins.gd
+        run: |
+          python3 .github/scripts/run_godot_test.py tests/addons/test_auxiliary_plugins.gd
+          python3 .github/scripts/run_godot_test.py tests/addons/test_achievement_ui.gd
 
   dotnet-build:
     name: Konado.NET compile

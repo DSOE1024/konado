@@ -9,9 +9,22 @@ var _progress_label: Label
 var _scroll: ScrollContainer
 var _item_container: VBoxContainer
 var _reset_btn: Button
+var _achievement_manager: Node
+
+
+func setup(achievement_manager: Node) -> void:
+	_achievement_manager = achievement_manager
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	if _achievement_manager == null:
+		_achievement_manager = get_tree().root.get_node_or_null("KND_AchievementManager")
+	if _achievement_manager == null:
+		push_error("KonadoAchievement 成就面板缺少管理器。")
+		queue_free()
+		return
 	anchors_preset = Control.PRESET_FULL_RECT
 	anchor_right = 1.0
 	anchor_bottom = 1.0
@@ -55,7 +68,7 @@ func _ready() -> void:
 
 	_reset_btn = Button.new()
 	_reset_btn.text = tr("重置所有成就")
-	_reset_btn.pressed.connect(func(): KND_AchievementManager.reset_all())
+	_reset_btn.pressed.connect(func(): _achievement_manager.reset_all())
 	header.add_child(_reset_btn)
 
 	# 分隔符
@@ -72,11 +85,11 @@ func _ready() -> void:
 	_item_container.add_theme_constant_override("separation", 8)
 	_scroll.add_child(_item_container)
 
-	KND_AchievementManager.achievement_unlocked.connect(_on_achievement_changed)
-	KND_AchievementManager.achievement_progress_updated.connect(_on_progress_changed)
-	KND_AchievementManager.achievement_reset.connect(_on_achievement_reset)
-	KND_AchievementManager.achievements_reset.connect(refresh)
-	KND_AchievementManager.achievements_loaded.connect(refresh)
+	_achievement_manager.achievement_unlocked.connect(_on_achievement_changed)
+	_achievement_manager.achievement_progress_updated.connect(_on_progress_changed)
+	_achievement_manager.achievement_reset.connect(_on_achievement_reset)
+	_achievement_manager.achievements_reset.connect(refresh)
+	_achievement_manager.achievements_loaded.connect(refresh)
 	refresh()
 
 
@@ -87,7 +100,7 @@ func refresh() -> void:
 	for child in _item_container.get_children():
 		child.queue_free()
 
-	var all_achs: Array = KND_AchievementManager.get_all_achievements()
+	var all_achs: Array = _achievement_manager.get_all_achievements()
 	var unlocked_count := 0
 
 	for ach in all_achs:
@@ -205,7 +218,22 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 
 
 func _on_close() -> void:
-	KND_AchievementManager.hide_panel()
+	_achievement_manager.hide_panel()
+
+
+func focus_close_button() -> void:
+	_grab_close_button_focus.call_deferred()
+
+
+func _grab_close_button_focus() -> void:
+	if visible and _close_btn and is_instance_valid(_close_btn) and _close_btn.is_visible_in_tree():
+		_close_btn.grab_focus()
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed("ui_cancel"):
+		_on_close()
+		get_viewport().set_input_as_handled()
 
 
 func _on_achievement_changed(_achievement_id: String, _data: Dictionary) -> void:

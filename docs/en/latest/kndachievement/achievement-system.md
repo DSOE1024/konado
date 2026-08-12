@@ -44,10 +44,8 @@ In `KND_AchievementManager`, you can configure the following properties:
 - `save_path`: Path for saving achievement progress
 - `popup_duration`: Display duration of the achievement unlock popup notification
 - `popup_position`: Popup notification position (top_left, top_right, bottom_left, bottom_right)
-
-::tip
-This part may be refactored in the future to provide more flexible configuration options.
-::
+- `panel_layer`: CanvasLayer index for the achievement panel; defaults to `100`
+- `popup_layer`: CanvasLayer index for unlock notifications; defaults to `110`
 
 ## Core Features
 

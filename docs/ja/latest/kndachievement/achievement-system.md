@@ -44,10 +44,8 @@ KonadoAchievement は、Konado 向けに設計された軽量なデータ駆動�
 - `save_path`: 実績進捗の保存パス
 - `popup_duration`: 実績解除ポップアップ通知の表示時間
 - `popup_position`: ポップアップ通知の位置（top_left, top_right, bottom_left, bottom_right）
-
-::tip
-この部分は将来、より柔軟な設定オプションを提供するためにリファクタリングされる可能性があります。
-::
+- `panel_layer`: 実績パネルの CanvasLayer レイヤー。デフォルトは `100`
+- `popup_layer`: 実績解除通知の CanvasLayer レイヤー。デフォルトは `110`
 
 ## コア機能
 
