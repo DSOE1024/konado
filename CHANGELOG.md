@@ -1,3 +1,16 @@
+## 2.7.4 - Wontons
+
+### Bug Fixes
+
+- Fixed achievement panels, settings panels, and system messages potentially being obscured by the dialogue UI
+- Fixed the achievement panel being impossible to close while paused and failing to restore keyboard focus after closing
+- Fixed `KonadoCamera2D` target markers potentially taking over the active camera and offsetting complex background transitions
+
+### Other Improvements
+
+- Added configurable layers for the achievement panel and unlock notifications, and documented the built-in UI layer contract
+- Expanded runtime regression coverage for achievement UI and camera targets in complex backgrounds
+
 ## 2.7.3 - Wontons
 
 ### Bug Fixes
