@@ -137,6 +137,8 @@ background bg1 fade
 
 系统会根据 `background_name` 找到对应的 `background_scene`，实例化后挂到背景层。
 
+需要镜头命令时，可以在背景场景中添加名称唯一的 `KonadoCamera2D`。它只保存目标机位的位置和缩放，不负责渲染画面；实际渲染由对话模板中的相机完成。因此不要把普通背景相机替换为 `KonadoCamera2D`。
+
 ### 基本结构
 
 一个图片背景可以这样组织：

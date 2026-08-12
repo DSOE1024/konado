@@ -9,4 +9,4 @@ order: 1
 cam move <camera_id> [none|linear|ease_in_out] [秒]
 ```
 
-移動到目前背景中名稱唯一的 `KonadoCamera2D`。省略或使用 `none` 會立即移動；動畫預設為一秒。
+移動到目前背景中名稱唯一的 `KonadoCamera2D`。`KonadoCamera2D` 只儲存目標位置與縮放，不會直接繪製場景。省略或使用 `none` 會立即移動；動畫預設為一秒。

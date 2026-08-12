@@ -27,12 +27,14 @@ texture = ExtResource("2_0ki5s")
 [node name="KonadoCamera2D" type="Camera2D" parent="." unique_id=665198934]
 position = Vector2(650, 397)
 zoom = Vector2(1.5, 1.5)
+enabled = false
 script = ExtResource("3_fr4rs")
 metadata/_custom_type_script = "uid://dbvsg63rj1tnx"
 
 [node name="KonadoCamera2D2" type="Camera2D" parent="." unique_id=326912723]
 position = Vector2(924, 476)
 zoom = Vector2(1.2, 1.2)
+enabled = false
 script = ExtResource("3_fr4rs")
 camera_setup = "cam2"
 metadata/_custom_type_script = "uid://dbvsg63rj1tnx"

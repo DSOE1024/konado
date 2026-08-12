@@ -11,6 +11,9 @@ func _init() -> void:
 
 func _run() -> void:
 	_test_safe_capture_contract()
+	await _test_camera_marker_contract()
+	await _test_parallax_camera_markers_during_transition()
+	await _test_custom_rendering_camera_during_transition()
 	await _test_transition_generation_and_viewport_lifecycle()
 	await _test_direct_texture_fast_path()
 	await _test_exit_tree_invalidates_deferred_transition()
@@ -58,6 +61,137 @@ func _test_safe_capture_contract() -> void:
 	default_background.free()
 	no_texture_background.free()
 	parallax_background.free()
+
+
+func _test_camera_marker_contract() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(320, 180)
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(viewport)
+	var background := KND_BackgroundSceneBase.new()
+	viewport.add_child(background)
+
+	var marker := KonadoCamera2D.new()
+	marker.camera_setup = "close_up"
+	marker.position = Vector2(128.0, 72.0)
+	marker.zoom = Vector2(1.5, 1.5)
+	marker.enabled = true
+	background.add_child(marker)
+	await process_frame
+	_expect(
+		not marker.enabled,
+		"KonadoCamera2D disables rendering when it enters the scene tree",
+	)
+	_expect_equal(
+		viewport.get_camera_2d(),
+		null,
+		"a Konado camera marker never takes over its viewport",
+	)
+
+	var render_camera := Camera2D.new()
+	render_camera.position = Vector2(10.0, 20.0)
+	background.add_child(render_camera)
+	await process_frame
+	_expect(render_camera.enabled, "an ordinary Camera2D remains available for custom rendering")
+	_expect_equal(
+		viewport.get_camera_2d(),
+		render_camera,
+		"the marker contract does not disable a custom rendering camera",
+	)
+
+	var manager := KonadoCameraManager.new()
+	manager.current = render_camera
+	manager.bg_container = background
+	viewport.add_child(manager)
+	manager.get_all_konado_cameras()
+	_expect_equal(manager.cameras.size(), 1, "the disabled marker remains discoverable")
+	manager.move_cam("close_up", 0.0)
+	await process_frame
+	_expect_equal(
+		render_camera.position,
+		marker.position,
+		"camera commands still copy the disabled marker position to the rendering camera",
+	)
+	_expect_equal(
+		render_camera.zoom,
+		marker.zoom,
+		"camera commands still copy the disabled marker zoom to the rendering camera",
+	)
+	await _free_node(viewport)
+
+
+func _test_parallax_camera_markers_during_transition() -> void:
+	var fixture := await _create_layer_fixture()
+	var host := fixture["host"] as Control
+	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var background := PARALLAX_BACKGROUND_SCENE.instantiate() as KND_BackgroundSceneBase
+	var markers := _find_camera_markers(background)
+	_expect_equal(markers.size(), 2, "the bundled parallax scene exposes both camera targets")
+
+	layer.play_transition(null, background, "fade")
+	await process_frame
+	_expect(
+		_all_markers_disabled(markers),
+		"camera targets stay disabled while the background is captured",
+	)
+	_expect_equal(
+		layer._target_viewport.get_camera_2d(),
+		null,
+		"camera targets cannot offset the target SubViewport capture",
+	)
+
+	var replacement := PARALLAX_BACKGROUND_SCENE.instantiate() as KND_BackgroundSceneBase
+	var replacement_markers := _find_camera_markers(replacement)
+	layer.play_transition(null, replacement, "wave")
+	await process_frame
+	_expect(
+		_all_markers_disabled(replacement_markers),
+		"replacement transitions preserve the non-rendering marker contract",
+	)
+	_expect_equal(
+		layer._target_viewport.get_camera_2d(),
+		null,
+		"a replacement capture is not displaced by its camera targets",
+	)
+	layer._finish_shader_transition(layer._transition_generation)
+	_expect(
+		_all_markers_disabled(replacement_markers),
+		"completed transitions never reactivate camera targets",
+	)
+	await _free_node(host)
+
+
+func _test_custom_rendering_camera_during_transition() -> void:
+	var fixture := await _create_layer_fixture()
+	var host := fixture["host"] as Control
+	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var background := _make_background(false)
+	var marker := KonadoCamera2D.new()
+	marker.position = Vector2(96.0, 54.0)
+	marker.enabled = true
+	background.add_child(marker)
+	var render_camera := Camera2D.new()
+	render_camera.position = Vector2(160.0, 90.0)
+	background.add_child(render_camera)
+
+	layer.play_transition(null, background, "fade")
+	await process_frame
+	_expect(not marker.enabled, "the camera target remains a marker during capture")
+	_expect(
+		render_camera.enabled,
+		"viewport capture preserves a custom rendering camera's authored state",
+	)
+	_expect_equal(
+		layer._target_viewport.get_camera_2d(),
+		render_camera,
+		"viewport capture uses the custom rendering camera instead of a marker",
+	)
+	layer._finish_shader_transition(layer._transition_generation)
+	_expect(
+		render_camera.enabled,
+		"completing a transition does not rewrite a custom rendering camera's state",
+	)
+	await _free_node(host)
 
 
 func _test_transition_generation_and_viewport_lifecycle() -> void:
@@ -394,6 +528,21 @@ func _make_texture() -> Texture2D:
 	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
 	image.fill(Color("684c9e"))
 	return ImageTexture.create_from_image(image)
+
+
+func _find_camera_markers(background: Node) -> Array[KonadoCamera2D]:
+	var markers: Array[KonadoCamera2D] = []
+	for node in background.find_children("*", "Camera2D", true, false):
+		if node is KonadoCamera2D:
+			markers.append(node)
+	return markers
+
+
+func _all_markers_disabled(markers: Array[KonadoCamera2D]) -> bool:
+	for marker in markers:
+		if marker.enabled:
+			return false
+	return true
 
 
 func _wait_until(predicate: Callable, timeout_ms: int) -> bool:
