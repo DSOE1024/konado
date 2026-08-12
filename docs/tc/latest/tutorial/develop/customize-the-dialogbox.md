@@ -17,6 +17,20 @@ order: 4
 
 一般情況下請不要修改節點上的腳本，而是透過修改節點屬性來達到自訂效果。
 
+## 顯示與隱藏 API
+
+`KND_DialogueBox` 將暫時隱藏與關閉清理分為兩組介面：
+
+```gdscript
+dialogue_box.hide_dialogue_box()
+dialogue_box.hide_dialogue_box_with_duration(0.5)
+
+dialogue_box.dismiss_dialogue_box()
+dialogue_box.dismiss_dialogue_box_with_duration(0.5)
+```
+
+`hide_dialogue_box*()` 會保留目前的角色名稱和對話文字，適合暫時隱藏後恢復；`dismiss_dialogue_box*()` 會在隱藏動畫完成後清除目前內容，適合結束目前的對話內容。KonadoScript 的 `hidetextbox` 指令使用後者。
+
 ## 介面層級約定
 
 內建介面使用以下 `CanvasLayer.layer` 層級，避免全螢幕介面因場景樹順序不同而互相遮擋：

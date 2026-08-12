@@ -293,7 +293,7 @@ func _show_dialogue_box(duration: float, callback: Callable = Callable()) -> voi
 	fade_tween.finished.connect(_complete_show.bind(transition_id, callback), CONNECT_ONE_SHOT)
 
 
-func _hide_dialogue_box(duration: float, clear_content: bool = false) -> void:
+func _hide_dialogue_box(duration: float, clear_content: bool) -> void:
 	var was_hidden := _visibility_state == VisibilityState.HIDDEN and not self.visible
 	var transition_id := _cancel_visibility_transition()
 	clear_voice_progress()
@@ -315,9 +315,14 @@ func _hide_dialogue_box(duration: float, clear_content: bool = false) -> void:
 	fade_tween.finished.connect(_complete_hide.bind(transition_id, clear_content), CONNECT_ONE_SHOT)
 
 
-## 隐藏对话框（带透明度过渡动画）
-func hide_dialogue_box(clear_content: bool = false) -> void:
-	_hide_dialogue_box(fade_duration, clear_content)
+## 暂时隐藏对话框并保留当前角色名和文本。
+func hide_dialogue_box() -> void:
+	_hide_dialogue_box(fade_duration, false)
+
+
+## 隐藏对话框，并在动画完成后清除当前角色名和文本。
+func dismiss_dialogue_box() -> void:
+	_hide_dialogue_box(fade_duration, true)
 
 
 ## 检查对话框是否显示
@@ -325,9 +330,14 @@ func is_dialogue_box_visible() -> bool:
 	return self.visible and _visibility_state != VisibilityState.HIDING and self.modulate.a > 0.0
 
 
-## 隐藏对话框（自定义动画时长）
-func hide_dialogue_box_with_duration(duration: float, clear_content: bool = false) -> void:
-	_hide_dialogue_box(duration, clear_content)
+## 使用指定时长暂时隐藏对话框，并保留当前角色名和文本。
+func hide_dialogue_box_with_duration(duration: float) -> void:
+	_hide_dialogue_box(duration, false)
+
+
+## 使用指定时长隐藏对话框，并在动画完成后清除当前角色名和文本。
+func dismiss_dialogue_box_with_duration(duration: float) -> void:
+	_hide_dialogue_box(duration, true)
 
 
 ## 清除仅属于当前镜头的文本、角色名、语音进度和打字状态。

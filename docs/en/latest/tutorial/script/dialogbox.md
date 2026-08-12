@@ -16,6 +16,8 @@ hidetextbox [duration]
 
 `duration` is optional, is measured in seconds, and cannot be negative. Omit it or use `0.0` for an immediate visibility change.
 
+After hiding completes, `hidetextbox` clears the current speaker and dialogue text so the previous line cannot briefly reappear the next time the dialogue box is shown.
+
 ## Examples
 
 ```text

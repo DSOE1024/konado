@@ -17,6 +17,20 @@ order: 4
 
 通常はノード上のスクリプトを変更せず、ノードのプロパティを変更してカスタマイズすることを推奨します。
 
+## 表示 API
+
+`KND_DialogueBox` は一時的な非表示と、内容を破棄する非表示を別の API として提供します。
+
+```gdscript
+dialogue_box.hide_dialogue_box()
+dialogue_box.hide_dialogue_box_with_duration(0.5)
+
+dialogue_box.dismiss_dialogue_box()
+dialogue_box.dismiss_dialogue_box_with_duration(0.5)
+```
+
+`hide_dialogue_box*()` は現在の話者名と台詞を保持するため、後で再表示する場合に使用します。`dismiss_dialogue_box*()` は非表示アニメーションの完了後に内容を消去するため、現在の会話内容を終了する場合に使用します。KonadoScript の `hidetextbox` 命令は後者の動作を使用します。
+
 ## UI レイヤーの規約
 
 シーンツリーの順序によって全画面 UI が互いに隠れないよう、組み込み UI では次の `CanvasLayer.layer` 値を使用します。
