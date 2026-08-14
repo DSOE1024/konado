@@ -6,12 +6,18 @@
 - Fixed the achievement panel being impossible to close while paused and failing to restore keyboard focus after closing
 - Fixed `KonadoCamera2D` target markers potentially taking over the active camera and offsetting complex background transitions
 - Fixed `hidetextbox` retaining the previous line and potentially flashing it the next time the dialogue box is shown
+- Fixed static portraits flashing or unexpectedly exposing the background during state blending
+- Fixed invalid, asynchronous, superseded, or actor-exit state requests potentially desynchronizing visuals and persisted data or leaving story execution waiting
+- Fixed invalid custom character scenes or motion layers replacing the active actor setup
+- Fixed custom character scenes receiving their initial state before layout and out-of-bounds portraits being clipped during state blending
+- Fixed repeated requests to an actor's in-progress destination potentially advancing the story before movement completed
 
 ### Other Improvements
 
 - Added configurable layers for the achievement panel and unlock notifications, and documented the built-in UI layer contract
-- Expanded runtime regression coverage for achievement UI and camera targets in complex backgrounds
 - Added explicit `dismiss_dialogue_box*()` APIs for hiding the dialogue box and clearing its content
+- Added premultiplied-alpha blending for static portraits with safe fading for dynamic and complex custom scenes
+- Expanded runtime regression coverage for achievement UI and camera targets in complex backgrounds
 
 ## 2.7.3 - Wontons
 
