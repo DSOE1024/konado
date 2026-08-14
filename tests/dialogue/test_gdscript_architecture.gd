@@ -9,14 +9,91 @@ class FakeActor:
 	var requested_statuses: Array[String] = []
 	var last_transition_duration := -1.0
 	var next_result := true
+	var before_status_applied := Callable()
+	var delay_next_move := false
+	var delay_next_status := false
+	var validation_result := true
+	var validation_count := 0
+	var validation_results: Array[bool] = []
+	var before_status_validation := Callable()
+	var fake_move_in_progress := false
 
 	func apply_character_status(
 		status_name: String, transition_duration: float = 0.0, completion: Callable = Callable()
 	) -> void:
 		requested_statuses.append(status_name)
 		last_transition_duration = transition_duration
+		var hook := before_status_applied
+		before_status_applied = Callable()
+		if hook.is_valid():
+			hook.call()
+		if delay_next_status:
+			delay_next_status = false
+			_finish_fake_status.call_deferred(status_name, completion, next_result)
+			return
+		_finish_fake_status(status_name, completion, next_result)
+
+	func _finish_fake_status(status_name: String, completion: Callable, succeeded: bool) -> void:
+		if succeeded:
+			actor_status_applied.emit(status_name)
 		if completion.is_valid():
-			completion.call(next_result)
+			completion.call(succeeded)
+
+	func set_stage_position(_target_h_division: int, _target_position: int) -> bool:
+		if fake_move_in_progress:
+			return false
+		if not delay_next_move:
+			return true
+		delay_next_move = false
+		fake_move_in_progress = true
+		_emit_fake_move.call_deferred()
+		return true
+
+	func _emit_fake_move() -> void:
+		fake_move_in_progress = false
+		actor_moved.emit()
+
+	func _is_stage_position_moving() -> bool:
+		return fake_move_in_progress
+
+	func _can_apply_character_status(_status_name: String) -> bool:
+		validation_count += 1
+		var hook := before_status_validation
+		before_status_validation = Callable()
+		if hook.is_valid():
+			hook.call()
+		if not validation_results.is_empty():
+			return validation_results.pop_front()
+		return validation_result
+
+
+class DeferredLegacyActor:
+	extends KND_Actor
+
+	var saved_completion := Callable()
+
+	func apply_character_status(
+		_status_name: String, _transition_duration: float = 0.0, completion: Callable = Callable()
+	) -> void:
+		saved_completion = completion
+
+	func _can_apply_character_status(_status_name: String) -> bool:
+		return true
+
+
+class FakeActingInterface:
+	extends KND_ActingInterface
+
+	func _init() -> void:
+		_chara_controler = Control.new()
+		add_child(_chara_controler)
+		_konado_actor_template = (
+			load("res://addons/konado/template/default/character/character_template.tscn")
+			as PackedScene
+		)
+
+	func apply_background_tint_to_characters() -> void:
+		pass
 
 
 func _init() -> void:
@@ -28,9 +105,13 @@ func _run() -> void:
 	_test_analyzer_control_flow()
 	_test_script_protection()
 	_test_dialogue_services()
+	_test_actor_status_validation_reentry()
 	_test_acting_interface_state_change()
+	_test_new_actor_state_transaction()
+	await _test_existing_actor_state_transaction()
+	await _test_repeated_move_command()
+	await _test_actor_state_request_lifecycle()
 	_test_save_system_contract()
-	await _test_actor_state_transition()
 	if _failures == 0:
 		print("PASS: GDScript architecture tests")
 	quit(_failures)
@@ -86,99 +167,54 @@ func _test_actor_commands() -> void:
 		)
 
 
-func _test_actor_state_transition() -> void:
-	var host := Control.new()
-	var visual := ColorRect.new()
-	visual.modulate = Color(0.8, 0.7, 0.6, 0.65)
-	host.add_child(visual)
-	get_root().add_child(host)
-	await process_frame
+func _test_actor_status_validation_reentry() -> void:
+	var actor := FakeActor.new()
+	actor._status_node = Node.new()
+	actor.add_child(actor._status_node)
+	var results: Array[String] = []
 
-	var applied_statuses: Array[String] = []
-	var events: Array[String] = []
-	var completions: Array[bool] = []
-	var controller := KND_ActorStateTransitionController.new(
-		host,
-		func() -> CanvasItem: return visual,
-		func(status_name: String) -> bool:
-			applied_statuses.append(status_name)
-			return not status_name.is_empty()
-	)
-	controller.transition_started.connect(
-		func(status_name: String) -> void: events.append("started:" + status_name)
-	)
-	controller.status_applied.connect(
-		func(status_name: String) -> void: events.append("applied:" + status_name)
-	)
-	controller.transition_finished.connect(
-		func(status_name: String, succeeded: bool) -> void:
-			events.append("finished:%s:%s" % [status_name, succeeded])
-	)
-
-	controller.request("idle", 0.0, func(succeeded: bool) -> void: completions.append(succeeded))
-	_expect_equal(
-		events,
-		["started:idle", "applied:idle", "finished:idle:true"],
-		"immediate status changes preserve signal order"
-	)
-	_expect_equal(completions, [true], "immediate status changes complete exactly once")
-	_expect(not controller.is_transitioning(), "immediate status changes leave no active request")
-	_expect_approx(visual.modulate.a, 0.65, "immediate status changes preserve alpha")
-
-	events.clear()
-	completions.clear()
-	controller.request("happy", 0.1, func(succeeded: bool) -> void: completions.append(succeeded))
-	_expect(controller.is_transitioning(), "animated status changes expose active state")
-	await create_timer(0.25).timeout
-	_expect_equal(
-		events,
-		["started:happy", "applied:happy", "finished:happy:true"],
-		"animated status changes preserve signal order"
-	)
-	_expect_equal(completions, [true], "animated status changes complete exactly once")
-	_expect(not controller.is_transitioning(), "animated status changes clear active state")
-	_expect_approx(visual.modulate.a, 0.65, "animated status changes restore alpha")
-	_expect_equal(host.get_child_count(), 1, "status transitions do not duplicate visual nodes")
-
-	events.clear()
-	completions.clear()
-	controller.request("sad", 1.0, func(succeeded: bool) -> void: completions.append(succeeded))
-	controller.request("angry", 0.0, func(succeeded: bool) -> void: completions.append(succeeded))
-	_expect_equal(
-		completions, [false, true], "superseded and replacement requests each complete exactly once"
-	)
-	_expect(events.has("finished:sad:false"), "superseded status changes report failed completion")
-	_expect(
-		events.has("finished:angry:true"), "replacement status changes report successful completion"
-	)
-	_expect_equal(applied_statuses.back(), "angry", "only the replacement status is applied")
-	_expect_approx(visual.modulate.a, 0.65, "cancelling a transition restores alpha")
-	_expect_equal(host.get_child_count(), 1, "cancelling transitions leaves no temporary nodes")
-
-	completions.clear()
-	controller.request("", 0.0, func(succeeded: bool) -> void: completions.append(succeeded))
-	_expect_equal(completions, [false], "invalid status changes fail without hanging")
-
-	var no_visual_completions: Array[bool] = []
-	var no_visual_controller := KND_ActorStateTransitionController.new(
-		host, func() -> CanvasItem: return null, func(_status_name: String) -> bool: return true
-	)
-	no_visual_controller.request(
-		"voice_only", 1.0, func(succeeded: bool) -> void: no_visual_completions.append(succeeded)
+	actor.before_status_validation = func() -> void:
+		actor.validation_result = false
+		actor._try_apply_character_status(
+			"invalid_inner",
+			0.0,
+			func(succeeded: bool) -> void: results.append("inner:%s" % succeeded)
+		)
+		actor.validation_result = true
+	var invalid_reentry_accepted := actor._try_apply_character_status(
+		"outer", 0.0, func(succeeded: bool) -> void: results.append("outer:%s" % succeeded)
 	)
 	_expect_equal(
-		no_visual_completions,
-		[true],
-		"non-visual character scenes fall back to immediate status changes"
+		results,
+		["inner:false", "outer:true"],
+		"invalid validation reentry does not steal actor request ownership"
 	)
+	_expect(invalid_reentry_accepted, "the outer request remains accepted after invalid reentry")
 
-	host.queue_free()
-	await process_frame
+	results.clear()
+	actor.before_status_validation = func() -> void:
+		actor._try_apply_character_status(
+			"replacement",
+			0.0,
+			func(succeeded: bool) -> void: results.append("replacement:%s" % succeeded)
+		)
+	var stale_outer_accepted := actor._try_apply_character_status(
+		"stale_outer", 0.0, func(succeeded: bool) -> void: results.append("outer:%s" % succeeded)
+	)
+	_expect_equal(
+		results,
+		["replacement:true", "outer:false"],
+		"valid validation reentry supersedes the older actor request"
+	)
+	_expect(not stale_outer_accepted, "the superseded outer request reports rejection")
+	actor.free()
 
 
 func _test_acting_interface_state_change() -> void:
 	var acting_interface := KND_ActingInterface.new()
 	var actor := FakeActor.new()
+	actor._status_node = Node.new()
+	actor.add_child(actor._status_node)
 	acting_interface.actor_nodes["Kona"] = actor
 	acting_interface.actor_dict["Kona"] = {"id": "Kona", "state": "idle"}
 	var completion_count := [0]
@@ -197,15 +233,23 @@ func _test_acting_interface_state_change() -> void:
 		"successful state changes persist the target state"
 	)
 	_expect_equal(completion_count[0], 1, "successful state changes complete exactly once")
+	_expect_equal(actor.validation_count, 1, "successful state changes validate exactly once")
+	_expect_equal(
+		acting_interface._actor_state_requests.size(),
+		0,
+		"synchronous state changes release their lifecycle coordinator"
+	)
 
+	actor.validation_results = [false, true]
 	actor.next_result = false
 	acting_interface.change_actor_state("Kona", "missing")
 	_expect_equal(
 		acting_interface.actor_dict["Kona"]["state"],
 		"happy",
-		"failed state changes roll back persisted actor state"
+		"failed state changes preserve the last applied actor state"
 	)
 	_expect_equal(completion_count[0], 2, "failed state changes still release dialogue flow")
+	_expect_equal(actor.validation_count, 2, "rejected state changes do not validate twice")
 
 	actor.next_result = true
 	acting_interface.enable_actor_state_fade = false
@@ -217,7 +261,250 @@ func _test_acting_interface_state_change() -> void:
 	)
 	_expect_equal(completion_count[0], 3, "immediate state changes complete exactly once")
 
+	actor.before_status_applied = func() -> void:
+		acting_interface.change_actor_state("Kona", "newer")
+	acting_interface.change_actor_state("Kona", "stale")
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"newer",
+		"reentrant state changes cannot be overwritten by stale completions"
+	)
+	_expect_equal(completion_count[0], 5, "reentrant state changes complete both requests once")
+
 	actor.free()
+	acting_interface.free()
+
+
+func _test_existing_actor_state_transaction() -> void:
+	var acting_interface := FakeActingInterface.new()
+	var actor := FakeActor.new()
+	actor._status_node = Node.new()
+	actor.add_child(actor._status_node)
+	acting_interface.actor_nodes["Kona"] = actor
+	acting_interface.actor_dict["Kona"] = {"id": "Kona", "h_division": 5, "pos": 3, "state": "idle"}
+
+	actor.next_result = false
+	acting_interface._update_existing_character(actor, "Kona", 4, 2, "missing")
+	_expect_equal(
+		acting_interface.actor_dict["Kona"],
+		{"id": "Kona", "h_division": 4, "pos": 2, "state": "idle"},
+		"failed reused states preserve the committed status while keeping valid position updates"
+	)
+
+	actor.next_result = true
+	acting_interface._update_existing_character(actor, "Kona", 4, 2, "happy")
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"happy",
+		"successful reused states commit their target status"
+	)
+
+	actor.before_status_applied = func() -> void:
+		acting_interface._update_existing_character(actor, "Kona", 4, 2, "newer")
+	acting_interface._update_existing_character(actor, "Kona", 4, 2, "stale")
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"newer",
+		"reentrant reused-state updates cannot be overwritten by stale requests"
+	)
+
+	actor.validation_result = false
+	actor.slot = Control.new()
+	actor.add_child(actor.slot)
+	actor.use_tween = true
+	actor.animation_time = 1.0
+	actor.h_division = 5
+	actor.h_character_position = 3
+	actor.delay_next_move = true
+	var shown_count := [0]
+	acting_interface.character_shown.connect(func() -> void: shown_count[0] += 1)
+	acting_interface._update_existing_character(actor, "Kona", 4, 2, "invalid")
+	acting_interface._update_existing_character(actor, "Kona", 5, 3, "newer")
+	_expect_equal(
+		shown_count[0],
+		0,
+		"repeated upserts wait for an already accepted movement instead of completing early"
+	)
+	await process_frame
+	_expect_equal(shown_count[0], 2, "one movement completion releases both waiting upserts")
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"newer",
+		"a valid replacement state remains committed while both updates wait for movement"
+	)
+
+	actor.validation_result = true
+	actor.validation_count = 0
+	actor.delay_next_status = true
+	acting_interface._update_existing_character(actor, "Kona", 5, 3, "async")
+	_expect_equal(shown_count[0], 2, "asynchronous states keep reused actor flow pending")
+	_expect_equal(
+		acting_interface._actor_state_requests.size(),
+		1,
+		"asynchronous state changes retain one lifecycle coordinator while pending"
+	)
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"newer",
+		"asynchronous states are not persisted before they are applied"
+	)
+	_expect_equal(actor.validation_count, 1, "state requests validate exactly once")
+	await process_frame
+	_expect_equal(shown_count[0], 3, "asynchronous state completion releases reused actor flow")
+	_expect_equal(
+		acting_interface.actor_dict["Kona"]["state"],
+		"async",
+		"asynchronous reused states persist after successful application"
+	)
+	_expect_equal(
+		acting_interface._actor_state_requests.size(),
+		0,
+		"asynchronous state changes release their lifecycle coordinator after completion"
+	)
+
+	actor.free()
+	acting_interface.free()
+
+
+func _test_repeated_move_command() -> void:
+	var acting_interface := FakeActingInterface.new()
+	var actor := FakeActor.new()
+	acting_interface.actor_nodes["Kona"] = actor
+	actor.actor_moved.connect(acting_interface._on_character_moved)
+	actor.delay_next_move = true
+	var moved_count := [0]
+	acting_interface.character_moved.connect(func() -> void: moved_count[0] += 1)
+
+	acting_interface.move_actor("Kona", 2)
+	acting_interface.move_actor("Kona", 2)
+	_expect_equal(
+		moved_count[0],
+		0,
+		"repeating a move to its in-progress target does not emit premature completion"
+	)
+	await process_frame
+	_expect_equal(moved_count[0], 1, "the active move emits one completion when it actually ends")
+
+	actor.free()
+	acting_interface.free()
+
+
+func _test_actor_state_request_lifecycle() -> void:
+	var acting_interface := FakeActingInterface.new()
+	get_root().add_child(acting_interface)
+	await process_frame
+
+	var changed_actor := DeferredLegacyActor.new()
+	changed_actor._status_node = Node.new()
+	changed_actor.add_child(changed_actor._status_node)
+	acting_interface._chara_controler.add_child(changed_actor)
+	changed_actor.slot = Control.new()
+	changed_actor.add_child(changed_actor.slot)
+	acting_interface.actor_nodes["Changed"] = changed_actor
+	acting_interface.actor_dict["Changed"] = {"id": "Changed", "state": "idle"}
+	var changed_count := [0]
+	acting_interface.character_state_changed.connect(func() -> void: changed_count[0] += 1)
+	acting_interface.change_actor_state("Changed", "happy")
+	var changed_completion := changed_actor.saved_completion
+	acting_interface.delete_all_actor(true)
+	_expect_equal(
+		changed_count[0],
+		1,
+		"deleting an actor completes a pending state command instead of hanging dialogue flow"
+	)
+	_expect_equal(
+		acting_interface._actor_state_requests.size(),
+		0,
+		"actor deletion releases the pending state lifecycle coordinator"
+	)
+	changed_completion.call(true)
+	_expect_equal(
+		changed_count[0],
+		1,
+		"late custom state completions are ignored after the actor leaves the tree"
+	)
+	_expect(
+		not acting_interface.actor_dict.has("Changed"),
+		"late custom state completions cannot restore deleted actor data"
+	)
+
+	var reused_actor := DeferredLegacyActor.new()
+	reused_actor._status_node = Node.new()
+	reused_actor.add_child(reused_actor._status_node)
+	acting_interface._chara_controler.add_child(reused_actor)
+	reused_actor.slot = Control.new()
+	reused_actor.add_child(reused_actor.slot)
+	acting_interface.actor_nodes["Reused"] = reused_actor
+	acting_interface.actor_dict["Reused"] = {
+		"id": "Reused", "h_division": 5, "pos": 3, "state": "idle"
+	}
+	var shown_count := [0]
+	acting_interface.character_shown.connect(func() -> void: shown_count[0] += 1)
+	acting_interface._update_existing_character(reused_actor, "Reused", 5, 3, "happy")
+	var reused_completion := reused_actor.saved_completion
+	acting_interface.delete_all_actor(true)
+	_expect_equal(
+		shown_count[0], 1, "deleting a reused actor releases a pending show command exactly once"
+	)
+	reused_completion.call(true)
+	_expect_equal(
+		shown_count[0], 1, "late reused-actor completions cannot finish the same command twice"
+	)
+
+	acting_interface.queue_free()
+	await process_frame
+	reused_completion.call(true)
+
+
+func _test_new_actor_state_transaction() -> void:
+	var acting_interface := FakeActingInterface.new()
+	var character_scene := load("res://sample/demo/sample_character.tscn") as PackedScene
+	var shown_count := [0]
+	acting_interface.character_shown.connect(func() -> void: shown_count[0] += 1)
+	acting_interface.show_character("Kona", 5, 3, "missing", character_scene)
+	_expect(
+		not acting_interface.actor_dict.has("Kona"),
+		"failed initial states never enter the persisted actor dictionary"
+	)
+	_expect(
+		not acting_interface.actor_nodes.has("Kona"),
+		"failed initial states never enter the live actor cache"
+	)
+	_expect_equal(
+		acting_interface.get_chara_node("Kona"),
+		null,
+		"failed initial actors are removed immediately and cannot shadow a retry"
+	)
+	_expect_equal(shown_count[0], 1, "failed initial states still release dialogue flow once")
+
+	acting_interface.show_character("InvalidLayer", 5, 3, "介绍正常", character_scene, character_scene)
+	_expect(
+		not acting_interface.actor_dict.has("InvalidLayer"),
+		"invalid motion layers never enter the persisted actor dictionary"
+	)
+	_expect(
+		not acting_interface.actor_nodes.has("InvalidLayer"),
+		"invalid motion layers never enter the live actor cache"
+	)
+	_expect_equal(shown_count[0], 2, "invalid motion layers still release dialogue flow once")
+
+	acting_interface.show_character("Kona", 5, 3, "介绍正常", character_scene)
+	_expect(
+		acting_interface.actor_dict.has("Kona"),
+		"a valid retry after failed initialization commits actor data"
+	)
+	_expect(
+		acting_interface.actor_nodes.has("Kona"),
+		"a valid retry after failed initialization enters the live actor cache"
+	)
+	var retry_actor := acting_interface.get_chara_node("Kona") as KND_Actor
+	_expect(retry_actor != null, "a valid retry creates a live actor node")
+	if retry_actor:
+		_expect_equal(
+			(retry_actor._status_node as KND_CharacterSceneBase).current_status_name,
+			"介绍正常",
+			"a retry applies its own initial state instead of retaining failed data"
+		)
 	acting_interface.free()
 
 
