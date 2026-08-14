@@ -17,7 +17,7 @@ EDITOR_SHUTDOWN_ERROR_PATTERN = re.compile(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run a headless Godot test and reject script errors hidden by exit code 0."
+        description="Run a Godot script test and reject errors hidden by exit code 0."
     )
     parser.add_argument("test_path", help="Godot script path to execute")
     parser.add_argument(
@@ -30,25 +30,53 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Initialize the editor and enabled plugins before running the test.",
     )
+    parser.add_argument(
+        "--rendering",
+        action="store_true",
+        help="Use the compatibility renderer instead of the headless dummy renderer.",
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=120,
+        help="Terminate a test that does not exit within this many seconds (default: 120).",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    command = [
-        args.godot,
-        "--headless",
-    ]
+    command = [args.godot]
+    if args.rendering:
+        command.extend(["--rendering-method", "gl_compatibility", "--audio-driver", "Dummy"])
+    else:
+        command.append("--headless")
     if args.editor:
         command.append("--editor")
     command.extend(["--path", ".", "--script", args.test_path])
-    result = subprocess.run(
-        command,
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
+    if args.timeout_seconds <= 0:
+        print("--timeout-seconds must be greater than zero.", file=sys.stderr)
+        return 2
+    try:
+        result = subprocess.run(
+            command,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=args.timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as error:
+        output = error.stdout or ""
+        if isinstance(output, bytes):
+            output = output.decode(errors="replace")
+        sys.stdout.write(output)
+        print(
+            f"Godot test exceeded the {args.timeout_seconds}-second timeout: "
+            f"{args.test_path}",
+            file=sys.stderr,
+        )
+        return 124
     sys.stdout.write(result.stdout)
     if result.returncode != 0:
         return result.returncode
