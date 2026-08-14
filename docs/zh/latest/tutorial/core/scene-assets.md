@@ -67,18 +67,35 @@ func _ready() -> void:
 	sprite = get_node_or_null(animated_sprite_path) as AnimatedSprite2D
 
 func _apply_status(resolved_status_name: String, original_status_name: String) -> void:
+	sprite.play(resolved_status_name)
+
+func _has_status(resolved_status_name: String, original_status_name: String) -> bool:
 	if sprite == null or sprite.sprite_frames == null:
 		push_warning("角色场景缺少 AnimatedSprite2D 或 SpriteFrames")
-		return
+		return false
 	if sprite.sprite_frames.has_animation(resolved_status_name):
-		sprite.play(resolved_status_name)
-	else:
-		push_warning("角色场景未找到状态：" + original_status_name)
+		return true
+	push_warning("角色场景未找到状态：" + original_status_name)
+	return false
+
+func _get_status_transition_frame(
+	resolved_status_name: String,
+	_original_status_name: String,
+	target_space: CanvasItem,
+) -> RefCounted:
+	return KND_CharacterTransitionFrame.from_animated_sprite(
+		sprite, target_space, StringName(resolved_status_name)
+	)
+
+func _get_current_status_transition_frame(
+	target_space: CanvasItem,
+) -> RefCounted:
+	return KND_CharacterTransitionFrame.from_animated_sprite(sprite, target_space)
 ```
 
 对于 Live2D、Spine、视频角色，只需要把 `_apply_status` 内部换成对应的播放逻辑。例如设置 Live2D 表情、播放 Spine 动画、切换视频流。
 
-`actor change` 默认会在角色挂载层上执行“淡出—应用状态—淡入”，不会复制角色场景。角色场景只需同步完成 `_apply_status`；对话系统会负责转场和等待。具体配置请参阅[演员切换状态](../script/actor/actor-change-state.md)。
+`_has_status` 只用于查询状态是否存在，必须保持无副作用且结果幂等；延迟转场可能在接收请求和最终提交时分别调用它。`_get_current_status_transition_frame` 和 `_get_status_transition_frame` 是可选的无副作用状态帧协议。前者捕获当前实际显示帧，后者准备目标状态帧；两次调用必须各自返回新建的独立帧，不能复用并改写同一个对象。能安全提供两者的角色会获得真正的像素交融；无法安全提供状态帧的 Live2D、Spine、视频和自定义场景无需实现，系统会自动使用“淡出—应用状态—淡入”。两条路径都不会复制角色场景。具体配置请参阅[演员切换状态](../script/actor/actor-change-state.md)。
 
 ### 状态别名
 

@@ -51,16 +51,40 @@ jobs:
   gdscript-runtime:
     name: GDScript architecture
     runs-on: ubuntu-24.04
-    container:
-      image: barichello/godot-ci:4.7.1
+    env:
+      GODOT_VERSION: "4.7.1"
+      GODOT_LINUX_SHA256: c7ff14fd28472c8d4f193043de30278dcf7e5241a1dcf7566b02e27addaa33ba
+      LIBGL_ALWAYS_SOFTWARE: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Install test dependencies
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends python3 libfontconfig1
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 \
+            libfontconfig1 \
+            libgl1 \
+            libgl1-mesa-dri \
+            libxcursor1 \
+            libxi6 \
+            libxinerama1 \
+            libxrandr2 \
+            xauth \
+            xvfb
+
+      - name: Install verified Godot
+        run: |
+          archive="$RUNNER_TEMP/godot.zip"
+          binary="$RUNNER_TEMP/Godot_v${GODOT_VERSION}-stable_linux.x86_64"
+          curl --fail --location --retry 3 \
+            --output "$archive" \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          echo "${GODOT_LINUX_SHA256}  ${archive}" | sha256sum --check --strict
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          sudo install -m 0755 "$binary" /usr/local/bin/godot
+          test "$(godot --version | cut -d. -f1-3)" = "$GODOT_VERSION"
 
       - name: Import project
         run: godot --headless --editor --path . --quit
@@ -76,6 +100,13 @@ jobs:
         run: >-
           python3 .github/scripts/run_godot_test.py
           tests/background/test_background_transition_layer.gd
+
+      - name: Test character state transitions
+        run: |
+          python3 .github/scripts/run_godot_test.py tests/character/test_actor_initial_state.gd
+          python3 .github/scripts/run_godot_test.py tests/character/test_actor_state_transition.gd
+          python3 .github/scripts/run_godot_test.py tests/character/test_character_transition_frame.gd
+          xvfb-run -a python3 .github/scripts/run_godot_test.py --rendering tests/character/test_character_transition_rendering.gd
 
       - name: Test KonadoScript editor integration
         run: |

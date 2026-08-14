@@ -15,18 +15,41 @@ func _ready() -> void:
 
 ## 对 AnimatedSprite2D 来说，状态名最终落到同名动画。
 ## 其他媒体类型可以把这里改成播放 Spine 动画、设置 Live2D 表情或切换视频流。
-func _apply_status(resolved_status_name: String, original_status_name: String) -> void:
+func _apply_status(resolved_status_name: String, _original_status_name: String) -> void:
+	var sprite_node := _get_sprite()
+	var animation_name := StringName(resolved_status_name)
+	sprite_node.play(animation_name)
+
+
+func _has_status(resolved_status_name: String, original_status_name: String) -> bool:
 	var sprite_node := _get_sprite()
 	if sprite_node == null or sprite_node.sprite_frames == null:
 		push_warning("角色场景缺少 AnimatedSprite2D 或 SpriteFrames")
-		return
-
-	var animation_name := StringName(resolved_status_name)
-	if sprite_node.sprite_frames.has_animation(animation_name):
-		sprite_node.play(animation_name)
-		return
-
+		return false
+	if sprite_node.sprite_frames.has_animation(StringName(resolved_status_name)):
+		return true
 	push_warning("角色场景未找到动画：" + original_status_name)
+	return false
+
+
+## 提前提供目标动画的第一帧，让状态切换可以用 shader 做真正的像素交融，
+## 不需要复制这个角色场景或提前播放目标动画。
+func _get_current_status_transition_frame(target_space: CanvasItem) -> RefCounted:
+	var sprite_node := _get_sprite()
+	if sprite_node == null or sprite_node.sprite_frames == null:
+		return null
+	return KND_CharacterTransitionFrame.from_animated_sprite(sprite_node, target_space)
+
+
+func _get_status_transition_frame(
+	resolved_status_name: String, _original_status_name: String, target_space: CanvasItem
+) -> RefCounted:
+	var sprite_node := _get_sprite()
+	if sprite_node == null or sprite_node.sprite_frames == null:
+		return null
+	return KND_CharacterTransitionFrame.from_animated_sprite(
+		sprite_node, target_space, StringName(resolved_status_name)
+	)
 
 
 ## demo 里先把动作当作一次性状态播放。

@@ -13,7 +13,7 @@
   `latest`，并编译检查 `latest` 中可执行的 KonadoScript 示例。
 - `check_plugin_configs.py`：验证所有 `plugin.cfg` 引用的入口脚本和图标真实存在。
 - `check_plugin_resource_boundaries.py`：验证 Konado 核心插件没有引用其目录之外的资源。
-- `run_godot_test.py`：运行 Godot 脚本测试，并阻止“引擎输出脚本错误但退出码仍为 0”的假通过。
+- `run_godot_test.py`：运行 Godot 脚本测试，并阻止“引擎输出脚本错误但退出码仍为 0”的假通过；默认 120 秒超时，需要验证实际像素输出时可通过 `--rendering` 启用兼容渲染器。
 - `run_dotnet_runtime_tests.sh`：在隔离的临时项目中编译并运行 Konado.NET 与 GDScript 的跨语言运行时测试。
 
 ## 本地运行

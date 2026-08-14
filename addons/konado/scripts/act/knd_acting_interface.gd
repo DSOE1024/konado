@@ -45,6 +45,9 @@ const BACKGROUND_EFFECT_NAMES := {
 	BackgroundTransitionEffectsType.CYBER_GLITCH_EFFECT: "cyberglitch",
 	BackgroundTransitionEffectsType.BlinkEffect: "blink",
 }
+const ACTOR_STATE_REQUEST_COORDINATOR := preload(
+	"res://addons/konado/scripts/act/knd_actor_state_request_coordinator.gd"
+)
 
 ## 启用全局演员背景色调混合
 @export var enable_tint_intensity: bool = true
@@ -58,7 +61,7 @@ const BACKGROUND_EFFECT_NAMES := {
 
 ## 启用演员状态切换淡入淡出过渡
 @export var enable_actor_state_fade: bool = true
-## 演员状态切换交叉淡入淡出总时长（秒），旧状态淡出与新状态淡入同时进行
+## 演员状态切换总时长（秒）；支持状态帧时交融，否则淡出和淡入各占一半
 @export_range(0.0, 5.0, 0.01, "or_greater") var actor_state_fade_duration: float = 0.3:
 	set(value):
 		actor_state_fade_duration = maxf(value, 0.0)
@@ -76,6 +79,10 @@ var _current_background_scene: KND_BackgroundSceneBase
 var _transition_old_background: KND_BackgroundSceneBase
 var _pending_shader_background: KND_BackgroundSceneBase
 var _background_transition_wait_count: int = 0
+var _actor_state_request_serial: int = 0
+var _actor_state_request_tokens: Dictionary = {}
+var _actor_pending_states: Dictionary = {}
+var _actor_state_requests: Dictionary = {}
 
 ## 演员模板
 @onready var _konado_actor_template: PackedScene = preload(
@@ -349,6 +356,7 @@ func show_character(
 		return
 
 	# actor_dict 可能残留旧数据；没有有效节点时按新建处理。
+	_invalidate_actor_state_request(chara_id)
 	if actor_dict.has(chara_id):
 		actor_dict.erase(chara_id)
 
@@ -373,19 +381,45 @@ func show_character(
 		"id": chara_id, "h_division": initial_h_division, "pos": initial_pos_h, "state": state
 	}
 
-	# 添加到角色字典
-	actor_dict[chara_dict["id"]] = chara_dict
 	var node_name: String = str(chara_dict["id"])
 	var temp_node: KND_Actor = _konado_actor_template.instantiate() as KND_Actor
-	temp_node.name = node_name
+	if temp_node == null:
+		push_error("显示角色失败：无法实例化演员模板")
+		_emit_character_shown()
+		return
+	var state_request_token := _begin_actor_state_request(chara_id)
+	# 初始化阶段使用内部名称并隐藏根节点。这样角色场景能够正常进入 SceneTree、执行
+	# @onready/_ready，又不会被 get_chara_node 当成已经公开的演员。
+	temp_node.name = "_KonadoPendingActor_%d" % temp_node.get_instance_id()
+	temp_node.visible = false
 	temp_node.use_tween = false
 	temp_node.set_stage_position(h_division, pos_h)
-	# 添加到角色容器
-	_chara_controler.add_child(temp_node)
 	temp_node.actor_motion_started.connect(_on_character_motion_started.bind(chara_id))
 	temp_node.actor_motion_finished.connect(_on_character_motion_finished.bind(chara_id))
-	temp_node.set_motion_layer_scene(motion_layer_scene)
-	temp_node.set_character_scene(character_scene, state)
+	_chara_controler.add_child(temp_node)
+	if not temp_node._try_set_motion_layer_scene(motion_layer_scene):
+		push_warning("显示角色失败：角色[%s]的动作层配置无效" % chara_id)
+		if _is_actor_state_request_current(chara_id, state_request_token):
+			_invalidate_actor_state_request(chara_id)
+		_discard_pending_actor(temp_node)
+		_emit_character_shown()
+		return
+	if not temp_node._try_set_character_scene(character_scene, state):
+		push_warning("显示角色失败：角色[%s]无法应用状态[%s]" % [chara_id, state])
+		if _is_actor_state_request_current(chara_id, state_request_token):
+			_invalidate_actor_state_request(chara_id)
+		_discard_pending_actor(temp_node)
+		_emit_character_shown()
+		return
+	if not _is_actor_state_request_current(chara_id, state_request_token):
+		# 初始化期间若同一演员已被更新请求取代，不允许旧请求进入场景树。
+		_discard_pending_actor(temp_node)
+		_emit_character_shown()
+		return
+	# 初始化事务成功后才使用公开名称并写入运行时索引。
+	temp_node.name = node_name
+	# 只有节点和初始状态都创建成功后，才提交存档使用的演员数据。
+	actor_dict[chara_dict["id"]] = chara_dict
 	# 角色场景创建完成后应用色调混合，确保新角色在显示前就已带有正确的色调
 	apply_background_tint_to_characters()
 	# 添加到演员节点字典
@@ -396,6 +430,7 @@ func show_character(
 		_on_character_entered.bind(chara_id, state), ConnectFlags.CONNECT_ONE_SHOT
 	)
 	temp_node.use_tween = true
+	temp_node.visible = true
 	temp_node.enter_actor(true)
 
 
@@ -423,29 +458,102 @@ func _update_existing_character(
 	var position_changed: bool = (
 		chara_node.h_division != next_h_division or chara_node.h_character_position != next_pos_h
 	)
-	var state_changed: bool = previous_state != state
+	var movement_in_progress := chara_node._is_stage_position_moving()
+	# 持续中的转场也必须由这次 upsert 明确取代，即使已提交状态恰好相同。
+	var state_changed: bool = previous_state != state or _actor_pending_states.has(chara_id)
 
-	actor_dict[chara_id] = {
-		"id": chara_id, "h_division": next_h_division, "pos": next_pos_h, "state": state
-	}
 	actor_nodes[chara_id] = chara_node
+	var next_actor_state: Dictionary = {
+		"id": chara_id,
+		"h_division": next_h_division,
+		"pos": next_pos_h,
+		"state": previous_state,
+	}
+	if not state_changed:
+		next_actor_state["state"] = state
+	# 位置是独立且已经接受的更新；状态仅在角色场景实际应用后提交。
+	actor_dict[chara_id] = next_actor_state
 
+	var waits := {
+		"state_done": not state_changed,
+		"movement_done":
+		not (
+			movement_in_progress
+			or (
+				position_changed
+				and chara_node.slot != null
+				and chara_node.use_tween
+				and chara_node.animation_time > 0.0
+			)
+		),
+		"finished": false,
+	}
+	var actor_ref := weakref(chara_node)
+	var finish_if_ready := func() -> void:
+		if waits.finished or not waits.state_done or not waits.movement_done:
+			return
+		waits.finished = true
+		if actor_dict.has(chara_id):
+			var committed_state := str(actor_dict[chara_id].get("state", ""))
+			print("复用已有演员：" + str(chara_id) + " 演员状态：" + committed_state)
+		_emit_character_shown()
+
+	var movement_exit_handler_ref := [Callable()]
+	var movement_handler := func() -> void:
+		waits.movement_done = true
+		var active_actor := actor_ref.get_ref() as KND_Actor
+		var movement_exit_handler: Callable = movement_exit_handler_ref[0]
+		movement_exit_handler_ref[0] = Callable()
+		if (
+			active_actor != null
+			and movement_exit_handler.is_valid()
+			and active_actor.tree_exiting.is_connected(movement_exit_handler)
+		):
+			active_actor.tree_exiting.disconnect(movement_exit_handler)
+		finish_if_ready.call()
+	if not waits.movement_done:
+		var movement_exit_handler := func() -> void:
+			movement_exit_handler_ref[0] = Callable()
+			if waits.movement_done:
+				return
+			waits.movement_done = true
+			var active_actor := actor_ref.get_ref() as KND_Actor
+			if active_actor != null and active_actor.actor_moved.is_connected(movement_handler):
+				active_actor.actor_moved.disconnect(movement_handler)
+			finish_if_ready.call()
+		movement_exit_handler_ref[0] = movement_exit_handler
+		chara_node.actor_moved.connect(movement_handler, ConnectFlags.CONNECT_ONE_SHOT)
+		chara_node.tree_exiting.connect(movement_exit_handler, ConnectFlags.CONNECT_ONE_SHOT)
 	if position_changed:
-		chara_node.set_stage_position(next_h_division, next_pos_h)
-	if state_changed:
-		# 先刷新色调混合，确保角色显示前带有正确的当前色调
-		apply_background_tint_to_characters()
-		chara_node.apply_character_status(state)
-	if (
-		position_changed
-		and chara_node.slot != null
-		and chara_node.use_tween
-		and chara_node.animation_time > 0.0
-	):
-		await chara_node.actor_moved
+		var movement_started := chara_node.set_stage_position(next_h_division, next_pos_h)
+		if not movement_started and not waits.movement_done:
+			if chara_node.actor_moved.is_connected(movement_handler):
+				chara_node.actor_moved.disconnect(movement_handler)
+			var movement_exit_handler: Callable = movement_exit_handler_ref[0]
+			movement_exit_handler_ref[0] = Callable()
+			if (
+				movement_exit_handler.is_valid()
+				and chara_node.tree_exiting.is_connected(movement_exit_handler)
+			):
+				chara_node.tree_exiting.disconnect(movement_exit_handler)
+			waits.movement_done = true
 
-	print("复用已有演员：" + str(chara_id) + " 演员状态：" + str(state))
-	_emit_character_shown()
+	if state_changed:
+		_request_actor_state(
+			chara_node,
+			chara_id,
+			state,
+			0.0,
+			"显示角色失败：角色[%s]无法应用状态[%s]" % [chara_id, state],
+			func(_succeeded: bool, actor_exited: bool, _owned_request: bool) -> void:
+				# 演员离树后移动信号也不会再到达；两个等待必须一起释放。
+				if actor_exited:
+					waits.movement_done = true
+				waits.state_done = true
+				finish_if_ready.call()
+		)
+
+	finish_if_ready.call()
 
 
 func _on_character_entered(chara_id: String, state: String) -> void:
@@ -458,6 +566,109 @@ func _emit_character_shown() -> void:
 	character_created.emit()
 
 
+func _discard_pending_actor(actor: KND_Actor) -> void:
+	if actor == null or not is_instance_valid(actor):
+		return
+	var parent := actor.get_parent()
+	if parent:
+		parent.remove_child(actor)
+	actor.free()
+
+
+## 所有已有演员的状态变更都经过这一入口。这里负责业务所有权和存档提交，
+## 协调器只负责把同步、异步、拒绝与离树归一为一次完成通知。
+func _request_actor_state(
+	actor: KND_Actor,
+	actor_id: String,
+	target_state: String,
+	transition_duration: float,
+	failure_message: String,
+	completion: Callable
+) -> bool:
+	var previous_request := _capture_actor_state_request(actor_id)
+	var request_token := _begin_actor_state_request(actor_id)
+	_actor_pending_states[actor_id] = target_state
+	# 转场帧必须使用请求开始时已经刷新的舞台色调。
+	apply_background_tint_to_characters()
+
+	var failure_reported := [false]
+	var report_failure := func() -> void:
+		if failure_reported[0]:
+			return
+		failure_reported[0] = true
+		push_warning(failure_message)
+	var coordinator := ACTOR_STATE_REQUEST_COORDINATOR.new(
+		actor,
+		target_state,
+		transition_duration,
+		func() -> bool: return _is_actor_state_request_current(actor_id, request_token),
+		func() -> void: _commit_actor_state(actor_id, target_state, request_token),
+		func() -> void:
+			report_failure.call()
+			_restore_actor_state_request(actor_id, request_token, previous_request),
+		func(succeeded: bool, actor_exited: bool) -> void:
+			_actor_state_requests.erase(request_token)
+			var owned_request := _is_actor_state_request_current(actor_id, request_token)
+			if owned_request:
+				if succeeded:
+					_commit_actor_state(actor_id, target_state, request_token)
+				else:
+					report_failure.call()
+				_actor_pending_states.erase(actor_id)
+			if completion.is_valid():
+				completion.call(succeeded, actor_exited, owned_request)
+	)
+	# 在 start() 前持有协调器，保证同步重入和异步扩展实现使用同一生命周期对象。
+	_actor_state_requests[request_token] = coordinator
+	return coordinator.start()
+
+
+func _commit_actor_state(actor_id: String, target_state: String, request_token: int) -> void:
+	if not _is_actor_state_request_current(actor_id, request_token):
+		return
+	if actor_dict.has(actor_id):
+		actor_dict[actor_id]["state"] = target_state
+
+
+func _begin_actor_state_request(actor_id: String) -> int:
+	_actor_state_request_serial += 1
+	_actor_state_request_tokens[actor_id] = _actor_state_request_serial
+	return _actor_state_request_serial
+
+
+func _capture_actor_state_request(actor_id: String) -> Dictionary:
+	return {
+		"has_token": _actor_state_request_tokens.has(actor_id),
+		"token": _actor_state_request_tokens.get(actor_id, -1),
+		"has_pending_state": _actor_pending_states.has(actor_id),
+		"pending_state": _actor_pending_states.get(actor_id, ""),
+	}
+
+
+func _restore_actor_state_request(
+	actor_id: String, rejected_token: int, previous_request: Dictionary
+) -> void:
+	if not _is_actor_state_request_current(actor_id, rejected_token):
+		return
+	if previous_request.has_token:
+		_actor_state_request_tokens[actor_id] = previous_request.token
+	else:
+		_actor_state_request_tokens.erase(actor_id)
+	if previous_request.has_pending_state:
+		_actor_pending_states[actor_id] = previous_request.pending_state
+	else:
+		_actor_pending_states.erase(actor_id)
+
+
+func _is_actor_state_request_current(actor_id: String, request_token: int) -> bool:
+	return int(_actor_state_request_tokens.get(actor_id, -1)) == request_token
+
+
+func _invalidate_actor_state_request(actor_id: String) -> void:
+	_actor_state_request_tokens.erase(actor_id)
+	_actor_pending_states.erase(actor_id)
+
+
 ## 切换演员的状态
 func change_actor_state(actor_id: String, state_id: String) -> void:
 	var chara_node: KND_Actor = get_chara_node(actor_id)
@@ -466,31 +677,18 @@ func change_actor_state(actor_id: String, state_id: String) -> void:
 		character_state_changed.emit()
 		return
 
-	var previous_state := ""
-	if actor_dict.has(actor_id):
-		previous_state = str(actor_dict[actor_id].get("state", ""))
-	else:
-		actor_dict[actor_id] = {"id": actor_id}
-	actor_dict[actor_id]["state"] = state_id
-
-	# 在切换前刷新色调混合，确保旧状态快照带有正确的当前色调
-	apply_background_tint_to_characters()
-
 	var transition_duration := actor_state_fade_duration if enable_actor_state_fade else 0.0
-	chara_node.apply_character_status(
+	_request_actor_state(
+		chara_node,
+		actor_id,
 		state_id,
 		transition_duration,
-		func(succeeded: bool):
-			# 只有尚未被更新请求取代时才允许失败请求回滚状态。
-			if (
-				not succeeded
-				and actor_dict.has(actor_id)
-				and str(actor_dict[actor_id].get("state", "")) == state_id
-			):
-				actor_dict[actor_id]["state"] = previous_state
+		"切换角色状态失败：角色[%s]无法应用状态[%s]" % [actor_id, state_id],
+		func(succeeded: bool, _actor_exited: bool, owned_request: bool) -> void:
+			if succeeded and owned_request:
+				print("切换" + actor_id + "到" + str(state_id) + "状态")
 			character_state_changed.emit()
 	)
-	print("切换" + actor_id + "到" + str(state_id) + "状态")
 
 
 ## 播放指定演员的舞台层动作，例如 shake、jump_twice、bounce。
@@ -535,6 +733,7 @@ func highlight_actor(actor_id: String) -> void:
 
 # 删除指定角色图片的方法
 func delete_character(chara_id: String) -> void:
+	_invalidate_actor_state_request(chara_id)
 	# 检查要删除的角色是否在容器和字典中
 	for actor in actor_dict.values():
 		if actor["id"] == chara_id:
@@ -545,6 +744,7 @@ func delete_character(chara_id: String) -> void:
 			# 通过名称查找索引并删除
 			var chara_node: KND_Actor = get_chara_node(chara_id) as KND_Actor
 			if chara_node:
+				chara_node._cancel_character_status_transition()
 				chara_node.tree_exited.connect(func(): character_deleted.emit())
 				chara_node.exit_actor(true)
 			else:
@@ -555,10 +755,14 @@ func delete_character(chara_id: String) -> void:
 
 ## 删除所有演员
 func delete_all_actor(immediate: bool = false) -> void:
+	_actor_state_request_tokens.clear()
+	_actor_pending_states.clear()
 	actor_dict.clear()
 	# 清空演员节点字典
 	actor_nodes.clear()
 	for node in _chara_controler.get_children():
+		if node is KND_Actor:
+			(node as KND_Actor)._cancel_character_status_transition()
 		if immediate:
 			node.free()
 		else:
@@ -576,7 +780,10 @@ func move_actor(chara_id: String, target_h_division: int):
 		character_moved.emit()
 		return
 	if not chara_node.set_stage_position(chara_node.h_division, target_h_division):
-		character_moved.emit()
+		# 目标值在补间开始时就会更新。重复请求同一目标时必须继续等待正在运行的
+		# 补间，不能提前释放 KonadoScript 的移动指令。
+		if not chara_node._is_stage_position_moving():
+			character_moved.emit()
 
 
 func _on_character_moved() -> void:
