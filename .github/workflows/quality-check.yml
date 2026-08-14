@@ -60,7 +60,7 @@ jobs:
       - name: Install test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3 libfontconfig1
+          apt-get install -y --no-install-recommends python3 libfontconfig1 xauth xvfb
 
       - name: Import project
         run: godot --headless --editor --path . --quit
@@ -76,6 +76,13 @@ jobs:
         run: >-
           python3 .github/scripts/run_godot_test.py
           tests/background/test_background_transition_layer.gd
+
+      - name: Test character state transitions
+        run: |
+          python3 .github/scripts/run_godot_test.py tests/character/test_actor_initial_state.gd
+          python3 .github/scripts/run_godot_test.py tests/character/test_actor_state_transition.gd
+          python3 .github/scripts/run_godot_test.py tests/character/test_character_transition_frame.gd
+          xvfb-run -a python3 .github/scripts/run_godot_test.py --rendering tests/character/test_character_transition_rendering.gd
 
       - name: Test KonadoScript editor integration
         run: |
