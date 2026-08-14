@@ -61,6 +61,12 @@ var _move_tween: Tween
 var _suspend_layout_update := false
 var _is_visible := false
 var _status_transition: KND_ActorStateTransitionController
+var _last_character_scene_setup_succeeded := true
+var _last_motion_layer_scene_setup_succeeded := true
+var _last_character_status_request_accepted := true
+var _visual_setup_serial := 0
+var _character_status_request_serial := 0
+var _prevalidated_character_status_request := -1
 
 
 ## 判断角色是否在左侧区域（用于确定进场/退场方向）
@@ -161,6 +167,12 @@ func set_stage_position(target_h_division: int, target_h_character_position: int
 	_suspend_layout_update = false
 	_on_resized()
 	return true
+
+
+## 返回舞台位置补间是否仍在进行。目标值会在补间开始时立即提交，调用方不能仅通过
+## h_division/h_character_position 判断角色是否已经真正到达目标位置。
+func _is_stage_position_moving() -> bool:
+	return _move_tween != null and _move_tween.is_valid()
 
 
 ## 高亮
@@ -304,25 +316,100 @@ func _on_enter_animation_finished() -> void:
 	actor_entered.emit()
 
 
+## 创建角色场景并应用初始状态。
+## 保留原有 void 签名，避免破坏外部 KND_Actor 子类的既有覆写。
 func set_character_scene(scene: PackedScene, initial_status: String = "") -> void:
-	_clear_status_node()
+	var observed_serial := _visual_setup_serial
+	_last_character_scene_setup_succeeded = _set_character_scene_internal(
+		scene, initial_status, observed_serial
+	)
+
+
+## 事务调用入口。它仍通过 set_character_scene 动态分派，因此不会绕过外部子类的旧覆写。
+## 旧覆写无法报告结果时保持历史兼容，按成功处理；内置实现会返回准确结果。
+func _try_set_character_scene(scene: PackedScene, initial_status: String = "") -> bool:
+	_last_character_scene_setup_succeeded = true
+	set_character_scene(scene, initial_status)
+	return _last_character_scene_setup_succeeded
+
+
+func _set_character_scene_internal(
+	scene: PackedScene, initial_status: String, observed_serial: int
+) -> bool:
 	var mount := _get_character_mount()
 	if mount == null:
-		return
-	if scene == null:
-		push_error("正在试图设置一个空角色场景")
-		return
+		return false
+	var instance := _prepare_character_scene_candidate(
+		scene, initial_status, mount, observed_serial
+	)
+	if instance == null:
+		return false
+	# @ready、状态校验和用户状态钩子都可能重入设置新场景。此时外层候选已经过期，
+	# 不能覆盖内层刚提交的结果。
+	if observed_serial != _visual_setup_serial:
+		_discard_character_scene_candidate(instance)
+		return false
+
+	_visual_setup_serial += 1
+	var setup_serial := _visual_setup_serial
+	if _status_transition:
+		_status_transition.cancel()
+	if setup_serial != _visual_setup_serial:
+		_discard_character_scene_candidate(instance)
+		return false
+	var previous_status_node := _status_node
+	_status_node = instance
+	if previous_status_node and is_instance_valid(previous_status_node):
+		var previous_parent := previous_status_node.get_parent()
+		if previous_parent:
+			previous_parent.remove_child(previous_status_node)
+		previous_status_node.queue_free()
 	if texture_rect:
 		texture_rect.texture = null
 		texture_rect.visible = false
-	var instance := scene.instantiate()
-	_status_node = instance
-	mount.add_child(instance)
 	_layout_status_node()
 	if instance is CanvasItem:
-		instance.visible = true
-	if not initial_status.is_empty():
-		_apply_character_status_immediately(initial_status)
+		(instance as CanvasItem).visible = true
+	return true
+
+
+func _prepare_character_scene_candidate(
+	scene: PackedScene, initial_status: String, mount: Node, observed_serial: int
+) -> Node:
+	if scene == null:
+		push_error("正在试图设置一个空角色场景")
+		return null
+	var instance := scene.instantiate()
+	if instance == null:
+		push_error("角色场景实例化失败")
+		return null
+	if instance is CanvasItem:
+		(instance as CanvasItem).visible = false
+	# 先让候选场景完整进入树，确保 @onready/_ready 已完成，再校验初始状态。
+	# 提交前不改写 _status_node，因此失败不会破坏当前有效角色场景。
+	mount.add_child(instance)
+	# 初始状态钩子可能依据 Control 的实际尺寸或 Node2D 的锚点位置布置内容。
+	# 候选场景虽然仍保持隐藏，也必须先完成与正式场景相同的布局。
+	_layout_character_scene_node(instance, mount)
+	if observed_serial != _visual_setup_serial:
+		_discard_character_scene_candidate(instance)
+		return null
+	if (
+		not initial_status.is_empty()
+		and not _apply_character_status_to_node(instance, initial_status)
+	):
+		_discard_character_scene_candidate(instance)
+		return null
+	return instance
+
+
+func _discard_character_scene_candidate(instance: Node) -> void:
+	if instance == null or not is_instance_valid(instance):
+		return
+	var parent := instance.get_parent()
+	if parent:
+		parent.remove_child(instance)
+	instance.free()
 
 
 ## 演员节点只负责把剧本里的状态名转发给角色场景。
@@ -331,7 +418,63 @@ func apply_character_status(
 	status_name: String, transition_duration: float = 0.0, completion: Callable = Callable()
 ) -> void:
 	_ensure_status_transition()
-	_status_transition.request(status_name, transition_duration, completion)
+	# 这里把当前阶段的校验结论直接交给控制器，避免同一个调用栈重复校验。
+	# 延迟转场在最终提交状态时仍会重新校验，确保等待期间的资源变化不会被忽略。
+	var observed_request_serial := _character_status_request_serial
+	var request_serial := observed_request_serial
+	if _prevalidated_character_status_request != observed_request_serial:
+		if not _can_apply_character_status(status_name):
+			_last_character_status_request_accepted = false
+			if completion.is_valid():
+				completion.call(false)
+			return
+		if observed_request_serial != _character_status_request_serial:
+			_last_character_status_request_accepted = false
+			if completion.is_valid():
+				completion.call(false)
+			return
+		_character_status_request_serial += 1
+		request_serial = _character_status_request_serial
+	_last_character_status_request_accepted = _status_transition.request(
+		status_name, transition_duration, completion, true
+	)
+
+
+## 事务调用入口。保留 apply_character_status 的 void 签名和动态分派，内置实现同时报告
+## 请求是否通过校验并进入状态控制器；旧子类覆写按历史行为视为已接受。
+func _try_apply_character_status(
+	status_name: String, transition_duration: float = 0.0, completion: Callable = Callable()
+) -> bool:
+	var observed_request_serial := _character_status_request_serial
+	# 有状态节点时在请求接收阶段只校验一次。没有状态节点时仍动态调用旧子类覆写；
+	# 内置实现会自行拒绝，而只覆写 void apply_character_status 的旧项目仍保持可用。
+	var should_prevalidate := _status_node != null
+	if should_prevalidate:
+		if not _can_apply_character_status(status_name):
+			if completion.is_valid():
+				completion.call(false)
+			return false
+		# 校验钩子属于用户扩展点：有效的重入请求取得所有权，无效请求不应抢占外层。
+		if observed_request_serial != _character_status_request_serial:
+			if completion.is_valid():
+				completion.call(false)
+			return false
+	_character_status_request_serial += 1
+	var request_serial := _character_status_request_serial
+	_last_character_status_request_accepted = true
+	_prevalidated_character_status_request = request_serial if should_prevalidate else -1
+	apply_character_status(status_name, transition_duration, completion)
+	if _prevalidated_character_status_request == request_serial:
+		_prevalidated_character_status_request = -1
+	return (
+		request_serial == _character_status_request_serial
+		and _last_character_status_request_accepted
+	)
+
+
+func _cancel_character_status_transition() -> void:
+	if _status_transition:
+		_status_transition.cancel()
 
 
 func _apply_character_status_immediately(status_name: String) -> bool:
@@ -340,21 +483,29 @@ func _apply_character_status_immediately(status_name: String) -> bool:
 	if _status_node == null:
 		push_error("角色场景节点未创建，无法切换状态：" + status_name)
 		return false
+	return _apply_character_status_to_node(_status_node, status_name)
+
+
+func _apply_character_status_to_node(character_node: Node, status_name: String) -> bool:
+	if character_node == null or status_name.is_empty():
+		return false
 	# 优先使用正式协议；后面的 has_method 分支用于兼容未继承基类的用户场景。
-	if _status_node is KND_CharacterSceneBase:
-		(_status_node as KND_CharacterSceneBase).apply_status(status_name)
-		return true
-	var method_name := _get_compatible_status_method()
+	if character_node is KND_CharacterSceneBase:
+		return (character_node as KND_CharacterSceneBase)._try_apply_status_compatible(status_name)
+	var method_name := _get_compatible_status_method(character_node)
 	if not method_name.is_empty():
-		_status_node.call(method_name, status_name)
+		character_node.call(method_name, status_name)
 		return true
 	push_warning("角色场景未实现 apply_status：" + status_name)
 	return false
 
 
-func _get_compatible_status_method() -> StringName:
+func _get_compatible_status_method(character_node: Node = null) -> StringName:
+	var target := character_node if character_node != null else _status_node
+	if target == null:
+		return &""
 	for method_name: StringName in [&"apply_status", &"change_status", &"set_status"]:
-		if _status_node.has_method(method_name):
+		if target.has_method(method_name):
 			return method_name
 	return &""
 
@@ -363,7 +514,11 @@ func _ensure_status_transition() -> void:
 	if _status_transition:
 		return
 	_status_transition = KND_ActorStateTransitionController.new(
-		self, _get_status_transition_visual, _apply_character_status_immediately
+		self,
+		_get_status_transition_visual,
+		_apply_character_status_immediately,
+		_get_character_transition_frame,
+		_can_apply_character_status
 	)
 	_status_transition.transition_started.connect(
 		func(status_name: String): actor_status_change_started.emit(status_name)
@@ -394,43 +549,85 @@ func play_actor_motion(motion_name: String, params: Dictionary = {}) -> void:
 
 
 func set_character_texture(texture: Texture) -> void:
-	_clear_status_node()
 	if not texture_rect:
 		return
 	if texture == null:
 		push_error("正在试图设置一个空角色图像")
+		return
+	_visual_setup_serial += 1
+	var setup_serial := _visual_setup_serial
+	_clear_status_node()
+	if setup_serial != _visual_setup_serial:
+		return
 	texture_rect.visible = true
 	texture_rect.texture = texture
 
 
 func _clear_status_node() -> void:
+	var status_node := _status_node
 	if _status_transition:
 		_status_transition.cancel()
-	if _status_node and is_instance_valid(_status_node):
-		_status_node.queue_free()
-	_status_node = null
-
-
-func set_motion_layer_scene(scene: PackedScene) -> void:
-	if scene == null:
+	# cancel() 会同步调用完成回调，回调可能已经提交了新的角色场景。
+	# 只清理调用前的快照，绝不能误删重入后产生的新节点。
+	if _status_node != status_node:
 		return
+	_status_node = null
+	if status_node and is_instance_valid(status_node):
+		var parent := status_node.get_parent()
+		if parent:
+			parent.remove_child(status_node)
+		status_node.queue_free()
+
+
+## 替换演员动作层。保留原有 void 签名，避免破坏外部 KND_Actor 子类的既有覆写。
+func set_motion_layer_scene(scene: PackedScene) -> void:
+	_last_motion_layer_scene_setup_succeeded = _set_motion_layer_scene_internal(scene)
+
+
+## 事务调用入口。旧覆写无法报告结果时按成功处理；内置实现会准确报告配置错误。
+func _try_set_motion_layer_scene(scene: PackedScene) -> bool:
+	_last_motion_layer_scene_setup_succeeded = true
+	set_motion_layer_scene(scene)
+	return _last_motion_layer_scene_setup_succeeded
+
+
+func _set_motion_layer_scene_internal(scene: PackedScene) -> bool:
+	if scene == null:
+		return true
 	if slot == null:
 		push_error("slot未赋值，无法替换演员动作层")
-		return
-	_clear_status_node()
-	if motion_layer and is_instance_valid(motion_layer):
-		motion_layer.queue_free()
+		return false
+	var observed_serial := _visual_setup_serial
 	var instance := scene.instantiate()
 	if not (instance is KND_ActorMotionLayer):
-		push_error("演员动作层场景必须继承 KND_ActorMotionLayer")
-		instance.queue_free()
-		return
+		push_warning("演员动作层场景必须继承 KND_ActorMotionLayer")
+		if instance != null:
+			instance.free()
+		return false
+
+	# 先完整实例化并验证新层，再提交替换。错误配置不能破坏仍在使用的动作层与角色状态。
+	if observed_serial != _visual_setup_serial:
+		instance.free()
+		return false
+	_visual_setup_serial += 1
+	var setup_serial := _visual_setup_serial
+	_clear_status_node()
+	if setup_serial != _visual_setup_serial:
+		instance.free()
+		return false
+	var previous_motion_layer := motion_layer
+	if previous_motion_layer and is_instance_valid(previous_motion_layer):
+		var previous_parent := previous_motion_layer.get_parent()
+		if previous_parent:
+			previous_parent.remove_child(previous_motion_layer)
+		previous_motion_layer.queue_free()
 	motion_layer = instance as KND_ActorMotionLayer
 	slot.add_child(motion_layer)
 	if motion_layer is Control:
-		motion_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+		motion_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	texture_rect = _find_texture_rect(motion_layer)
 	_bind_motion_layer_signals()
+	return true
 
 
 func _bind_motion_layer_signals() -> void:
@@ -466,15 +663,23 @@ func _layout_status_node() -> void:
 	var mount := _get_character_mount()
 	if _status_node == null or mount == null:
 		return
+	_layout_character_scene_node(_status_node, mount)
+
+
+func _layout_character_scene_node(character_scene: Node, mount: Node) -> void:
+	if character_scene == null or mount == null:
+		return
 	# Control 场景适合铺满角色槽；Node2D 场景适合以槽中心作为立绘锚点。
 	# 具体缩放和内部偏移仍由角色场景自己控制。
-	if _status_node is Control:
-		var control := _status_node as Control
-		control.set_anchors_preset(Control.PRESET_FULL_RECT)
+	if character_scene is Control:
+		var control := character_scene as Control
+		# 只设置 anchors 会保留场景原有 offsets，初始状态钩子仍可能读到 0 尺寸。
+		# 同时归零 offsets，确保候选节点在状态校验和应用前已经取得挂载层尺寸。
+		control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		control.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	elif _status_node is Node2D:
-		var node_2d := _status_node as Node2D
+	elif character_scene is Node2D:
+		var node_2d := character_scene as Node2D
 		if mount is Control:
 			node_2d.position = (mount as Control).size * 0.5
 
@@ -497,6 +702,26 @@ func _get_status_transition_visual() -> CanvasItem:
 	if mount is CanvasItem:
 		return mount as CanvasItem
 	return _get_status_visual()
+
+
+func _get_character_transition_frame(status_name: String) -> RefCounted:
+	if not (_status_node is KND_CharacterSceneBase):
+		return null
+	var target_space := _get_status_transition_visual()
+	if target_space == null:
+		return null
+	var character_scene := _status_node as KND_CharacterSceneBase
+	if status_name.is_empty():
+		return character_scene.get_current_status_transition_frame(target_space)
+	return character_scene.get_status_transition_frame(status_name, target_space)
+
+
+func _can_apply_character_status(status_name: String) -> bool:
+	if status_name.is_empty() or _status_node == null:
+		return false
+	if _status_node is KND_CharacterSceneBase:
+		return (_status_node as KND_CharacterSceneBase).can_apply_status(status_name)
+	return not _get_compatible_status_method().is_empty()
 
 
 func _get_character_mount() -> Node:
