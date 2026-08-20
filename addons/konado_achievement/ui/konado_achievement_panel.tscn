@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cf1lod8rjewbg"]
 
-[ext_resource type="Script" uid="uid://cwkfuhsp2rxr1" path="res://addons/konado_achievement/achievement_panel.gd" id="1"]
+[ext_resource type="Script" uid="uid://cwkfuhsp2rxr1" path="res://addons/konado_achievement/ui/konado_achievement_panel.gd" id="1"]
 
 [node name="AchievementPanel" type="PanelContainer" unique_id=1526011578]
 z_index = 90

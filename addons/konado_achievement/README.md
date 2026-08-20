@@ -5,7 +5,7 @@
 
 ### 配置成就
 
-编辑 `addons/konado_achievement/data/achievements.json`：
+编辑 `addons/konado_achievement/data/default_achievements.json`：
 
 ```json
 {
@@ -47,13 +47,13 @@
 
 ```gdscript
 # 直接解锁
-KND_AchievementManager.unlock_achievement("first_blood")
+KonadoAchievements.unlock_achievement("first_blood")
 
 # 基于计数器（自动检查条件）
-KND_AchievementManager.increment_progress("enemies_defeated", 1)
+KonadoAchievements.increment_progress("enemies_defeated", 1)
 
 # 基于标志（自动检查条件）
-KND_AchievementManager.set_flag("secret_ending_found", true)
+KonadoAchievements.set_flag("secret_ending_found", true)
 ```
 
 ## API 参考
@@ -98,12 +98,12 @@ signal achievements_loaded()
 ### 配置属性
 
 ```gdscript
-KND_AchievementManager.config_path = "res://my_data/achievements.json"
-KND_AchievementManager.save_path = "user://my_save.json"
-KND_AchievementManager.popup_duration = 4.0
-KND_AchievementManager.popup_position = "top_right"  # top_left, top_right, bottom_left, bottom_right
-KND_AchievementManager.panel_layer = 100
-KND_AchievementManager.popup_layer = 110
+KonadoAchievements.config_path = "res://my_data/achievements.json"
+KonadoAchievements.save_path = "user://my_save.json"
+KonadoAchievements.popup_duration = 4.0
+KonadoAchievements.popup_position = "top_right"  # top_left, top_right, bottom_left, bottom_right
+KonadoAchievements.panel_layer = 100
+KonadoAchievements.popup_layer = 110
 ```
 
 ## 外部集成
@@ -112,10 +112,10 @@ KND_AchievementManager.popup_layer = 110
 
 ```gdscript
 # 提供服务器端持久化的自定义处理程序
-KND_AchievementManager.custom_save_handler = func(data: Dictionary):
+KonadoAchievements.custom_save_handler = func(data: Dictionary):
 	MyServerAPI.save_achievements(data)
 
-KND_AchievementManager.custom_load_handler = func() -> Dictionary:
+KonadoAchievements.custom_load_handler = func() -> Dictionary:
 	return MyServerAPI.load_achievements()
 ```
 
@@ -123,7 +123,7 @@ KND_AchievementManager.custom_load_handler = func() -> Dictionary:
 
 ```gdscript
 # 挂钩到解锁事件以与外部平台同步
-KND_AchievementManager.on_external_unlock = func(id: String, data: Dictionary):
+KonadoAchievements.on_external_unlock = func(id: String, data: Dictionary):
 	SteamworksAPI.set_achievement(id)
 	SteamworksAPI.store_stats()
 ```
@@ -131,7 +131,7 @@ KND_AchievementManager.on_external_unlock = func(id: String, data: Dictionary):
 ### 监听事件
 
 ```gdscript
-KND_AchievementManager.achievement_unlocked.connect(func(id, data):
+KonadoAchievements.achievement_unlocked.connect(func(id, data):
 	print("玩家解锁：", data["name"])
 )
 ```

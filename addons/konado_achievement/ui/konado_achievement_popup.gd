@@ -29,36 +29,36 @@ func _ready() -> void:
 	style.content_margin_bottom = 8
 	add_theme_stylebox_override("panel", style)
 
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 12)
-	add_child(hbox)
+	var horizontal_container := HBoxContainer.new()
+	horizontal_container.add_theme_constant_override("separation", 12)
+	add_child(horizontal_container)
 
 	_icon_rect = TextureRect.new()
 	_icon_rect.custom_minimum_size = Vector2(48, 48)
 	_icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	hbox.add_child(_icon_rect)
+	horizontal_container.add_child(_icon_rect)
 
-	var vbox := VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(vbox)
+	var vertical_container := VBoxContainer.new()
+	vertical_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	horizontal_container.add_child(vertical_container)
 
 	_header_label = Label.new()
-	_header_label.text = tr("成就解锁")
+	_header_label.text = tr("KONADO_ACHIEVEMENT_UNLOCKED_TITLE")
 	_header_label.add_theme_font_size_override("font_size", 11)
 	_header_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.2))
-	vbox.add_child(_header_label)
+	vertical_container.add_child(_header_label)
 
 	_title_label = Label.new()
 	_title_label.add_theme_font_size_override("font_size", 16)
 	_title_label.add_theme_color_override("font_color", Color.WHITE)
-	vbox.add_child(_title_label)
+	vertical_container.add_child(_title_label)
 
 	_desc_label = Label.new()
 	_desc_label.add_theme_font_size_override("font_size", 12)
 	_desc_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(_desc_label)
+	vertical_container.add_child(_desc_label)
 
 
 func setup(
@@ -84,7 +84,7 @@ func setup(
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
-		_header_label.text = tr("成就解锁")
+		_header_label.text = tr("KONADO_ACHIEVEMENT_UNLOCKED_TITLE")
 
 
 func _apply_position(pos: String) -> void:

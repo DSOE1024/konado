@@ -20,7 +20,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	if _achievement_manager == null:
-		_achievement_manager = get_tree().root.get_node_or_null("KND_AchievementManager")
+		_achievement_manager = get_tree().root.get_node_or_null("KonadoAchievements")
 	if _achievement_manager == null:
 		push_error("KonadoAchievement 成就面板缺少管理器。")
 		queue_free()
@@ -46,7 +46,7 @@ func _ready() -> void:
 	root_vbox.add_child(header)
 
 	_title_label = Label.new()
-	_title_label.text = tr("成就")
+	_title_label.text = tr("KONADO_ACHIEVEMENTS")
 	_title_label.add_theme_font_size_override("font_size", 24)
 	_title_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.2))
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -67,7 +67,7 @@ func _ready() -> void:
 	header.add_child(_close_btn)
 
 	_reset_btn = Button.new()
-	_reset_btn.text = tr("重置所有成就")
+	_reset_btn.text = tr("KONADO_ACHIEVEMENTS_RESET")
 	_reset_btn.pressed.connect(func(): _achievement_manager.reset_all())
 	header.add_child(_reset_btn)
 
@@ -147,9 +147,9 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 	bg.border_width_right = 1
 	panel.add_theme_stylebox_override("panel", bg)
 
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 12)
-	panel.add_child(hbox)
+	var horizontal_container := HBoxContainer.new()
+	horizontal_container.add_theme_constant_override("separation", 12)
+	panel.add_child(horizontal_container)
 
 	# 图标
 	var icon_rect := TextureRect.new()
@@ -158,61 +158,63 @@ func _create_item(ach: Dictionary, is_unlocked: bool, is_hidden: bool) -> PanelC
 	icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	var icon_path: String = ach.get("icon", "")
 	if icon_path.is_empty():
-		icon_path = "res://addons/konado_achievement/icons/default_icon.svg"
+		icon_path = "res://addons/konado_achievement/assets/icons/default_icon.svg"
 	if ResourceLoader.exists(icon_path):
 		icon_rect.texture = load(icon_path)
 	if not is_unlocked:
 		icon_rect.modulate = Color(0.3, 0.3, 0.3)
-	hbox.add_child(icon_rect)
+	horizontal_container.add_child(icon_rect)
 
 	# 文本信息
-	var vbox := VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(vbox)
+	var vertical_container := VBoxContainer.new()
+	vertical_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	horizontal_container.add_child(vertical_container)
 
 	var name_label := Label.new()
 	if is_hidden and not is_unlocked:
 		name_label.text = "???"
 	else:
-		name_label.text = tr(str(ach.get("name", "未知")))
+		name_label.text = tr(str(ach.get("name", "KONADO_UNKNOWN")))
 	name_label.add_theme_font_size_override("font_size", 15)
 	if is_unlocked:
 		name_label.add_theme_color_override("font_color", Color.WHITE)
 	else:
 		name_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-	vbox.add_child(name_label)
+	vertical_container.add_child(name_label)
 
-	var desc_label := Label.new()
+	var description_label := Label.new()
 	if is_hidden and not is_unlocked:
-		desc_label.text = tr("此成就是隐藏的。")
+		description_label.text = tr("KONADO_ACHIEVEMENT_HIDDEN")
 	else:
-		desc_label.text = tr(str(ach.get("description", "")))
-	desc_label.add_theme_font_size_override("font_size", 12)
-	desc_label.add_theme_color_override(
+		description_label.text = tr(str(ach.get("description", "")))
+	description_label.add_theme_font_size_override("font_size", 12)
+	description_label.add_theme_color_override(
 		"font_color", Color(0.55, 0.55, 0.55) if not is_unlocked else Color(0.75, 0.75, 0.75)
 	)
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(desc_label)
+	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vertical_container.add_child(description_label)
 
 	# 点数徽章
 	var pts := ach.get("points", 0)
 	if pts > 0:
 		var pts_label := Label.new()
-		pts_label.text = tr("%d 点") % pts
+		pts_label.text = tr("KONADO_ACHIEVEMENT_POINTS") % pts
 		pts_label.add_theme_font_size_override("font_size", 13)
 		pts_label.add_theme_color_override(
 			"font_color", Color(0.85, 0.7, 0.2) if is_unlocked else Color(0.4, 0.4, 0.4)
 		)
-		hbox.add_child(pts_label)
+		horizontal_container.add_child(pts_label)
 
 	# 状态指示器
 	var status := Label.new()
-	status.text = tr("已解锁") if is_unlocked else tr("未解锁")
+	status.text = (
+		tr("KONADO_ACHIEVEMENT_UNLOCKED") if is_unlocked else tr("KONADO_ACHIEVEMENT_LOCKED")
+	)
 	status.add_theme_font_size_override("font_size", 11)
 	status.add_theme_color_override(
 		"font_color", Color(0.4, 0.8, 0.2) if is_unlocked else Color(0.5, 0.5, 0.5)
 	)
-	hbox.add_child(status)
+	horizontal_container.add_child(status)
 
 	return panel
 
@@ -251,6 +253,6 @@ func _on_achievement_reset(_achievement_id: String) -> void:
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_TRANSLATION_CHANGED or not is_node_ready():
 		return
-	_title_label.text = tr("成就")
-	_reset_btn.text = tr("重置所有成就")
+	_title_label.text = tr("KONADO_ACHIEVEMENTS")
+	_reset_btn.text = tr("KONADO_ACHIEVEMENTS_RESET")
 	refresh()

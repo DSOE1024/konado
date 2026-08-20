@@ -11,7 +11,7 @@ signal achievements_loaded
 const DEFAULT_PANEL_LAYER := 100
 const DEFAULT_POPUP_LAYER := 110
 
-@export var config_path: String = "res://addons/konado_achievement/data/achievements.json"
+@export var config_path: String = "res://addons/konado_achievement/data/default_achievements.json"
 @export var save_path: String = "user://achievements_save.json"
 @export_range(0.1, 60.0, 0.1, "or_greater") var popup_duration: float = 3.0
 @export var popup_position: String = "top_left"  # top_left, top_right, bottom_left, bottom_right
@@ -51,8 +51,8 @@ var _focus_change_generation: int = 0
 func _ready() -> void:
 	_panel_canvas_layer = _create_canvas_layer("AchievementPanelLayer", panel_layer)
 	_popup_canvas_layer = _create_canvas_layer("AchievementPopupLayer", popup_layer)
-	_popup_scene = load("res://addons/konado_achievement/achievement_popup.tscn")
-	_panel_scene = load("res://addons/konado_achievement/achievement_panel.tscn")
+	_popup_scene = load("res://addons/konado_achievement/ui/konado_achievement_popup.tscn")
+	_panel_scene = load("res://addons/konado_achievement/ui/konado_achievement_panel.tscn")
 	_load_config()
 	_load_save_data()
 	achievements_loaded.emit()
@@ -303,7 +303,7 @@ func _show_popup(ach_data: Dictionary) -> void:
 	if _active_popup.has_method("setup"):
 		var icon_path: String = ach_data.get("icon", "")
 		if icon_path.is_empty():
-			icon_path = "res://addons/konado_achievement/icons/default_icon.svg"
+			icon_path = "res://addons/konado_achievement/assets/icons/default_icon.svg"
 		_active_popup.setup(
 			ach_data.get("name", ""),
 			ach_data.get("description", ""),

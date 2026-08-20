@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ddp63j8nqpsy6"
-path="res://.godot/imported/default_icon.svg-7f3f02879d539148e2f7e0ece0740201.ctex"
+path="res://.godot/imported/default_icon.svg-ce3d709b679ec3e4c980a192cf9bea78.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/konado_achievement/icons/default_icon.svg"
-dest_files=["res://.godot/imported/default_icon.svg-7f3f02879d539148e2f7e0ece0740201.ctex"]
+source_file="res://addons/konado_achievement/assets/icons/default_icon.svg"
+dest_files=["res://.godot/imported/default_icon.svg-ce3d709b679ec3e4c980a192cf9bea78.ctex"]
 
 [params]
 
