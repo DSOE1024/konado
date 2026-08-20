@@ -12,9 +12,10 @@
 - Significantly reduced memory usage and improved runtime performance for large scripts, with time-sliced execution for exceptionally long runs
 - Improved cancellation and state handling so stopped or replaced asynchronous commands cannot leave stale work behind
 - Adopted Godot's native `TranslationServer` and `.po` resources so locale selection, UI translation, and story localization share one locale state
-- Improved compiler diagnostics and standardized plugin structure and naming
-- Fixed Konado.NET activation and completed the localized API documentation
+- Fixed screen text remaining visible after its final line or a shot replacement and covering later story content
 - Simplified Godot's Create New Node list by hiding template-only implementation nodes
+- Fixed Konado.NET activation and completed the localized API documentation
+- Improved compiler diagnostics and standardized plugin structure and naming
 
 ## 2.7.4 - Wontons
 

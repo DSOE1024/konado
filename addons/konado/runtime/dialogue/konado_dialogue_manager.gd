@@ -184,6 +184,8 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 func set_shot(new_shot: KonadoShot) -> void:
 	_cancel_execution()
+	if screen_text != null:
+		screen_text.reset_screen_text()
 	var localized := _load_localized_shot(new_shot)
 	if _install_shot(localized):
 		start_dialogue_shot = localized

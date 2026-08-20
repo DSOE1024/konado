@@ -13,6 +13,8 @@ signal screen_text_clicked
 ## 信号：所有行播放完成
 signal display_finished
 
+enum PresentationState { IDLE, DISPLAYING, HIDING }
+
 ## 下一行指示器（三角箭头）
 @export var next_line_indicator: TextureRect
 
@@ -52,6 +54,8 @@ var _line_index: int = 0
 var _total_lines: int = 0
 var _is_waiting_input: bool = false
 var _display_generation: int = 0
+var _auto_hide_on_finish: bool = false
+var _presentation_state := PresentationState.IDLE
 
 
 func _ready() -> void:
@@ -65,10 +69,13 @@ func _ready() -> void:
 ## 显示 NVL 文本内容
 ## text_lines: 文本行列表
 ## align: 对齐方式（"left"/"center"/"right"）
-func display(text_lines: Array[String], align: String = "center") -> void:
+## auto_hide: 全部行播放完成后是否自动隐藏（默认为 false，此时需由调用方显式隐藏）
+func display(text_lines: Array[String], align: String = "center", auto_hide: bool = false) -> void:
 	_display_generation += 1
 	var display_generation := _display_generation
 	_cancel_display_activity()
+	_auto_hide_on_finish = auto_hide
+	_presentation_state = PresentationState.DISPLAYING
 	hide()
 	_current_align = align
 	_line_index = 0
@@ -85,6 +92,12 @@ func display(text_lines: Array[String], align: String = "center") -> void:
 ## 显示屏幕文本（带淡入动画），淡入完成后自动开始第一行
 func show_screen_text() -> void:
 	var display_generation := _display_generation
+	if _presentation_state == PresentationState.HIDING:
+		_presentation_state = (
+			PresentationState.DISPLAYING if _line_index < _total_lines else PresentationState.IDLE
+		)
+	elif _presentation_state == PresentationState.IDLE and _line_index < _total_lines:
+		_presentation_state = PresentationState.DISPLAYING
 	show()
 	modulate.a = 0.0
 
@@ -105,8 +118,12 @@ func show_screen_text() -> void:
 
 ## 隐藏屏幕文本（带淡出动画），完成后发射 screen_text_hidden
 func hide_screen_text() -> void:
+	if _presentation_state == PresentationState.HIDING:
+		return
 	_display_generation += 1
 	var display_generation := _display_generation
+	_presentation_state = PresentationState.HIDING
+	_auto_hide_on_finish = false
 	_cancel_display_activity()
 
 	_fade_tween = create_tween()
@@ -117,6 +134,7 @@ func hide_screen_text() -> void:
 		func():
 			if display_generation != _display_generation:
 				return
+			_presentation_state = PresentationState.IDLE
 			hide()
 			modulate.a = 1.0
 			_clear_text()
@@ -127,6 +145,8 @@ func hide_screen_text() -> void:
 ## 立即取消当前显示流程并清除仅属于当前镜头的屏幕文本。
 func reset_screen_text() -> void:
 	_display_generation += 1
+	_presentation_state = PresentationState.IDLE
+	_auto_hide_on_finish = false
 	_cancel_display_activity()
 	hide()
 	modulate.a = 1.0
@@ -136,6 +156,8 @@ func reset_screen_text() -> void:
 ## Cancel callbacks and tweens while preserving the last committed visual state.
 func cancel_pending_operations() -> void:
 	_display_generation += 1
+	_presentation_state = PresentationState.IDLE
+	_auto_hide_on_finish = false
 	_cancel_display_activity()
 	modulate.a = 1.0
 
@@ -159,6 +181,7 @@ func restore_state(state: Dictionary) -> bool:
 	_line_index = clampi(int(state.get("line_index", 0)), 0, lines.size())
 	_build_text(lines, _current_align)
 	_current_lines = lines
+	_presentation_state = PresentationState.IDLE
 	show()
 	modulate.a = 1.0
 	for index in range(_line_labels.size()):
@@ -168,14 +191,35 @@ func restore_state(state: Dictionary) -> bool:
 
 ## 跳过逐行淡入动画，直接显示所有文本并发射完成信号
 func skip_display() -> void:
+	if _presentation_state != PresentationState.DISPLAYING:
+		return
 	_kill_line_tween()
 	_kill_blink_tween()
 	_is_waiting_input = false
 	if next_line_indicator:
 		next_line_indicator.hide()
 	for label in _line_labels:
+		label.show()
 		label.modulate.a = 1.0
+	_line_index = _total_lines
+	_finish_display(_display_generation)
+
+
+## 播放完成统一出口：发射 display_finished，并按需自动隐藏
+func _finish_display(display_generation: int) -> void:
+	if (
+		display_generation != _display_generation
+		or _presentation_state != PresentationState.DISPLAYING
+	):
+		return
+	_presentation_state = PresentationState.IDLE
+	var auto_hide := _auto_hide_on_finish
+	_auto_hide_on_finish = false
 	display_finished.emit()
+	if display_generation != _display_generation:
+		return
+	if auto_hide:
+		hide_screen_text()
 
 
 ## 淡入当前行
@@ -183,7 +227,7 @@ func _reveal_current_line(display_generation: int = _display_generation) -> void
 	if display_generation != _display_generation:
 		return
 	if _line_index >= _total_lines:
-		display_finished.emit()
+		_finish_display(display_generation)
 		return
 
 	var label := _line_labels[_line_index]
@@ -209,10 +253,12 @@ func _reveal_current_line(display_generation: int = _display_generation) -> void
 func _show_indicator(display_generation: int = _display_generation) -> void:
 	if (
 		display_generation != _display_generation
-		or next_line_indicator == null
 		or _line_index <= 0
 		or _line_index > _line_labels.size()
 	):
+		return
+	_is_waiting_input = true
+	if next_line_indicator == null:
 		return
 
 	var last_label := _line_labels[_line_index - 1]
@@ -232,8 +278,6 @@ func _show_indicator(display_generation: int = _display_generation) -> void:
 	)
 	_blink_tween.tween_property(next_line_indicator, "modulate:a", 1.0, blink_cycle * 0.5)
 
-	_is_waiting_input = true
-
 
 ## 隐藏指示器
 func _hide_indicator() -> void:
@@ -251,7 +295,7 @@ func _on_click_advance() -> void:
 	_hide_indicator()
 
 	if _line_index >= _total_lines:
-		display_finished.emit()
+		_finish_display(_display_generation)
 	else:
 		_reveal_current_line(_display_generation)
 
