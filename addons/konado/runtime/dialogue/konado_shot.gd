@@ -1,27 +1,21 @@
 @tool
 extends ScriptExtension
-class_name KND_Shot
+class_name KonadoShot
 
-static var _konado_script_language: KND_KonadoScriptLanguage
+static var _konado_script_language: KonadoScriptLanguage
 
-@export var ks_path: String = "null"
+@export var source_path: String = "null"
 
 @export var shot_id: String = "新镜头"
 
-## 起始节点ID
-@export var start_node_id: String = ""
-
-## 所有对话节点（扁平列表）
-@export var dialogues: Array[KND_Dialogue]:
-	set(value):
-		_dialogues = value
-	get:
-		if _protection_version > 0 and not Engine.is_editor_hint():
-			ensure_script_ready()
-		return _dialogues
+## Konado 2.8 唯一可执行产物。
+@export_storage var program: KonadoProgram
+@export_storage var locale_overlay: KonadoLocaleOverlay
 
 ## 依赖角色
-@export var dep_characters: Array[String] = []
+@export var dependent_characters: Array[String] = []
+## 编译期提取的资源依赖清单，供编辑器、导出检查和诊断复用。
+@export var dependencies: Dictionary = {}
 
 @export_storage var _protection_version := 0
 @export_storage var _protection_serialized_size := 0
@@ -30,7 +24,6 @@ static var _konado_script_language: KND_KonadoScriptLanguage
 @export_storage var _protection_ciphertext := PackedByteArray()
 @export_storage var _protection_mac := PackedByteArray()
 
-var _dialogues: Array[KND_Dialogue] = []
 var _protection_attempted := false
 var _source_code := ""
 var _source_loaded := false
@@ -108,7 +101,7 @@ func _is_tool() -> bool:
 
 func _get_language() -> ScriptLanguage:
 	if _konado_script_language == null:
-		_konado_script_language = KND_KonadoScriptLanguage.new()
+		_konado_script_language = KonadoScriptLanguage.new()
 	return _konado_script_language
 
 
@@ -171,10 +164,10 @@ func _get_rpc_config() -> Variant:
 func _load_source_code() -> void:
 	if _source_loaded:
 		return
-	if not Engine.is_editor_hint() or ks_path.is_empty() or ks_path == "null":
+	if not Engine.is_editor_hint() or source_path.is_empty() or source_path == "null":
 		_source_loaded = true
 		return
-	var file := FileAccess.open(ks_path, FileAccess.READ)
+	var file := FileAccess.open(source_path, FileAccess.READ)
 	if file == null:
 		return
 	_source_code = file.get_as_text()
@@ -185,9 +178,12 @@ func _load_source_code() -> void:
 func protect_script_for_export(build_key: PackedByteArray) -> bool:
 	if is_script_protected():
 		return true
-	var result := KND_ScriptProtection.protect(_dialogues, build_key, ks_path)
+	if program == null or not program.is_valid():
+		push_error("[Konado] %s：没有可保护的有效 Program" % source_path)
+		return false
+	var result := KonadoScriptProtection.protect_program(program, build_key, source_path)
 	if not result.get("ok", false):
-		push_error("[Konado] %s：%s" % [ks_path, result.get("error", "未知加密错误")])
+		push_error("[Konado] %s：%s" % [source_path, result.get("error", "未知加密错误")])
 		return false
 	_protection_version = result["version"]
 	_protection_serialized_size = result["serialized_size"]
@@ -195,7 +191,7 @@ func protect_script_for_export(build_key: PackedByteArray) -> bool:
 	_protection_wrapped_key = result["wrapped_key"]
 	_protection_ciphertext = result["ciphertext"]
 	_protection_mac = result["mac"]
-	_dialogues.clear()
+	program = null
 	_protection_attempted = false
 	return true
 
@@ -207,19 +203,19 @@ func ensure_script_ready() -> bool:
 	if _protection_attempted:
 		return false
 	_protection_attempted = true
-	var result := KND_ScriptProtection.unprotect(
+	var result := KonadoScriptProtection.unprotect(
 		_protection_version,
 		_protection_serialized_size,
 		_protection_iv,
 		_protection_wrapped_key,
 		_protection_ciphertext,
 		_protection_mac,
-		ks_path
+		source_path
 	)
 	if not result.get("ok", false):
-		push_error("[Konado] %s：%s" % [ks_path, result.get("error", "未知解密错误")])
+		push_error("[Konado] %s：%s" % [source_path, result.get("error", "未知解密错误")])
 		return false
-	_dialogues = result["dialogues"]
+	program = result["program"]
 	_clear_script_protection()
 	return true
 
@@ -238,24 +234,51 @@ func _clear_script_protection() -> void:
 	_protection_attempted = false
 
 
-## 根据 node_id 查找对话节点
-func find_node(id: String) -> KND_Dialogue:
-	if not ensure_script_ready():
-		return null
-	if id.is_empty():
-		return null
-	for d in _dialogues:
-		if d.node_id == id:
-			return d
-	return null
+func install_program(value: KonadoProgram) -> void:
+	program = value if value != null and value.seal() else null
+	locale_overlay = null
 
 
-## 获取起始节点
-func get_start_node() -> KND_Dialogue:
+func install_locale_overlay(value: KonadoLocaleOverlay) -> bool:
+	if value != null and not value.is_compatible(program):
+		return false
+	locale_overlay = value
+	return true
+
+
+func instruction_count() -> int:
+	return program.instruction_count() if program != null and program.is_valid() else 0
+
+
+func entry_pc() -> int:
+	if not ensure_script_ready():
+		return KonadoProgram.INVALID_PC
+	return program.entry_pc if program != null and program.is_valid() else KonadoProgram.INVALID_PC
+
+
+func pc_for_key(key: String) -> int:
+	if not ensure_script_ready():
+		return KonadoProgram.INVALID_PC
+	return (
+		program.pc_for_key(key)
+		if program != null and program.is_valid()
+		else KonadoProgram.INVALID_PC
+	)
+
+
+func key_for_pc(pc: int) -> String:
+	return program.key_for_pc(pc) if program != null and program.is_valid() else ""
+
+
+func instruction_at(pc: int) -> KonadoInstruction:
 	if not ensure_script_ready():
 		return null
-	if not start_node_id.is_empty():
-		return find_node(start_node_id)
-	if _dialogues.size() > 0:
-		return _dialogues[0]
-	return null
+	return (
+		KonadoInstruction.new(program, pc, locale_overlay)
+		if program != null and program.is_valid() and pc >= 0 and pc < program.instruction_count()
+		else null
+	)
+
+
+func program_fingerprint() -> String:
+	return program.fingerprint() if program != null and program.is_valid() else ""

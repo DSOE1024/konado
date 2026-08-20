@@ -1,5 +1,4 @@
 extends Node
-class_name KND_ChoiceInterface
 
 ## 对话选项UI接口
 
@@ -32,8 +31,8 @@ func distroy_options() -> void:
 
 ## 显示对话选项的方法
 func display_options(
-	choices: Array[KND_DialogueChoice],
-	manager: KND_DialogueManager,
+	choices: Array[Dictionary],
+	manager: KonadoDialogueManager,
 	choices_font_size: int = 32,
 	playback_generation: int = -1
 ) -> void:
@@ -46,7 +45,7 @@ func display_options(
 	for choice in choices:
 		var choice_button: Button = Button.new()
 		# 选项文本内容
-		choice_button.set_text(choice.choice_text)
+		choice_button.set_text(String(choice.get("text", "")))
 		choice_button.add_theme_font_size_override("font_size", int(choices_font_size))
 		# 选项触发
 		choice_button.pressed.connect(
@@ -62,7 +61,7 @@ func display_options(
 				await get_tree().process_frame
 				if not is_instance_valid(manager) or claimed_generation != _display_generation:
 					return
-				manager.on_option_triggered(choice, playback_generation)
+				manager._on_option_triggered(choice, playback_generation)
 				print_rich("[color=green]选项被触发: [/color]" + str(choice))
 		)
 		choice_button.gui_input.connect(

@@ -1,14 +1,14 @@
 @tool
 extends RefCounted
-class_name KND_ScriptProtection
+class_name KonadoScriptProtection
 
-## Runtime codec used by the export pipeline to protect compiled KS dialogue data.
+## Runtime codec used by the export pipeline to protect compiled KonadoScript dialogue data.
 ##
 ## This is transparent export-time protection, not DRM. The build key must remain
 ## recoverable by the client so the goal is to prevent direct PCK resource
 ## extraction, rather than to resist targeted runtime reverse engineering.
 
-const FORMAT_VERSION := 2
+const FORMAT_VERSION := 3
 const KEY_SIZE := 32
 const IV_SIZE := 16
 const BLOCK_SIZE := 16
@@ -17,18 +17,20 @@ const AUTH_HEADER_SIZE := 16
 const MAX_SERIALIZED_MIB := 64
 const MAX_SERIALIZED_SIZE := MAX_SERIALIZED_MIB * 1024 * 1024
 const MAX_CIPHERTEXT_SIZE := MAX_SERIALIZED_SIZE + 1024 * 1024
-const WRAP_SALT := "Konado.ScriptProtection.v1"
-const ENCRYPTION_KEY_CONTEXT := "Konado.ScriptProtection.Encryption.v2"
-const AUTHENTICATION_KEY_CONTEXT := "Konado.ScriptProtection.Authentication.v2"
+const WRAP_SALT := "Konado.ScriptProtection.v3"
+const ENCRYPTION_KEY_CONTEXT := "Konado.ScriptProtection.Encryption.v3"
+const AUTHENTICATION_KEY_CONTEXT := "Konado.ScriptProtection.Authentication.v3"
 
 
-static func protect(
-	dialogues: Array[KND_Dialogue], build_key: PackedByteArray, source_path: String
+static func protect_program(
+	program: KonadoProgram, build_key: PackedByteArray, source_path: String
 ) -> Dictionary:
 	if build_key.size() != KEY_SIZE:
 		return _failure("剧本加密密钥必须为 %d 字节" % KEY_SIZE)
+	if program == null or not program.is_valid():
+		return _failure("剧本 Program 无效")
 
-	var serialized := var_to_bytes_with_objects(dialogues)
+	var serialized := var_to_bytes(program.to_payload())
 	if serialized.is_empty():
 		return _failure("剧本序列化失败")
 	if serialized.size() > MAX_SERIALIZED_SIZE:
@@ -128,15 +130,13 @@ static func unprotect(
 	if serialized.is_empty() or serialized.size() != serialized_size:
 		return _failure("加密剧本解压失败")
 
-	var decoded: Variant = bytes_to_var_with_objects(serialized)
-	if typeof(decoded) != TYPE_ARRAY:
-		return _failure("加密剧本反序列化结果不是节点数组")
-	var restored: Array[KND_Dialogue] = []
-	for item: Variant in decoded:
-		if not item is KND_Dialogue:
-			return _failure("加密剧本包含无效节点")
-		restored.append(item as KND_Dialogue)
-	return {"ok": true, "dialogues": restored}
+	var decoded: Variant = bytes_to_var(serialized)
+	if typeof(decoded) != TYPE_DICTIONARY:
+		return _failure("加密剧本反序列化结果不是 Program 载荷")
+	var program := KonadoProgram.from_payload(decoded)
+	if program == null:
+		return _failure("加密剧本 Program 的 ABI 或结构无效")
+	return {"ok": true, "program": program}
 
 
 static func _build_authenticated_data(

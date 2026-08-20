@@ -1,5 +1,5 @@
-extends KND_Data
-class_name KND_VariableStore
+extends KonadoData
+class_name KonadoVariableStore
 
 signal variable_changed(name: String, value: Variant)
 signal variable_added(name: String, value: Variant)
@@ -73,26 +73,12 @@ func set_value(name: String, value: Variant) -> void:
 		variable_added.emit(name, value)
 
 
-func apply_operation(name: String, op: Operation, operand: Variant) -> void:
-	match op:
-		Operation.SET:
-			set_value(name, operand)
-		Operation.ADD:
-			var current = get_value(name, 0)
-			if typeof(current) == TYPE_STRING:
-				set_value(name, str(current) + str(operand))
-			else:
-				set_value(name, get_float(name) + float(operand))
-		Operation.SUB:
-			set_value(name, get_float(name) - float(operand))
-		Operation.MUL:
-			set_value(name, get_float(name) * float(operand))
-		Operation.DIV:
-			var divisor = float(operand)
-			if divisor == 0.0:
-				push_error("变量 '%s' 除法操作除数为零" % name)
-				return
-			set_value(name, get_float(name) / divisor)
+func apply_operation(name: String, op: Operation, operand: Variant) -> bool:
+	var result: Dictionary = KonadoValueOperations.apply(get_value(name), op, operand, has(name))
+	if not bool(result.get("ok", false)):
+		return false
+	set_value(name, result.get("value"))
+	return true
 
 
 func remove(name: String) -> void:
