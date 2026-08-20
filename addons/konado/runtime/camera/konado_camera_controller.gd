@@ -51,12 +51,23 @@ func move_to_marker(
 	callback: Callable = Callable(),
 	transition_type: String = "linear",
 ) -> bool:
-	if active_camera == null or duration < 0.0:
+	if active_camera == null:
+		push_error(
+			"Konado: camera.move 失败：active_camera 未配置（请在 KonadoCameraController 中指定 Camera2D）"
+		)
+		return false
+	if duration < 0.0:
+		push_error("Konado: camera.move 失败：duration 不能为负数（%f）" % duration)
+		return false
+	if camera_markers.is_empty():
+		push_error("Konado: camera.move 失败：camera_markers 为空，未找到机位 '%s'。" % marker_id)
 		return false
 	for marker in camera_markers:
 		if is_instance_valid(marker) and marker.marker_id == marker_id:
 			_transition_to_marker(marker, duration, callback, transition_type)
 			return true
+	var known := ", ".join(camera_markers.map(func(m): return m.marker_id if is_instance_valid(m) else "<invalid>"))
+	push_error("Konado: camera.move 失败：未注册机位 '%s'。已注册的机位：%s" % [marker_id, known])
 	return false
 
 
@@ -136,13 +147,29 @@ func shake_camera(duration: float, callback: Callable = Callable()) -> bool:
 func move_to_marker_async(
 	marker_id: String, duration: float, transition_type: String = "linear"
 ) -> bool:
-	if active_camera == null or duration < 0.0:
+	if active_camera == null:
+		push_error(
+			"Konado: camera.move.async 失败：active_camera 未配置（请在 KonadoCameraController 中指定 Camera2D）"
+		)
+		return false
+	if duration < 0.0:
+		push_error("Konado: camera.move.async 失败：duration 不能为负数（%f）" % duration)
+		return false
+	if camera_markers.is_empty():
+		push_error(
+			"Konado: camera.move.async 失败：camera_markers 为空，未找到机位 '%s'。"
+			% marker_id
+		)
 		return false
 	for marker in camera_markers:
 		if is_instance_valid(marker) and marker.marker_id == marker_id:
 			_async_target_pos = marker.position
 			_async_target_zoom = marker.zoom
 			return _start_async_tween(marker.position, marker.zoom, duration, transition_type)
+	var known := ", ".join(camera_markers.map(func(m): return m.marker_id if is_instance_valid(m) else "<invalid>"))
+	push_error(
+		"Konado: camera.move.async 失败：未注册机位 '%s'。已注册的机位：%s" % [marker_id, known]
+	)
 	return false
 
 
