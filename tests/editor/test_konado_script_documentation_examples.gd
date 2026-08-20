@@ -27,6 +27,9 @@ func _init() -> void:
 					continue
 				checked_blocks += 1
 				_validate_example(path, int(block["line"]), snippet)
+	for path: String in _collect_konado_script_files("res://skills/konado-script/examples"):
+		checked_blocks += 1
+		_validate_example(path, 1, _read_text(path))
 	if checked_blocks == 0:
 		_fail("no executable KonadoScript documentation examples were found")
 	elif _failures == 0:
@@ -77,6 +80,17 @@ func _collect_markdown_files(root_path: String) -> PackedStringArray:
 	return result
 
 
+func _collect_konado_script_files(root_path: String) -> PackedStringArray:
+	var result := PackedStringArray()
+	for file_name: String in DirAccess.get_files_at(root_path):
+		if file_name.get_extension().to_lower() == "ks":
+			result.append(root_path.path_join(file_name))
+	for directory_name: String in DirAccess.get_directories_at(root_path):
+		result.append_array(_collect_konado_script_files(root_path.path_join(directory_name)))
+	result.sort()
+	return result
+
+
 func _extract_text_blocks(markdown: String) -> Array[Dictionary]:
 	var blocks: Array[Dictionary] = []
 	var lines := markdown.split("\n")
@@ -108,13 +122,13 @@ func _is_executable_example(source: String) -> bool:
 			continue
 		if content.begins_with('"'):
 			return true
-		return content.get_slice(" ", 0) in KS_LanguageCatalog.ROOT_KEYWORDS
+		return content.get_slice(" ", 0) in KonadoScriptLanguageCatalog.ROOT_KEYWORDS
 	return false
 
 
 func _validate_example(path: String, line: int, source: String) -> void:
-	var lexer := KS_Lexer.new()
-	var parser := KS_Parser.new()
+	var lexer := KonadoScriptLexer.new()
+	var parser := KonadoScriptParser.new()
 	lexer.console_output_enabled = false
 	parser.console_output_enabled = false
 	var tokens := lexer.tokenize(source, path)

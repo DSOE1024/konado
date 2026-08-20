@@ -1,6 +1,9 @@
 extends SceneTree
 
 const CARET_MARKER := "\uFFFF"
+const SCRIPT_LINK_OVERLAY := preload(
+	"res://addons/konado/editor/script_editor/konado_script_link_overlay.gd"
+)
 
 var _failures := 0
 var _selected_filesystem_path := ""
@@ -31,12 +34,17 @@ func _run() -> void:
 
 
 func _test_parser_strictness() -> void:
-	var lexer := KS_Lexer.new()
+	var lexer := KonadoScriptLexer.new()
 	lexer.console_output_enabled = false
 	var tokens := lexer.tokenize("    branch opening-scene # inline comment", "strictness.ks")
 	_expect(lexer.get_errors().is_empty(), "inline comments are ignored by the lexer")
+	var branch_name_token: KonadoScriptToken = tokens.token_at(2)
 	_expect(
-		tokens.size() >= 3 and tokens[2].value == "opening-scene" and tokens[2].column == 12,
+		(
+			tokens.size() >= 3
+			and branch_name_token.value == "opening-scene"
+			and branch_name_token.column == 12
+		),
 		"hyphenated identifiers retain their real indented source column",
 	)
 	var malformed_variable_tokens := lexer.tokenize("set % 1", "strictness.ks")
@@ -44,10 +52,15 @@ func _test_parser_strictness() -> void:
 		not malformed_variable_tokens.is_empty(),
 		"an isolated variable prefix is consumed without stalling live analysis",
 	)
-	var compiler := KS_Compiler.new()
+	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
 	_expect(
-		compiler.compile_string("branch opening-scene\n    end", "strictness.ks") != null,
+		(
+			compiler.compile_string(
+				"jump_branch opening-scene\nbranch opening-scene\n    end", "strictness.ks"
+			)
+			!= null
+		),
 		"refactorable branch names are accepted by the compiler",
 	)
 	_expect(
@@ -82,7 +95,32 @@ func _test_parser_strictness() -> void:
 		compiler.compile_string("showtextbox\nhidetextbox\nend", "strictness.ks") != null,
 		"optional text-box durations match the language signature",
 	)
-	var diagnostics := KS_Diagnostics.new()
+	_expect(
+		(
+			(
+				compiler
+				. compile_string(
+					(
+						'if %love == 0:\n\t"Konado" "Tab-indented"\nendif\n'
+						+ 'if %love == 1:\n    "Konado" "Space-indented"\nendif'
+					),
+					"strictness.ks",
+				)
+			)
+			!= null
+		),
+		"equivalent tab and four-space indentation can coexist on separate lines",
+	)
+	_expect(
+		(
+			compiler.compile_string(
+				'if %love == 0:\n \t"Konado" "Ambiguous"\nendif', "strictness.ks"
+			)
+			== null
+		),
+		"a single indentation prefix cannot mix tabs and spaces",
+	)
+	var diagnostics := KonadoScriptDiagnostics.new()
 	var recovered := (
 		diagnostics
 		. analyze(
@@ -111,7 +149,7 @@ func _test_parser_strictness() -> void:
 
 
 func _test_diagnostic_service() -> void:
-	var diagnostics := KS_Diagnostics.new()
+	var diagnostics := KonadoScriptDiagnostics.new()
 	var results := diagnostics.analyze("actor move missing 2", "diagnostic-test.ks")
 	_expect(not results.is_empty(), "semantic warnings are exposed to the editor")
 	if not results.is_empty():
@@ -202,14 +240,14 @@ func _test_diagnostic_service() -> void:
 		results.size() == 1 and results[0]["message"] == "The if block requires endif.",
 		"editor diagnostics follow a non-Chinese editor locale",
 	)
-	for message: String in KS_DiagnosticMessages.EXACT_ENGLISH:
+	for message: String in KonadoScriptDiagnosticMessages.EXACT_ENGLISH:
 		_expect(
-			KS_DiagnosticMessages.localize(message, "en") != "KonadoScript: " + message,
+			KonadoScriptDiagnosticMessages.localize(message, "en") != "KonadoScript: " + message,
 			"static compiler diagnostic has an English translation: %s" % message,
 		)
 	_expect(
 		(
-			KS_DiagnosticMessages.localize("期望 IDENTIFIER，实际为 EOF", "en")
+			KonadoScriptDiagnosticMessages.localize("期望 IDENTIFIER，实际为 EOF", "en")
 			== "Expected IDENTIFIER; got EOF."
 		),
 		"dynamic parser-context diagnostics are translated",
@@ -237,7 +275,7 @@ func _test_diagnostic_service() -> void:
 	_expect(
 		(
 			results.size() == 1
-			and results[0]["severity"] == "warning"
+			and results[0]["severity"] == "error"
 			and (
 				results[0]["message"]
 				== "Target KonadoScript 'res://missing/story.ks' does not exist."
@@ -248,13 +286,16 @@ func _test_diagnostic_service() -> void:
 
 
 func _test_project_index() -> void:
-	var project_index := KS_ProjectIndex.shared()
+	var project_index := KonadoScriptProjectIndex.shared()
 	project_index.invalidate()
 	var background := project_index.get_definition("backgrounds", "bg_end")
 	_expect(
 		(
-			background.get("owner_path") == "res://sample/demo/bg_list.tres"
-			and background.get("target_path") == "res://sample/demo/backgrounds/bg_end.tscn"
+			background.get("owner_path") == "res://sample/demo/background_list.tres"
+			and (
+				background.get("target_path")
+				== "res://sample/demo/backgrounds/background_ending.tscn"
+			)
 			and int(background.get("line", 0)) > 0
 		),
 		"background IDs map to their declaration and final scene",
@@ -270,14 +311,19 @@ func _test_project_index() -> void:
 	)
 	var default_camera := project_index.get_definition("cameras", "cam1")
 	_expect(
-		default_camera.get("target_path") == "res://sample/demo/backgrounds/bg_para.tscn",
+		(
+			default_camera.get("target_path")
+			== "res://sample/demo/backgrounds/background_parallax.tscn"
+		),
 		"camera IDs include exported defaults omitted from serialized scenes",
 	)
 
 
 func _test_semantic_navigation() -> void:
 	var line := "background bg_end fade"
-	var reference := KS_SymbolIndex.get_semantic_reference_at(line, line.find("bg_end") + 2)
+	var reference := KonadoScriptSymbolIndex.get_semantic_reference_at(
+		line, line.find("bg_end") + 2
+	)
 	_expect(
 		(
 			reference.get("kind") == "backgrounds"
@@ -287,7 +333,7 @@ func _test_semantic_navigation() -> void:
 		),
 		"semantic spans cover complete resource identifiers",
 	)
-	var link_controller := KS_JumpLinkOverlay.new()
+	var link_controller := SCRIPT_LINK_OVERLAY.new()
 	var native_lookup_editor := CodeEdit.new()
 	native_lookup_editor.set_symbol_lookup_on_click_enabled(true)
 	native_lookup_editor.set_symbol_tooltip_on_hover_enabled(true)
@@ -353,7 +399,7 @@ func _test_semantic_navigation() -> void:
 	_expect(
 		(
 			targets.size() == 1
-			and targets[0].get("path") == "res://sample/demo/backgrounds/bg_end.tscn"
+			and targets[0].get("path") == "res://sample/demo/backgrounds/background_ending.tscn"
 		),
 		"background navigation resolves the final scene",
 	)
@@ -371,23 +417,24 @@ func _test_semantic_navigation() -> void:
 		{
 			"line": "actor motion Kona jump",
 			"token": "jump",
-			"target": "res://addons/konado/template/default/character/actor_motion_layer.tscn",
+			"target":
+			"res://addons/konado/templates/default/character/konado_actor_motion_layer.tscn",
 		},
 		{
 			"line": "play bgm echo",
 			"token": "echo",
-			"target": "res://sample/demo/bgm/EchoesOfHome.mp3",
+			"target": "res://sample/demo/background_music/echoes_of_home.mp3",
 		},
 		{
 			"line": "cam move cam2",
 			"token": "cam2",
-			"target": "res://sample/demo/backgrounds/bg_para.tscn",
+			"target": "res://sample/demo/backgrounds/background_parallax.tscn",
 		},
 	]
 	for test_case: Dictionary in navigation_cases:
 		var case_line := String(test_case["line"])
 		var case_reference := (
-			KS_SymbolIndex
+			KonadoScriptSymbolIndex
 			. get_semantic_reference_at(
 				case_line,
 				case_line.find(String(test_case["token"])),
@@ -411,10 +458,10 @@ func _test_semantic_navigation() -> void:
 		_selected_filesystem_path == "res://sample/demo/demo_03_variable.ks",
 		"KonadoScript navigation synchronizes the FileSystem dock selection",
 	)
-	var dialogue_line := '"Kona" "回合=$score，奖励=%bonus"'
-	var speaker_reference := KS_SymbolIndex.get_semantic_reference_at(dialogue_line, 1)
+	var dialogue_line := 'Kona "回合=$score，奖励=%bonus"'
+	var speaker_reference := KonadoScriptSymbolIndex.get_semantic_reference_at(dialogue_line, 1)
 	var dialogue_variable := (
-		KS_SymbolIndex
+		KonadoScriptSymbolIndex
 		. get_semantic_reference_at(
 			dialogue_line,
 			dialogue_line.find("$score") + 2,
@@ -423,16 +470,26 @@ func _test_semantic_navigation() -> void:
 	_expect(
 		(
 			speaker_reference.get("start") == 0
-			and speaker_reference.get("end") == '"Kona"'.length()
+			and speaker_reference.get("end") == "Kona".length()
 			and dialogue_variable.get("kind") == "variables"
 			and dialogue_variable.get("name") == "$score"
 			and dialogue_variable.get("start") == dialogue_line.find("$score")
 			and (dialogue_variable.get("end") == dialogue_line.find("$score") + "$score".length())
 		),
-		"quoted actor links include their quotes and dialogue variable links use exact spans",
+		"static actor and interpolated variable links use exact spans",
+	)
+	var dynamic_label := '"访客 $score" "你好"'
+	var dynamic_label_references := KonadoScriptSymbolIndex.get_semantic_references(dynamic_label)
+	_expect(
+		(
+			dynamic_label_references.size() == 1
+			and dynamic_label_references[0].get("kind") == "variables"
+			and dynamic_label_references[0].get("name") == "$score"
+		),
+		"interpolated text labels are not misclassified as actor references",
 	)
 	var screentext_source := 'screentext {\n    "Full-screen text with $score"\n}'
-	var screentext_references := KS_SymbolIndex.get_semantic_references(screentext_source)
+	var screentext_references := KonadoScriptSymbolIndex.get_semantic_references(screentext_source)
 	var has_screentext_actor := false
 	var has_screentext_variable := false
 	for screentext_reference: Dictionary in screentext_references:
@@ -450,24 +507,24 @@ func _test_semantic_navigation() -> void:
 		not has_screentext_actor and has_screentext_variable,
 		"full-screen text is not treated as an actor while interpolated variables remain semantic",
 	)
-	var highlighter := KND_KsHighlighter.new()
+	var highlighter := KonadoScriptSyntaxHighlighter.new()
 	var highlighting := highlighter._highlight_line_text(dialogue_line, Color.WHITE)
 	_expect(
 		(
 			(
 				_color_at(highlighting, dialogue_line.find("$score"), Color.WHITE)
-				== KND_KsHighlighter.VARIABLE_COLOR
+				== KonadoScriptSyntaxHighlighter.VARIABLE_COLOR
 			)
 			and (
 				_color_at(highlighting, dialogue_line.find("%bonus"), Color.WHITE)
-				== KND_KsHighlighter.VARIABLE_COLOR
+				== KonadoScriptSyntaxHighlighter.VARIABLE_COLOR
 			)
 		),
 		"variables interpolated inside dialogue strings retain variable highlighting",
 	)
 	var local_source := "set $score 0\n%s" % dialogue_line
 	var local_reference := (
-		KS_SymbolIndex
+		KonadoScriptSymbolIndex
 		. get_semantic_reference_at(
 			dialogue_line,
 			dialogue_line.find("$score"),
@@ -487,7 +544,7 @@ func _test_semantic_navigation() -> void:
 		"native link behavior is restored after leaving KonadoScript",
 	)
 	native_lookup_editor.free()
-	var language := KND_KonadoScriptLanguage.new()
+	var language := KonadoScriptLanguage.new()
 	var embedded_lookup := (
 		language
 		. _lookup_code(
@@ -530,7 +587,7 @@ func _test_semantic_navigation() -> void:
 
 
 func _test_project_diagnostics() -> void:
-	var diagnostics := KS_Diagnostics.new()
+	var diagnostics := KonadoScriptDiagnostics.new()
 	_expect(
 		diagnostics.analyze("background bg_end fade", "semantic.ks").is_empty(),
 		"valid indexed resources do not produce false diagnostics",
@@ -550,15 +607,24 @@ func _test_project_diagnostics() -> void:
 		diagnostics.analyze(valid_screentext_and_camera, "semantic.ks", "en").is_empty(),
 		"screentext content and default camera IDs do not produce false diagnostics",
 	)
+	var missing_actor := diagnostics.analyze('UnknownActor "Hello"', "semantic.ks", "en")
+	_expect(
+		_has_diagnostic_containing(missing_actor, "UnknownActor"),
+		"bare dialogue actors are checked against project resources",
+	)
+	_expect(
+		diagnostics.analyze('"Narrator" "Hello"', "semantic.ks", "en").is_empty(),
+		"quoted text labels do not require an actor resource",
+	)
 
 
 func _test_project_scripts_compile() -> void:
-	for path: String in KS_ProjectIndex.shared().get_values("scripts"):
+	for path: String in KonadoScriptProjectIndex.shared().get_values("scripts"):
 		var file := FileAccess.open(path, FileAccess.READ)
 		if file == null:
 			_expect(false, "indexed KonadoScript can be read: %s" % path)
 			continue
-		var compiler := KS_Compiler.new()
+		var compiler := KonadoScriptCompiler.new()
 		compiler.set_console_output_enabled(false)
 		var valid := compiler.validate_string(file.get_as_text(), path)
 		_expect(
@@ -575,7 +641,7 @@ func _test_link_geometry() -> void:
 	editor.size = Vector2(1000, 200)
 	editor.text = "\tactor show Kona normal at 1"
 	root.add_child(editor)
-	var overlay := KS_JumpLinkOverlay.new()
+	var overlay := SCRIPT_LINK_OVERLAY.new()
 	editor.add_child(overlay)
 	overlay.setup(editor)
 	await process_frame

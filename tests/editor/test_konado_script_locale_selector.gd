@@ -26,7 +26,7 @@ func _run() -> void:
 
 
 func _test_variant_discovery() -> void:
-	var variants := KS_ScriptEditorIntegration.get_script_variants(
+	var variants := KonadoScriptEditorIntegration.get_script_variants(
 		"res://sample/demo/demo_01.zh_Hant.ks"
 	)
 	var locales: Array[String] = []
@@ -45,7 +45,7 @@ func _test_variant_discovery() -> void:
 	for locale: String in ["zh_Hans", "zh_Hant", "en", "ja", "ko"]:
 		_expect(locale in locales, "variant discovery includes locale: %s" % locale)
 	_expect_equal(
-		KS_ScriptEditorIntegration.get_language_display_name("zh_Hans"),
+		KonadoScriptEditorIntegration.get_language_display_name("zh_Hans"),
 		"简体中文",
 		"variant labels use language names instead of filenames",
 	)
@@ -101,7 +101,7 @@ func _test_selector_ui() -> void:
 		if label == "English":
 			english_index = index
 	for expected_label: String in [
-		KS_EditorLocale.text("Default", "默认"),
+		KonadoScriptEditorLocale.text("Default", "默认"),
 		"简体中文",
 		"繁體中文",
 		"English",
@@ -128,7 +128,7 @@ func _test_selector_ui() -> void:
 			"the selector follows the active localized script",
 		)
 
-	var gd_script := load("res://tests/dotnet/custom_dialogue.gd") as Script
+	var gd_script := load("res://tests/dotnet/fake_dialogue_manager.gd") as Script
 	if gd_script != null:
 		EditorInterface.edit_script(gd_script)
 		await process_frame

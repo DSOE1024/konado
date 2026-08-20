@@ -1,12 +1,16 @@
 extends SceneTree
 
+const SCRIPT_LINK_OVERLAY := preload(
+	"res://addons/konado/editor/script_editor/konado_script_link_overlay.gd"
+)
+
 
 class DebugManager:
 	extends Node
 
 	var resume_count := 0
 
-	func _process_next() -> void:
+	func _resume_from_debugger() -> void:
 		resume_count += 1
 
 
@@ -45,7 +49,7 @@ func _run() -> void:
 
 
 func _test_document_cache() -> void:
-	var store := KS_DocumentStore.new()
+	var store := KonadoScriptDocumentStore.new()
 	var first := store.update_buffer("res://tests/cache.ks", "branch intro\n\tend")
 	var revision := first.revision
 	var second := store.update_buffer("res://tests/cache.ks", "branch intro\n\tend")
@@ -54,15 +58,22 @@ func _test_document_cache() -> void:
 	store.update_buffer("res://tests/cache.ks", "branch changed\n\tend")
 	_expect(second.revision == revision + 1, "changed source advances the semantic revision")
 	_expect(second.branch_definitions.has("changed"), "document model exposes compiler symbols")
+	_expect(
+		not second.get_analysis().has("ast"),
+		"cached document revisions release the compiler AST after projecting editor data",
+	)
 	var empty := store.update_buffer("res://tests/empty.ks", "")
 	_expect(empty.source.is_empty(), "empty unsaved buffers never fall back to stale disk content")
 
 
 func _test_atomic_file() -> void:
 	var path := "user://konado_atomic_file_test.ks"
-	_expect(KS_AtomicFile.replace_text(path, "first") == OK, "atomic writer creates a new file")
 	_expect(
-		KS_AtomicFile.replace_text(path, "second") == OK, "atomic writer replaces an existing file"
+		KonadoScriptAtomicFile.replace_text(path, "first") == OK, "atomic writer creates a new file"
+	)
+	_expect(
+		KonadoScriptAtomicFile.replace_text(path, "second") == OK,
+		"atomic writer replaces an existing file"
 	)
 	var file := FileAccess.open(path, FileAccess.READ)
 	_expect(
@@ -73,9 +84,9 @@ func _test_atomic_file() -> void:
 
 func _test_incremental_project_index() -> void:
 	var path := "res://tests/editor/fixtures/editor_refactor.ks"
-	var store := KS_DocumentStore.shared()
+	var store := KonadoScriptDocumentStore.shared()
 	var original := store.get_document(path).source
-	var index := KS_ProjectIndex.shared()
+	var index := KonadoScriptProjectIndex.shared()
 	index.get_values("scripts")
 	var changed := store.update_buffer(path, original + "\nbranch unsaved_index_symbol\n\tend")
 	index.update_document(changed)
@@ -101,7 +112,7 @@ func _test_formatter() -> void:
 		+ " }\n"
 		+ "endif"
 	)
-	var formatted := KS_Formatter.format_document(source, "    ")
+	var formatted := KonadoScriptFormatter.format_document(source, "    ")
 	_expect(
 		'"Kona" "spaces   inside" # keep   comment' in formatted,
 		"formatter normalizes syntax spacing without changing strings or comments",
@@ -111,13 +122,13 @@ func _test_formatter() -> void:
 		"formatter applies deterministic nested indentation",
 	)
 	_expect(
-		KS_Formatter.format_document(formatted, "    ") == formatted,
+		KonadoScriptFormatter.format_document(formatted, "    ") == formatted,
 		"formatter output is idempotent",
 	)
 
 
 func _test_typed_completion() -> void:
-	var language := KND_KonadoScriptLanguage.new()
+	var language := KonadoScriptLanguage.new()
 	var variables := language._get_completion_candidates("set %score 0", "set %")
 	var variables_are_typed := not variables.is_empty()
 	for item: Dictionary in variables:
@@ -131,7 +142,7 @@ func _test_typed_completion() -> void:
 
 
 func _test_control_flow_analysis() -> void:
-	var document := KS_DocumentModel.new()
+	var document := KonadoScriptDocument.new()
 	(
 		document
 		. update(
@@ -139,7 +150,7 @@ func _test_control_flow_analysis() -> void:
 			"res://tests/story.ks",
 		)
 	)
-	var diagnostics := KS_ControlFlowAnalyzer.analyze(document)
+	var diagnostics := KonadoScriptControlFlowAnalyzer.analyze(document)
 	_expect(
 		diagnostics.any(
 			func(item: Dictionary) -> bool: return item.get("code") == "missing_branch"
@@ -156,7 +167,7 @@ func _test_control_flow_analysis() -> void:
 
 func _test_localization_validation() -> void:
 	var comparison := (
-		KS_LocalizationValidator
+		KonadoScriptLocalizationValidator
 		. compare(
 			'"Kona" "Hello"\nchoice "Continue" -> next\nbranch next\n\tend',
 			'"Kona" "你好"\nchoice "继续" -> next\nbranch next\n\tend',
@@ -165,8 +176,31 @@ func _test_localization_validation() -> void:
 	_expect(
 		comparison["compatible"], "translated text may differ while structure remains compatible"
 	)
+	var translated_speaker := (
+		KonadoScriptLocalizationValidator
+		. compare(
+			'"Narrator" "Hello"',
+			'"旁白" "你好"',
+		)
+	)
+	_expect(
+		translated_speaker["compatible"],
+		"quoted speaker labels are localizable text",
+	)
+	var translated_voice := KonadoScriptLocalizationValidator.compare(
+		'Kona "Hello" voice_en', 'Kona "你好" voice_zh'
+	)
+	_expect(
+		translated_voice["compatible"],
+		"localized dialogue may select a locale-specific voice resource",
+	)
+	var changed_actor := KonadoScriptLocalizationValidator.compare('Kona "Hello"', 'Alice "你好"')
+	_expect(
+		not changed_actor["compatible"],
+		"localized scripts cannot replace a static actor identifier",
+	)
 	var broken := (
-		KS_LocalizationValidator
+		KonadoScriptLocalizationValidator
 		. compare(
 			'choice "Continue" -> next\nbranch next\n\tend',
 			'choice "继续" -> other\nbranch next\n\tend',
@@ -174,7 +208,7 @@ func _test_localization_validation() -> void:
 	)
 	_expect(not broken["compatible"], "localized branch target drift is reported")
 	var inserted := (
-		KS_LocalizationValidator
+		KonadoScriptLocalizationValidator
 		. compare(
 			'"Kona" "One"\n"Kona" "Two"\n"Kona" "Three"',
 			'"Kona" "一"\n"Kona" "新增"\n"Kona" "二"\n"Kona" "三"',
@@ -195,21 +229,21 @@ func _test_localization_validation() -> void:
 
 func _test_editor_localization() -> void:
 	_expect(
-		KS_DiagnosticMessages.validate_catalog().is_empty(),
+		KonadoScriptDiagnosticMessages.validate_catalog().is_empty(),
 		"every static and dynamic diagnostic template has complete bilingual coverage",
 	)
 	_expect(
-		KS_EditorLocale.resolve_locale("auto", "zh_CN", "en_US") == "zh_CN",
+		KonadoScriptEditorLocale.resolve_locale("auto", "zh_CN", "en_US") == "zh_CN",
 		"automatic editor language resolves through Godot's tool locale",
 	)
 	_expect(
-		KS_EditorLocale.resolve_locale("en", "zh_CN", "zh_CN") == "en",
+		KonadoScriptEditorLocale.resolve_locale("en", "zh_CN", "zh_CN") == "en",
 		"an explicitly configured editor language takes precedence",
 	)
-	var document := KS_DocumentModel.new()
+	var document := KonadoScriptDocument.new()
 	document.update('if %love == 0:\n\t"Kona" "Hello"\nendif1', "diagnostic-test.ks")
 	var chinese_diagnostics := document.get_diagnostics("zh_CN")
-	var chinese_fixes := KS_QuickFixService.get_fixes(document, "zh_CN")
+	var chinese_fixes := KonadoScriptQuickFixService.get_fixes(document, "zh_CN")
 	_expect(
 		(
 			not chinese_diagnostics.is_empty()
@@ -222,12 +256,12 @@ func _test_editor_localization() -> void:
 		not chinese_fixes.is_empty() and chinese_fixes[0]["title"] == "替换为“endif”",
 		"diagnostic quick fixes follow the Chinese editor locale",
 	)
-	var compiler := KS_Compiler.new()
+	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
 	var analysis := compiler.analyze_string("cam fly", "res://tests/diagnostic-test.ks")
 	var records: Array = analysis.get("diagnostics", [])
 	var english_diagnostics := (
-		KS_Diagnostics
+		KonadoScriptDiagnostics
 		. new()
 		. analyze_result(
 			"cam fly",
@@ -255,17 +289,17 @@ func _test_editor_localization() -> void:
 
 
 func _test_quick_fixes() -> void:
-	var document := KS_DocumentModel.new()
+	var document := KonadoScriptDocument.new()
 	document.update("if %score == 1: # keep\n\tendif_bad # explain", "res://tests/fixes.ks")
-	var fixes := KS_QuickFixService.get_fixes(document)
+	var fixes := KonadoScriptQuickFixService.get_fixes(document)
 	var normalize := {}
 	for fix: Dictionary in fixes:
 		if fix.get("code") == "normalize_endif":
-			normalize = KS_QuickFixService.materialize_line_fix(document.source, fix)
+			normalize = KonadoScriptQuickFixService.materialize_line_fix(document.source, fix)
 			break
 	_expect(not normalize.is_empty(), "quick fixes recognize malformed endif")
 	if not normalize.is_empty():
-		var fixed := KS_QuickFixService.apply_fix(document.source, normalize)
+		var fixed := KonadoScriptQuickFixService.apply_fix(document.source, normalize)
 		_expect(
 			fixed.ends_with("\tendif # explain"),
 			"quick fix changes only the malformed token and preserves comments",
@@ -275,7 +309,7 @@ func _test_quick_fixes() -> void:
 			"normalizing a malformed endif also balances its conditional block",
 		)
 	var stale_fix := (
-		KS_QuickFixService
+		KonadoScriptQuickFixService
 		. materialize_line_fix(
 			document.source,
 			{"line_edit": true, "line": 999, "replacement_line": ""},
@@ -285,16 +319,16 @@ func _test_quick_fixes() -> void:
 		stale_fix.is_empty(),
 		"stale quick fixes cannot address a line outside the current revision",
 	)
-	var fixed_all := KS_QuickFixService.apply_all_fixes(
+	var fixed_all := KonadoScriptQuickFixService.apply_all_fixes(
 		"if %score == 1\n\tendif_bad\n}", "res://tests/fixes.ks"
 	)
 	_expect(
 		fixed_all == "if %score == 1:\n\tendif\n",
 		"all safe quick fixes apply directly to one current editor revision",
 	)
-	var choice_document := KS_DocumentModel.new()
+	var choice_document := KonadoScriptDocument.new()
 	choice_document.update('choice "Continue" next', "res://tests/fixes.ks")
-	var choice_fix := KS_QuickFixService.get_fixes(choice_document, "en").filter(
+	var choice_fix := KonadoScriptQuickFixService.get_fixes(choice_document, "en").filter(
 		func(fix: Dictionary) -> bool: return fix.get("code") == "insert_choice_arrow"
 	)
 	_expect(
@@ -302,11 +336,11 @@ func _test_quick_fixes() -> void:
 			choice_fix.size() == 1
 			and (
 				(
-					KS_QuickFixService
+					KonadoScriptQuickFixService
 					. apply_fix(
 						choice_document.source,
 						(
-							KS_QuickFixService
+							KonadoScriptQuickFixService
 							. materialize_line_fix(
 								choice_document.source,
 								choice_fix[0],
@@ -319,7 +353,7 @@ func _test_quick_fixes() -> void:
 		),
 		"quick fixes insert an unambiguous missing choice arrow",
 	)
-	var boolean_document := KS_DocumentModel.new()
+	var boolean_document := KonadoScriptDocument.new()
 	(
 		boolean_document
 		. update(
@@ -328,9 +362,9 @@ func _test_quick_fixes() -> void:
 		)
 	)
 	var boolean_diagnostic := boolean_document.get_diagnostics("en")[0]
-	var boolean_fixes := KS_QuickFixService.get_fixes(boolean_document, "en").filter(
+	var boolean_fixes := KonadoScriptQuickFixService.get_fixes(boolean_document, "en").filter(
 		func(fix: Dictionary) -> bool:
-			return KS_QuickFixService.matches_diagnostic(fix, boolean_diagnostic)
+			return KonadoScriptQuickFixService.matches_diagnostic(fix, boolean_diagnostic)
 	)
 	_expect(
 		(
@@ -344,7 +378,7 @@ func _test_quick_fixes() -> void:
 	_expect(
 		(
 			(
-				KS_QuickFixService
+				KonadoScriptQuickFixService
 				. apply_all_fixes(
 					boolean_document.source,
 					boolean_document.path,
@@ -354,21 +388,25 @@ func _test_quick_fixes() -> void:
 		),
 		"apply-all never chooses between non-deterministic quick-fix alternatives",
 	)
-	var actor_document := KS_DocumentModel.new()
+	var actor_document := KonadoScriptDocument.new()
 	actor_document.update("actor show Kona normal", "res://tests/fixes.ks")
 	var actor_diagnostics := actor_document.get_diagnostics("en")
+	var actor_position_diagnostic := {}
+	for diagnostic: Dictionary in actor_diagnostics:
+		if diagnostic.get("code") == "syntax.actor_position":
+			actor_position_diagnostic = diagnostic
+			break
 	var actor_fixes := (
-		KS_QuickFixService
+		KonadoScriptQuickFixService
 		. rank_fixes_for_diagnostic(
-			KS_QuickFixService.get_fixes(actor_document, "en"),
-			actor_diagnostics[0] if not actor_diagnostics.is_empty() else {},
+			KonadoScriptQuickFixService.get_fixes(actor_document, "en"),
+			actor_position_diagnostic,
 		)
 	)
 	_expect(
 		(
-			actor_diagnostics.size() == 1
-			and actor_diagnostics[0].get("code") == "syntax.actor_position"
-			and actor_fixes.size() == KS_QuickFixService.MAX_CANDIDATES_PER_DIAGNOSTIC
+			not actor_position_diagnostic.is_empty()
+			and actor_fixes.size() == KonadoScriptQuickFixService.MAX_CANDIDATES_PER_DIAGNOSTIC
 			and actor_fixes.all(
 				func(fix: Dictionary) -> bool: return not bool(fix.get("safe", true))
 			)
@@ -377,7 +415,7 @@ func _test_quick_fixes() -> void:
 	)
 	for position_index: int in actor_fixes.size():
 		var actor_fix := (
-			KS_QuickFixService
+			KonadoScriptQuickFixService
 			. materialize_line_fix(
 				actor_document.source,
 				actor_fixes[position_index],
@@ -385,10 +423,10 @@ func _test_quick_fixes() -> void:
 		)
 		_expect(
 			(
-				KS_QuickFixService.apply_fix(actor_document.source, actor_fix)
+				KonadoScriptQuickFixService.apply_fix(actor_document.source, actor_fix)
 				== (
 					"actor show Kona normal at %s"
-					% KS_LanguageCatalog.LIKELY_POSITION_VALUES[position_index]
+					% KonadoScriptLanguageCatalog.LIKELY_POSITION_VALUES[position_index]
 				)
 			),
 			"each actor position suggestion applies its distinct candidate",
@@ -396,7 +434,7 @@ func _test_quick_fixes() -> void:
 	_expect(
 		(
 			(
-				KS_QuickFixService
+				KonadoScriptQuickFixService
 				. apply_all_fixes(
 					actor_document.source,
 					actor_document.path,
@@ -406,7 +444,7 @@ func _test_quick_fixes() -> void:
 		),
 		"apply-all does not guess an actor position",
 	)
-	var keyword_typo_document := KS_DocumentModel.new()
+	var keyword_typo_document := KonadoScriptDocument.new()
 	(
 		keyword_typo_document
 		. update(
@@ -414,7 +452,7 @@ func _test_quick_fixes() -> void:
 			"res://tests/fixes.ks",
 		)
 	)
-	var keyword_typo_fixes := KS_QuickFixService.get_fixes(keyword_typo_document, "zh_CN")
+	var keyword_typo_fixes := KonadoScriptQuickFixService.get_fixes(keyword_typo_document, "zh_CN")
 	var actor_action_fix := keyword_typo_fixes.filter(
 		func(fix: Dictionary) -> bool:
 			return (
@@ -438,7 +476,7 @@ func _test_quick_fixes() -> void:
 		"likely root and contextual keyword typos offer explicit non-destructive corrections",
 	)
 	var ranked_candidates := (
-		KS_QuickFixService
+		KonadoScriptQuickFixService
 		. rank_fixes_for_diagnostic(
 			[
 				{"code": "low", "line": 1, "safe": false, "confidence": 0.2},
@@ -467,7 +505,7 @@ func _test_code_edit_transaction() -> void:
 	code_edit.select(0, 1, 0, 4)
 	var second_caret := code_edit.add_caret(2, 2)
 	_expect(second_caret >= 0, "native editor accepts a secondary caret for transaction testing")
-	KS_CodeEditTransaction.replace_text(code_edit, "alpha!\nbeta\ngamma")
+	KonadoScriptCodeEditTransaction.replace_text(code_edit, "alpha!\nbeta\ngamma")
 	_expect(
 		(
 			code_edit.get_caret_count() == 2
@@ -487,7 +525,7 @@ func _test_adaptive_diagnostic_card() -> void:
 	var code_edit := CodeEdit.new()
 	code_edit.size = Vector2(1000, 600)
 	root.add_child(code_edit)
-	var overlay := KS_JumpLinkOverlay.new()
+	var overlay := SCRIPT_LINK_OVERLAY.new()
 	code_edit.add_child(overlay)
 	overlay.setup(code_edit)
 	overlay._ensure_diagnostic_panel()
@@ -544,7 +582,7 @@ func _test_diagnostic_hover_interaction() -> void:
 	code_edit.size = Vector2(1000, 600)
 	code_edit.text = "if %score == 1:\n\tendif_bad"
 	root.add_child(code_edit)
-	var overlay := KS_JumpLinkOverlay.new()
+	var overlay := SCRIPT_LINK_OVERLAY.new()
 	code_edit.add_child(overlay)
 	overlay.setup(code_edit)
 	await process_frame
@@ -619,7 +657,7 @@ func _test_diagnostic_hover_interaction() -> void:
 func _test_refactor_plan() -> void:
 	var path := "res://tests/editor/fixtures/editor_refactor.ks"
 	var plan := (
-		KS_RefactorService
+		KonadoScriptRefactorService
 		. create_rename_plan(
 			"branches",
 			"intro",
@@ -633,7 +671,7 @@ func _test_refactor_plan() -> void:
 		"rename plan updates semantic declarations",
 	)
 	var resource_plan := (
-		KS_RefactorService
+		KonadoScriptRefactorService
 		. create_project_resource_rename_plan(
 			"backgrounds",
 			"bg_end",
@@ -643,7 +681,7 @@ func _test_refactor_plan() -> void:
 	_expect(resource_plan["valid"], "project resource rename produces a validated preview")
 	var includes_owner_resource := false
 	for change: Dictionary in resource_plan["changes"]:
-		if String(change["path"]).ends_with("bg_list.tres"):
+		if String(change["path"]).ends_with("background_list.tres"):
 			includes_owner_resource = true
 			break
 	_expect(
@@ -653,7 +691,7 @@ func _test_refactor_plan() -> void:
 	var stale_plan := resource_plan.duplicate(true)
 	stale_plan["changes"][0]["before"] += "\n# changed after preview"
 	_expect(
-		not KS_RefactorService.validate_plan(stale_plan).is_empty(),
+		not KonadoScriptRefactorService.validate_plan(stale_plan).is_empty(),
 		"refactor validation rejects stale previews before writing any file",
 	)
 
@@ -661,37 +699,40 @@ func _test_refactor_plan() -> void:
 func _test_runtime_debugger_resume() -> void:
 	var manager := DebugManager.new()
 	root.add_child(manager)
-	KS_RuntimeDebugger._current_key = "res://debug.ks:1:node"
-	KS_RuntimeDebugger._paused = true
-	KS_RuntimeDebugger._paused_manager = weakref(manager)
-	KS_RuntimeDebugger._capture_message("continue", [])
+	KonadoScriptRuntimeDebugger._current_key = "res://debug.ks:1:node"
+	KonadoScriptRuntimeDebugger._paused = true
+	KonadoScriptRuntimeDebugger._paused_manager = weakref(manager)
+	KonadoScriptRuntimeDebugger._capture_message("continue", [])
 	await process_frame
 	_expect(manager.resume_count == 1, "debugger Continue resumes the suspended dialogue manager")
-	KS_RuntimeDebugger._paused = true
-	KS_RuntimeDebugger._paused_manager = weakref(manager)
-	KS_RuntimeDebugger._capture_message("step", [])
+	KonadoScriptRuntimeDebugger._paused = true
+	KonadoScriptRuntimeDebugger._paused_manager = weakref(manager)
+	KonadoScriptRuntimeDebugger._capture_message("step", [])
 	await process_frame
 	_expect(
-		manager.resume_count == 2 and KS_RuntimeDebugger._step_after_resume,
+		manager.resume_count == 2 and KonadoScriptRuntimeDebugger._step_after_resume,
 		"debugger Step resumes once and arms a pause for the following statement",
 	)
-	KS_RuntimeDebugger._paused = false
-	KS_RuntimeDebugger._pause_next = false
-	KS_RuntimeDebugger._step_after_resume = false
-	KS_RuntimeDebugger._resume_key = ""
+	KonadoScriptRuntimeDebugger._paused = false
+	KonadoScriptRuntimeDebugger._pause_next = false
+	KonadoScriptRuntimeDebugger._step_after_resume = false
+	KonadoScriptRuntimeDebugger._resume_key = ""
 	root.remove_child(manager)
 	manager.free()
 
 
 func _test_editor_plugin_contracts() -> void:
 	var integration_script := (
-		load("res://addons/konado/editor/ks_editor/ks_script_editor_integration.gd") as GDScript
+		load("res://addons/konado/editor/script_editor/konado_script_editor_integration.gd")
+		as GDScript
 	)
 	var context_menu_script := (
-		load("res://addons/konado/editor/ks_editor/ks_code_context_menu.gd") as GDScript
+		load("res://addons/konado/editor/script_editor/konado_script_code_context_menu.gd")
+		as GDScript
 	)
 	var debugger_script := (
-		load("res://addons/konado/editor/ks_editor/ks_debugger_plugin.gd") as GDScript
+		load("res://addons/konado/editor/script_editor/konado_script_debugger_plugin.gd")
+		as GDScript
 	)
 	_expect(
 		_script_has_methods(

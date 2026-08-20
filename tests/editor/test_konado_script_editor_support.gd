@@ -4,9 +4,12 @@ const SCRIPT_PATH := "res://tests/editor/fixtures/native_editor.ks"
 const NAVIGATION_SCRIPT_PATH := "res://sample/demo/demo_03_variable.ks"
 const INVALID_SCRIPT_PATH := "user://invalid_editor_document.ks"
 const CARET_MARKER := "\uFFFF"
+const SCRIPT_LINK_OVERLAY := preload(
+	"res://addons/konado/editor/script_editor/konado_script_link_overlay.gd"
+)
 
 var _failures := 0
-var _invalid_document: KND_Shot
+var _invalid_document: KonadoShot
 
 
 func _init() -> void:
@@ -49,33 +52,37 @@ func _run() -> void:
 
 func _test_language_catalog() -> void:
 	_expect(
-		KS_LanguageCatalog.validate_catalog().is_empty(),
+		KonadoScriptLanguageCatalog.validate_catalog().is_empty(),
 		"language catalog contains only parser-supported keywords",
 	)
 	_expect(
-		not KS_LanguageCatalog.ROOT_KEYWORDS.has("shot_id"), "obsolete shot_id is not suggested"
+		not KonadoScriptLanguageCatalog.ROOT_KEYWORDS.has("shot_id"),
+		"obsolete shot_id is not suggested"
 	)
-	_expect(not KS_LanguageCatalog.ROOT_KEYWORDS.has("start"), "obsolete start is not suggested")
 	_expect(
-		KS_LanguageCatalog.get_context_completions("play").has("sfx"),
+		not KonadoScriptLanguageCatalog.ROOT_KEYWORDS.has("start"),
+		"obsolete start is not suggested"
+	)
+	_expect(
+		KonadoScriptLanguageCatalog.get_context_completions("play").has("sfx"),
 		"audio completion uses the supported sfx keyword",
 	)
 	_expect(
-		KS_LanguageCatalog.get_context_completions("actor").has("motion"),
+		KonadoScriptLanguageCatalog.get_context_completions("actor").has("motion"),
 		"actor motion is included in completion metadata",
 	)
 	_expect(
 		(
-			KS_LanguageCatalog.get_background_effects().size()
-			== KS_Emitter.BACKGROUND_EFFECTS_MAP.size()
+			KonadoScriptLanguageCatalog.get_background_effects().size()
+			== KonadoScriptProgramEmitter.BACKGROUND_EFFECTS_MAP.size()
 		),
 		"background effect completion uses the compiler source of truth",
 	)
-	var lexer := KS_Lexer.new()
-	var parser := KS_Parser.new()
+	var lexer := KonadoScriptLexer.new()
+	var parser := KonadoScriptParser.new()
 	lexer.console_output_enabled = false
 	parser.console_output_enabled = false
-	for snippet: Dictionary in KS_LanguageCatalog.SNIPPETS:
+	for snippet: Dictionary in KonadoScriptLanguageCatalog.SNIPPETS:
 		var tokens := lexer.tokenize(snippet["snippet"], "editor-snippet-test.ks")
 		_expect(
 			parser.parse(tokens, "editor-snippet-test.ks") != null,
@@ -86,21 +93,21 @@ func _test_language_catalog() -> void:
 func _test_documentation_routes() -> void:
 	_expect(
 		(
-			KS_ScriptEditorIntegration.get_docs_url("2.6.2", "zh_CN")
+			KonadoScriptEditorIntegration.get_docs_url("2.6.2", "zh_CN")
 			== "https://godothub.com/oss/konado/zh/latest/"
 		),
 		"maintained Konado releases use the stable latest documentation route",
 	)
 	_expect(
 		(
-			KS_ScriptEditorIntegration.get_docs_url("2.4.9", "zh_CN")
+			KonadoScriptEditorIntegration.get_docs_url("2.4.9", "zh_CN")
 			== "https://godothub.com/oss/konado/zh/2.4/"
 		),
 		"the supported LTS release keeps its versioned documentation route",
 	)
 	_expect(
 		(
-			KS_ScriptEditorIntegration.get_docs_url("2.6.2", "zh_Hant")
+			KonadoScriptEditorIntegration.get_docs_url("2.6.2", "zh_Hant")
 			== "https://godothub.com/oss/konado/tc/latest/"
 		),
 		"traditional Chinese editors open the matching documentation locale",
@@ -108,15 +115,15 @@ func _test_documentation_routes() -> void:
 	_expect(
 		(
 			(
-				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "ja_JP")
+				KonadoScriptEditorIntegration.get_docs_url("2.6.2", "ja_JP")
 				== "https://godothub.com/oss/konado/ja/latest/"
 			)
 			and (
-				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "ko_KR")
+				KonadoScriptEditorIntegration.get_docs_url("2.6.2", "ko_KR")
 				== "https://godothub.com/oss/konado/ko/latest/"
 			)
 			and (
-				KS_ScriptEditorIntegration.get_docs_url("2.6.2", "fr_FR")
+				KonadoScriptEditorIntegration.get_docs_url("2.6.2", "fr_FR")
 				== "https://godothub.com/oss/konado/en/latest/"
 			)
 		),
@@ -129,24 +136,24 @@ func _test_script_resource() -> void:
 		not FileAccess.file_exists(SCRIPT_PATH + ".import"),
 		"KonadoScript source is not marked as a read-only imported resource",
 	)
-	var shot := ResourceLoader.load(SCRIPT_PATH) as KND_Shot
-	_expect(shot != null, "KonadoScript files load as KND_Shot")
+	var shot := ResourceLoader.load(SCRIPT_PATH) as KonadoShot
+	_expect(shot != null, "KonadoScript files load as KonadoShot")
 	if shot == null:
 		return
-	_expect(shot is ScriptExtension, "KND_Shot is a native Script Editor document")
+	_expect(shot is ScriptExtension, "KonadoShot is a native Script Editor document")
 	_expect(
 		shot.resource_path == SCRIPT_PATH,
 		"imported script keeps its source resource path: %s" % shot.resource_path,
 	)
 	_expect(
 		shot._get_language()._get_name() == "KonadoScript",
-		"KND_Shot exposes its language",
+		"KonadoShot exposes its language",
 	)
-	_expect(shot.ks_path == SCRIPT_PATH, "imported script retains its source path")
+	_expect(shot.source_path == SCRIPT_PATH, "imported script retains its source path")
 
 
 func _test_source_line_numbers() -> void:
-	var compiler := KS_Compiler.new()
+	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
 	var shot := compiler.compile_string("unknown_command", "line-number-test.ks")
 	_expect(shot == null, "invalid first-line command is rejected")
@@ -157,7 +164,7 @@ func _test_source_line_numbers() -> void:
 
 
 func _test_language_validation() -> void:
-	var language := KND_KonadoScriptLanguage.new()
+	var language := KonadoScriptLanguage.new()
 	var result := (
 		language
 		. _validate(
@@ -177,7 +184,7 @@ func _test_language_validation() -> void:
 	result = (
 		language
 		. _validate(
-			'branch intro\n"Kona" "Hello"',
+			'jump_branch intro\nbranch intro\n\t"Kona" "Hello"',
 			"validation-test.ks",
 			true,
 			true,
@@ -187,13 +194,13 @@ func _test_language_validation() -> void:
 	)
 	_expect(result["valid"], "language bridge accepts valid scripts")
 	_expect(
-		result["functions"] == PackedStringArray(["intro:1"]),
+		result["functions"] == PackedStringArray(["intro:2"]),
 		"branch declarations populate the native member outline",
 	)
 
 
 func _test_language_completion_and_outline() -> void:
-	var language := KND_KonadoScriptLanguage.new()
+	var language := KonadoScriptLanguage.new()
 	var result := language._complete_code("actor %s" % CARET_MARKER, "completion.ks", null)
 	_expect(
 		_completion_displays(result).has("show"),
@@ -223,6 +230,62 @@ func _test_language_completion_and_outline() -> void:
 		_completion_displays(result).has("Kona"),
 		"actor names are completed from the current document",
 	)
+	result = language._complete_code("Ko%s" % CARET_MARKER, "completion.ks", null)
+	_expect(
+		_completion_displays(result).has("Kona"),
+		"static dialogue actors are completed at the start of a line",
+	)
+	result = (
+		language
+		. _complete_code(
+			'set $speaker "Kona"\n$sp%s' % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		_completion_displays(result).has("$speaker"),
+		"speaker variables are completed at the start of a line",
+	)
+	result = language._complete_code('Kona "Hello" %s' % CARET_MARKER, "completion.ks", null)
+	_expect(
+		(
+			_completion_displays(result).has("[speed=]")
+			and _completion_displays(result).has("[interval=]")
+			and _completion_displays(result).has("[id=]")
+		),
+		"dialogue completion exposes the registered KonadoScript 2.8 parameters",
+	)
+	result = (
+		language
+		. _complete_code(
+			"actor show Kona happy at 3 %s" % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		(
+			_completion_displays(result).has("[duration=]")
+			and _completion_displays(result).has("[id=]")
+		),
+		"command completion derives named parameters from the compiler registry",
+	)
+	result = (
+		language
+		. _complete_code(
+			"actor show Kona happy at 3 [duration=0.2] %s" % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		(
+			not _completion_displays(result).has("[duration=]")
+			and _completion_displays(result).has("[id=]")
+		),
+		"completion omits named parameters that are already present",
+	)
 	_expect(
 		language._find_function("intro", "branch intro\njump_branch intro") == 0,
 		"native symbol navigation resolves branch declarations",
@@ -244,7 +307,7 @@ func _test_language_completion_and_outline() -> void:
 				== ScriptLanguageExtension.LookupResultType.LOOKUP_RESULT_SCRIPT_LOCATION
 			)
 			and script_lookup.get("script_path") == "res://sample/demo/demo_04_choice_branch.ks"
-			and script_lookup.get("script") is KND_Shot
+			and script_lookup.get("script") is KonadoShot
 			and script_lookup.get("location") == 1
 		),
 		"Ctrl-click lookup returns the target KonadoScript resource for cross-file opening",
@@ -265,7 +328,7 @@ func _test_language_completion_and_outline() -> void:
 
 
 func _test_language_indent_lookup_and_hints() -> void:
-	var language := KND_KonadoScriptLanguage.new()
+	var language := KonadoScriptLanguage.new()
 	var unindented := 'if %love == 0:\n"Kona" "Hello"\nelse:\nscreentext {\n"Fallback"\n}\nendif'
 	var expected := (
 		'if %love == 0:\n\t"Kona" "Hello"\nelse:\n\tscreentext {\n' + '\t\t"Fallback"\n\t}\nendif'
@@ -337,7 +400,7 @@ func _test_language_indent_lookup_and_hints() -> void:
 
 
 func _test_project_resource_completion() -> void:
-	var language := KND_KonadoScriptLanguage.new()
+	var language := KonadoScriptLanguage.new()
 	var cases := [
 		{"source": "background bg_%s", "expected": "bg_para"},
 		{"source": "play bgm ec%s", "expected": "echo"},
@@ -372,6 +435,18 @@ func _test_project_resource_completion() -> void:
 		_completion_displays(voice_result).has("voice_01"),
 		"dialogue voice completion handles quoted text containing spaces",
 	)
+	var parameter_result := (
+		language
+		. _complete_code(
+			'Kona "Hello world" [speed=%s' % CARET_MARKER,
+			"completion.ks",
+			null,
+		)
+	)
+	_expect(
+		not _completion_displays(parameter_result).has("voice_01"),
+		"named dialogue parameters are not completed as voice resources",
+	)
 
 
 func _test_symbol_index() -> void:
@@ -382,9 +457,9 @@ func _test_symbol_index() -> void:
 		+ '"Kona" "intro"\n'
 		+ "# intro\n"
 	)
-	var references := KS_SymbolIndex.get_branch_references(source)
+	var references := KonadoScriptSymbolIndex.get_branch_references(source)
 	_expect(references.size() == 3, "branch reference query ignores dialogue text and comments")
-	var renamed := KS_SymbolIndex.rename_branch(source, "intro", "opening-scene")
+	var renamed := KonadoScriptSymbolIndex.rename_branch(source, "intro", "opening-scene")
 	_expect(
 		(
 			"branch opening-scene" in renamed
@@ -395,11 +470,13 @@ func _test_symbol_index() -> void:
 		"branch rename changes only structural declarations and references",
 	)
 	_expect(
-		KS_SymbolIndex.find_branch_definition(renamed, "opening-scene") == 1,
+		KonadoScriptSymbolIndex.find_branch_definition(renamed, "opening-scene") == 1,
 		"branch identifiers ending in non-word characters remain navigable",
 	)
 	var jump_line := "jump res://sample/demo/demo_04_choice_branch.ks"
-	var jump_span := KS_SymbolIndex.find_script_jump_span(jump_line, jump_line.find("sample"))
+	var jump_span := KonadoScriptSymbolIndex.find_script_jump_span(
+		jump_line, jump_line.find("sample")
+	)
 	_expect(
 		(
 			jump_span.get("path") == "res://sample/demo/demo_04_choice_branch.ks"
@@ -409,7 +486,7 @@ func _test_symbol_index() -> void:
 		"script jump links cover the complete res:// path",
 	)
 	_expect(
-		KS_SymbolIndex.find_script_jump_span(jump_line, jump_line.find("jump")).is_empty(),
+		KonadoScriptSymbolIndex.find_script_jump_span(jump_line, jump_line.find("jump")).is_empty(),
 		"script jump links do not extend over the command keyword",
 	)
 	var local_source := (
@@ -422,10 +499,10 @@ func _test_symbol_index() -> void:
 	)
 	_expect(
 		(
-			KS_SymbolIndex.find_local_definition(local_source, "variables", "$score") == 1
+			KonadoScriptSymbolIndex.find_local_definition(local_source, "variables", "$score") == 1
 			and (
 				(
-					KS_SymbolIndex
+					KonadoScriptSymbolIndex
 					. get_local_symbol_references(
 						local_source,
 						"variables",
@@ -435,12 +512,17 @@ func _test_symbol_index() -> void:
 				)
 				== 3
 			)
-			and KS_SymbolIndex.find_local_definition(local_source, "signals", "scene_ready") == 5
+			and (
+				KonadoScriptSymbolIndex.find_local_definition(
+					local_source, "signals", "scene_ready"
+				)
+				== 5
+			)
 		),
 		"variables and signals expose declarations and references",
 	)
 	var renamed_local := (
-		KS_SymbolIndex
+		KonadoScriptSymbolIndex
 		. rename_local_symbol(
 			local_source,
 			"variables",
@@ -452,6 +534,13 @@ func _test_symbol_index() -> void:
 		"$score" not in renamed_local and renamed_local.count("$points") == 3,
 		"local variable rename updates only semantic references",
 	)
+	var dialogue_references := KonadoScriptSymbolIndex.get_line_semantic_references(
+		'Kona "Hello" [speed=2.0] [id=intro]'
+	)
+	_expect(
+		dialogue_references.all(func(item: Dictionary) -> bool: return item["kind"] != "voices"),
+		"named dialogue parameters are not indexed as voice resources",
+	)
 
 
 func _test_invalid_source_document() -> void:
@@ -460,7 +549,7 @@ func _test_invalid_source_document() -> void:
 	file.store_string(source)
 	file.close()
 	var loaded: Variant = (
-		KS_ResourceLoader
+		KonadoScriptResourceLoader
 		. new()
 		. _load(
 			INVALID_SCRIPT_PATH,
@@ -469,15 +558,15 @@ func _test_invalid_source_document() -> void:
 			0,
 		)
 	)
-	_expect(loaded is KND_Shot, "invalid KonadoScript remains an editable script document")
-	if loaded is KND_Shot:
+	_expect(loaded is KonadoShot, "invalid KonadoScript remains an editable script document")
+	if loaded is KonadoShot:
 		_expect(loaded.get_source_code() == source, "invalid editor document preserves its source")
 		_invalid_document = loaded
 
 
 func _test_create_script_template() -> void:
-	var source := KS_CreateMenu.new()._get_template()
-	var compiler := KS_Compiler.new()
+	var source := KonadoScriptCreateMenu.new()._get_template()
+	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
 	_expect(
 		compiler.compile_string(source, "new-script-template.ks") != null,
@@ -486,15 +575,17 @@ func _test_create_script_template() -> void:
 
 
 func _test_script_tooltip_support() -> void:
-	var tooltip := preload("res://addons/konado/ks/ks_tooltip_plugin.gd").new()
+	var tooltip := (
+		preload("res://addons/konado/editor/script_editor/konado_script_tooltip_plugin.gd").new()
+	)
 	_expect(tooltip._handles("Script"), "KonadoScript retains its FileSystem tooltip")
 
 
 func _test_source_saver() -> void:
 	var path := "user://konado_script_source_saver.ks"
-	var shot := KND_Shot.new()
-	shot.ks_path = path
-	shot.set_source_code('branch saved\n"Kona" "Saved"\n')
+	var shot := KonadoShot.new()
+	shot.source_path = path
+	shot.set_source_code('jump_branch saved\n\nbranch saved\n\t"Kona" "Saved"\n')
 	_expect(ResourceSaver.save(shot, path) == OK, "source saver writes .ks files")
 	var file := FileAccess.open(path, FileAccess.READ)
 	_expect(
@@ -502,10 +593,10 @@ func _test_source_saver() -> void:
 		"source saver preserves the complete editor buffer",
 	)
 	_expect(
-		not shot.dialogues.is_empty(),
-		"source saver refreshes the cached compiled KND_Shot after a valid save",
+		shot.program != null and shot.program.is_valid(),
+		"source saver refreshes the compiled Program after a valid save",
 	)
-	var compiled_start_node := shot.start_node_id
+	var compiled_fingerprint := shot.program_fingerprint()
 	shot.set_source_code("endif_invalid")
 	_expect(ResourceSaver.save(shot, path) == OK, "invalid editor source can still be saved")
 	_expect(
@@ -513,15 +604,15 @@ func _test_source_saver() -> void:
 		"invalid save preserves the exact source for repair",
 	)
 	_expect(
-		not shot.dialogues.is_empty() and shot.start_node_id == compiled_start_node,
-		"invalid save does not replace the last valid compiled KND_Shot data",
+		shot.program != null and shot.program_fingerprint() == compiled_fingerprint,
+		"invalid save does not replace the last valid Program",
 	)
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _test_highlighter_cache() -> void:
-	var highlighter := KND_KsHighlighter.new()
+	var highlighter := KonadoScriptSyntaxHighlighter.new()
 	_expect(
 		highlighter._get_supported_languages() == PackedStringArray(["KonadoScript"]),
 		"syntax highlighter targets the KonadoScript language",
@@ -533,18 +624,33 @@ func _test_highlighter_cache() -> void:
 
 
 func _test_highlighter_lexical_boundaries() -> void:
-	var highlighter := KND_KsHighlighter.new()
+	var highlighter := KonadoScriptSyntaxHighlighter.new()
 	var line := '"Kona" "C# and \\"#\\" stay text" # actual comment'
 	var highlighting := highlighter._highlight_line_text(line, Color.WHITE)
 	var string_hash := line.find("#")
 	var comment_hash := line.rfind("#")
 	_expect(
-		_color_at(highlighting, string_hash, Color.WHITE) == KND_KsHighlighter.STRING_COLOR,
+		(
+			_color_at(highlighting, string_hash, Color.WHITE)
+			== KonadoScriptSyntaxHighlighter.STRING_COLOR
+		),
 		"comment markers inside strings retain string highlighting",
 	)
 	_expect(
-		_color_at(highlighting, comment_hash, Color.WHITE) == KND_KsHighlighter.COMMENT_COLOR,
+		(
+			_color_at(highlighting, comment_hash, Color.WHITE)
+			== KonadoScriptSyntaxHighlighter.COMMENT_COLOR
+		),
 		"comment markers outside strings begin comment highlighting",
+	)
+	var parameter_line := 'Kona "Fast" [speed=1.5]'
+	var parameter_highlighting := highlighter._highlight_line_text(parameter_line, Color.WHITE)
+	_expect(
+		(
+			_color_at(parameter_highlighting, parameter_line.find("speed"), Color.WHITE)
+			== KonadoScriptSyntaxHighlighter.SUBCOMMAND_COLOR
+		),
+		"KonadoScript 2.8 named parameters receive semantic highlighting",
 	)
 	var unterminated_line := '"unfinished # still string'
 	var unterminated_highlighting := highlighter._highlight_line_text(
@@ -553,7 +659,7 @@ func _test_highlighter_lexical_boundaries() -> void:
 	_expect(
 		(
 			_color_at(unterminated_highlighting, unterminated_line.find("#"), Color.WHITE)
-			== KND_KsHighlighter.STRING_COLOR
+			== KonadoScriptSyntaxHighlighter.STRING_COLOR
 		),
 		"unterminated strings do not leak comment highlighting",
 	)
@@ -566,7 +672,7 @@ func _test_native_script_editor() -> void:
 		EditorInterface.get_resource_filesystem().get_file_type(SCRIPT_PATH) == "Script",
 		"FileSystem advertises KonadoScript as a Script resource",
 	)
-	var shot := ResourceLoader.load(SCRIPT_PATH) as KND_Shot
+	var shot := ResourceLoader.load(SCRIPT_PATH) as KonadoShot
 	if shot == null:
 		_expect(false, "native editor test can load the imported script")
 		return
@@ -592,7 +698,7 @@ func _test_native_script_editor() -> void:
 	var instruction_tree := script_editor.find_child("InstructionTree", true, false) as Tree
 	var docs_button := script_editor.find_child("KonadoOnlineDocs", true, false) as Button
 	var jump_link_overlay := (
-		code_edit.find_child("KonadoJumpLinkOverlay", false, false) as KS_JumpLinkOverlay
+		code_edit.find_child("KonadoJumpLinkOverlay", false, false) as SCRIPT_LINK_OVERLAY
 	)
 	var godot_docs_button: Button
 	var godot_help_button: Button
@@ -697,11 +803,11 @@ func _test_native_script_editor() -> void:
 	if code_edit != null:
 		var original_source := code_edit.text
 		_expect(
-			original_source.begins_with("branch intro"),
+			original_source.begins_with("jump_branch intro"),
 			"native Script Editor displays the original .ks source",
 		)
 		_expect(
-			code_edit.syntax_highlighter is KND_KsHighlighter,
+			code_edit.syntax_highlighter is KonadoScriptSyntaxHighlighter,
 			"native Script Editor selects the KonadoScript highlighter",
 		)
 		if instruction_tree != null:
@@ -753,7 +859,7 @@ func _test_native_script_editor() -> void:
 		)
 	script_editor.close_file(SCRIPT_PATH)
 	script_editor.close_file(NAVIGATION_SCRIPT_PATH)
-	var gd_script := load("res://tests/dotnet/custom_dialogue.gd") as Script
+	var gd_script := load("res://tests/dotnet/fake_dialogue_manager.gd") as Script
 	if gd_script != null:
 		EditorInterface.edit_script(gd_script)
 		await process_frame
@@ -806,7 +912,7 @@ func _test_branch_refactor_ui() -> void:
 	code_edit.text = (
 		"branch intro\n" + 'choice "Go" -> intro\n' + "jump_branch intro\n" + '"Kona" "intro"'
 	)
-	var menu := KS_CodeContextMenu.new()
+	var menu := KonadoScriptCodeContextMenu.new()
 	menu._active_code_edit = code_edit
 	menu._active_symbol = "intro"
 	menu._find_references(null)
