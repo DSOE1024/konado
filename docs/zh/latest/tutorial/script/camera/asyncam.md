@@ -146,23 +146,23 @@ asyncam stop
 
 ```text
 # 异步移动镜头到 cam1，对话继续推进
-"alice" "看，那边的风景多美！"
+alice "看，那边的风景多美！"
 asyncam move cam1 linear 3.0
 
 # 镜头在后台移动中，玩家可以继续点击对话
-"alice" "镜头正在慢慢移过去……"
+alice "镜头正在慢慢移过去……"
 
 # 异步晃动镜头，模拟地震效果
 asyncam shake 2.0
-"alice" "地震了！小心！"
+alice "地震了！小心！"
 
 # 玩家快速跳过，镜头需要瞬间到位
 asyncam stop
-"alice" "好了，镜头已经到位了。"
+alice "好了，镜头已经到位了。"
 
 # 异步重置镜头
 asyncam reset linear 1.0
-"alice" "让我们回到最初的位置。"
+alice "让我们回到最初的位置。"
 ```
 
 ## 与 `cam` 命令的区别

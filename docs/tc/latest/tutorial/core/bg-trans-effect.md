@@ -35,7 +35,7 @@ uniform sampler2D target_texture : hint_default_black; // 目標紋理
 
 同時，切換背景是一個動態過程，因此還需要補充以下內容：
 
-定義 BackgroundTransitionEffectsType 列舉，用於標識背景切換特效類型。
+定義 BackgroundTransitionEffect 列舉，用於標識背景切換特效類型。
 ```
 YOUR_EFFECT_SHADER
 ```
@@ -48,7 +48,7 @@ var your_effect_shader: Shader = preload("res://path/to/your_effect_shader.shade
 接下來需要實作 YOUR_EFFECT_SHADER 類型的背景切換特效設定。
 
 ```gdscript
-BackgroundTransitionEffectsType.YOUR_EFFECT_SHADER: {
+BackgroundTransitionEffect.YOUR_EFFECT_SHADER: {
 	"shader": your_effect_shader,  // 背景切換 Shader，應與上文中的變數一致
 	"duration": 1.0,  // 轉場時長，預設為1.0s
 	"progress_target": 1.0,  // 目標進度，預設為1.0

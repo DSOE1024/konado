@@ -35,7 +35,7 @@ uniform sampler2D target_texture : hint_default_black; // Target texture
 
 Because background switching is a dynamic process, the following also needs to be added:
 
-Define the BackgroundTransitionEffectsType enum to identify the background switching effect type.
+Define the BackgroundTransitionEffect enum to identify the background switching effect type.
 ```
 YOUR_EFFECT_SHADER
 ```
@@ -48,7 +48,7 @@ var your_effect_shader: Shader = preload("res://path/to/your_effect_shader.shade
 Next, implement the background switching effect configuration for the YOUR_EFFECT_SHADER type.
 
 ```gdscript
-BackgroundTransitionEffectsType.YOUR_EFFECT_SHADER: {
+BackgroundTransitionEffect.YOUR_EFFECT_SHADER: {
 	"shader": your_effect_shader,  // Background switching Shader, should match the variable above
 	"duration": 1.0,  // Transition duration, default 1.0s
 	"progress_target": 1.0,  // Target progress, default 1.0

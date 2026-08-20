@@ -35,13 +35,13 @@ actor change kona happy
 2. 无法安全提供状态帧时，依次淡出当前角色、应用状态并淡入。
 3. 转场结束后，继续执行下一条剧情命令。
 
-在 `KND_ActingInterface` 节点的检查器中可以配置转场：
+在 `KonadoStageController` 节点的检查器中可以配置转场：
 
 | 属性 | 默认值 | 说明 |
 |------|--------|------|
-| `enable_actor_state_fade` | `true` | 是否为演员状态切换启用淡入淡出 |
-| `actor_state_fade_duration` | `0.3` | 完整转场的总时长（秒）；安全降级时淡出和淡入各占一半 |
+| `actor_state_transition_enabled` | `true` | 是否为演员状态切换启用淡入淡出 |
+| `actor_state_transition_duration` | `0.3` | 完整转场的总时长（秒）；安全降级时淡出和淡入各占一半 |
 
-关闭 `enable_actor_state_fade` 或把 `actor_state_fade_duration` 设为 `0` 时，状态会立即切换。
+关闭 `actor_state_transition_enabled` 或把 `actor_state_transition_duration` 设为 `0` 时，状态会立即切换。
 
 转场不会复制角色场景。内置 AnimatedSprite2D 示例通过纯纹理状态帧实现真正交融；自定义状态帧必须完整表示角色画面，不能只包含其中一个可见部件。视频、Spine、Live2D 和无法提供完整安全状态帧的自定义角色场景会自动降级，不会重复运行脚本、音频或动态媒体。目标演员不存在或角色场景无法应用该状态时，系统会结束本次命令并继续剧情，不会一直等待。

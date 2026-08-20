@@ -10,7 +10,7 @@ waitsignal "minigame_done"
 ```
 
 ```gdscript
-$KND_DialogueManager.emit_wait_signal("minigame_done")
+$KonadoDialogueManager.emit_wait_signal("minigame_done")
 ```
 
 同名のシグナルが外部コードから送られるまでシナリオを停止します。

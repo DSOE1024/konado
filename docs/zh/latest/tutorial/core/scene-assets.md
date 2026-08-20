@@ -20,14 +20,14 @@ background bg1 fade
 
 ## 角色场景
 
-角色场景建议继承 `KND_CharacterSceneBase`。对话系统创建角色时，会把角色列表中的 `character_scene` 实例化，然后把剧本里的状态名传给角色场景。
+角色场景建议继承 `KonadoCharacterSceneBase`。对话系统创建角色时，会把角色列表中的 `character_scene` 实例化，然后把剧本里的状态名传给角色场景。
 
 ### 基本结构
 
 一个简单的角色场景可以这样组织：
 
 ```text
-SampleCharacter (KND_CharacterSceneBase)
+SampleCharacter (KonadoCharacterSceneBase)
 ├─ AnimatedSprite2D
 └─ AnimationPlayer
 ```
@@ -35,13 +35,13 @@ SampleCharacter (KND_CharacterSceneBase)
 也可以换成其他表现：
 
 ```text
-Live2DCharacter (KND_CharacterSceneBase)
+Live2DCharacter (KonadoCharacterSceneBase)
 └─ Live2D 节点
 
-SpineCharacter (KND_CharacterSceneBase)
+SpineCharacter (KonadoCharacterSceneBase)
 └─ Spine 节点
 
-VideoCharacter (KND_CharacterSceneBase)
+VideoCharacter (KonadoCharacterSceneBase)
 └─ VideoStreamPlayer
 ```
 
@@ -57,7 +57,7 @@ actor change kona happy
 系统会调用角色场景的 `apply_status(status_name)`。用户场景通常覆写 `_apply_status`：
 
 ```gdscript
-extends KND_CharacterSceneBase
+extends KonadoCharacterSceneBase
 
 @export var animated_sprite_path: NodePath = ^"AnimatedSprite2D"
 
@@ -83,14 +83,14 @@ func _get_status_transition_frame(
 	_original_status_name: String,
 	target_space: CanvasItem,
 ) -> RefCounted:
-	return KND_CharacterTransitionFrame.from_animated_sprite(
+	return KonadoCharacterTransitionFrame.from_animated_sprite(
 		sprite, target_space, StringName(resolved_status_name)
 	)
 
 func _get_current_status_transition_frame(
 	target_space: CanvasItem,
 ) -> RefCounted:
-	return KND_CharacterTransitionFrame.from_animated_sprite(sprite, target_space)
+	return KonadoCharacterTransitionFrame.from_animated_sprite(sprite, target_space)
 ```
 
 对于 Live2D、Spine、视频角色，只需要把 `_apply_status` 内部换成对应的播放逻辑。例如设置 Live2D 表情、播放 Spine 动画、切换视频流。
@@ -127,7 +127,7 @@ func _play_action(action_name: String) -> void:
 	finish_action(action_name)
 ```
 
-舞台动作由 `KND_ActorMotionLayer` 负责，适合震动、跳跃、弹一下、左右晃动。动作层使用 `AnimationPlayer` 中的同名动画：
+舞台动作由 `KonadoActorMotionLayer` 负责，适合震动、跳跃、弹一下、左右晃动。动作层使用 `AnimationPlayer` 中的同名动画：
 
 ```text
 actor motion kona shake
@@ -138,7 +138,7 @@ actor motion kona jump_twice
 
 ## 背景场景
 
-背景场景建议继承 `KND_BackgroundSceneBase`。背景列表中的每个背景资源需要配置：
+背景场景建议继承 `KonadoBackgroundSceneBase`。背景列表中的每个背景资源需要配置：
 
 | 字段 | 说明 |
 |------|------|
@@ -154,14 +154,14 @@ background bg1 fade
 
 系统会根据 `background_name` 找到对应的 `background_scene`，实例化后挂到背景层。
 
-需要镜头命令时，可以在背景场景中添加名称唯一的 `KonadoCamera2D`。它只保存目标机位的位置和缩放，不负责渲染画面；实际渲染由对话模板中的相机完成。因此不要把普通背景相机替换为 `KonadoCamera2D`。
+需要镜头命令时，可以在背景场景中添加名称唯一的 `KonadoCameraMarker`。它只保存目标机位的位置和缩放，不负责渲染画面；实际渲染由对话模板中的相机完成。因此不要把普通背景相机替换为 `KonadoCameraMarker`。
 
 ### 基本结构
 
 一个图片背景可以这样组织：
 
 ```text
-Background (KND_BackgroundSceneBase)
+Background (KonadoBackgroundSceneBase)
 ├─ TextureRect
 └─ AnimationPlayer
 ```
@@ -177,7 +177,7 @@ Background (KND_BackgroundSceneBase)
 视频、Spine、Live2D 或 shader 背景，也可以放在同一个场景中：
 
 ```text
-Background (KND_BackgroundSceneBase)
+Background (KonadoBackgroundSceneBase)
 ├─ VideoStreamPlayer
 ├─ ColorRect(ShaderLayer)
 └─ AnimationPlayer
@@ -206,7 +206,7 @@ background bg1 custom
 
 ### 内置 shader 转场
 
-Konado 的内置背景转场 shader 由 `KND_BackgroundTransitionLayer` 统一处理，不需要每个背景场景自己挂旧版转场 shader。
+Konado 的内置背景转场 shader 由 `KonadoBackgroundTransitionLayer` 统一处理，不需要每个背景场景自己挂旧版转场 shader。
 
 目前内置效果包括：
 
@@ -248,7 +248,7 @@ ShaderLayer:material:shader_parameter/progress
 
 ### 配置角色
 
-1. 创建一个继承 `KND_CharacterSceneBase` 的角色场景。
+1. 创建一个继承 `KonadoCharacterSceneBase` 的角色场景。
 2. 在角色场景里实现 `_apply_status`。
 3. 打开角色列表资源。
 4. 给角色配置 `character_scene`。
@@ -256,7 +256,7 @@ ShaderLayer:material:shader_parameter/progress
 
 ### 配置背景
 
-1. 创建一个继承 `KND_BackgroundSceneBase` 的背景场景。
+1. 创建一个继承 `KonadoBackgroundSceneBase` 的背景场景。
 2. 在背景场景里放入图片、视频、Spine、Live2D 或 shader 节点。
 3. 如需自定义入场/退场动画，添加 `AnimationPlayer` 并制作 `enter_xxx`、`exit_xxx` 动画。
 4. 打开背景列表资源。

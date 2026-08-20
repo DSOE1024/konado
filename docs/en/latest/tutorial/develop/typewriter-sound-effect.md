@@ -14,7 +14,7 @@ The Konado dialogue box component supports typing sound effects. It can play sho
 The plugin's default sounds are stored in:
 
 ```
-res://addons/konado/audioeffect/typewriter/
+res://addons/konado/assets/audio/typewriter/
 ```
 
 Keep project-specific sounds outside the plugin directory, for example under `res://audio/typewriter/`, so Konado upgrades cannot overwrite them.
@@ -29,7 +29,7 @@ Keep project-specific sounds outside the plugin directory, for example under `re
 
 ## Basic Configuration
 
-In the Inspector panel of `KND_DialogueBox`, you can find typing sound effect settings:
+In the Inspector panel of `KonadoDialogueBox`, you can find typing sound effect settings:
 
 ```gdscript
 @export var enable_typing_effect_audio: bool = true
@@ -39,7 +39,7 @@ In the Inspector panel of `KND_DialogueBox`, you can find typing sound effect se
 Set `enable_typing_effect_audio` to `true` to enable typing sound effects, or `false` to disable them. Select an audio file from the editor dropdown, or load it from code:
 
 ```gdscript
-dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/typing_01.wav")
+dialogue_box.typing_effect_audio = load("res://addons/konado/assets/audio/typewriter/typing_01.wav")
 ```
 
 ## Trigger Configuration
@@ -58,13 +58,13 @@ dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewri
 ## Usage Example
 
 1. Put custom sound files in a project directory such as `res://audio/typewriter/`
-2. Select the `KND_DialogueBox` node in the scene
+2. Select the `KonadoDialogueBox` node in the scene
 3. Enable `Enable Typing Effect Audio` in the Inspector
 4. Select the sound file from the dropdown
 5. Adjust volume and other parameters
 
 ```gdscript
-var dialogue_box = $KND_DialogueBox
+var dialogue_box = $KonadoDialogueBox
 dialogue_box.enable_typing_effect_audio = true
 dialogue_box.typing_effect_audio = load("res://audio/typewriter/custom_typing.wav")
 dialogue_box.audio_trigger_chance = 1.0

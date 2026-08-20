@@ -13,14 +13,14 @@ order: 4
 
 分支不可巢狀使用，分支的縮排層級必須與對話的縮排層級一致，否則會導致無法正常識別。以下是錯誤範例：
 
-```text
+```text no-test
 # 錯誤範例
 branch drink_water
-    "kona" "我想喝水"
+    kona "我想喝水"
         branch eat_cake
-            "kona" "我想吃蛋糕"
+            kona "我想吃蛋糕"
 branch drink_tea
-    "kona" "我想喝茶"
+    kona "我想喝茶"
 ```
 
 ## 語法結構
@@ -38,7 +38,7 @@ branch [標籤ID]
 
 ```text
 branch drink_water
-    "kona" "我想喝水"
+    kona "我想喝水"
 branch drink_tea
-    "kona" "我想喝茶"
+    kona "我想喝茶"
 ```

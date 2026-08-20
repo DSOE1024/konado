@@ -5,16 +5,21 @@ order: 2
 
 # 存檔系統
 
+預設對話模板提供快速儲存、快速讀取和存檔面板。槽位 `0` 用作快速存檔；預設共有 20 個槽位，編號為 `0`–`19`。
+
 ## 使用方法
+
+先取得預設對話模板中的對話管理器，例如：
+
+```gdscript
+@export var dialogue_manager: KonadoDialogueManager
+```
 
 ### 儲存遊戲
 
 ```gdscript
 # 儲存到指定槽位
 dialogue_manager.save_game(1)  # 儲存到 1 號槽位
-
-# 或者直接使用存檔系統
-save_system.save_game(2)  # 儲存到 2 號槽位
 ```
 
 ### 載入遊戲
@@ -22,9 +27,6 @@ save_system.save_game(2)  # 儲存到 2 號槽位
 ```gdscript
 # 從指定槽位載入
 dialogue_manager.load_game(1)  # 從 1 號槽位載入
-
-# 或者直接使用存檔系統
-save_system.load_game(2)  # 從 2 號槽位載入
 ```
 
 ### 刪除存檔
@@ -32,9 +34,6 @@ save_system.load_game(2)  # 從 2 號槽位載入
 ```gdscript
 # 刪除指定槽位的存檔
 dialogue_manager.delete_save(1)  # 刪除 1 號槽位的存檔
-
-# 或者直接使用存檔系統
-save_system.delete_save(2)  # 刪除 2 號槽位的存檔
 ```
 
 ### 取得存檔資訊
@@ -51,33 +50,12 @@ for i in range(all_save_infos.size()):
         print("存檔 " + str(i) + " 存在")
 ```
 
-### 設定存檔策略
-
-```gdscript
-# 自訂存檔策略
-var custom_strategy = {
-    "include_dialogue_state": true,    # 包含對話狀態
-    "include_variables": true,          # 包含變數
-    "include_audio_state": false,       # 不包含音訊狀態
-    "include_actor_state": false,       # 不包含演員狀態
-    "include_background_state": false   # 不包含背景狀態
-}
-
-dialogue_manager.set_save_strategy(custom_strategy)
-```
-
 ## 存檔資料結構
 
-存檔資料包含以下內容：
+Konado 會在一個原子執行邊界中儲存目前指令、臨時與持久變數、對話框、演員、背景、相機和音訊等執行狀態。完整狀態必須整體儲存和還原，避免畫面與劇情邏輯不一致。
 
-- **dialogue_state** - 對話狀態，包括目前鏡頭、對話索引和對話狀態
-- **variables** - 遊戲變數
-- **audio_state** - 目前 BGM、播放位置與音量狀態
-- **actor_state** - 目前演員、狀態、位置與可見性
-- **background_state** - 目前背景場景與轉場狀態
-- **save_time** - 存檔時間
-- **version** - 存檔版本
+讀取時會驗證存檔格式、編譯器 ABI、劇本指紋和指令標識。劇本結構變更而無法準確還原時，載入會明確失敗，不會靜默跳到錯誤的劇情位置。`save_game()`、`load_game()` 和 `delete_save()` 都會回傳 `bool`，呼叫端應處理失敗結果。
 
 ## 存檔檔案格式
 
-存檔檔案使用 JSON 格式儲存，保存在 `user://konado_saves/` 目錄下，檔案名稱為 `[槽位ID].kns`。預設提供 20 個槽位，有效 ID 為 `0`–`19`。
+存檔保存在 `user://konado_saves/`，檔名為 `[槽位ID].kns`。檔案使用包含格式版本、長度和 SHA-256 完整性校驗的二進位封裝；這可以發現損壞或不完整寫入，但不屬於加密或防竄改安全機制。

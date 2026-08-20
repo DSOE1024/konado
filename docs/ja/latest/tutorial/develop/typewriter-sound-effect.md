@@ -14,7 +14,7 @@ Konado の会話ボックスコンポーネントはタイプライター効果�
 プラグイン付属のデフォルト音源は以下のディレクトリにあります。
 
 ```
-res://addons/konado/audioeffect/typewriter/
+res://addons/konado/assets/audio/typewriter/
 ```
 
 プロジェクト固有の音源は `res://audio/typewriter/` などプラグイン外へ配置し、Konado の更新で上書きされないようにしてください。
@@ -29,7 +29,7 @@ res://addons/konado/audioeffect/typewriter/
 
 ## 基本設定
 
-`KND_DialogueBox` コンポーネントの Inspector パネルで、タイプライター効果音の設定を確認できます。
+`KonadoDialogueBox` コンポーネントの Inspector パネルで、タイプライター効果音の設定を確認できます。
 
 ```gdscript
 @export var enable_typing_effect_audio: bool = true
@@ -39,7 +39,7 @@ res://addons/konado/audioeffect/typewriter/
 `enable_typing_effect_audio` を `true` にすると効果音が有効になり、`false` にすると無効になります。エディターのドロップダウンから効果音ファイルを選択するか、コードで読み込めます。
 
 ```gdscript
-dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/typing_01.wav")
+dialogue_box.typing_effect_audio = load("res://addons/konado/assets/audio/typewriter/typing_01.wav")
 ```
 
 ## 効果音トリガー設定
@@ -58,7 +58,7 @@ dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewri
 ## 使用例
 
 ```gdscript
-var dialogue_box = $KND_DialogueBox
+var dialogue_box = $KonadoDialogueBox
 dialogue_box.enable_typing_effect_audio = true
 dialogue_box.typing_effect_audio = load("res://audio/typewriter/custom_typing.wav")
 dialogue_box.audio_trigger_chance = 1.0

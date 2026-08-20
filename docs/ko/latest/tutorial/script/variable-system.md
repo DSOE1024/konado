@@ -76,7 +76,7 @@ set %unlocked true
 ### 문법
 
 ```
-"캐릭터 이름" "대사 텍스트. %변수명 또는 $변수명을 포함할 수 있습니다"
+Kona "대사 텍스트. %변수명 또는 $변수명을 포함할 수 있습니다"
 ```
 
 ### 예시
@@ -85,8 +85,8 @@ set %unlocked true
 set %player_name "민수"
 set $stage "초보자 마을"
 
-"Kona" "안녕하세요, %player_name! 지금 있는 곳은 $stage입니다."
-"Kona" "호감도는 %love이고, 현재는 $round 라운드입니다."
+Kona "안녕하세요, %player_name! 지금 있는 곳은 $stage입니다."
+Kona "호감도는 %love이고, 현재는 $round 라운드입니다."
 ```
 
 실행 시 출력:
@@ -137,17 +137,17 @@ endif
 
 ```
 if %love == 5:
-    "Kona" "호감도가 정확히 5입니다!"
+    Kona "호감도가 정확히 5입니다!"
 else:
-    "Kona" "호감도가 5가 아닙니다."
+    Kona "호감도가 5가 아닙니다."
 endif
 
 if $score >= 80:
-    "Kona" "좋습니다!"
+    Kona "좋습니다!"
 endif
 
 if $score >= 60:
-    "Kona" "합격입니다."
+    Kona "합격입니다."
 endif
 ```
 
@@ -168,18 +168,18 @@ endif
 
 ```
 branch after_choice
-    "Kona" "당신의 선택이 기록되었습니다."
+    Kona "당신의 선택이 기록되었습니다."
 
     if $choice_made == 1:
-        "Kona" "선물을 주기로 했군요. 정말 다정하네요."
+        Kona "선물을 주기로 했군요. 정말 다정하네요."
     endif
 
     if $choice_made == 2:
-        "Kona" "대화하기로 했군요. 소통은 중요합니다."
+        Kona "대화하기로 했군요. 소통은 중요합니다."
     endif
 
     if $choice_made == 3:
-        "Kona" "무시하기로 했군요... 다음에는 다른 선택지도 시도해 보세요."
+        Kona "무시하기로 했군요... 다음에는 다른 선택지도 시도해 보세요."
     endif
 ```
 
@@ -201,23 +201,23 @@ choice "무시하기(호감도-5)" -> ignore_choice
 branch gift_choice
     add %love 10
     set $choice_made = 1
-    "Kona" "고마워요! 호감도가 %love까지 올랐어요!"
+    Kona "고마워요! 호감도가 %love까지 올랐어요!"
     jump_branch after_choice
 
 branch chat_choice
     add %love 5
     set $choice_made = 2
-    "Kona" "당신과 이야기해서 즐거웠어요. 지금 호감도는 %love입니다."
+    Kona "당신과 이야기해서 즐거웠어요. 지금 호감도는 %love입니다."
     jump_branch after_choice
 
 branch ignore_choice
     sub %love 5
     set $choice_made = 3
-    "Kona" "......호감도가 %love까지 내려갔어요."
+    Kona "......호감도가 %love까지 내려갔어요."
     jump_branch after_choice
 
 branch after_choice
-    "Kona" "당신의 선택이 기록되었습니다."
+    Kona "당신의 선택이 기록되었습니다."
 ```
 
 ---
@@ -233,12 +233,12 @@ set %unlocked true
 set $visited false
 
 if %unlocked == 1:
-    "Kona" "기능이 잠금 해제되었습니다!"
+    Kona "기능이 잠금 해제되었습니다!"
 endif
 
 set $visited true
 if $visited == 1:
-    "Kona" "방문 플래그가 설정되었습니다."
+    Kona "방문 플래그가 설정되었습니다."
 endif
 ```
 
@@ -252,14 +252,14 @@ endif
 
 **방법 1: 인스펙터에서 미리 설정(권장)**
 
-에디터에서 `KND_VariableStore` 리소스를 만들고, 인스펙터에서 초기 변수 값을 설정한 뒤 `KND_DialogueManager`의 `variable_store` 속성에 할당합니다.
+에디터에서 `KonadoVariableStore` 리소스를 만들고, 인스펙터에서 초기 변수 값을 설정한 뒤 `KonadoDialogueManager`의 `variable_store` 속성에 할당합니다.
 
 **방법 2: 코드로 초기화**
 
 ```gdscript
 func _ready() -> void:
     if dialogue_manager.variable_store == null:
-        var store = KND_VariableStore.new()
+        var store = KonadoVariableStore.new()
         store.set_value("love", 0)
         store.set_value("player_name", "")
         store.set_value("unlocked", false)
@@ -281,61 +281,61 @@ play bgm echo
 background bg1 fade
 
 actor show 코나 보통 at 3
-"Kona" "변수 시스템 데모에 오신 것을 환영합니다!"
+Kona "변수 시스템 데모에 오신 것을 환영합니다!"
 
 set %love = 10
-"Kona" "호감도를 10으로 설정했습니다. 현재 값: %love"
+Kona "호감도를 10으로 설정했습니다. 현재 값: %love"
 
 add %love 5
-"Kona" "5를 더한 뒤 호감도: %love"
+Kona "5를 더한 뒤 호감도: %love"
 
 sub %love 3
-"Kona" "3을 뺀 뒤 호감도: %love"
+Kona "3을 뺀 뒤 호감도: %love"
 
 mul %love 2
-"Kona" "2를 곱한 뒤 호감도: %love"
+Kona "2를 곱한 뒤 호감도: %love"
 
 div %love 4
-"Kona" "4로 나눈 뒤 호감도: %love"
+Kona "4로 나눈 뒤 호감도: %love"
 
 set $round = 1
 set $bonus = 100
-"Kona" "라운드=$round, 보너스=$bonus"
+Kona "라운드=$round, 보너스=$bonus"
 
 add $round 1
 add $bonus 50
-"Kona" "$round 라운드, 보너스 $bonus"
+Kona "$round 라운드, 보너스 $bonus"
 
 set %player_name "플레이어"
-"Kona" "안녕하세요, %player_name! 호감도 %love, $round 라운드입니다."
+Kona "안녕하세요, %player_name! 호감도 %love, $round 라운드입니다."
 
 if %love == 6:
-    "Kona" "호감도가 정확히 6입니다!"
+    Kona "호감도가 정확히 6입니다!"
 else:
-    "Kona" "호감도가 6이 아닙니다."
+    Kona "호감도가 6이 아닙니다."
 endif
 
 if %love > 3:
-    "Kona" "호감도가 3보다 큽니다!"
+    Kona "호감도가 3보다 큽니다!"
 endif
 
 if %love < 10:
-    "Kona" "호감도가 10보다 작습니다."
+    Kona "호감도가 10보다 작습니다."
 endif
 
 set $score = 85
 
 if $score >= 90:
-    "Kona" "훌륭합니다!"
+    Kona "훌륭합니다!"
 endif
 
 if $score >= 80:
-    "Kona" "좋습니다!"
+    Kona "좋습니다!"
 endif
 
 set %unlocked true
 if %unlocked == 1:
-    "Kona" "기능이 잠금 해제되었습니다!"
+    Kona "기능이 잠금 해제되었습니다!"
 endif
 
 choice "선물하기(호감도+10)" -> gift
@@ -343,12 +343,12 @@ choice "무시하기(호감도-5)" -> ignore
 
 branch gift
     add %love 10
-    "Kona" "고마워요! 호감도 %love!"
+    Kona "고마워요! 호감도 %love!"
     jump_branch done
 
 branch ignore
     sub %love 5
-    "Kona" "......호감도 %love."
+    Kona "......호감도 %love."
     jump_branch done
 
 branch done

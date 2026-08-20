@@ -21,16 +21,16 @@ Konado は強力なタイプライター効果コンポーネントを提供し�
 
 ### 会話ボックスで使用
 
-`KND_DialogueBox` コンポーネントでは、タイプライター効果を直接有効化できます。
+`KonadoDialogueBox` コンポーネントでは、タイプライター効果を直接有効化できます。
 
-1. シーン内の `KND_DialogueBox` ノードを選択
+1. シーン内の `KonadoDialogueBox` ノードを選択
 2. Inspector パネルで対応する設定項目を探す
 3. タイプライターモードを有効化
 
 ### コードから使用
 
 ```gdscript
-var typewriter = $KND_TypewriterText
+var typewriter = $KonadoTypewriterText
 typewriter.set_bbcode("[color=yellow]こんにちは[/color]、[b]プレイヤー[/b]！")
 typewriter.start()
 typewriter.skip()
@@ -106,7 +106,7 @@ typewriter.spatial_blend = 0.5
 
 ```gdscript
 func _ready():
-    var typewriter = $KND_TypewriterText
+    var typewriter = $KonadoTypewriterText
     typewriter.typewriter_finished.connect(_on_finished)
 
 func _on_finished():

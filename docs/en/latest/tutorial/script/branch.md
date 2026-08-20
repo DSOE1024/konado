@@ -13,14 +13,14 @@ You can think of a label as a "bookmark" in the script. A label lets you quickly
 
 Branches cannot be nested. The indentation level of a branch must match the indentation level of dialogues, otherwise it will not be recognized correctly. The following is an incorrect example:
 
-```text
+```text no-test
 # Incorrect example
 branch drink_water
-    "kona" "I want to drink water"
+    kona "I want to drink water"
         branch eat_cake
-            "kona" "I want to eat cake"
+            kona "I want to eat cake"
 branch drink_tea
-    "kona" "I want to drink tea"
+    kona "I want to drink tea"
 ```
 
 ## Syntax
@@ -38,7 +38,7 @@ branch [label ID]
 
 ```text
 branch drink_water
-    "kona" "I want to drink water"
+    kona "I want to drink water"
 branch drink_tea
-    "kona" "I want to drink tea"
+    kona "I want to drink tea"
 ```

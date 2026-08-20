@@ -1,40 +1,33 @@
 ---
-title: 对话数据
+title: 对话运行数据
 order: 1
 ---
 
-# KND_Shot 以及 KND_Dialogue
+# 对话运行数据
 
-## 前言
+KonadoScript 源文件不会在运行时被逐行解释。导入或保存 `.ks` 文件时，编译器会生成一组职责明确的运行数据。
 
-这个章节将介绍 Konado 的两个核心类：KND_Shot 和 KND_Dialogue。这两个类是 Konado 的核心，用于表示对话镜头和对话。如果你希望深入了解 Konado 的架构原理，那么理解这两个类是非常重要的。在充分理解这两个类的基础上，你可以根据自己需要，对它们进行扩展和修改，以满足你的需求。
+## KonadoShot
 
-## KND_Shot
+`KonadoShot` 表示一个可加载的剧情镜头。它记录源文件、镜头标识、资源依赖和本地化覆盖层，并持有唯一的可执行产物 `KonadoProgram`。一般无需手动创建该资源；编辑器和运行时加载器会负责更新它。
 
-### 定义
+## KonadoProgram
 
-KND_Shot 是 Konado 的一个核心类，用于表示一个对话镜头。
+`KonadoProgram` 是紧凑、只读的指令程序，保存常量池、操作码、操作数、控制流位置、稳定指令键和源码行号。运行时直接按程序计数器执行这些数组，不再创建旧式的逐行对话对象。
 
-镜头是影视以及动画制作中的一个基本概念，它表示一个连续的画面，通常包含一系列的帧。在这里，KND_Shot 类用于表示一个对话镜头，其中包含了一系列对话。
+## KonadoInstruction
 
-当然也可以用书本的概念来理解，一个镜头就是一个小章节节，一个对话镜头就是一个小章节中的对话。
+`KonadoInstruction` 是程序中单条指令的只读视图。它不复制底层数据，可用于调试、编辑器导航和 .NET 集成。普通游戏逻辑应通过 `KonadoDialogueManager` 驱动镜头，而不是自行遍历指令。
 
-KND_Shot 将负责组织零散的 KND_Dialogue 数据对象，并按照一定的顺序排列它们，以便在播放时能够按照指定顺序播放。
-
-当然，与电影镜头不同，KND_Shot 并不一定表示连续的，线性的故事，而是可能由多个 branch 分支组成，每个分支都包含一系列的对话，搭配 choice 来实现多选分支，让用户选择不同的对话路径。
-
-### KND_Shot与KonadoScript的关系
-
-在使用过程中你不难发现，默认情况下，KND_Shot 并不需要手动创建，而是由 KonadoScript 自动创建，并且自动更新数据的。这是由于我们采用了自定义的 KonadoScript 语法，并使用了 KonadoScript 的解析器来解析脚本文件，通过将源文件的行解析成 KND_Dialogue 对象，然后根据一定的规则将它们组织成 KND_Shot 对象。
-
-如果用流程图来表示，那么从KonadoScript 到多个 KND_Dialogue 到 KND_Shot 的过程大致如下：
+## 执行流程
 
 ```mermaid
-graph TD
-    A["KonadoScript源文件"] --> B["解析器"]
-    B --> C["生成KND_Dialogue对象"]
-    C --> D["按规则组织"]
-    D --> E["自动创建/更新KND_Shot"]
-
+graph LR
+    A["KonadoScript 源文件"] --> B["词法与语法分析"]
+    B --> C["语义检查与资源索引"]
+    C --> D["KonadoProgram"]
+    D --> E["KonadoShot"]
+    E --> F["KonadoVirtualMachine"]
 ```
-如果你想详细了解 KonadoScript 的解析过程，可以参考 KonadoScript 的相关文档以及解析器的源代码。
+
+这种结构让编译期诊断、资源依赖检查、运行时回滚和本地化共享同一套稳定指令模型，同时避免运行时重复解析脚本文本。

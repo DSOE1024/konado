@@ -12,7 +12,7 @@ waitsignal "minigame_done"
 ```
 
 ```gdscript
-$KND_DialogueManager.emit_wait_signal("minigame_done")
+$KonadoDialogueManager.emit_wait_signal("minigame_done")
 ```
 
 Quoted strings and identifiers are accepted. This is useful for cutscenes, minigames, and custom interactions.

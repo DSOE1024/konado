@@ -23,11 +23,11 @@ waitsignal <signal_name>
 
 ## 外部调用
 
-在对话暂停后，需要在外部代码中通过 `KND_DialogueManager` 的 `emit_wait_signal` 方法触发信号，才能继续对话流程。
+在对话暂停后，需要在外部代码中通过 `KonadoDialogueManager` 的 `emit_wait_signal` 方法触发信号，才能继续对话流程。
 
 ```gdscript
 # 触发信号，继续对话
-$KND_DialogueManager.emit_wait_signal("over")
+$KonadoDialogueManager.emit_wait_signal("over")
 ```
 
 ## 示例
@@ -47,13 +47,13 @@ waitsignal over
 showtextbox 0.5
 
 # 普通对话
-"alice" "接下来我们来玩个小游戏！"
+alice "接下来我们来玩个小游戏！"
 
 # 等待外部触发器（如小游戏完成）
 waitsignal "minigame_done"
 
 # 小游戏完成后继续
-"alice" "恭喜你完成了！"
+alice "恭喜你完成了！"
 ```
 
 外部代码：
@@ -61,5 +61,5 @@ waitsignal "minigame_done"
 ```gdscript
 # 小游戏完成后触发
 func _on_minigame_finished():
-    $KND_DialogueManager.emit_wait_signal("minigame_done")
+    $KonadoDialogueManager.emit_wait_signal("minigame_done")
 ```

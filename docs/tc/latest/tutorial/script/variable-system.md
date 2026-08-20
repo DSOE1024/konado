@@ -76,7 +76,7 @@ set %unlocked true
 ### 語法
 
 ```
-"角色名" "對話文字，包含 %變數名 或 $變數名"
+Kona "對話文字，包含 %變數名 或 $變數名"
 ```
 
 ### 範例
@@ -85,8 +85,8 @@ set %unlocked true
 set %player_name "小明"
 set $stage "新手村"
 
-"Kona" "你好，%player_name！你現在在 $stage。"
-"Kona" "你的好感度是 %love，目前是第 $round 回合。"
+Kona "你好，%player_name！你現在在 $stage。"
+Kona "你的好感度是 %love，目前是第 $round 回合。"
 ```
 
 執行時輸出：
@@ -137,17 +137,17 @@ endif
 
 ```
 if %love == 5:
-    "Kona" "好感度正好是 5！"
+    Kona "好感度正好是 5！"
 else:
-    "Kona" "好感度不是 5。"
+    Kona "好感度不是 5。"
 endif
 
 if $score >= 80:
-    "Kona" "良好！"
+    Kona "良好！"
 endif
 
 if $score >= 60:
-    "Kona" "及格。"
+    Kona "及格。"
 endif
 ```
 
@@ -168,18 +168,18 @@ endif
 
 ```
 branch after_choice
-    "Kona" "你的選擇已被記錄。"
+    Kona "你的選擇已被記錄。"
 
     if $choice_made == 1:
-        "Kona" "你選擇了送禮物，真是個溫柔的人呢。"
+        Kona "你選擇了送禮物，真是個溫柔的人呢。"
     endif
 
     if $choice_made == 2:
-        "Kona" "你選擇了聊天，溝通很重要。"
+        Kona "你選擇了聊天，溝通很重要。"
     endif
 
     if $choice_made == 3:
-        "Kona" "你選擇了無視……也許下次可以試試別的選項。"
+        Kona "你選擇了無視……也許下次可以試試別的選項。"
     endif
 ```
 
@@ -201,23 +201,23 @@ choice "無視（好感-5）" -> ignore_choice
 branch gift_choice
     add %love 10
     set $choice_made = 1
-    "Kona" "謝謝你！好感度提升到 %love！"
+    Kona "謝謝你！好感度提升到 %love！"
     jump_branch after_choice
 
 branch chat_choice
     add %love 5
     set $choice_made = 2
-    "Kona" "和你聊天很開心，好感度現在是 %love。"
+    Kona "和你聊天很開心，好感度現在是 %love。"
     jump_branch after_choice
 
 branch ignore_choice
     sub %love 5
     set $choice_made = 3
-    "Kona" "……好感度降到了 %love。"
+    Kona "……好感度降到了 %love。"
     jump_branch after_choice
 
 branch after_choice
-    "Kona" "你的選擇已被記錄。"
+    Kona "你的選擇已被記錄。"
 ```
 
 ---
@@ -233,12 +233,12 @@ set %unlocked true
 set $visited false
 
 if %unlocked == 1:
-    "Kona" "功能已解鎖！"
+    Kona "功能已解鎖！"
 endif
 
 set $visited true
 if $visited == 1:
-    "Kona" "已設定訪問標記。"
+    Kona "已設定訪問標記。"
 endif
 ```
 
@@ -252,14 +252,14 @@ endif
 
 **方式一：檢查器預設（推薦）**
 
-在編輯器中建立 `KND_VariableStore` 資源，在檢查器中設定初始變數值，然後賦值給 `KND_DialogueManager` 的 `variable_store` 屬性。
+在編輯器中建立 `KonadoVariableStore` 資源，在檢查器中設定初始變數值，然後賦值給 `KonadoDialogueManager` 的 `variable_store` 屬性。
 
 **方式二：程式碼初始化**
 
 ```gdscript
 func _ready() -> void:
     if dialogue_manager.variable_store == null:
-        var store = KND_VariableStore.new()
+        var store = KonadoVariableStore.new()
         store.set_value("love", 0)
         store.set_value("player_name", "")
         store.set_value("unlocked", false)
@@ -281,61 +281,61 @@ play bgm echo
 background bg1 fade
 
 actor show 可娜 正常 at 3
-"Kona" "歡迎來到變數系統示範！"
+Kona "歡迎來到變數系統示範！"
 
 set %love = 10
-"Kona" "好感度設為 10，現在是：%love"
+Kona "好感度設為 10，現在是：%love"
 
 add %love 5
-"Kona" "加 5 後好感度：%love"
+Kona "加 5 後好感度：%love"
 
 sub %love 3
-"Kona" "減 3 後好感度：%love"
+Kona "減 3 後好感度：%love"
 
 mul %love 2
-"Kona" "乘 2 後好感度：%love"
+Kona "乘 2 後好感度：%love"
 
 div %love 4
-"Kona" "除 4 後好感度：%love"
+Kona "除 4 後好感度：%love"
 
 set $round = 1
 set $bonus = 100
-"Kona" "回合=$round，獎金=$bonus"
+Kona "回合=$round，獎金=$bonus"
 
 add $round 1
 add $bonus 50
-"Kona" "第 $round 回合，獎金 $bonus"
+Kona "第 $round 回合，獎金 $bonus"
 
 set %player_name "玩家"
-"Kona" "你好，%player_name！好感度 %love，第 $round 回合。"
+Kona "你好，%player_name！好感度 %love，第 $round 回合。"
 
 if %love == 6:
-    "Kona" "好感度正好是 6！"
+    Kona "好感度正好是 6！"
 else:
-    "Kona" "好感度不是 6。"
+    Kona "好感度不是 6。"
 endif
 
 if %love > 3:
-    "Kona" "好感度大於 3！"
+    Kona "好感度大於 3！"
 endif
 
 if %love < 10:
-    "Kona" "好感度小於 10。"
+    Kona "好感度小於 10。"
 endif
 
 set $score = 85
 
 if $score >= 90:
-    "Kona" "優秀！"
+    Kona "優秀！"
 endif
 
 if $score >= 80:
-    "Kona" "良好！"
+    Kona "良好！"
 endif
 
 set %unlocked true
 if %unlocked == 1:
-    "Kona" "功能已解鎖！"
+    Kona "功能已解鎖！"
 endif
 
 choice "送禮物（好感+10）" -> gift
@@ -343,12 +343,12 @@ choice "無視（好感-5）" -> ignore
 
 branch gift
     add %love 10
-    "Kona" "謝謝你！好感度 %love！"
+    Kona "謝謝你！好感度 %love！"
     jump_branch done
 
 branch ignore
     sub %love 5
-    "Kona" "……好感度 %love。"
+    Kona "……好感度 %love。"
     jump_branch done
 
 branch done

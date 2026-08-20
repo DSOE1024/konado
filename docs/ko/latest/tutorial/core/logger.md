@@ -3,11 +3,11 @@ title: Logger
 order: 4
 ---
 
-# 로거 KND_Logger
+# 로거 KonadoLogger
 
 ## 머리말
 
-KND_Logger는 Godot Logger 구현을 기반으로 한 로그 모듈입니다. 로그 레벨, 로그 형식, 로그 출력, 로그 파일 등의 기능을 지원하며 Konado 실행 중의 로그 정보를 기록하는 데 사용됩니다.
+KonadoLogger는 Godot Logger 구현을 기반으로 한 로그 모듈입니다. 로그 레벨, 로그 형식, 로그 출력, 로그 파일 등의 기능을 지원하며 Konado 실행 중의 로그 정보를 기록하는 데 사용됩니다.
 
 ## 로그 경로
 
@@ -15,8 +15,8 @@ KND_Logger는 Godot Logger 구현을 기반으로 한 로그 모듈입니다. �
 
 ## 화면 오버레이 로그
 
-오류가 발생하면 대화 장면은 화면 위에 로그 창을 덮어 표시하여 오류 정보를 보여 주고 게임 실행을 중단합니다. 일반 경고는 계속 로그 파일에 기록되지만 런타임 오류로 표시되거나 게임을 중단하지는 않습니다. 오류 오버레이를 끄려면 `KND_DialogueManager`의 `enable_overlay_log` 속성을 `false`로 설정하세요.
+오류가 발생하면 대화 장면은 화면 위에 로그 창을 덮어 표시하여 오류 정보를 보여 주고 게임 실행을 중단합니다. 일반 경고는 계속 로그 파일에 기록되지만 런타임 오류로 표시되거나 게임을 중단하지는 않습니다. 오류 오버레이를 끄려면 `KonadoDialogueManager`의 `enable_overlay_log` 속성을 `false`로 설정하세요.
 
 ## 로그 콜백
 
-`KND_Logger` 인스턴스는 `error_caught(msg)`와 `message_caught(message, error)` 신호를 보냅니다. `KND_DialogueManager`는 씬 트리에 들어갈 때 내부 로거를 만들어 Godot에 등록하고 `error_caught`로 화면 오버레이를 구동합니다. 로거는 전역 자동 로드 객체가 아닙니다. 별도의 `KND_Logger`를 만드는 사용자 지정 연동은 `OS.add_logger()`로 등록하고 해제 전에 `OS.remove_logger()`를 호출하여 중복 기록이나 유효하지 않은 인스턴스가 남지 않게 해야 합니다.
+`KonadoLogger` 인스턴스는 `error_caught(msg)`와 `message_caught(message, error)` 신호를 보냅니다. `KonadoDialogueManager`는 씬 트리에 들어갈 때 내부 로거를 만들어 Godot에 등록하고 `error_caught`로 화면 오버레이를 구동합니다. 로거는 전역 자동 로드 객체가 아닙니다. 별도의 `KonadoLogger`를 만드는 사용자 지정 연동은 `OS.add_logger()`로 등록하고 해제 전에 `OS.remove_logger()`를 호출하여 중복 기록이나 유효하지 않은 인스턴스가 남지 않게 해야 합니다.

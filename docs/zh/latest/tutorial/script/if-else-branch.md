@@ -25,9 +25,9 @@ endif
 
 ```
 if %love == 0:
-    "Kona" "今天想喝点什么？"
+    Kona "今天想喝点什么？"
 else:
-    "Kona" "又见面了！"
-    "Kona" "今天想喝点什么？"
+    Kona "又见面了！"
+    Kona "今天想喝点什么？"
 endif
 ```

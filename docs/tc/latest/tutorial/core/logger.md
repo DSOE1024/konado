@@ -3,11 +3,11 @@ title: Logger
 order: 4
 ---
 
-# 日誌器 KND_Logger
+# 日誌器 KonadoLogger
 
 ## 前言
 
-KND_Logger 是基於 Godot Logger 實作的日誌模組，支援日誌級別、日誌格式、日誌輸出、日誌檔案等功能，用於記錄 Konado 執行時的日誌資訊。
+KonadoLogger 是基於 Godot Logger 實作的日誌模組，支援日誌級別、日誌格式、日誌輸出、日誌檔案等功能，用於記錄 Konado 執行時的日誌資訊。
 
 ## 日誌路徑
 
@@ -15,8 +15,8 @@ KND_Logger 是基於 Godot Logger 實作的日誌模組，支援日誌級別、�
 
 ## 螢幕覆蓋日誌
 
-發生錯誤時，對話場景會在螢幕上覆蓋一個日誌視窗，用於顯示錯誤資訊並中斷遊戲執行。一般警告仍會寫入日誌檔案，但不會顯示為執行時錯誤或中斷遊戲。如果您希望關閉錯誤覆蓋視窗，可以將 `KND_DialogueManager` 的 `enable_overlay_log` 屬性設定為 `false`。
+發生錯誤時，對話場景會在螢幕上覆蓋一個日誌視窗，用於顯示錯誤資訊並中斷遊戲執行。一般警告仍會寫入日誌檔案，但不會顯示為執行時錯誤或中斷遊戲。如果您希望關閉錯誤覆蓋視窗，可以將 `KonadoDialogueManager` 的 `enable_overlay_log` 屬性設定為 `false`。
 
 ## 日誌回呼
 
-`KND_Logger` 實例會發出 `error_caught(msg)` 與 `message_caught(message, error)` 訊號。`KND_DialogueManager` 進入場景樹時會建立內部日誌器並向 Godot 註冊，再以 `error_caught` 驅動畫面覆蓋日誌；它不是全域自動載入物件。自訂日誌整合若另行建立 `KND_Logger`，必須使用 `OS.add_logger()` 註冊，並在釋放前使用 `OS.remove_logger()` 移除，避免重複記錄或殘留無效實例。
+`KonadoLogger` 實例會發出 `error_caught(msg)` 與 `message_caught(message, error)` 訊號。`KonadoDialogueManager` 進入場景樹時會建立內部日誌器並向 Godot 註冊，再以 `error_caught` 驅動畫面覆蓋日誌；它不是全域自動載入物件。自訂日誌整合若另行建立 `KonadoLogger`，必須使用 `OS.add_logger()` 註冊，並在釋放前使用 `OS.remove_logger()` 移除，避免重複記錄或殘留無效實例。

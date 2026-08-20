@@ -5,16 +5,21 @@ order: 2
 
 # セーブシステム
 
+デフォルトの会話テンプレートには、クイックセーブ、クイックロード、セーブスロットパネルが含まれます。スロット `0` はクイックセーブ用です。デフォルトでは `0`～`19` の 20 スロットを使用できます。
+
 ## 使用方法
+
+最初に、デフォルト会話テンプレートの会話マネージャーを参照します。
+
+```gdscript
+@export var dialogue_manager: KonadoDialogueManager
+```
 
 ### ゲームを保存
 
 ```gdscript
 # 指定スロットへ保存
 dialogue_manager.save_game(1)  # スロット 1 へ保存
-
-# またはセーブシステムを直接使用
-save_system.save_game(2)  # スロット 2 へ保存
 ```
 
 ### ゲームを読み込み
@@ -22,9 +27,6 @@ save_system.save_game(2)  # スロット 2 へ保存
 ```gdscript
 # 指定スロットから読み込み
 dialogue_manager.load_game(1)  # スロット 1 から読み込み
-
-# またはセーブシステムを直接使用
-save_system.load_game(2)  # スロット 2 から読み込み
 ```
 
 ### セーブを削除
@@ -32,9 +34,6 @@ save_system.load_game(2)  # スロット 2 から読み込み
 ```gdscript
 # 指定スロットのセーブを削除
 dialogue_manager.delete_save(1)  # スロット 1 のセーブを削除
-
-# またはセーブシステムを直接使用
-save_system.delete_save(2)  # スロット 2 のセーブを削除
 ```
 
 ### セーブ情報を取得
@@ -51,33 +50,12 @@ for i in range(all_save_infos.size()):
         print("セーブ " + str(i) + " が存在します")
 ```
 
-### セーブ戦略を設定
-
-```gdscript
-# カスタムセーブ戦略
-var custom_strategy = {
-    "include_dialogue_state": true,    # 会話状態を含める
-    "include_variables": true,          # 変数を含める
-    "include_audio_state": false,       # オーディオ状態を含めない
-    "include_actor_state": false,       # アクター状態を含めない
-    "include_background_state": false   # 背景状態を含めない
-}
-
-dialogue_manager.set_save_strategy(custom_strategy)
-```
-
 ## セーブデータ構造
 
-セーブデータには以下が含まれます。
+Konado は、現在の命令、一時変数と永続変数、会話ボックス、アクター、背景、カメラ、オーディオなどの実行状態を、1 つのアトミックな実行境界として保存します。表示とストーリーの状態が食い違わないよう、完全な状態を一体として保存・復元します。
 
-- **dialogue_state** - 会話状態。現在のショット、会話インデックス、会話状態を含みます
-- **variables** - ゲーム変数
-- **audio_state** - 現在の BGM、再生位置、音量状態
-- **actor_state** - 現在のアクター、状態、位置、表示状態
-- **background_state** - 現在の背景シーンとトランジション状態
-- **save_time** - 保存時間
-- **version** - セーブバージョン
+ロード時にはファイル形式、コンパイラー ABI、スクリプト指紋、命令 ID を検証します。変更後のスクリプトへ正確に復元できない場合は、誤った位置へ進まずロードに失敗します。`save_game()`、`load_game()`、`delete_save()` は `bool` を返すため、失敗結果を処理してください。
 
 ## セーブファイル形式
 
-セーブファイルは JSON 形式で `user://konado_saves/` に保存され、ファイル名は `[スロットID].kns` です。デフォルトでは 20 スロットが用意され、有効な ID は `0`～`19` です。
+セーブファイルは `user://konado_saves/` に `[スロットID].kns` として保存されます。形式バージョン、ペイロード長、SHA-256 完全性ダイジェストを含むバイナリ形式です。破損や不完全な書き込みは検出できますが、暗号化や改ざん防止の仕組みではありません。

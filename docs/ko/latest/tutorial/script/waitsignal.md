@@ -10,7 +10,7 @@ waitsignal "minigame_done"
 ```
 
 ```gdscript
-$KND_DialogueManager.emit_wait_signal("minigame_done")
+$KonadoDialogueManager.emit_wait_signal("minigame_done")
 ```
 
 외부 코드가 같은 이름을 보낼 때까지 스토리를 일시 중지합니다.

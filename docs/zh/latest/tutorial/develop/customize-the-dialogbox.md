@@ -13,13 +13,13 @@ order: 4
 
 ## 编辑模板文件
 
-`res://addons/konado/template/` 保存的是内置对话界面模板。复制所需的 `.tscn` 到项目目录，在自己的对话场景中实例化副本，并把其中的 `KND_DialogueBox` 节点分配给 `KND_DialogueManager` 的 `_konado_dialogue_box` 属性。
+`res://addons/konado/templates/` 保存的是内置对话界面模板。复制所需的 `.tscn` 到项目目录，在自己的对话场景中实例化副本，并把其中的 `KonadoDialogueBox` 节点分配给 `KonadoDialogueManager` 的 `dialogue_box` 属性。
 
 一般情况下请不要修改节点上的脚本，而是通过修改节点上的属性来达到自定义的效果。
 
 ## 显示与隐藏 API
 
-`KND_DialogueBox` 将临时隐藏与关闭清理分为两组接口：
+`KonadoDialogueBox` 将临时隐藏与关闭清理分为两组接口：
 
 ```gdscript
 dialogue_box.hide_dialogue_box()
@@ -44,7 +44,7 @@ dialogue_box.dismiss_dialogue_box_with_duration(0.5)
 | `110` | 成就解锁等短时通知 |
 | `120` | 必须位于最上方的运行时错误提示 |
 
-自定义界面应根据用途放在对应区间。除非确实需要覆盖系统错误提示，否则不要使用 `120` 或更高层级。成就面板和通知的层级还可以通过 `KND_AchievementManager.panel_layer` 与 `popup_layer` 调整。
+自定义界面应根据用途放在对应区间。除非确实需要覆盖系统错误提示，否则不要使用 `120` 或更高层级。成就面板和通知的层级还可以通过 `KonadoAchievements.panel_layer` 与 `popup_layer` 调整。
 
 ## 自定义音频进度显示
 
@@ -55,7 +55,7 @@ dialogue_box.dismiss_dialogue_box_with_duration(0.5)
 音频进度显示是一个独立组件，默认场景位于：
 
 ```text
-res://addons/konado/template/default/voice_progress_display.tscn
+res://addons/konado/templates/default/voice_progress_display.tscn
 ```
 
 如果只是修改进度条的颜色、圆角、尺寸或内部布局，优先复制并编辑这个场景。默认组件中包含：
@@ -78,8 +78,8 @@ res://addons/konado/template/default/voice_progress_display.tscn
 如果要调整进度显示在对话框中的位置，请在项目副本中编辑对应对话框模板里的 `VoiceProgressDisplay` 实例。内置源模板包括：
 
 ```text
-res://addons/konado/template/default/knd_dialogue_box.tscn
-res://addons/konado/template/custom_middle/konado_dialogue_middle.tscn
+res://addons/konado/templates/default/dialogue_box.tscn
+res://addons/konado/templates/centered_dialogue/centered_dialogue_box.tscn
 ```
 
 组件脚本通过两个方法接收对话框传入的状态：

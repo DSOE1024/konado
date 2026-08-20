@@ -5,16 +5,21 @@ order: 2
 
 # Save System
 
+The default dialogue template includes Quick Save, Quick Load, and a save-slot panel. Slot `0` is reserved for quick saves. The default configuration provides 20 slots numbered `0` through `19`.
+
 ## Usage
+
+Reference the dialogue manager from the default dialogue template first:
+
+```gdscript
+@export var dialogue_manager: KonadoDialogueManager
+```
 
 ### Save Game
 
 ```gdscript
 # Save to specified slot
 dialogue_manager.save_game(1)  # Save to slot 1
-
-# Or use the save system directly
-save_system.save_game(2)  # Save to slot 2
 ```
 
 ### Load Game
@@ -22,9 +27,6 @@ save_system.save_game(2)  # Save to slot 2
 ```gdscript
 # Load from specified slot
 dialogue_manager.load_game(1)  # Load from slot 1
-
-# Or use the save system directly
-save_system.load_game(2)  # Load from slot 2
 ```
 
 ### Delete Save
@@ -32,9 +34,6 @@ save_system.load_game(2)  # Load from slot 2
 ```gdscript
 # Delete the save in the specified slot
 dialogue_manager.delete_save(1)  # Delete save in slot 1
-
-# Or use the save system directly
-save_system.delete_save(2)  # Delete save in slot 2
 ```
 
 ### Get Save Information
@@ -51,33 +50,12 @@ for i in range(all_save_infos.size()):
         print("Save " + str(i) + " exists")
 ```
 
-### Configure Save Strategy
-
-```gdscript
-# Custom save strategy
-var custom_strategy = {
-    "include_dialogue_state": true,    # Include dialogue state
-    "include_variables": true,          # Include variables
-    "include_audio_state": false,       # Do not include audio state
-    "include_actor_state": false,       # Do not include actor state
-    "include_background_state": false   # Do not include background state
-}
-
-dialogue_manager.set_save_strategy(custom_strategy)
-```
-
 ## Save Data Structure
 
-Save data contains the following:
+Konado saves the current instruction, temporary and persistent variables, dialogue box, actors, background, camera, audio, and other runtime state at one atomic execution boundary. The complete state is saved and restored as one unit so the presentation cannot diverge from story logic.
 
-- **dialogue_state** - Dialogue state, including current shot, dialogue index, and dialogue status
-- **variables** - Game variables
-- **audio_state** - Current BGM, playback position, and volume state
-- **actor_state** - Current actors, states, positions, and visibility
-- **background_state** - Current background scene and transition state
-- **save_time** - Save time
-- **version** - Save version
+Loading validates the file format, compiler ABI, script fingerprint, and instruction identity. If a changed script can no longer be restored precisely, loading fails instead of silently continuing at the wrong story position. `save_game()`, `load_game()`, and `delete_save()` return `bool`; callers should handle failure.
 
 ## Save File Format
 
-Save files are JSON documents stored under `user://konado_saves/`, with names in the form `[slot ID].kns`. The default configuration provides 20 slots with valid IDs from `0` through `19`.
+Save files are stored under `user://konado_saves/` as `[slot ID].kns`. They use a binary envelope with a format version, payload length, and SHA-256 integrity digest. This detects corruption and incomplete writes; it is not encryption or a tamper-resistance mechanism.

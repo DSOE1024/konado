@@ -14,7 +14,7 @@ Konado 对话框组件支持打字机音效功能，在打字过程中播放"滴
 插件附带的默认音效位于：
 
 ```
-res://addons/konado/audioeffect/typewriter/
+res://addons/konado/assets/audio/typewriter/
 ```
 
 请把项目自己的音效放在插件目录之外，例如 `res://audio/typewriter/`，避免升级 Konado 时被覆盖。
@@ -29,7 +29,7 @@ res://addons/konado/audioeffect/typewriter/
 
 ## 基本配置
 
-在 `KND_DialogueBox` 组件的 Inspector 面板中，可以找到打字机音效的相关配置：
+在 `KonadoDialogueBox` 组件的 Inspector 面板中，可以找到打字机音效的相关配置：
 
 ### 音效开关
 
@@ -49,7 +49,7 @@ res://addons/konado/audioeffect/typewriter/
 
 ```gdscript
 # 代码方式设置音效
-dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/typing_01.wav")
+dialogue_box.typing_effect_audio = load("res://addons/konado/assets/audio/typewriter/typing_01.wav")
 ```
 
 ## 音效触发配置
@@ -98,7 +98,7 @@ dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewri
 ### 基础使用
 
 1. 将自定义音效文件放入 `res://audio/typewriter/` 等项目目录
-2. 选中场景中的 `KND_DialogueBox` 节点
+2. 选中场景中的 `KonadoDialogueBox` 节点
 3. 在 Inspector 中启用 `Enable Typing Effect Audio`
 4. 通过下拉菜单选择音效文件
 5. 调整音量和其他参数
@@ -107,7 +107,7 @@ dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewri
 
 ```gdscript
 # 获取对话框实例
-var dialogue_box = $KND_DialogueBox
+var dialogue_box = $KonadoDialogueBox
 
 # 启用音效
 dialogue_box.enable_typing_effect_audio = true

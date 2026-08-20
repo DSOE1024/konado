@@ -5,18 +5,26 @@ order: 2
 
 # 存档系统
 
+默认对话模板提供快速保存、快速读取和存档面板。槽位 `0` 用作快速存档；默认共有 20 个槽位，编号为 `0`–`19`。
+
 ## 使用方法
+
+先取得默认对话模板中的对话管理器，例如：
+
+```gdscript
+@export var dialogue_manager: KonadoDialogueManager
+```
 
 ### 快速保存
 
 ```gdscript
-# 快速保存到槽位0
-save_system.save_game(0)
+# 快速保存到槽位 0
+dialogue_manager.save_game(0)
 ```
 ### 快速读取
 ```gdscript
-# 从槽位0快速加载
-save_system.load_game(0)
+# 从槽位 0 快速加载
+dialogue_manager.load_game(0)
 ```
 
 ### 保存游戏
@@ -24,9 +32,6 @@ save_system.load_game(0)
 ```gdscript
 # 保存到指定槽位
 dialogue_manager.save_game(1)  # 保存到 1 号槽位
-
-# 或者直接使用存档系统
-save_system.save_game(2)  # 保存到 2 号槽位
 ```
 
 ### 加载游戏
@@ -34,9 +39,6 @@ save_system.save_game(2)  # 保存到 2 号槽位
 ```gdscript
 # 从指定槽位加载
 dialogue_manager.load_game(1)  # 从 1 号槽位加载
-
-# 或者直接使用存档系统
-save_system.load_game(2)  # 从 2 号槽位加载
 ```
 
 ### 删除存档
@@ -44,9 +46,6 @@ save_system.load_game(2)  # 从 2 号槽位加载
 ```gdscript
 # 删除指定槽位的存档
 dialogue_manager.delete_save(1)  # 删除 1 号槽位的存档
-
-# 或者直接使用存档系统
-save_system.delete_save(2)  # 删除 2 号槽位的存档
 ```
 
 ### 获取存档信息
@@ -63,35 +62,12 @@ for i in range(all_save_infos.size()):
         print("存档 " + str(i) + " 存在")
 ```
 
-### 配置存档策略
-
-```gdscript
-# 自定义存档策略
-var custom_strategy = {
-    "include_dialogue_state": true,    # 包含对话状态
-    "include_variables": true,          # 包含变量
-    "include_audio_state": false,       # 不包含音频状态
-    "include_actor_state": false,       # 不包含演员状态
-    "include_background_state": false   # 不包含背景状态
-}
-
-dialogue_manager.set_save_strategy(custom_strategy)
-```
-
 ## 存档数据结构
 
-存档数据包含以下内容：
+Konado 在一个原子执行边界中保存当前指令、临时与持久变量、对话框、角色、背景、相机和音频等运行状态。完整状态必须作为整体保存和恢复，不能选择性关闭其中一部分，否则画面和剧情逻辑可能不一致。
 
-- **dialogue_state** - 对话状态，包括当前镜头、对话索引和对话状态
-- **variables** - 游戏变量
-- **audio_state** - 当前 BGM、播放位置与音量状态
-- **actor_state** - 当前演员、状态、位置与可见性
-- **background_state** - 当前背景场景与过渡状态
-- **save_time** - 存档时间
-- **version** - 存档版本
-
-
+读取时会校验存档格式、编译器 ABI、剧本指纹和指令标识。剧本结构发生变化而无法准确恢复时，加载会明确失败，不会静默跳转到错误剧情位置。`save_game()`、`load_game()` 和 `delete_save()` 均返回 `bool`，调用方应处理失败结果。
 
 ## 存档文件格式
 
-存档文件使用 JSON 格式存储，保存在 `user://konado_saves/` 目录下，文件名为 `[槽位ID].kns`。默认提供 20 个槽位，有效 ID 为 `0`–`19`。
+存档保存在 `user://konado_saves/`，文件名为 `[槽位ID].kns`。文件使用带格式版本、长度和 SHA-256 完整性校验的二进制封装；这可以发现损坏或不完整写入，但不属于加密或防篡改安全机制。

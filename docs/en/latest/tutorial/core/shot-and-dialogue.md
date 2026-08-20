@@ -1,41 +1,33 @@
 ---
-title: Dialogue Data
+title: Dialogue Runtime Data
 order: 1
 ---
 
-# KND_Shot and KND_Dialogue
+# Dialogue Runtime Data
 
-## Preface
+Konado does not interpret KonadoScript source line by line at runtime. Importing or saving a `.ks` file compiles it into a small set of runtime data types with explicit responsibilities.
 
-This chapter introduces two core Konado classes: KND_Shot and KND_Dialogue. These two classes are central to Konado and are used to represent dialogue shots and dialogues. If you want to understand Konado's architecture in depth, understanding these classes is very important. Once you fully understand them, you can extend and modify them as needed to meet your requirements.
+## KonadoShot
 
-## KND_Shot
+`KonadoShot` represents one loadable story shot. It records the source path, shot identifier, resource dependencies, and locale overlay, and owns the sole executable artifact: `KonadoProgram`. Applications normally do not create it manually; the editor and runtime loader keep it up to date.
 
-### Definition
+## KonadoProgram
 
-KND_Shot is a core Konado class used to represent a dialogue shot.
+`KonadoProgram` is a compact, read-only instruction program. It stores constant pools, opcodes, operands, control-flow positions, stable instruction keys, and source lines. The runtime executes these arrays by program counter instead of allocating legacy per-line dialogue objects.
 
-A shot is a basic concept in film and animation production. It represents a continuous picture, usually containing a series of frames. Here, the KND_Shot class represents a dialogue shot that contains a series of dialogues.
+## KonadoInstruction
 
-You can also understand it with a book metaphor: a shot is like a small chapter, and a dialogue shot is the dialogue inside that small chapter.
+`KonadoInstruction` is a read-only view of one instruction. It does not copy the underlying data and supports debugging, editor navigation, and .NET integration. Game code should normally drive a shot through `KonadoDialogueManager` rather than iterate instructions itself.
 
-KND_Shot is responsible for organizing scattered KND_Dialogue data objects and arranging them in a certain order so they can be played in the specified order during playback.
-
-Unlike a film shot, however, KND_Shot does not necessarily represent a continuous, linear story. It may be composed of multiple branch sections, each containing a series of dialogues, and can be combined with choice to implement multi-option branches so users can choose different dialogue paths.
-
-### Relationship Between KND_Shot and KonadoScript
-
-During use, you will notice that KND_Shot does not normally need to be created manually. It is created automatically by KonadoScript, and its data is updated automatically. This is because we use a custom KonadoScript syntax and a KonadoScript parser to parse script files. Lines from the source file are parsed into KND_Dialogue objects, then organized into KND_Shot objects according to specific rules.
-
-Expressed as a flowchart, the process from KonadoScript to multiple KND_Dialogue objects and then to KND_Shot is roughly:
+## Execution pipeline
 
 ```mermaid
-graph TD
-    A["KonadoScript source file"] --> B["Parser"]
-    B --> C["Generate KND_Dialogue objects"]
-    C --> D["Organize by rules"]
-    D --> E["Automatically create/update KND_Shot"]
-
+graph LR
+    A["KonadoScript source"] --> B["Lexing and parsing"]
+    B --> C["Semantic and dependency analysis"]
+    C --> D["KonadoProgram"]
+    D --> E["KonadoShot"]
+    E --> F["KonadoVirtualMachine"]
 ```
 
-If you want to learn more about how KonadoScript is parsed, refer to the KonadoScript documentation and the parser source code.
+This design gives compile-time diagnostics, dependency validation, rollback, and localization one stable instruction model while avoiding repeated source parsing at runtime.

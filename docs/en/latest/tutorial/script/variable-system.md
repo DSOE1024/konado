@@ -76,7 +76,7 @@ Use `%variable_name` or `$variable_name` directly in dialogue text to reference 
 ### Syntax
 
 ```
-"Character Name" "Dialogue text containing %variable_name or $variable_name"
+Kona "Dialogue text containing %variable_name or $variable_name"
 ```
 
 ### Examples
@@ -85,8 +85,8 @@ Use `%variable_name` or `$variable_name` directly in dialogue text to reference 
 set %player_name "Alex"
 set $stage "Starter Village"
 
-"Kona" "Hello, %player_name! You are now in $stage."
-"Kona" "Your affection is %love, and this is round $round."
+Kona "Hello, %player_name! You are now in $stage."
+Kona "Your affection is %love, and this is round $round."
 ```
 
 Runtime output:
@@ -137,17 +137,17 @@ The `else:` block is optional. If it is omitted and the condition is false, the 
 
 ```
 if %love == 5:
-    "Kona" "Affection is exactly 5!"
+    Kona "Affection is exactly 5!"
 else:
-    "Kona" "Affection is not 5."
+    Kona "Affection is not 5."
 endif
 
 if $score >= 80:
-    "Kona" "Good!"
+    Kona "Good!"
 endif
 
 if $score >= 60:
-    "Kona" "Passed."
+    Kona "Passed."
 endif
 ```
 
@@ -168,18 +168,18 @@ A `branch` block can contain `if` / `endif` conditional checks, allowing dynamic
 
 ```
 branch after_choice
-    "Kona" "Your choice has been recorded."
+    Kona "Your choice has been recorded."
 
     if $choice_made == 1:
-        "Kona" "You chose to give a gift. That was kind of you."
+        Kona "You chose to give a gift. That was kind of you."
     endif
 
     if $choice_made == 2:
-        "Kona" "You chose to chat. Communication matters."
+        Kona "You chose to chat. Communication matters."
     endif
 
     if $choice_made == 3:
-        "Kona" "You chose to ignore me... maybe try another option next time."
+        Kona "You chose to ignore me... maybe try another option next time."
     endif
 ```
 
@@ -201,23 +201,23 @@ choice "Ignore (affection -5)" -> ignore_choice
 branch gift_choice
     add %love 10
     set $choice_made = 1
-    "Kona" "Thank you! Affection increased to %love!"
+    Kona "Thank you! Affection increased to %love!"
     jump_branch after_choice
 
 branch chat_choice
     add %love 5
     set $choice_made = 2
-    "Kona" "I enjoyed talking with you. Affection is now %love."
+    Kona "I enjoyed talking with you. Affection is now %love."
     jump_branch after_choice
 
 branch ignore_choice
     sub %love 5
     set $choice_made = 3
-    "Kona" "......Affection dropped to %love."
+    Kona "......Affection dropped to %love."
     jump_branch after_choice
 
 branch after_choice
-    "Kona" "Your choice has been recorded."
+    Kona "Your choice has been recorded."
 ```
 
 ---
@@ -233,12 +233,12 @@ set %unlocked true
 set $visited false
 
 if %unlocked == 1:
-    "Kona" "Feature unlocked!"
+    Kona "Feature unlocked!"
 endif
 
 set $visited true
 if $visited == 1:
-    "Kona" "The visited flag has been set."
+    Kona "The visited flag has been set."
 endif
 ```
 
@@ -252,14 +252,14 @@ Persistent variables must be initialized before the script runs. There are two w
 
 **Method 1: Inspector preset (recommended)**
 
-Create a `KND_VariableStore` resource in the editor, set the initial variable values in the inspector, and assign it to the `variable_store` property of `KND_DialogueManager`.
+Create a `KonadoVariableStore` resource in the editor, set the initial variable values in the inspector, and assign it to the `variable_store` property of `KonadoDialogueManager`.
 
 **Method 2: Code initialization**
 
 ```gdscript
 func _ready() -> void:
     if dialogue_manager.variable_store == null:
-        var store = KND_VariableStore.new()
+        var store = KonadoVariableStore.new()
         store.set_value("love", 0)
         store.set_value("player_name", "")
         store.set_value("unlocked", false)
@@ -281,61 +281,61 @@ play bgm echo
 background bg1 fade
 
 actor show Kona Normal at 3
-"Kona" "Welcome to the variable system demo!"
+Kona "Welcome to the variable system demo!"
 
 set %love = 10
-"Kona" "Affection has been set to 10. Current value: %love"
+Kona "Affection has been set to 10. Current value: %love"
 
 add %love 5
-"Kona" "After adding 5, affection is: %love"
+Kona "After adding 5, affection is: %love"
 
 sub %love 3
-"Kona" "After subtracting 3, affection is: %love"
+Kona "After subtracting 3, affection is: %love"
 
 mul %love 2
-"Kona" "After multiplying by 2, affection is: %love"
+Kona "After multiplying by 2, affection is: %love"
 
 div %love 4
-"Kona" "After dividing by 4, affection is: %love"
+Kona "After dividing by 4, affection is: %love"
 
 set $round = 1
 set $bonus = 100
-"Kona" "round=$round, bonus=$bonus"
+Kona "round=$round, bonus=$bonus"
 
 add $round 1
 add $bonus 50
-"Kona" "Round $round, bonus $bonus"
+Kona "Round $round, bonus $bonus"
 
 set %player_name "Player"
-"Kona" "Hello, %player_name! Affection %love, round $round."
+Kona "Hello, %player_name! Affection %love, round $round."
 
 if %love == 6:
-    "Kona" "Affection is exactly 6!"
+    Kona "Affection is exactly 6!"
 else:
-    "Kona" "Affection is not 6."
+    Kona "Affection is not 6."
 endif
 
 if %love > 3:
-    "Kona" "Affection is greater than 3!"
+    Kona "Affection is greater than 3!"
 endif
 
 if %love < 10:
-    "Kona" "Affection is less than 10."
+    Kona "Affection is less than 10."
 endif
 
 set $score = 85
 
 if $score >= 90:
-    "Kona" "Excellent!"
+    Kona "Excellent!"
 endif
 
 if $score >= 80:
-    "Kona" "Good!"
+    Kona "Good!"
 endif
 
 set %unlocked true
 if %unlocked == 1:
-    "Kona" "Feature unlocked!"
+    Kona "Feature unlocked!"
 endif
 
 choice "Give a gift (affection +10)" -> gift
@@ -343,12 +343,12 @@ choice "Ignore (affection -5)" -> ignore
 
 branch gift
     add %love 10
-    "Kona" "Thank you! Affection %love!"
+    Kona "Thank you! Affection %love!"
     jump_branch done
 
 branch ignore
     sub %love 5
-    "Kona" "......Affection %love."
+    Kona "......Affection %love."
     jump_branch done
 
 branch done

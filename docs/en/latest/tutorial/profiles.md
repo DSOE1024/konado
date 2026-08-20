@@ -1,6 +1,6 @@
 ---
 title: Project Configuration
-order: 2
+order: 3
 ---
 
 # Basic Configuration

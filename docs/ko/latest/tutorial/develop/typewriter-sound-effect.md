@@ -14,7 +14,7 @@ Konado 대화 상자 컴포넌트는 타자기 효과음 기능을 지원합니�
 플러그인에 포함된 기본 음원은 다음 디렉터리에 있습니다.
 
 ```
-res://addons/konado/audioeffect/typewriter/
+res://addons/konado/assets/audio/typewriter/
 ```
 
 프로젝트 전용 음원은 `res://audio/typewriter/` 같은 플러그인 외부 경로에 두어 Konado 업그레이드 시 덮어쓰지 않게 하세요.
@@ -29,7 +29,7 @@ res://addons/konado/audioeffect/typewriter/
 
 ## 기본 설정
 
-`KND_DialogueBox` 컴포넌트의 Inspector 패널에서 타자기 효과음 관련 설정을 찾을 수 있습니다.
+`KonadoDialogueBox` 컴포넌트의 Inspector 패널에서 타자기 효과음 관련 설정을 찾을 수 있습니다.
 
 ```gdscript
 @export var enable_typing_effect_audio: bool = true
@@ -39,7 +39,7 @@ res://addons/konado/audioeffect/typewriter/
 `enable_typing_effect_audio`를 `true`로 설정하면 효과음이 활성화되고, `false`로 설정하면 비활성화됩니다. 에디터 드롭다운 메뉴에서 효과음 파일을 선택하거나 코드로 로드할 수 있습니다.
 
 ```gdscript
-dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewriter/typing_01.wav")
+dialogue_box.typing_effect_audio = load("res://addons/konado/assets/audio/typewriter/typing_01.wav")
 ```
 
 ## 효과음 트리거 설정
@@ -58,7 +58,7 @@ dialogue_box.typing_effect_audio = load("res://addons/konado/audioeffect/typewri
 ## 사용 예시
 
 ```gdscript
-var dialogue_box = $KND_DialogueBox
+var dialogue_box = $KonadoDialogueBox
 dialogue_box.enable_typing_effect_audio = true
 dialogue_box.typing_effect_audio = load("res://audio/typewriter/custom_typing.wav")
 dialogue_box.audio_trigger_chance = 1.0

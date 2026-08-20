@@ -21,29 +21,29 @@ After enabling the Konado plugin, double-clicking a `.ks` file in the FileSystem
 - Hover commands and resource identifiers to inspect signatures, purpose, resolved paths, or unresolved status; an underline appears only when a real navigation target exists
 - Use the context menu to format a document or selection, apply fixes, go to definitions, find references, and rename safely; cross-file resource renames show a change preview first
 - Auto-indent conditional and full-screen text blocks using Godot's indentation settings
-- Save directly to the original `.ks` file and refresh the runtime `KND_Shot` compiled by the resource loader
+- Save directly to the original `.ks` file and refresh the runtime `KonadoShot` compiled by the resource loader
 
 ## Highlighting and Completion
 
-`KND_KsHighlighter` is built on Godot's `EditorSyntaxHighlighter` and is registered with the Script Editor when the plugin starts. Highlighting and completion share `KS_LanguageCatalog`, while valid keywords come from the parser's `KS_Token.KEYWORDS`. Automated checks keep both sources aligned.
+`KonadoScriptSyntaxHighlighter` is built on Godot's `EditorSyntaxHighlighter` and is registered with the Script Editor when the plugin starts. Highlighting and completion share `KonadoScriptLanguageCatalog`, while valid keywords come from the parser's `KonadoScriptToken.KEYWORDS`. Automated checks keep both sources aligned.
 
-Completion offers commands, subcommands, insertable statement templates, and parameter signatures. It indexes project resources for KonadoScript paths, actors, states, motions, backgrounds, audio, and cameras. States and custom motions are filtered for the selected actor, dialogue voice completion handles quoted text containing spaces, and branches, variables, and signals from the current document are suggested immediately. Highlighting expressions are compiled once, and each line records only color transitions.
+Completion offers commands, subcommands, insertable statement templates, and the 2.8 named parameters valid for the current statement, while omitting parameters already present. It also indexes project resources for KonadoScript paths, actors, states, motions, backgrounds, audio, and cameras. States and custom motions are filtered for the selected actor, dialogue voice completion handles quoted text containing spaces, and branches, variables, and signals from the current document are suggested immediately. Named parameters have dedicated highlighting, while the authoritative compiler validates their types, ranges, conflicts, and duplicate IDs. Highlighting expressions are compiled once, and each line records only color transitions.
 
 The default highlighting resource is located at:
 
 ```text
-res://addons/konado/editor/ks_editor/highlighter.tres
+res://addons/konado/editor/script_editor/konado_script_highlighter.tres
 ```
 
 Other `CodeEdit` controls can also instantiate the highlighter directly:
 
 ```gdscript
-set_syntax_highlighter(KND_KsHighlighter.new())
+set_syntax_highlighter(KonadoScriptSyntaxHighlighter.new())
 ```
 
 ## Live Diagnostics
 
-After a short typing pause, Godot asks the KonadoScript language bridge to run lexical, syntax, and semantic analysis without generating a runtime `KND_Shot`. Errors and warnings appear on the relevant source lines and in the Script Editor's built-in problems panels, in Chinese or English according to the Godot editor language. Independent errors on multiple lines are reported together. Checks cover trailing arguments, invalid numeric and Boolean values, invalid jump paths, unknown resource IDs, missing target files, actor lifecycle errors, and localized-script structure; malformed input cannot stall live analysis.
+After a short typing pause, Godot asks the KonadoScript language bridge to run lexical, syntax, and semantic analysis without generating a runtime `KonadoShot`. Errors and warnings appear on the relevant source lines and in the Script Editor's built-in problems panels, in Chinese or English according to the Godot editor language. Independent errors on multiple lines are reported together. Checks cover trailing arguments, invalid numeric and Boolean values, invalid jump paths, unknown resource IDs, missing target files, actor lifecycle errors, and localized-script structure; malformed input cannot stall live analysis.
 
 Hover an error range to open a diagnostic card whose width and height adapt to its contents. A diagnostic may offer up to three **Try** actions ranked by likelihood. Alternatives requiring a decision are excluded from **Apply All Safe Quick Fixes**. Diagnostics without an automatic edit link to the relevant resource configuration or documentation. Each edit is one undoable operation and preserves carets, selections, multiple carets, folds, and scroll position.
 

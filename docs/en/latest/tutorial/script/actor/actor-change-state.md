@@ -35,13 +35,13 @@ actor change kona happy
 2. Otherwise, safely fade the current actor out, apply the state, and fade it in.
 3. Continue with the next story command after the transition finishes.
 
-Configure the transition in the Inspector for the `KND_ActingInterface` node:
+Configure the transition in the Inspector for the `KonadoStageController` node:
 
 | Property | Default | Description |
 |------|------|------|
-| `enable_actor_state_fade` | `true` | Enables the fade transition for actor state changes |
-| `actor_state_fade_duration` | `0.3` | Total transition duration in seconds; the safe fallback splits it equally between fade-out and fade-in |
+| `actor_state_transition_enabled` | `true` | Enables the fade transition for actor state changes |
+| `actor_state_transition_duration` | `0.3` | Total transition duration in seconds; the safe fallback splits it equally between fade-out and fade-in |
 
-Disable `enable_actor_state_fade` or set `actor_state_fade_duration` to `0` to switch states immediately.
+Disable `actor_state_transition_enabled` or set `actor_state_transition_duration` to `0` to switch states immediately.
 
 Transitions never duplicate the character scene. The bundled AnimatedSprite2D example uses pure texture frames for a true blend. A custom state frame must represent the complete character image, not just one visible component. Video, Spine, Live2D, and custom scenes without complete, safe state frames automatically use the fallback, so scripts, audio, and dynamic media are never started twice. If the target actor is missing or its scene cannot apply the state, Konado completes the command and continues the story instead of waiting indefinitely.

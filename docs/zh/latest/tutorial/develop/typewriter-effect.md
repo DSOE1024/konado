@@ -21,9 +21,9 @@ Konado 提供了强大的打字机效果组件，支持 GPU 加速的逐字符�
 
 ### 在对话框中使用
 
-在 `KND_DialogueBox` 组件中，可以直接选择开启打字机效果：
+在 `KonadoDialogueBox` 组件中，可以直接选择开启打字机效果：
 
-1. 选中场景中的 `KND_DialogueBox` 节点
+1. 选中场景中的 `KonadoDialogueBox` 节点
 2. 在 Inspector 面板中找到相应的设置选项
 3. 启用打字机模式
 
@@ -31,7 +31,7 @@ Konado 提供了强大的打字机效果组件，支持 GPU 加速的逐字符�
 
 ```gdscript
 # 获取打字机组件
-var typewriter = $KND_TypewriterText
+var typewriter = $KonadoTypewriterText
 
 # 设置要显示的文本（支持 BBCode）
 typewriter.set_bbcode("[color=yellow]你好[/color]，[b]玩家[/b]！")
@@ -107,7 +107,7 @@ typewriter.reset()
 
 ```gdscript
 func _ready():
-    var typewriter = $KND_TypewriterText
+    var typewriter = $KonadoTypewriterText
     typewriter.typewriter_started.connect(_on_typewriter_started)
     typewriter.typewriter_finished.connect(_on_typewriter_finished)
     typewriter.character_revealed.connect(_on_character_revealed)
@@ -179,7 +179,7 @@ typewriter.spatial_blend = 0.5
 
 ```gdscript
 func _ready():
-    var typewriter = $KND_TypewriterText
+    var typewriter = $KonadoTypewriterText
     typewriter.typewriter_finished.connect(_on_finished)
 
 func _on_finished():

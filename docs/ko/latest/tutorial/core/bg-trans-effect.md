@@ -35,7 +35,7 @@ uniform sampler2D target_texture : hint_default_black; // 대상 텍스처
 
 배경 전환은 동적인 과정이므로 다음 내용도 추가해야 합니다.
 
-BackgroundTransitionEffectsType 열거형을 정의해 배경 전환 효과 유형을 식별합니다.
+BackgroundTransitionEffect 열거형을 정의해 배경 전환 효과 유형을 식별합니다.
 ```
 YOUR_EFFECT_SHADER
 ```
@@ -48,7 +48,7 @@ var your_effect_shader: Shader = preload("res://path/to/your_effect_shader.shade
 다음으로 YOUR_EFFECT_SHADER 유형의 배경 전환 효과 설정을 구현해야 합니다.
 
 ```gdscript
-BackgroundTransitionEffectsType.YOUR_EFFECT_SHADER: {
+BackgroundTransitionEffect.YOUR_EFFECT_SHADER: {
 	"shader": your_effect_shader,  // 배경 전환 Shader, 위 변수와 일치해야 합니다
 	"duration": 1.0,  // 트랜지션 시간, 기본값 1.0s
 	"progress_target": 1.0,  // 목표 진행도, 기본값 1.0

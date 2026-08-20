@@ -76,7 +76,7 @@ set %unlocked true
 ### 構文
 
 ```
-"キャラクター名" "会話テキスト。%変数名 または $変数名 を含められます"
+Kona "会話テキスト。%変数名 または $変数名 を含められます"
 ```
 
 ### 例
@@ -85,8 +85,8 @@ set %unlocked true
 set %player_name "太郎"
 set $stage "はじまりの村"
 
-"Kona" "こんにちは、%player_name！今いる場所は $stage です。"
-"Kona" "好感度は %love、現在は第 $round ラウンドです。"
+Kona "こんにちは、%player_name！今いる場所は $stage です。"
+Kona "好感度は %love、現在は第 $round ラウンドです。"
 ```
 
 実行時の出力:
@@ -137,17 +137,17 @@ endif
 
 ```
 if %love == 5:
-    "Kona" "好感度はちょうど 5 です！"
+    Kona "好感度はちょうど 5 です！"
 else:
-    "Kona" "好感度は 5 ではありません。"
+    Kona "好感度は 5 ではありません。"
 endif
 
 if $score >= 80:
-    "Kona" "良好です！"
+    Kona "良好です！"
 endif
 
 if $score >= 60:
-    "Kona" "合格です。"
+    Kona "合格です。"
 endif
 ```
 
@@ -168,18 +168,18 @@ endif
 
 ```
 branch after_choice
-    "Kona" "あなたの選択は記録されました。"
+    Kona "あなたの選択は記録されました。"
 
     if $choice_made == 1:
-        "Kona" "プレゼントを贈ることを選びましたね。優しいですね。"
+        Kona "プレゼントを贈ることを選びましたね。優しいですね。"
     endif
 
     if $choice_made == 2:
-        "Kona" "会話することを選びましたね。コミュニケーションは大切です。"
+        Kona "会話することを選びましたね。コミュニケーションは大切です。"
     endif
 
     if $choice_made == 3:
-        "Kona" "無視することを選びました……次は別の選択肢も試してみてください。"
+        Kona "無視することを選びました……次は別の選択肢も試してみてください。"
     endif
 ```
 
@@ -201,23 +201,23 @@ choice "無視する（好感度-5）" -> ignore_choice
 branch gift_choice
     add %love 10
     set $choice_made = 1
-    "Kona" "ありがとうございます！好感度が %love まで上がりました！"
+    Kona "ありがとうございます！好感度が %love まで上がりました！"
     jump_branch after_choice
 
 branch chat_choice
     add %love 5
     set $choice_made = 2
-    "Kona" "あなたと話せて楽しかったです。今の好感度は %love です。"
+    Kona "あなたと話せて楽しかったです。今の好感度は %love です。"
     jump_branch after_choice
 
 branch ignore_choice
     sub %love 5
     set $choice_made = 3
-    "Kona" "……好感度が %love まで下がりました。"
+    Kona "……好感度が %love まで下がりました。"
     jump_branch after_choice
 
 branch after_choice
-    "Kona" "あなたの選択は記録されました。"
+    Kona "あなたの選択は記録されました。"
 ```
 
 ---
@@ -233,12 +233,12 @@ set %unlocked true
 set $visited false
 
 if %unlocked == 1:
-    "Kona" "機能がアンロックされました！"
+    Kona "機能がアンロックされました！"
 endif
 
 set $visited true
 if $visited == 1:
-    "Kona" "訪問済みフラグが設定されました。"
+    Kona "訪問済みフラグが設定されました。"
 endif
 ```
 
@@ -252,14 +252,14 @@ endif
 
 **方法 1: インスペクターでプリセット（推奨）**
 
-エディターで `KND_VariableStore` リソースを作成し、インスペクターで初期変数値を設定してから、`KND_DialogueManager` の `variable_store` プロパティへ割り当てます。
+エディターで `KonadoVariableStore` リソースを作成し、インスペクターで初期変数値を設定してから、`KonadoDialogueManager` の `variable_store` プロパティへ割り当てます。
 
 **方法 2: コードで初期化**
 
 ```gdscript
 func _ready() -> void:
     if dialogue_manager.variable_store == null:
-        var store = KND_VariableStore.new()
+        var store = KonadoVariableStore.new()
         store.set_value("love", 0)
         store.set_value("player_name", "")
         store.set_value("unlocked", false)
@@ -281,61 +281,61 @@ play bgm echo
 background bg1 fade
 
 actor show コナ 通常 at 3
-"Kona" "変数システムのデモへようこそ！"
+Kona "変数システムのデモへようこそ！"
 
 set %love = 10
-"Kona" "好感度を 10 に設定しました。現在の値：%love"
+Kona "好感度を 10 に設定しました。現在の値：%love"
 
 add %love 5
-"Kona" "5 を加えた後の好感度：%love"
+Kona "5 を加えた後の好感度：%love"
 
 sub %love 3
-"Kona" "3 を引いた後の好感度：%love"
+Kona "3 を引いた後の好感度：%love"
 
 mul %love 2
-"Kona" "2 を掛けた後の好感度：%love"
+Kona "2 を掛けた後の好感度：%love"
 
 div %love 4
-"Kona" "4 で割った後の好感度：%love"
+Kona "4 で割った後の好感度：%love"
 
 set $round = 1
 set $bonus = 100
-"Kona" "ラウンド=$round、ボーナス=$bonus"
+Kona "ラウンド=$round、ボーナス=$bonus"
 
 add $round 1
 add $bonus 50
-"Kona" "第 $round ラウンド、ボーナス $bonus"
+Kona "第 $round ラウンド、ボーナス $bonus"
 
 set %player_name "プレイヤー"
-"Kona" "こんにちは、%player_name！好感度 %love、第 $round ラウンドです。"
+Kona "こんにちは、%player_name！好感度 %love、第 $round ラウンドです。"
 
 if %love == 6:
-    "Kona" "好感度はちょうど 6 です！"
+    Kona "好感度はちょうど 6 です！"
 else:
-    "Kona" "好感度は 6 ではありません。"
+    Kona "好感度は 6 ではありません。"
 endif
 
 if %love > 3:
-    "Kona" "好感度は 3 より大きいです！"
+    Kona "好感度は 3 より大きいです！"
 endif
 
 if %love < 10:
-    "Kona" "好感度は 10 より小さいです。"
+    Kona "好感度は 10 より小さいです。"
 endif
 
 set $score = 85
 
 if $score >= 90:
-    "Kona" "優秀です！"
+    Kona "優秀です！"
 endif
 
 if $score >= 80:
-    "Kona" "良好です！"
+    Kona "良好です！"
 endif
 
 set %unlocked true
 if %unlocked == 1:
-    "Kona" "機能がアンロックされました！"
+    Kona "機能がアンロックされました！"
 endif
 
 choice "プレゼントを贈る（好感度+10）" -> gift
@@ -343,12 +343,12 @@ choice "無視する（好感度-5）" -> ignore
 
 branch gift
     add %love 10
-    "Kona" "ありがとうございます！好感度 %love！"
+    Kona "ありがとうございます！好感度 %love！"
     jump_branch done
 
 branch ignore
     sub %love 5
-    "Kona" "……好感度 %love。"
+    Kona "……好感度 %love。"
     jump_branch done
 
 branch done

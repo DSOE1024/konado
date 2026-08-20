@@ -35,7 +35,7 @@ uniform sampler2D target_texture : hint_default_black; // ターゲットテク�
 
 背景切り替えは動的な処理であるため、以下も追加する必要があります。
 
-BackgroundTransitionEffectsType enum を定義し、背景切り替えエフェクトタイプを識別します。
+BackgroundTransitionEffect enum を定義し、背景切り替えエフェクトタイプを識別します。
 ```
 YOUR_EFFECT_SHADER
 ```
@@ -48,7 +48,7 @@ var your_effect_shader: Shader = preload("res://path/to/your_effect_shader.shade
 次に、YOUR_EFFECT_SHADER タイプの背景切り替えエフェクト設定を実装します。
 
 ```gdscript
-BackgroundTransitionEffectsType.YOUR_EFFECT_SHADER: {
+BackgroundTransitionEffect.YOUR_EFFECT_SHADER: {
 	"shader": your_effect_shader,  // 背景切り替え Shader。上記の変数と一致させます
 	"duration": 1.0,  // トランジション時間。デフォルトは1.0s
 	"progress_target": 1.0,  // 目標進捗。デフォルトは1.0

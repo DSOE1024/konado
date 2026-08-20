@@ -13,14 +13,14 @@ order: 4
 
 분기는 중첩해서 사용할 수 없습니다. 분기의 들여쓰기 단계는 대화의 들여쓰기 단계와 일치해야 하며, 그렇지 않으면 정상적으로 인식되지 않습니다. 다음은 잘못된 예시입니다.
 
-```text
+```text no-test
 # 잘못된 예시
 branch drink_water
-    "kona" "물을 마시고 싶어"
+    kona "물을 마시고 싶어"
         branch eat_cake
-            "kona" "케이크를 먹고 싶어"
+            kona "케이크를 먹고 싶어"
 branch drink_tea
-    "kona" "차를 마시고 싶어"
+    kona "차를 마시고 싶어"
 ```
 
 ## 문법 구조
@@ -38,7 +38,7 @@ branch [라벨 ID]
 
 ```text
 branch drink_water
-    "kona" "물을 마시고 싶어"
+    kona "물을 마시고 싶어"
 branch drink_tea
-    "kona" "차를 마시고 싶어"
+    kona "차를 마시고 싶어"
 ```

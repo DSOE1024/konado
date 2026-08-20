@@ -13,16 +13,16 @@ order: 4
 
 分支不可以**嵌套使用**，分支的缩进层级必须和对话的缩进层级一致，否则会导致无法正常解析，以下是错误的示例：
 
-```text
+```text no-test
 # 错误的示例：嵌套使用
 branch drink_water
-    "kona" "我想喝水"
+    kona "我想喝水"
         branch eat_cake
-            "kona" "我想吃蛋糕"
+            kona "我想吃蛋糕"
 
 # 错误的示例：缩进层级不一致，导致分支内无内容
 branch drink_tea
-"kona" "我想喝茶"
+kona "我想喝茶"
 ```
 
 一般正确的分支结合选项使用，例如：
@@ -38,28 +38,28 @@ choice "离开" -> exit_choice
 
 branch gift_flower
     actor change Kona 害羞
-    "Kona" "哇，花很漂亮！谢谢你！"
+    Kona "哇，花很漂亮！谢谢你！"
 
     choice "继续聊天" -> chat_more
     choice "告别离开" -> exit_choice
 
 branch gift_book
     actor change Kona 惊讶
-    "Kona" "这本书看起来很有趣，谢谢！"
+    Kona "这本书看起来很有趣，谢谢！"
 
     choice "继续聊天" -> chat_more
     choice "告别离开" -> exit_choice
 
 branch gift_none
     actor change Kona 正常
-    "Kona" "没关系，下次再送吧。"
+    Kona "没关系，下次再送吧。"
 
     choice "继续聊天" -> chat_more
     choice "告别离开" -> exit_choice
 
 branch chat_more
     actor change Kona 正常
-    "Kona" "你想聊什么话题呢？"
+    Kona "你想聊什么话题呢？"
 
     choice "聊聊旅行" -> topic_travel
     choice "聊聊美食" -> topic_food
@@ -67,21 +67,21 @@ branch chat_more
 
 branch topic_travel
     actor change Kona 惊讶
-    "Kona" "我也很喜欢旅行！下次一起去吧！"
+    Kona "我也很喜欢旅行！下次一起去吧！"
 
     choice "送花" -> gift_flower
     choice "告别离开" -> exit_choice
 
 branch topic_food
     actor change Kona 害羞
-    "Kona" "美食话题我最喜欢了！"
+    Kona "美食话题我最喜欢了！"
 
     choice "送书" -> gift_book
     choice "告别离开" -> exit_choice
 
 branch exit_choice
     actor change Kona 正常
-    "Kona" "再见，期待下次见面！"
+    Kona "再见，期待下次见面！"
     actor exit Kona
     background bg_end fade
     end
@@ -104,7 +104,7 @@ branch [标签ID]
 
 ```text
 branch drink_water
-    "kona" "我想喝水"
+    kona "我想喝水"
 branch drink_tea
-    "kona" "我想喝茶"
+    kona "我想喝茶"
 ```

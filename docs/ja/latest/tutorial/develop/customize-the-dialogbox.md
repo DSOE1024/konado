@@ -13,13 +13,13 @@ order: 4
 
 ## テンプレートファイルの編集
 
-`res://addons/konado/template/` には組み込み会話テンプレートがあります。必要な `.tscn` をプロジェクトへコピーし、会話シーンでその複製をインスタンス化して、含まれる `KND_DialogueBox` ノードを `KND_DialogueManager` の `_konado_dialogue_box` プロパティへ割り当てます。
+`res://addons/konado/templates/` には組み込み会話テンプレートがあります。必要な `.tscn` をプロジェクトへコピーし、会話シーンでその複製をインスタンス化して、含まれる `KonadoDialogueBox` ノードを `KonadoDialogueManager` の `dialogue_box` プロパティへ割り当てます。
 
 通常はノード上のスクリプトを変更せず、ノードのプロパティを変更してカスタマイズすることを推奨します。
 
 ## 表示 API
 
-`KND_DialogueBox` は一時的な非表示と、内容を破棄する非表示を別の API として提供します。
+`KonadoDialogueBox` は一時的な非表示と、内容を破棄する非表示を別の API として提供します。
 
 ```gdscript
 dialogue_box.hide_dialogue_box()
@@ -44,13 +44,13 @@ dialogue_box.dismiss_dialogue_box_with_duration(0.5)
 | `110` | 実績解除などの一時的な通知 |
 | `120` | すべての組み込み UI より前面に表示する実行時エラー |
 
-カスタム UI は用途に応じた範囲へ配置してください。システムエラーを覆う必要がない限り、`120` 以上は使用しないでください。実績パネルと通知のレイヤーは `KND_AchievementManager.panel_layer` と `popup_layer` でも調整できます。
+カスタム UI は用途に応じた範囲へ配置してください。システムエラーを覆う必要がない限り、`120` 以上は使用しないでください。実績パネルと通知のレイヤーは `KonadoAchievements.panel_layer` と `popup_layer` でも調整できます。
 
 ## ボイス進行表示のカスタマイズ
 
 通常の会話行にボイスタグがあり、音声を再生している間は、会話ボックスに再生進行が表示されます。ボイスがない、リソースを解決できない、または再生が終了した場合は自動的に非表示になります。不要な場合は `KonadoDialogueBox` ノードの `show_voice_progress` を無効にしてください。
 
-組み込みコンポーネントの元ファイルは `res://addons/konado/template/default/voice_progress_display.tscn` です。色、角丸、サイズ、ノード構造を変更する前にプロジェクトへコピーし、カスタマイズした会話ボックスからその複製を参照してください。完全に置き換える場合は次のインターフェースを維持します。
+組み込みコンポーネントの元ファイルは `res://addons/konado/templates/default/voice_progress_display.tscn` です。色、角丸、サイズ、ノード構造を変更する前にプロジェクトへコピーし、カスタマイズした会話ボックスからその複製を参照してください。完全に置き換える場合は次のインターフェースを維持します。
 
 ```gdscript
 func set_progress(current: float, total: float) -> void

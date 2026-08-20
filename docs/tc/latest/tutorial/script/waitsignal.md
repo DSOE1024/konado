@@ -10,7 +10,7 @@ waitsignal "minigame_done"
 ```
 
 ```gdscript
-$KND_DialogueManager.emit_wait_signal("minigame_done")
+$KonadoDialogueManager.emit_wait_signal("minigame_done")
 ```
 
 劇情會暫停，直到外部程式送出同名訊號。

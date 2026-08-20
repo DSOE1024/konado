@@ -21,16 +21,16 @@ Konado provides a powerful typewriter effect component. It supports GPU-accelera
 
 ### Use in a Dialogue Box
 
-In the `KND_DialogueBox` component, you can enable the typewriter effect directly:
+In the `KonadoDialogueBox` component, you can enable the typewriter effect directly:
 
-1. Select the `KND_DialogueBox` node in the scene
+1. Select the `KonadoDialogueBox` node in the scene
 2. Find the corresponding settings in the Inspector panel
 3. Enable typewriter mode
 
 ### Use from Code
 
 ```gdscript
-var typewriter = $KND_TypewriterText
+var typewriter = $KonadoTypewriterText
 typewriter.set_bbcode("[color=yellow]Hello[/color], [b]player[/b]!")
 typewriter.start()
 typewriter.skip()
@@ -72,7 +72,7 @@ typewriter.reset()
 
 ```gdscript
 func _ready():
-    var typewriter = $KND_TypewriterText
+    var typewriter = $KonadoTypewriterText
     typewriter.typewriter_started.connect(_on_typewriter_started)
     typewriter.typewriter_finished.connect(_on_typewriter_finished)
     typewriter.character_revealed.connect(_on_character_revealed)
@@ -128,7 +128,7 @@ typewriter.spatial_blend = 0.5
 
 ```gdscript
 func _ready():
-    var typewriter = $KND_TypewriterText
+    var typewriter = $KonadoTypewriterText
     typewriter.typewriter_finished.connect(_on_finished)
 
 func _on_finished():

@@ -37,7 +37,7 @@ uniform sampler2D target_texture : hint_default_black; // 目标纹理
 
 同时，切换背景是一个动态的过程，因此还需要补充以下：
 
-在 `KND_BackgroundTransitionLayer` 中注册效果名，用于标识背景切换特效类型。
+在 `KonadoBackgroundTransitionLayer` 中注册效果名，用于标识背景切换特效类型。
 ```
 your_effect
 ```

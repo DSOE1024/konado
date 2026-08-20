@@ -24,7 +24,7 @@ The core design philosophy of KonadoScript is to separate **story content** from
 
 ### 1. Handling parse errors
 
-Godot's Script Editor reports KonadoScript syntax and semantic problems as you type. Invalid content can still be saved to the `.ks` source file, but it does not replace the current runtime `KND_Shot`. Fix the errors and save again to let the resource loader compile it automatically; no manual reimport is required.
+Godot's Script Editor reports KonadoScript syntax and semantic problems as you type. Invalid content can still be saved to the `.ks` source file, but it does not replace the current runtime `KonadoShot`. Fix the errors and save again to let the resource loader compile it automatically; no manual reimport is required.
 
 ### 2. Script file encoding issues
 

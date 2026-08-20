@@ -1,6 +1,6 @@
 ---
 title: Portrait Guidelines
-order: 3
+order: 4
 ---
 
 # Portrait Guidelines

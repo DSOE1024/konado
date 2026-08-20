@@ -13,14 +13,14 @@ order: 4
 
 分岐はネストして使用できません。分岐のインデントレベルは会話のインデントレベルと一致している必要があります。一致していない場合、正しく認識できません。以下は誤った例です。
 
-```text
+```text no-test
 # 誤った例
 branch drink_water
-    "kona" "水が飲みたい"
+    kona "水が飲みたい"
         branch eat_cake
-            "kona" "ケーキが食べたい"
+            kona "ケーキが食べたい"
 branch drink_tea
-    "kona" "お茶が飲みたい"
+    kona "お茶が飲みたい"
 ```
 
 ## 構文
@@ -38,7 +38,7 @@ branch [ラベルID]
 
 ```text
 branch drink_water
-    "kona" "水が飲みたい"
+    kona "水が飲みたい"
 branch drink_tea
-    "kona" "お茶が飲みたい"
+    kona "お茶が飲みたい"
 ```

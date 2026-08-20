@@ -21,16 +21,16 @@ Konado는 강력한 타자기 효과 컴포넌트를 제공합니다. GPU 가속
 
 ### 대화 상자에서 사용
 
-`KND_DialogueBox` 컴포넌트에서 타자기 효과를 직접 활성화할 수 있습니다.
+`KonadoDialogueBox` 컴포넌트에서 타자기 효과를 직접 활성화할 수 있습니다.
 
-1. 장면의 `KND_DialogueBox` 노드를 선택합니다
+1. 장면의 `KonadoDialogueBox` 노드를 선택합니다
 2. Inspector 패널에서 해당 설정 항목을 찾습니다
 3. 타자기 모드를 활성화합니다
 
 ### 코드로 사용
 
 ```gdscript
-var typewriter = $KND_TypewriterText
+var typewriter = $KonadoTypewriterText
 typewriter.set_bbcode("[color=yellow]안녕[/color], [b]플레이어[/b]!")
 typewriter.start()
 typewriter.skip()
@@ -99,7 +99,7 @@ typewriter.spatial_blend = 0.5
 
 ```gdscript
 func _ready():
-    var typewriter = $KND_TypewriterText
+    var typewriter = $KonadoTypewriterText
     typewriter.typewriter_finished.connect(_on_finished)
 
 func _on_finished():
