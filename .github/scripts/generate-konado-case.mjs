@@ -650,9 +650,10 @@ async function main() {
 		fetchAllWorks(),
 	]);
 	if (works.length === 0) {
-		throw new Error(
-			"GodotHub returned no approved online works tagged for Konado",
+		console.warn(
+			"GodotHub returned no approved Konado works; keeping the previous showcase unchanged",
 		);
+		return;
 	}
 
 	const cardResults = await Promise.all(works.map(createCardAssets));
