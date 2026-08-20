@@ -1,4 +1,4 @@
-extends KND_CharacterSceneBase
+extends KonadoCharacterSceneBase
 
 var size_during_initial_status := Vector2.ZERO
 

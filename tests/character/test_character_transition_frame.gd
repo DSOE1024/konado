@@ -4,7 +4,7 @@ var _failures := 0
 
 
 class ExtendedTransitionFrame:
-	extends KND_CharacterTransitionFrame
+	extends KonadoCharacterTransitionFrame
 
 	func is_valid() -> bool:
 		return true
@@ -35,7 +35,7 @@ func _test_frame_contract() -> void:
 	sprite.light_mask = 9
 	target.add_child(sprite)
 	get_root().add_child(target)
-	var frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect(frame != null and frame.is_valid(), "static sprites expose safe transition frames")
 	if frame:
 		_expect_equal(frame.source_visual, sprite, "frames retain only the source visual")
@@ -61,7 +61,7 @@ func _test_frame_contract() -> void:
 			"frames preserve the source visibility layer"
 		)
 		_expect_equal(frame.light_mask, sprite.light_mask, "frames preserve the source light mask")
-		var controller := KND_ActorStateTransitionController.new(
+		var controller := KonadoActorStateTransitionController.new(
 			target,
 			func() -> CanvasItem: return target,
 			func(_status_name: String) -> bool: return true
@@ -88,7 +88,7 @@ func _test_frame_contract() -> void:
 	atlas_region.region = Rect2(8, 0, 8, 8)
 	atlas_region.filter_clip = false
 	sprite.texture = atlas_region
-	var atlas_frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var atlas_frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect(atlas_frame != null and atlas_frame.is_valid(), "atlas states expose safe frames")
 	if atlas_frame:
 		_expect_equal(atlas_frame.texture, atlas_texture, "atlas frames sample backing textures")
@@ -100,7 +100,7 @@ func _test_frame_contract() -> void:
 		_expect(not atlas_frame.filter_clip, "unclipped atlases preserve neighbor filtering")
 
 	atlas_region.filter_clip = true
-	var clipped_atlas_frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var clipped_atlas_frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect(
 		clipped_atlas_frame != null and clipped_atlas_frame.is_valid(),
 		"filter-clipped atlases expose safe frames"
@@ -118,7 +118,7 @@ func _test_frame_contract() -> void:
 	nested_atlas.atlas = atlas_region
 	nested_atlas.region = Rect2(4, 0, 4, 8)
 	sprite.texture = nested_atlas
-	var nested_frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var nested_frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect(nested_frame != null and nested_frame.is_valid(), "nested atlases expose safe frames")
 	if nested_frame:
 		_expect_equal(
@@ -132,7 +132,7 @@ func _test_frame_contract() -> void:
 
 	# 内层 AtlasTexture 的裁切边界可能大于外层选区，不能误收紧到最终帧边界。
 	atlas_region.filter_clip = true
-	var nested_clipped_frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var nested_clipped_frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect(
 		nested_clipped_frame != null and nested_clipped_frame.is_valid(),
 		"nested clipped atlases expose safe frames"
@@ -152,7 +152,7 @@ func _test_frame_contract() -> void:
 	sprite.hframes = 3
 	sprite.vframes = 1
 	sprite.frame = 2
-	var region_frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var region_frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect(
 		region_frame != null and region_frame.is_valid(), "region sprite sheets expose safe frames"
 	)
@@ -171,7 +171,7 @@ func _test_frame_contract() -> void:
 	sprite.texture = atlas_texture
 	sprite.centered = false
 	sprite.offset = Vector2(0.2, 1.6)
-	var snapped_frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var snapped_frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect_equal(
 		snapped_frame,
 		null,
@@ -187,7 +187,7 @@ func _test_frame_contract() -> void:
 	margined_atlas.margin = Rect2(1, 0, 0, 0)
 	sprite.texture = margined_atlas
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"trimmed atlases use fallback instead of producing inaccurate blends"
 	)
@@ -196,7 +196,7 @@ func _test_frame_contract() -> void:
 	foreign_sprite.texture = atlas_texture
 	get_root().add_child(foreign_sprite)
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(foreign_sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(foreign_sprite, target),
 		null,
 		"visuals outside the stable mount cannot become transition frames"
 	)
@@ -206,7 +206,7 @@ func _test_frame_contract() -> void:
 	custom_material.shader.code = "shader_type canvas_item;"
 	sprite.material = custom_material
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"material-driven visuals use fallback instead of losing their effects"
 	)
@@ -214,7 +214,7 @@ func _test_frame_contract() -> void:
 
 	sprite.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"repeating textures use fallback instead of changing edge sampling semantics"
 	)
@@ -225,7 +225,7 @@ func _test_frame_contract() -> void:
 	animated_texture.set_frame_texture(0, atlas_texture)
 	sprite.texture = animated_texture
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"dynamic textures use fallback instead of pretending to be snapshots"
 	)
@@ -234,7 +234,7 @@ func _test_frame_contract() -> void:
 	mesh_texture.image_size = Vector2(8.0, 8.0)
 	sprite.texture = mesh_texture
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"textures without a directly sampleable RID use the safe fallback"
 	)
@@ -242,28 +242,28 @@ func _test_frame_contract() -> void:
 	sprite.texture = atlas_texture
 	sprite.z_index = 1
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"source-specific Z ordering uses fallback instead of changing external draw order"
 	)
 	sprite.z_index = 0
 	sprite.z_as_relative = false
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"absolute source Z ordering uses fallback instead of escaping the character mount"
 	)
 	sprite.z_as_relative = true
 	sprite.show_behind_parent = true
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"source behind-parent ordering uses fallback instead of changing composition"
 	)
 	sprite.show_behind_parent = false
 	target.y_sort_enabled = true
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		null,
 		"Y-sorted character mounts use fallback instead of flattening runtime draw order"
 	)
@@ -276,18 +276,18 @@ func _test_frame_contract() -> void:
 	ordered_sprite.texture = atlas_texture
 	ordered_parent.add_child(ordered_sprite)
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(ordered_sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(ordered_sprite, target),
 		null,
 		"intermediate Z ordering uses fallback instead of flattening nested composition"
 	)
 
-	var malformed_frame := KND_CharacterTransitionFrame.new()
+	var malformed_frame := KonadoCharacterTransitionFrame.new()
 	malformed_frame.texture = atlas_texture
 	malformed_frame.source_region = Rect2(0, 0, 64, 64)
 	malformed_frame.source_visual = sprite
 	_expect(not malformed_frame.is_valid(), "frames reject out-of-bounds sampling regions")
 
-	var overflowing_frame := KND_CharacterTransitionFrame.new()
+	var overflowing_frame := KonadoCharacterTransitionFrame.new()
 	overflowing_frame.texture = atlas_texture
 	overflowing_frame.source_region = Rect2(0, 0, 8, 8)
 	overflowing_frame.frame_to_target = Transform2D(
@@ -306,7 +306,7 @@ func _test_frame_contract() -> void:
 	clipped_sprite.texture = atlas_texture
 	clipped_parent.add_child(clipped_sprite)
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(clipped_sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(clipped_sprite, target),
 		null,
 		"intermediate clipping uses fallback instead of producing incomplete frames"
 	)
@@ -318,7 +318,7 @@ func _test_frame_contract() -> void:
 	masked_sprite.texture = atlas_texture
 	masked_parent.add_child(masked_sprite)
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(masked_sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(masked_sprite, target),
 		null,
 		"CanvasItem child masks use fallback instead of losing their mask"
 	)
@@ -329,7 +329,7 @@ func _test_frame_contract() -> void:
 	grouped_sprite.texture = atlas_texture
 	canvas_group.add_child(grouped_sprite)
 	_expect_equal(
-		KND_CharacterTransitionFrame.from_sprite(grouped_sprite, target),
+		KonadoCharacterTransitionFrame.from_sprite(grouped_sprite, target),
 		null,
 		"CanvasGroup composition uses fallback instead of changing render semantics"
 	)
@@ -349,10 +349,10 @@ func _test_frame_contract() -> void:
 
 func _test_frame_type_boundary() -> void:
 	var host := Control.new()
-	var controller := KND_ActorStateTransitionController.new(
+	var controller := KonadoActorStateTransitionController.new(
 		host, Callable(), func(_status_name: String) -> bool: return true
 	)
-	var official_frame := KND_CharacterTransitionFrame.new()
+	var official_frame := KonadoCharacterTransitionFrame.new()
 	var extended_frame := ExtendedTransitionFrame.new()
 	_expect(
 		controller._is_official_transition_frame(official_frame),

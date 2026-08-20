@@ -1,6 +1,6 @@
 extends SceneTree
 
-const BLEND_SHADER := preload("res://addons/konado/shader/character_state_blend.gdshader")
+const BLEND_SHADER := preload("res://addons/konado/assets/shaders/character_state_blend.gdshader")
 const VIEWPORT_SIZE := Vector2i(8, 8)
 const SPATIAL_VIEWPORT_SIZE := Vector2i(12, 12)
 const COLOR_TOLERANCE := 0.035
@@ -217,12 +217,12 @@ func _test_overlay_visual_transform() -> void:
 	await process_frame
 	var live_image := viewport.get_texture().get_image()
 
-	var controller := KND_ActorStateTransitionController.new(
+	var controller := KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return target,
 		func(_status_name: String) -> bool: return true,
-		func(_status_name: String) -> KND_CharacterTransitionFrame:
-			return KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		func(_status_name: String) -> KonadoCharacterTransitionFrame:
+			return KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		func(_status_name: String) -> bool: return true
 	)
 	controller.request("same", 1.0, func(_succeeded: bool) -> void: pass)
@@ -267,12 +267,12 @@ func _test_overlay_draw_order() -> void:
 	RenderingServer.force_draw(true)
 	await process_frame
 	var live_image := viewport.get_texture().get_image()
-	var controller := KND_ActorStateTransitionController.new(
+	var controller := KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return target,
 		func(_status_name: String) -> bool: return true,
-		func(_status_name: String) -> KND_CharacterTransitionFrame:
-			return KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		func(_status_name: String) -> KonadoCharacterTransitionFrame:
+			return KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		func(_status_name: String) -> bool: return true
 	)
 	controller.request("same", 1.0, func(_succeeded: bool) -> void: pass)
@@ -317,12 +317,12 @@ func _test_overlay_outside_target_bounds() -> void:
 	RenderingServer.force_draw(true)
 	await process_frame
 	var live_image := viewport.get_texture().get_image()
-	var controller := KND_ActorStateTransitionController.new(
+	var controller := KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return target,
 		func(_status_name: String) -> bool: return true,
-		func(_status_name: String) -> KND_CharacterTransitionFrame:
-			return KND_CharacterTransitionFrame.from_sprite(sprite, target),
+		func(_status_name: String) -> KonadoCharacterTransitionFrame:
+			return KonadoCharacterTransitionFrame.from_sprite(sprite, target),
 		func(_status_name: String) -> bool: return true
 	)
 	controller.request("same", 1.0, func(_succeeded: bool) -> void: pass)
@@ -356,7 +356,7 @@ func _render_constructed_sprite(
 	target.texture_filter = texture_filter
 	viewport.add_child(target)
 	target.add_child(sprite)
-	var frame := KND_CharacterTransitionFrame.from_sprite(sprite, target)
+	var frame := KonadoCharacterTransitionFrame.from_sprite(sprite, target)
 	_expect(
 		frame != null and frame.is_valid(), "constructed sprites produce valid transition frames"
 	)
@@ -376,7 +376,7 @@ func _render_constructed_sprite(
 		material.shader = BLEND_SHADER
 		blend_rect.material = material
 		material.set_shader_parameter("target_size", Vector2(SPATIAL_VIEWPORT_SIZE))
-		var controller := KND_ActorStateTransitionController.new(
+		var controller := KonadoActorStateTransitionController.new(
 			target, Callable(), func(_status_name: String) -> bool: return true
 		)
 		controller._set_frame_shader_parameters(material, "old", frame)

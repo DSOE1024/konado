@@ -4,7 +4,7 @@ var _failures := 0
 
 
 class ValidatedCharacterScene:
-	extends KND_CharacterSceneBase
+	extends KonadoCharacterSceneBase
 
 	var available_statuses := [&"idle", &"happy"]
 	var applied_statuses: Array[String] = []
@@ -56,7 +56,7 @@ func _test_character_status_validation() -> void:
 		"request admission can validate a state without mutating the character scene"
 	)
 	_expect(
-		staged_character_scene.try_apply_status("happy"),
+		staged_character_scene.apply_status("happy"),
 		"the same state is revalidated when it is committed"
 	)
 	_expect_equal(
@@ -67,9 +67,9 @@ func _test_character_status_validation() -> void:
 	staged_character_scene.free()
 
 	var character_scene := ValidatedCharacterScene.new()
-	_expect(character_scene.try_apply_status("idle"), "available states apply successfully")
+	_expect(character_scene.apply_status("idle"), "available states apply successfully")
 	_expect_equal(character_scene.current_status_name, "idle", "successful states become current")
-	_expect(not character_scene.try_apply_status("missing"), "missing states report failure")
+	_expect(not character_scene.apply_status("missing"), "missing states report failure")
 	_expect_equal(
 		character_scene.current_status_name,
 		"idle",
@@ -83,8 +83,8 @@ func _test_character_status_validation() -> void:
 
 	var invalid_validation_results: Array[bool] = []
 	character_scene.before_validation = func() -> void:
-		invalid_validation_results.append(character_scene.try_apply_status("missing"))
-	invalid_validation_results.append(character_scene.try_apply_status("happy"))
+		invalid_validation_results.append(character_scene.apply_status("missing"))
+	invalid_validation_results.append(character_scene.apply_status("happy"))
 	_expect_equal(
 		invalid_validation_results,
 		[false, true],
@@ -94,8 +94,8 @@ func _test_character_status_validation() -> void:
 
 	var apply_reentry_results: Array[bool] = []
 	character_scene.before_apply = func() -> void:
-		apply_reentry_results.append(character_scene.try_apply_status("idle"))
-	apply_reentry_results.append(character_scene.try_apply_status("happy"))
+		apply_reentry_results.append(character_scene.apply_status("idle"))
+	apply_reentry_results.append(character_scene.apply_status("happy"))
 	_expect_equal(
 		apply_reentry_results,
 		[true, false],
@@ -109,7 +109,7 @@ func _test_character_status_validation() -> void:
 	character_scene.character_scene_reset.connect(func() -> void: reset_signal_count[0] += 1)
 	character_scene.before_reset = func() -> void:
 		_expect(
-			character_scene.try_apply_status("happy"),
+			character_scene.apply_status("happy"),
 			"a state applied from the reset hook takes ownership"
 		)
 	character_scene.reset_character_scene()
@@ -137,7 +137,7 @@ func _test_transition_lifecycle() -> void:
 	var applied_statuses: Array[String] = []
 	var events: Array[String] = []
 	var completions: Array[bool] = []
-	var controller := KND_ActorStateTransitionController.new(
+	var controller := KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return visual,
 		func(status_name: String) -> bool:
@@ -178,7 +178,7 @@ func _test_transition_lifecycle() -> void:
 	_expect_equal(applied_statuses, ["idle"], "cancelled fade-outs never apply pending state")
 
 	var accepts_status := [true]
-	var validation_controller := KND_ActorStateTransitionController.new(
+	var validation_controller := KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return visual,
 		func(status_name: String) -> bool:
@@ -212,9 +212,9 @@ func _test_transition_lifecycle() -> void:
 	)
 
 	var invalid_reentry_results: Array[String] = []
-	var invalid_reentry_controller: KND_ActorStateTransitionController
+	var invalid_reentry_controller: KonadoActorStateTransitionController
 	var invalid_reentry_refs: Array[WeakRef] = [null]
-	invalid_reentry_controller = KND_ActorStateTransitionController.new(
+	invalid_reentry_controller = KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return visual,
 		func(_status_name: String) -> bool: return true,
@@ -222,7 +222,7 @@ func _test_transition_lifecycle() -> void:
 		func(status_name: String) -> bool:
 			if status_name == "outer":
 				var active_controller := (
-					invalid_reentry_refs[0].get_ref() as KND_ActorStateTransitionController
+					invalid_reentry_refs[0].get_ref() as KonadoActorStateTransitionController
 				)
 				active_controller.request(
 					"invalid_inner",
@@ -245,9 +245,9 @@ func _test_transition_lifecycle() -> void:
 	)
 
 	var valid_reentry_results: Array[String] = []
-	var valid_reentry_controller: KND_ActorStateTransitionController
+	var valid_reentry_controller: KonadoActorStateTransitionController
 	var valid_reentry_refs: Array[WeakRef] = [null]
-	valid_reentry_controller = KND_ActorStateTransitionController.new(
+	valid_reentry_controller = KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return visual,
 		func(_status_name: String) -> bool: return true,
@@ -255,7 +255,7 @@ func _test_transition_lifecycle() -> void:
 		func(status_name: String) -> bool:
 			if status_name == "outer":
 				var active_controller := (
-					valid_reentry_refs[0].get_ref() as KND_ActorStateTransitionController
+					valid_reentry_refs[0].get_ref() as KonadoActorStateTransitionController
 				)
 				active_controller.request(
 					"replacement",
@@ -309,7 +309,7 @@ func _test_transition_lifecycle() -> void:
 	_expect_equal(completions, [false], "invalid status changes fail without hanging")
 
 	var no_visual_completions: Array[bool] = []
-	var no_visual_controller := KND_ActorStateTransitionController.new(
+	var no_visual_controller := KonadoActorStateTransitionController.new(
 		host, func() -> CanvasItem: return null, func(_status_name: String) -> bool: return true
 	)
 	no_visual_controller.request(
@@ -318,8 +318,8 @@ func _test_transition_lifecycle() -> void:
 	_expect_equal(no_visual_completions, [true], "non-visual scenes use immediate status changes")
 
 	var signal_reentrant_completions: Array[String] = []
-	var signal_reentrant_controller: KND_ActorStateTransitionController
-	signal_reentrant_controller = KND_ActorStateTransitionController.new(
+	var signal_reentrant_controller: KonadoActorStateTransitionController
+	signal_reentrant_controller = KonadoActorStateTransitionController.new(
 		host, func() -> CanvasItem: return visual, func(_status_name: String) -> bool: return true
 	)
 	var signal_controller_ref: WeakRef = weakref(signal_reentrant_controller)
@@ -328,7 +328,7 @@ func _test_transition_lifecycle() -> void:
 			if status_name != "outer":
 				return
 			var active_controller := (
-				signal_controller_ref.get_ref() as KND_ActorStateTransitionController
+				signal_controller_ref.get_ref() as KonadoActorStateTransitionController
 			)
 			active_controller.request(
 				"replacement",
@@ -353,15 +353,15 @@ func _test_transition_lifecycle() -> void:
 	)
 
 	var apply_reentrant_completions: Array[String] = []
-	var apply_reentrant_controller: KND_ActorStateTransitionController
+	var apply_reentrant_controller: KonadoActorStateTransitionController
 	var apply_controller_refs: Array[WeakRef] = [null]
-	apply_reentrant_controller = KND_ActorStateTransitionController.new(
+	apply_reentrant_controller = KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return visual,
 		func(status_name: String) -> bool:
 			if status_name == "outer_apply":
 				var active_controller := (
-					apply_controller_refs[0].get_ref() as KND_ActorStateTransitionController
+					apply_controller_refs[0].get_ref() as KonadoActorStateTransitionController
 				)
 				active_controller.request(
 					"replacement_apply",
@@ -406,7 +406,7 @@ func _test_cancel_callback_reentry() -> void:
 	await process_frame
 
 	var signal_results: Array[String] = []
-	var signal_controller := KND_ActorStateTransitionController.new(
+	var signal_controller := KonadoActorStateTransitionController.new(
 		host, func() -> CanvasItem: return visual, func(_status_name: String) -> bool: return true
 	)
 	var signal_controller_ref: WeakRef = weakref(signal_controller)
@@ -415,7 +415,7 @@ func _test_cancel_callback_reentry() -> void:
 			if status_name != "old":
 				return
 			var active_controller := (
-				signal_controller_ref.get_ref() as KND_ActorStateTransitionController
+				signal_controller_ref.get_ref() as KonadoActorStateTransitionController
 			)
 			active_controller.request(
 				"callback_replacement",
@@ -439,7 +439,7 @@ func _test_cancel_callback_reentry() -> void:
 	_expect(not signal_controller.is_transitioning(), "signal reentry leaves no orphan Tween")
 
 	var completion_results: Array[String] = []
-	var completion_controller := KND_ActorStateTransitionController.new(
+	var completion_controller := KonadoActorStateTransitionController.new(
 		host, func() -> CanvasItem: return visual, func(_status_name: String) -> bool: return true
 	)
 	var completion_controller_ref: WeakRef = weakref(completion_controller)
@@ -449,7 +449,7 @@ func _test_cancel_callback_reentry() -> void:
 		func(succeeded: bool) -> void:
 			completion_results.append("old:%s" % succeeded)
 			var active_controller := (
-				completion_controller_ref.get_ref() as KND_ActorStateTransitionController
+				completion_controller_ref.get_ref() as KonadoActorStateTransitionController
 			)
 			active_controller.request(
 				"completion_replacement",
@@ -509,7 +509,7 @@ func _test_frame_blend_lifecycle() -> void:
 	var completions: Array[bool] = []
 	var apply_should_succeed := [true]
 	var validator_accepts := [true]
-	var controller := KND_ActorStateTransitionController.new(
+	var controller := KonadoActorStateTransitionController.new(
 		host,
 		func() -> CanvasItem: return visual,
 		func(status_name: String) -> bool:
@@ -518,8 +518,8 @@ func _test_frame_blend_lifecycle() -> void:
 			applied_statuses.append(status_name)
 			source_visual.texture = new_texture
 			return true,
-		func(status_name: String) -> KND_CharacterTransitionFrame:
-			return KND_CharacterTransitionFrame.from_sprite(
+		func(status_name: String) -> KonadoCharacterTransitionFrame:
+			return KonadoCharacterTransitionFrame.from_sprite(
 				source_visual, visual, old_texture if status_name.is_empty() else new_texture
 			),
 		func(_status_name: String) -> bool: return validator_accepts[0]
@@ -641,7 +641,7 @@ func _test_frame_blend_lifecycle() -> void:
 		if not visibility_reentry_armed[0] or visual.visible:
 			return
 		visibility_reentry_armed[0] = false
-		var active_controller := controller_ref.get_ref() as KND_ActorStateTransitionController
+		var active_controller := controller_ref.get_ref() as KonadoActorStateTransitionController
 		active_controller.request(
 			"visibility_replacement",
 			0.0,
@@ -675,9 +675,9 @@ func _test_frame_blend_lifecycle() -> void:
 	controller.cancel()
 	visual.material = null
 
-	var old_frame := KND_CharacterTransitionFrame.from_sprite(source_visual, visual, old_texture)
+	var old_frame := KonadoCharacterTransitionFrame.from_sprite(source_visual, visual, old_texture)
 	source_visual.visibility_layer = 2
-	var different_layer_frame := KND_CharacterTransitionFrame.from_sprite(
+	var different_layer_frame := KonadoCharacterTransitionFrame.from_sprite(
 		source_visual, visual, new_texture
 	)
 	controller._active_visual = visual

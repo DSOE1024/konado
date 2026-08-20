@@ -1,4 +1,4 @@
-extends KND_CharacterSceneBase
+extends KonadoCharacterSceneBase
 
 var ready_completed := false
 

@@ -1,6 +1,12 @@
 extends SceneTree
 
-const PARALLAX_BACKGROUND_SCENE := preload("res://sample/demo/backgrounds/bg_para.tscn")
+const PARALLAX_BACKGROUND_SCENE := preload("res://sample/demo/backgrounds/background_parallax.tscn")
+const CAMERA_CONTROLLER_SCRIPT := preload(
+	"res://addons/konado/runtime/camera/konado_camera_controller.gd"
+)
+const BACKGROUND_TRANSITION_LAYER_SCRIPT := preload(
+	"res://addons/konado/runtime/stage/background/konado_background_transition_layer.gd"
+)
 
 var _failures: int = 0
 
@@ -36,23 +42,23 @@ func _test_safe_capture_contract() -> void:
 	)
 
 	default_background.transition_render_mode = (
-		KND_BackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
+		KonadoBackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
 	)
 	_expect(
 		default_background.can_use_direct_transition_texture(),
 		"backgrounds can explicitly opt into the direct texture contract",
 	)
 
-	var no_texture_background := KND_BackgroundSceneBase.new()
+	var no_texture_background := KonadoBackgroundSceneBase.new()
 	no_texture_background.transition_render_mode = (
-		KND_BackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
+		KonadoBackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
 	)
 	_expect(
 		not no_texture_background.can_use_direct_transition_texture(),
 		"direct texture mode still requires a valid transition texture",
 	)
 
-	var parallax_background := PARALLAX_BACKGROUND_SCENE.instantiate() as KND_BackgroundSceneBase
+	var parallax_background := PARALLAX_BACKGROUND_SCENE.instantiate() as KonadoBackgroundSceneBase
 	_expect(
 		parallax_background.requires_viewport_capture(),
 		"the bundled parallax and camera background stays on the safe capture path",
@@ -68,11 +74,11 @@ func _test_camera_marker_contract() -> void:
 	viewport.size = Vector2i(320, 180)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	root.add_child(viewport)
-	var background := KND_BackgroundSceneBase.new()
+	var background := KonadoBackgroundSceneBase.new()
 	viewport.add_child(background)
 
-	var marker := KonadoCamera2D.new()
-	marker.camera_setup = "close_up"
+	var marker := KonadoCameraMarker.new()
+	marker.marker_id = "close_up"
 	marker.position = Vector2(128.0, 72.0)
 	marker.zoom = Vector2(1.5, 1.5)
 	marker.enabled = true
@@ -80,7 +86,7 @@ func _test_camera_marker_contract() -> void:
 	await process_frame
 	_expect(
 		not marker.enabled,
-		"KonadoCamera2D disables rendering when it enters the scene tree",
+		"KonadoCameraMarker disables rendering when it enters the scene tree",
 	)
 	_expect_equal(
 		viewport.get_camera_2d(),
@@ -99,13 +105,13 @@ func _test_camera_marker_contract() -> void:
 		"the marker contract does not disable a custom rendering camera",
 	)
 
-	var manager := KonadoCameraManager.new()
-	manager.current = render_camera
-	manager.bg_container = background
+	var manager := CAMERA_CONTROLLER_SCRIPT.new()
+	manager.active_camera = render_camera
+	manager.marker_root = background
 	viewport.add_child(manager)
-	manager.get_all_konado_cameras()
-	_expect_equal(manager.cameras.size(), 1, "the disabled marker remains discoverable")
-	manager.move_cam("close_up", 0.0)
+	manager.refresh_camera_markers()
+	_expect_equal(manager.camera_markers.size(), 1, "the disabled marker remains discoverable")
+	manager.move_to_marker("close_up", 0.0)
 	await process_frame
 	_expect_equal(
 		render_camera.position,
@@ -123,8 +129,8 @@ func _test_camera_marker_contract() -> void:
 func _test_parallax_camera_markers_during_transition() -> void:
 	var fixture := await _create_layer_fixture()
 	var host := fixture["host"] as Control
-	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
-	var background := PARALLAX_BACKGROUND_SCENE.instantiate() as KND_BackgroundSceneBase
+	var layer := fixture["layer"] as BACKGROUND_TRANSITION_LAYER_SCRIPT
+	var background := PARALLAX_BACKGROUND_SCENE.instantiate() as KonadoBackgroundSceneBase
 	var markers := _find_camera_markers(background)
 	_expect_equal(markers.size(), 2, "the bundled parallax scene exposes both camera targets")
 
@@ -140,7 +146,7 @@ func _test_parallax_camera_markers_during_transition() -> void:
 		"camera targets cannot offset the target SubViewport capture",
 	)
 
-	var replacement := PARALLAX_BACKGROUND_SCENE.instantiate() as KND_BackgroundSceneBase
+	var replacement := PARALLAX_BACKGROUND_SCENE.instantiate() as KonadoBackgroundSceneBase
 	var replacement_markers := _find_camera_markers(replacement)
 	layer.play_transition(null, replacement, "wave")
 	await process_frame
@@ -164,9 +170,9 @@ func _test_parallax_camera_markers_during_transition() -> void:
 func _test_custom_rendering_camera_during_transition() -> void:
 	var fixture := await _create_layer_fixture()
 	var host := fixture["host"] as Control
-	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var layer := fixture["layer"] as BACKGROUND_TRANSITION_LAYER_SCRIPT
 	var background := _make_background(false)
-	var marker := KonadoCamera2D.new()
+	var marker := KonadoCameraMarker.new()
 	marker.position = Vector2(96.0, 54.0)
 	marker.enabled = true
 	background.add_child(marker)
@@ -197,7 +203,7 @@ func _test_custom_rendering_camera_during_transition() -> void:
 func _test_transition_generation_and_viewport_lifecycle() -> void:
 	var fixture := await _create_layer_fixture()
 	var host := fixture["host"] as Control
-	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var layer := fixture["layer"] as BACKGROUND_TRANSITION_LAYER_SCRIPT
 	var first_old := _make_background(false)
 	var first_new := _make_background(false)
 	host.add_child(first_old)
@@ -266,12 +272,12 @@ func _test_transition_generation_and_viewport_lifecycle() -> void:
 func _test_direct_texture_fast_path() -> void:
 	var fixture := await _create_layer_fixture()
 	var host := fixture["host"] as Control
-	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var layer := fixture["layer"] as BACKGROUND_TRANSITION_LAYER_SCRIPT
 	var old_background := _make_background(true)
 	var new_background := _make_background(true)
 	var completions: Array[Array] = []
 	layer.transition_finished.connect(
-		func(old_value: KND_BackgroundSceneBase, new_value: KND_BackgroundSceneBase) -> void:
+		func(old_value: KonadoBackgroundSceneBase, new_value: KonadoBackgroundSceneBase) -> void:
 			completions.append([old_value, new_value])
 	)
 	host.add_child(old_background)
@@ -308,7 +314,7 @@ func _test_direct_texture_fast_path() -> void:
 func _test_exit_tree_invalidates_deferred_transition() -> void:
 	var fixture := await _create_layer_fixture()
 	var host := fixture["host"] as Control
-	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var layer := fixture["layer"] as BACKGROUND_TRANSITION_LAYER_SCRIPT
 	var staged_background := _make_background(false)
 
 	layer.play_transition(null, staged_background, "fade")
@@ -374,7 +380,7 @@ func _test_exit_tree_invalidates_deferred_transition() -> void:
 
 
 func _test_acting_interface_transition_lifecycle() -> void:
-	var acting := KND_ActingInterface.new()
+	var acting := KonadoStageController.new()
 	acting.size = Vector2(320.0, 180.0)
 	root.add_child(acting)
 	await process_frame
@@ -383,16 +389,16 @@ func _test_acting_interface_transition_lifecycle() -> void:
 	var first_scene := _make_background_scene(first_modulate)
 	var second_modulate := Color(0.8, 0.35, 0.65, 0.6)
 	var second_scene := _make_background_scene(second_modulate)
-	var no_effect := KND_ActingInterface.BackgroundTransitionEffectsType.NONE_EFFECT
-	var fade_effect := KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT
+	var no_effect := KonadoStageController.BackgroundTransitionEffect.NONE
+	var fade_effect := KonadoStageController.BackgroundTransitionEffect.ALPHA_FADE
 	acting.change_background_scene(first_scene, "first", no_effect)
-	var old_background := acting._current_background_scene
+	var old_background := acting.get_current_background()
 	_expect(old_background != null, "the initial background is installed on the acting stage")
 
 	var completions := [0]
-	acting.background_change_finished.connect(func() -> void: completions[0] += 1)
+	acting.background_change_finished.connect(func(_succeeded: bool) -> void: completions[0] += 1)
 	acting.change_background_scene(second_scene, "second", fade_effect)
-	var staged_background := acting._pending_shader_background
+	var staged_background := acting.get_pending_background()
 	_expect(staged_background != null, "the replacement background is staged for shader capture")
 	_expect_equal(
 		old_background.get_parent(),
@@ -433,7 +439,7 @@ func _test_acting_interface_transition_lifecycle() -> void:
 	var transition_completed := await _wait_until(func() -> bool: return completions[0] == 1, 2500)
 	_expect(transition_completed, "the real tween completes and notifies the acting interface")
 	if transition_completed:
-		var current_background := acting._current_background_scene
+		var current_background := acting.get_current_background()
 		_expect_equal(
 			current_background,
 			staged_background,
@@ -471,7 +477,7 @@ func _test_acting_interface_transition_lifecycle() -> void:
 func _test_orphan_cleanup() -> void:
 	var fixture := await _create_layer_fixture()
 	var host := fixture["host"] as Control
-	var layer := fixture["layer"] as KND_BackgroundTransitionLayer
+	var layer := fixture["layer"] as BACKGROUND_TRANSITION_LAYER_SCRIPT
 	var orphan := Control.new()
 	layer._ensure_capture_nodes()
 	layer._current_root.add_child(orphan)
@@ -489,19 +495,19 @@ func _create_layer_fixture() -> Dictionary:
 	var host := Control.new()
 	host.size = Vector2(320.0, 180.0)
 	root.add_child(host)
-	var layer := KND_BackgroundTransitionLayer.new()
+	var layer := BACKGROUND_TRANSITION_LAYER_SCRIPT.new()
 	layer.size = host.size
 	host.add_child(layer)
 	await process_frame
 	return {"host": host, "layer": layer}
 
 
-func _make_background(direct_texture: bool) -> KND_BackgroundSceneBase:
-	var background := KND_BackgroundSceneBase.new()
+func _make_background(direct_texture: bool) -> KonadoBackgroundSceneBase:
+	var background := KonadoBackgroundSceneBase.new()
 	background.size = Vector2(320.0, 180.0)
 	if direct_texture:
 		background.transition_render_mode = (
-			KND_BackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
+			KonadoBackgroundSceneBase.TransitionRenderMode.DIRECT_TEXTURE
 		)
 	var texture_rect := TextureRect.new()
 	texture_rect.texture = _make_texture()
@@ -530,15 +536,15 @@ func _make_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
-func _find_camera_markers(background: Node) -> Array[KonadoCamera2D]:
-	var markers: Array[KonadoCamera2D] = []
+func _find_camera_markers(background: Node) -> Array[KonadoCameraMarker]:
+	var markers: Array[KonadoCameraMarker] = []
 	for node in background.find_children("*", "Camera2D", true, false):
-		if node is KonadoCamera2D:
+		if node is KonadoCameraMarker:
 			markers.append(node)
 	return markers
 
 
-func _all_markers_disabled(markers: Array[KonadoCamera2D]) -> bool:
+func _all_markers_disabled(markers: Array[KonadoCameraMarker]) -> bool:
 	for marker in markers:
 		if marker.enabled:
 			return false
