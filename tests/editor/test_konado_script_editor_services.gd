@@ -166,6 +166,20 @@ func _test_control_flow_analysis() -> void:
 
 
 func _test_localization_validation() -> void:
+	var unchanged := (
+		KonadoScriptLocalizationValidator
+		. compare(
+			'"Kona" "这是全屏文本"',
+			'"Kona" "这是全屏文本"',
+			"res://story.ks",
+			"res://story.zh_Hans.ks",
+			"zh_Hans",
+		)
+	)
+	_expect(
+		unchanged["diagnostics"].is_empty(),
+		"localized text content is never inspected to guess whether translation is complete",
+	)
 	var comparison := (
 		KonadoScriptLocalizationValidator
 		. compare(

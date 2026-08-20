@@ -30,8 +30,6 @@ static func compare(
 			status = "missing"
 		elif base.get("signature") != translated.get("signature"):
 			status = "structure_changed"
-		elif bool(base.get("translatable", false)) and base.get("text") == translated.get("text"):
-			status = "untranslated"
 		(
 			rows
 			. append(
@@ -60,33 +58,6 @@ static func compare(
 						"arguments": [line],
 						"actions": [],
 						"message": _status_message(status, line, locale),
-					}
-				)
-			)
-		elif status == "untranslated":
-			(
-				diagnostics
-				. append(
-					{
-						"severity": "warning",
-						"line": int(translated.get("line", 1)),
-						"column": 1,
-						"end_line": int(translated.get("line", 1)),
-						"end_column":
-						_line_end_column(localized_source, int(translated.get("line", 1))),
-						"path": localized_path,
-						"code": "locale_untranslated",
-						"arguments": [],
-						"actions": [],
-						"message":
-						(
-							KonadoScriptEditorLocale
-							. text(
-								"Text may be untranslated.",
-								"文本可能尚未翻译。",
-								locale,
-							)
-						),
 					}
 				)
 			)
@@ -195,50 +166,30 @@ static func _collect_entries(source: String) -> Array[Dictionary]:
 			var close_tokens := PackedStringArray()
 			for token: Dictionary in tokens:
 				close_tokens.append(String(token["text"]))
-			entries.append(_entry(line_index + 1, " ".join(close_tokens), "", false))
+			entries.append(_entry(line_index + 1, " ".join(close_tokens)))
 			continue
 		if inside_screen_text and bool(tokens[0].get("quoted", false)):
-			entries.append(_entry(line_index + 1, "screen_text", tokens[0]["text"], true))
+			entries.append(_entry(line_index + 1, "screen_text"))
 			continue
 		var command := String(tokens[0]["text"])
 		if command == "screentext":
 			inside_screen_text = true
-			entries.append(_entry(line_index + 1, "screentext {", "", false))
+			entries.append(_entry(line_index + 1, "screentext {"))
 		elif _is_dialogue_tokens(tokens):
 			var speaker_signature := _dialogue_speaker_signature(tokens[0])
-			(
-				entries
-				. append(
-					_entry(
-						line_index + 1,
-						"dialogue_content|%s" % speaker_signature,
-						String(tokens[1]["text"]) if tokens.size() >= 2 else "",
-						true,
-					)
-				)
-			)
+			entries.append(_entry(line_index + 1, "dialogue_content|%s" % speaker_signature))
 		elif command == "choice":
 			var target := ""
 			for token_index: int in tokens.size():
 				if String(tokens[token_index]["text"]) == "->" and token_index + 1 < tokens.size():
 					target = String(tokens[token_index + 1]["text"])
 					break
-			(
-				entries
-				. append(
-					_entry(
-						line_index + 1,
-						"choice|%s" % target,
-						String(tokens[1]["text"]) if tokens.size() >= 2 else "",
-						true,
-					)
-				)
-			)
+			entries.append(_entry(line_index + 1, "choice|%s" % target))
 		else:
 			var structural_tokens := PackedStringArray()
 			for token: Dictionary in tokens:
 				structural_tokens.append(String(token["text"]))
-			entries.append(_entry(line_index + 1, " ".join(structural_tokens), "", false))
+			entries.append(_entry(line_index + 1, " ".join(structural_tokens)))
 	return entries
 
 
@@ -266,12 +217,10 @@ static func _dialogue_speaker_signature(token: Dictionary) -> String:
 	return "actor:%s" % value
 
 
-static func _entry(line: int, signature: String, text: String, translatable: bool) -> Dictionary:
+static func _entry(line: int, signature: String) -> Dictionary:
 	return {
 		"line": line,
 		"signature": signature,
-		"text": text,
-		"translatable": translatable,
 	}
 
 
