@@ -1,10 +1,7 @@
 extends Node
-class_name KND_SettingsBridge
 
-## KND_SettingsBridge - 设置桥接器
-##
-## 作为 konado 和 konado_settings 两个模块之间的解耦通信层，
-## 提供统一的设置访问接口，实现模块间数据互通但保持高度解耦。
+## Konado 与可选 Konado Settings 插件之间的运行时适配层。
+## 核心插件只依赖这个稳定接口，不直接引用辅助插件的类型或脚本。
 
 ## 设置变更信号
 ## @param category: 设置分类
@@ -29,18 +26,20 @@ const KEY_SKIP_ALL: String = "skip_all"
 const KEY_FULLSCREEN: String = "fullscreen"
 const KEY_LANGUAGE: String = "language"
 
-## 设置管理器引用（动态获取）
 var _settings_manager: Node = null
-
-## 缓存的设置值，用于快速访问
-var _cached_settings: Dictionary = {}
 
 
 ## 获取设置管理器实例
 ## @return: 设置管理器节点，如果不存在返回 null
 func _get_settings_manager() -> Node:
-	if _settings_manager == null:
-		_settings_manager = get_tree().root.get_node_or_null("KND_Settings")
+	if _settings_manager != null and is_instance_valid(_settings_manager):
+		return _settings_manager
+	_settings_manager = get_tree().root.get_node_or_null("KonadoSettings")
+	if (
+		_settings_manager != null
+		and not _settings_manager.setting_changed.is_connected(_on_setting_changed)
+	):
+		_settings_manager.setting_changed.connect(_on_setting_changed)
 	return _settings_manager
 
 
@@ -50,11 +49,11 @@ func _get_settings_manager() -> Node:
 ## @param default_value: 默认值
 ## @return: 设置值
 func get_setting(category: String, key: String, default_value: Variant = null) -> Variant:
-	var mgr = _get_settings_manager()
-	if mgr == null:
+	var manager := _get_settings_manager()
+	if manager == null:
 		return default_value
 
-	var value = mgr.call("get_setting", category, key)
+	var value: Variant = manager.call("get_setting", category, key)
 	if value == null:
 		return default_value
 	return value
@@ -64,10 +63,9 @@ func get_setting(category: String, key: String, default_value: Variant = null) -
 ## @param category: 设置分类
 ## @param key: 设置项的键
 ## @param value: 新的设置值
-func set_setting(category: String, key: String, value: Variant) -> void:
-	var mgr = _get_settings_manager()
-	if mgr != null:
-		mgr.call("set_setting", category, key, value)
+func set_setting(category: String, key: String, value: Variant) -> bool:
+	var manager := _get_settings_manager()
+	return manager != null and bool(manager.call("set_setting", category, key, value))
 
 
 ## 音频设置相关方法
@@ -120,34 +118,25 @@ func get_fullscreen() -> bool:
 
 
 func get_language() -> String:
-	return get_setting(CATEGORY_DISPLAY, KEY_LANGUAGE, "zh_Hans")
+	return TranslationServer.get_locale()
 
 
-## 订阅设置变更
-## @param category: 设置分类（可选，为 null 时监听所有分类）
-## @param key: 设置键（可选，为 null 时监听该分类下所有键）
-## @param callback: 回调函数
-func subscribe_to_setting(_category: String, _key: String, callback: Callable) -> void:
-	var mgr = _get_settings_manager()
-	if mgr != null and callback != null:
-		mgr.setting_changed.connect(callback)
-
-
-## 节点就绪时连接设置变更信号
 func _ready() -> void:
-	var mgr = _get_settings_manager()
-	if mgr != null:
-		mgr.setting_changed.connect(_on_setting_changed)
+	_get_settings_manager()
+
+
+func _exit_tree() -> void:
+	if (
+		_settings_manager != null
+		and is_instance_valid(_settings_manager)
+		and _settings_manager.setting_changed.is_connected(_on_setting_changed)
+	):
+		_settings_manager.setting_changed.disconnect(_on_setting_changed)
+	_settings_manager = null
 
 
 ## 设置变更处理
 func _on_setting_changed(category: String, key: String, value: Variant) -> void:
-	# 更新缓存
-	if not _cached_settings.has(category):
-		_cached_settings[category] = {}
-	_cached_settings[category][key] = value
-
-	# 转发信号
 	setting_changed.emit(category, key, value)
 
 
@@ -160,27 +149,33 @@ func is_settings_available() -> bool:
 ## 获取所有分类信息
 ## @return: 分类数组
 func get_categories() -> Array:
-	var mgr = _get_settings_manager()
-	if mgr != null:
-		return mgr.call("get_categories")
+	var manager := _get_settings_manager()
+	if manager != null:
+		return manager.call("get_categories")
 	return []
 
 
 ## 重置指定分类的设置
 ## @param category_id: 分类ID
-func reset_category(category_id: String) -> void:
-	var mgr = _get_settings_manager()
-	if mgr != null:
-		mgr.call("reset_category", category_id)
+func reset_category(category_id: String) -> bool:
+	var manager := _get_settings_manager()
+	return manager != null and bool(manager.call("reset_category", category_id))
 
 
 ## 显示设置面板
-func show_settings_panel() -> void:
-	var load_path: String = "res://addons/konado_settings/scenes/settings_panel.tscn"
-	if not ResourceLoader.exists(load_path):
-		printerr("未安装Konado Settings")
-		return
-	var settings_panel = load(load_path).instantiate()
+func show_settings_panel() -> bool:
+	const PANEL_SCENE_PATH := "res://addons/konado_settings/ui/konado_settings_panel.tscn"
+	if not ResourceLoader.exists(PANEL_SCENE_PATH):
+		push_warning("Konado Settings 插件未安装，无法打开设置面板")
+		return false
+	var panel_scene := load(PANEL_SCENE_PATH) as PackedScene
+	if panel_scene == null:
+		push_error("无法加载 Konado Settings 面板：" + PANEL_SCENE_PATH)
+		return false
+	var settings_panel := panel_scene.instantiate() as Control
+	if settings_panel == null:
+		push_error("Konado Settings 面板根节点必须继承 Control")
+		return false
 	add_child(settings_panel)
-	# 显示设置面板
 	settings_panel.show()
+	return true

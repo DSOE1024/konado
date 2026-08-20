@@ -1,5 +1,4 @@
 extends Control
-class_name KND_VoiceProgressDisplay
 
 @onready var progress_bar: ProgressBar = %VoiceProgressBar
 

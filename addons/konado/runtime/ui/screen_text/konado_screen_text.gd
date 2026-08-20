@@ -1,5 +1,5 @@
 extends ColorRect
-class_name KND_ScreenText
+class_name KonadoScreenText
 
 ## NVL 屏幕文本组件（Overlay 正文）
 ## 每行使用独立的 RichTextLabel，逐行淡入，点击后播放下一条
@@ -131,6 +131,39 @@ func reset_screen_text() -> void:
 	hide()
 	modulate.a = 1.0
 	_clear_text()
+
+
+## Cancel callbacks and tweens while preserving the last committed visual state.
+func cancel_pending_operations() -> void:
+	_display_generation += 1
+	_cancel_display_activity()
+	modulate.a = 1.0
+
+
+func capture_state() -> Dictionary:
+	return {
+		"lines": _current_lines.duplicate(),
+		"align": _current_align,
+		"line_index": _line_index,
+		"visible": visible,
+	}
+
+
+func restore_state(state: Dictionary) -> bool:
+	reset_screen_text()
+	if state.is_empty() or not bool(state.get("visible", false)):
+		return true
+	var lines: Array[String] = []
+	lines.assign(state.get("lines", []))
+	_current_align = String(state.get("align", "center"))
+	_line_index = clampi(int(state.get("line_index", 0)), 0, lines.size())
+	_build_text(lines, _current_align)
+	_current_lines = lines
+	show()
+	modulate.a = 1.0
+	for index in range(_line_labels.size()):
+		_line_labels[index].modulate.a = 1.0 if index < _line_index else 0.0
+	return true
 
 
 ## 跳过逐行淡入动画，直接显示所有文本并发射完成信号

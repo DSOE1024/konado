@@ -1,5 +1,5 @@
 extends Control
-class_name KND_DialogueBox
+class_name KonadoDialogueBox
 
 ## Konado对话框模板
 ## 可以自定义设置画面显示内容、位置、尺寸
@@ -22,12 +22,16 @@ signal on_dialogue_hide_completed
 enum TypewriterMode { TRADITIONAL = 0, FADE_IN_TYPEWRITER = 1 }  ## 传统模式  ## 淡入打字机模式
 enum VisibilityState { HIDDEN, SHOWING, VISIBLE, HIDING }
 
+const VOICE_PROGRESS_DISPLAY_SCRIPT := preload(
+	"res://addons/konado/runtime/ui/dialogue_box/konado_voice_progress_display.gd"
+)
+
 ## 角色对象
 @export_group("名字")
 @export var character_name: String = "":
 	set(value):
 		character_name = value
-		update_character_name()
+		_update_character_name()
 
 @export var name_size: int = 32  ## 名字字体大小
 @export var name_bg: Texture2D  ## 名字标签背景
@@ -38,14 +42,14 @@ enum VisibilityState { HIDDEN, SHOWING, VISIBLE, HIDING }
 @export var dialogue_text: String = "":
 	set(value):
 		dialogue_text = value
-		update_dialogue_content()
+		_update_dialogue_content()
 
 @export var dialogue_font_size: int = 24  ## 对话文本字体大小（新增）
 ## 打字间隔（单字符）
 @export var typing_interval: float = 0.4:
 	set(value):
 		typing_interval = value
-		update_dialogue_content()
+		_update_dialogue_content()
 
 @export_group("打字音效配置")
 @export var enable_typing_effect_audio: bool = true
@@ -83,7 +87,7 @@ enum VisibilityState { HIDDEN, SHOWING, VISIBLE, HIDING }
 @export var typewriter_mode: TypewriterMode = TypewriterMode.TRADITIONAL  ## 打字机模式
 
 # TypewriterText 组件
-@export var typewriter_text: KND_TypewriterText
+@export var typewriter_text: KonadoTypewriterText
 
 # 音效状态变量 - 记录上一次播放时间、当前随机间隔
 var last_audio_play_time: float = 0.0
@@ -103,14 +107,14 @@ var _immediate_content_update: bool = false
 @onready var audio_player: AudioStreamPlayer = AudioStreamPlayer.new()
 
 ## 加载节点
-@onready var character_name_label: Label = %character_name_label
-@onready var dialogue_label: RichTextLabel = %dialogue_label
-@onready var progress_bar: TextureProgressBar = %ProgressBar
-@onready var voice_progress_display: KND_VoiceProgressDisplay = (
-	get_node_or_null("%VoiceProgressDisplay") as KND_VoiceProgressDisplay
+@onready var character_name_label: Label = %CharacterNameLabel
+@onready var dialogue_label: RichTextLabel = %DialogueLabel
+@onready var progress_bar: TextureProgressBar = %RelationshipProgress
+@onready var voice_progress_display: VOICE_PROGRESS_DISPLAY_SCRIPT = (
+	get_node_or_null("%VoiceProgressDisplay") as VOICE_PROGRESS_DISPLAY_SCRIPT
 )
-@onready var dialogue_container: MarginContainer = %dialogue_container
-@onready var dialogue_box_bg: Panel = %dialogue_box_bg
+@onready var dialogue_container: MarginContainer = %DialogueContainer
+@onready var dialogue_box_bg: Panel = %DialogueBackground
 
 
 func _ready() -> void:
@@ -118,8 +122,8 @@ func _ready() -> void:
 	self.modulate.a = 1.0
 	_visibility_state = VisibilityState.HIDDEN
 	clear_voice_progress()
-	apply_dialogue_text_theme_settings()
-	update_dialogue_box_height()
+	_apply_dialogue_text_theme_settings()
+	_update_dialogue_box_height()
 
 	# 始终由对话框持有播放器，避免关闭音效时留下未入树的孤立对象。
 	add_child(audio_player)
@@ -131,7 +135,7 @@ func _ready() -> void:
 
 	# 根据打字机模式处理 TypewriterText 组件
 	if _uses_fade_typewriter():
-		create_typewriter_text()
+		_create_typewriter_text()
 	else:
 		# 如果 TypewriterText 组件存在，则隐藏它并显示传统的 dialogue_label
 		if typewriter_text != null:
@@ -164,7 +168,7 @@ func clear_voice_progress() -> void:
 		voice_progress_display.hide_progress()
 
 
-func update_voice_progress() -> void:
+func _update_voice_progress() -> void:
 	if not show_voice_progress:
 		clear_voice_progress()
 		return
@@ -182,7 +186,7 @@ func update_voice_progress() -> void:
 
 
 ## 应用对话文本的主题设置
-func apply_dialogue_text_theme_settings() -> void:
+func _apply_dialogue_text_theme_settings() -> void:
 	if not is_inside_tree():
 		return
 	dialogue_label.add_theme_font_size_override("normal_font_size", dialogue_font_size)
@@ -194,7 +198,7 @@ func apply_dialogue_text_theme_settings() -> void:
 
 
 ## 创建 TypewriterText 组件
-func create_typewriter_text() -> void:
+func _create_typewriter_text() -> void:
 	if typewriter_text == null:
 		return
 	if not typewriter_text.typewriter_finished.is_connected(_on_typewriter_finished):
@@ -357,6 +361,38 @@ func reset_dialogue_box() -> void:
 	_visibility_state = VisibilityState.HIDDEN
 
 
+## Cancel in-flight transitions and typewriter work without clearing committed content.
+## The VM uses this as an atomic-instruction cancellation boundary.
+func cancel_pending_operations() -> void:
+	_cancel_visibility_transition()
+	_stop_typing_activity()
+	modulate.a = 1.0
+	_visibility_state = VisibilityState.VISIBLE if visible else VisibilityState.HIDDEN
+
+
+func capture_state() -> Dictionary:
+	return {
+		"character": character_name,
+		"text": dialogue_text,
+		"visible": is_dialogue_box_visible(),
+		"typing_interval": typing_interval,
+	}
+
+
+func restore_state(state: Dictionary) -> bool:
+	reset_dialogue_box()
+	if state.is_empty():
+		return true
+	typing_interval = float(state.get("typing_interval", typing_interval))
+	character_name = String(state.get("character", ""))
+	set_dialogue_content_immediately(String(state.get("text", "")))
+	if bool(state.get("visible", false)):
+		show()
+		modulate.a = 1.0
+		_visibility_state = VisibilityState.VISIBLE
+	return true
+
+
 ## 显示对话框（带透明度过渡动画）
 func show_dialogue_box(callback: Callable = Callable()) -> void:
 	_show_dialogue_box(fade_duration, callback)
@@ -367,14 +403,14 @@ func show_dialogue_box_with_duration(duration: float) -> void:
 	_show_dialogue_box(duration)
 
 
-func update_dialogue():
+func _update_dialogue():
 	if not is_inside_tree():
 		return
-	update_character_name()
-	update_dialogue_content()
+	_update_character_name()
+	_update_dialogue_content()
 
 
-func update_character_name() -> void:
+func _update_character_name() -> void:
 	if not is_inside_tree():
 		return
 	character_name_label.text = character_name
@@ -382,7 +418,7 @@ func update_character_name() -> void:
 	character_name_label.label_settings.font_color = name_color
 
 
-func update_dialogue_box_height() -> void:
+func _update_dialogue_box_height() -> void:
 	# 更改边距
 	dialogue_container.add_theme_constant_override("margin_left", dialogue_margins)
 	dialogue_container.add_theme_constant_override("margin_right", dialogue_margins)
@@ -398,7 +434,7 @@ func update_dialogue_box_height() -> void:
 		typewriter_text.size = Vector2(dialogue_container.size.x, dialogue_height)
 
 
-func update_dialogue_content() -> void:
+func _update_dialogue_content() -> void:
 	if not is_inside_tree():
 		return
 
@@ -414,9 +450,9 @@ func update_dialogue_content() -> void:
 		return
 
 	# 每次更新对话内容时，重新应用主题设置（确保字体大小/颜色生效）
-	apply_dialogue_text_theme_settings()
+	_apply_dialogue_text_theme_settings()
 
-	update_dialogue_box_height()
+	_update_dialogue_box_height()
 
 	# 重置音效状态 - 重新打字时从头计算间隔
 	last_audio_play_time = 0.0
@@ -487,7 +523,7 @@ func skip_typing_anim() -> void:
 
 
 func _process(_delta: float) -> void:
-	update_voice_progress()
+	_update_voice_progress()
 
 	# 仅当打字动画运行、文本非空时，处理音效逻辑
 	var is_typing = false

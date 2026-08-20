@@ -1,5 +1,5 @@
 extends Logger
-class_name KND_Logger
+class_name KonadoLogger
 
 ## Konado Logger，Konado日志记录器
 
