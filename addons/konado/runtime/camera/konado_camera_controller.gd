@@ -66,7 +66,10 @@ func move_to_marker(
 		if is_instance_valid(marker) and marker.marker_id == marker_id:
 			_transition_to_marker(marker, duration, callback, transition_type)
 			return true
-	var known := ", ".join(camera_markers.map(func(m): return m.marker_id if is_instance_valid(m) else "<invalid>"))
+	var known: String = ", ".join(camera_markers.map(
+		func(m): 
+			return m.marker_id if is_instance_valid(m) else "<invalid>")
+		)
 	push_error("Konado: camera.move 失败：未注册机位 '%s'。已注册的机位：%s" % [marker_id, known])
 	return false
 
@@ -166,7 +169,10 @@ func move_to_marker_async(
 			_async_target_pos = marker.position
 			_async_target_zoom = marker.zoom
 			return _start_async_tween(marker.position, marker.zoom, duration, transition_type)
-	var known := ", ".join(camera_markers.map(func(m): return m.marker_id if is_instance_valid(m) else "<invalid>"))
+	var known: String = ", ".join(camera_markers.map(
+		func(m): 
+			return m.marker_id if is_instance_valid(m) else "<invalid>")
+			)
 	push_error(
 		"Konado: camera.move.async 失败：未注册机位 '%s'。已注册的机位：%s" % [marker_id, known]
 	)
