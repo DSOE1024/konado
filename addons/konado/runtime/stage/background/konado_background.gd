@@ -1,5 +1,5 @@
-extends KND_Data
-class_name KND_Background
+extends KonadoData
+class_name KonadoBackground
 
 ## 背景名称
 @export var background_name: String

@@ -1,6 +1,6 @@
 @tool
 extends RefCounted
-class_name KND_CharacterTransitionFrame
+class_name KonadoCharacterTransitionFrame
 
 ## 角色状态交融所需的一帧纯渲染数据。
 ## 该对象只引用纹理和几何信息，不复制或运行角色场景中的脚本、音频和动态媒体节点。
@@ -70,7 +70,7 @@ func get_target_bounds() -> Rect2:
 ## 指定动画时捕获该动画的第一帧，且不会改变正在运行的 AnimatedSprite2D。
 static func from_animated_sprite(
 	sprite: AnimatedSprite2D, target_space: CanvasItem, animation_name: StringName = &""
-) -> KND_CharacterTransitionFrame:
+) -> KonadoCharacterTransitionFrame:
 	if sprite == null or target_space == null or sprite.sprite_frames == null:
 		return null
 	var selected_animation := animation_name if not animation_name.is_empty() else sprite.animation
@@ -101,7 +101,7 @@ static func from_animated_sprite(
 ## 为 Sprite2D 创建状态帧。可传入目标纹理，在不修改实时节点的情况下准备下一状态。
 static func from_sprite(
 	sprite: Sprite2D, target_space: CanvasItem, target_texture: Texture2D = null
-) -> KND_CharacterTransitionFrame:
+) -> KonadoCharacterTransitionFrame:
 	if sprite == null or target_space == null:
 		return null
 	var frame_texture := target_texture if target_texture else sprite.texture
@@ -144,7 +144,7 @@ static func _from_texture_canvas_item(
 	horizontal_flip: bool,
 	vertical_flip: bool,
 	logical_filter_clip: bool
-) -> KND_CharacterTransitionFrame:
+) -> KonadoCharacterTransitionFrame:
 	if frame_texture == null or source == null or target_space == null:
 		return null
 	if not _is_static_texture(frame_texture):
@@ -210,7 +210,7 @@ static func _from_texture_canvas_item(
 	var target_inverse := target_space.get_global_transform_with_canvas().affine_inverse()
 	var source_to_target := target_inverse * source.get_global_transform_with_canvas()
 	var draw_origin := offset - logical_region.size * 0.5 if centered else offset
-	var result := KND_CharacterTransitionFrame.new()
+	var result := KonadoCharacterTransitionFrame.new()
 	result.texture = sampling_texture
 	result.source_region = sampling_region
 	result.sampling_clip_region = sampling_clip_region

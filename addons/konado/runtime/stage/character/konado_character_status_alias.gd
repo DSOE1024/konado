@@ -1,5 +1,5 @@
 extends Resource
-class_name KND_CharacterStatusAlias
+class_name KonadoCharacterStatusAlias
 
 ## 角色状态别名条目。
 ## 用资源条目承载两个字符串，是为了让 Inspector 比 Dictionary 更好编辑。

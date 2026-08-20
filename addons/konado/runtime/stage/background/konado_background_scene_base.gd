@@ -1,10 +1,10 @@
 @tool
 extends Control
-class_name KND_BackgroundSceneBase
+class_name KonadoBackgroundSceneBase
 
 ## 背景场景基类。
 ## 背景切换时，系统只调用 enter/exit；具体是图片、视频、Spine、Live2D 或 shader，由场景内部决定。
-## 内置的双纹理背景转场 shader 由 KND_BackgroundTransitionLayer 统一处理；
+## 内置的双纹理背景转场 shader 由 KonadoBackgroundTransitionLayer 统一处理；
 ## 这里更适合放背景自己的入场、退场、循环表现和自定义 effect 动画。
 
 signal background_enter_finished
@@ -94,18 +94,19 @@ func stop_background_transition() -> void:
 	_active_phase = ""
 
 
-func _play_transition(phase: String, effect_name: String, _params: Dictionary) -> void:
+func _play_transition(phase: String, effect_name: String, params: Dictionary) -> void:
 	stop_background_transition()
 	_active_phase = phase
-	if _play_animation_for_phase(phase, effect_name):
+	var duration := float(params.get("duration", -1.0))
+	if _play_animation_for_phase(phase, effect_name, duration):
 		return
 	if use_default_fade and effect_name != "none":
-		_play_default_fade(phase)
+		_play_default_fade(phase, duration)
 		return
 	_finish_transition(phase)
 
 
-func _play_animation_for_phase(phase: String, effect_name: String) -> bool:
+func _play_animation_for_phase(phase: String, effect_name: String, duration: float) -> bool:
 	if animation_player == null:
 		return false
 	var candidates := PackedStringArray()
@@ -115,17 +116,25 @@ func _play_animation_for_phase(phase: String, effect_name: String) -> bool:
 	for animation_name in candidates:
 		if animation_player.has_animation(animation_name):
 			_active_animation = StringName(animation_name)
-			animation_player.play(animation_name)
+			if duration == 0.0:
+				_finish_transition(phase)
+				return true
+			var custom_speed := 1.0
+			var animation := animation_player.get_animation(animation_name)
+			if duration > 0.0 and animation != null and animation.length > 0.0:
+				custom_speed = animation.length / duration
+			animation_player.play(animation_name, -1.0, custom_speed)
 			return true
 	return false
 
 
-func _play_default_fade(phase: String) -> void:
+func _play_default_fade(phase: String, duration_override: float = -1.0) -> void:
 	var from_alpha := 0.0 if phase == "enter" else modulate.a
 	var to_alpha := 1.0 if phase == "enter" else 0.0
 	modulate.a = from_alpha
 	_transition_tween = create_tween()
-	_transition_tween.tween_property(self, "modulate:a", to_alpha, default_transition_duration)
+	var duration := duration_override if duration_override >= 0.0 else default_transition_duration
+	_transition_tween.tween_property(self, "modulate:a", to_alpha, duration)
 	_transition_tween.finished.connect(_finish_transition.bind(phase))
 
 

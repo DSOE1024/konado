@@ -1,5 +1,5 @@
 extends Node
-class_name KND_CharacterSceneBase
+class_name KonadoCharacterSceneBase
 
 ## 角色场景基类。
 ## 主链路只调用这些公开入口，具体图片、视频、Spine、Live2D 等表现由子场景自己实现。
@@ -10,35 +10,22 @@ signal action_started(action_name: String)
 signal action_finished(action_name: String)
 signal character_scene_reset
 
-## 状态别名用于兼容剧本里的语义名和具体资源里的动画名。
+## 状态别名用于将剧本里的语义名映射为具体资源里的动画名。
 ## 使用数组条目而不是 Dictionary，是为了在 Inspector 中展开后直接填写两个字符串。
-@export var status_aliases: Array[KND_CharacterStatusAlias] = []
+@export var status_aliases: Array[KonadoCharacterStatusAlias] = []
 
 ## 记录原始状态名和解析后的状态名，方便存档、调试面板或扩展节点读取。
 var current_status_name: String = ""
 var current_resolved_status_name: String = ""
 var current_action_name: String = ""
 var _status_change_serial := 0
-var _last_status_apply_succeeded := true
 
 
 ## 状态是角色的持续表现，例如表情、待机动画、视频片段或 Live2D expression。
 ## 对话系统只传入语义状态名，不关心子场景如何呈现。
-func apply_status(status_name: String) -> void:
-	_last_status_apply_succeeded = try_apply_status(status_name)
-
-
-## 事务兼容入口。它动态调用公开 apply_status，因此不会绕过旧项目的直接覆写。
-## 基类实现会返回准确结果；无法报告结果的旧 void 覆写按历史语义视为已接受。
-func _try_apply_status_compatible(status_name: String) -> bool:
-	_last_status_apply_succeeded = true
-	apply_status(status_name)
-	return _last_status_apply_succeeded
-
-
 ## 在提交状态时重新校验，并明确返回是否成功。转场控制器会在接收请求时先校验，
 ## 转场结束、真正提交状态时再校验一次，以处理等待期间资源或可用性发生的变化。
-func try_apply_status(status_name: String) -> bool:
+func apply_status(status_name: String) -> bool:
 	if status_name.is_empty():
 		return false
 	var observed_serial := _status_change_serial
@@ -103,7 +90,7 @@ func get_status_transition_frame(status_name: String, target_space: CanvasItem) 
 
 
 ## 角色场景内部动作是一次性表现，例如挥手、眨眼、播放一段 Spine 动画。
-## 它和 status 分离，是为了不破坏当前表情状态；震动、跳跃等整体舞台动作交给 KND_ActorMotionLayer。
+## 它和 status 分离，是为了不破坏当前表情状态；震动、跳跃等整体舞台动作交给 KonadoActorMotionLayer。
 func play_action(action_name: String) -> void:
 	if action_name.is_empty():
 		return
@@ -161,13 +148,14 @@ func _apply_status(_resolved_status_name: String, _original_status_name: String)
 
 
 ## 子类覆写：目标状态是否可用。实现必须无副作用且幂等；一次延迟转场通常会在
-## 接收请求与最终提交时各调用一次。默认保持旧自定义场景的兼容行为。
+## 接收请求与最终提交时各调用一次。默认接受任意非空状态名；需要严格资源校验的
+## 场景必须覆写该方法。
 func _has_status(_resolved_status_name: String, _original_status_name: String) -> bool:
 	return true
 
 
 ## 子类覆写：返回当前实际显示的纯纹理帧，且不得修改实时角色状态。
-## 可使用 KND_CharacterTransitionFrame.from_animated_sprite / from_sprite 创建帧。
+## 可使用 KonadoCharacterTransitionFrame.from_animated_sprite / from_sprite 创建帧。
 ## 每次调用必须返回独立帧，不能复用并改写上一次返回的可变对象。
 func _get_current_status_transition_frame(_target_space: CanvasItem) -> RefCounted:
 	return null

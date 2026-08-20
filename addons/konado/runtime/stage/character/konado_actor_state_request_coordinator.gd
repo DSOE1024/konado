@@ -20,7 +20,7 @@ var _finalized := false
 
 
 func _init(
-	actor: KND_Actor,
+	actor: KonadoActor,
 	target_state: String,
 	transition_duration: float,
 	is_current: Callable,
@@ -52,10 +52,10 @@ func start() -> bool:
 
 	actor.actor_status_applied.connect(_handle_status_applied)
 	actor.tree_exiting.connect(_handle_actor_exiting, ConnectFlags.CONNECT_ONE_SHOT)
-	# 使用闭包持有协调器本身。旧扩展可能保存完成回调并在演员离树后调用；
+	# 使用闭包持有协调器本身。异步扩展可能保存完成回调并在演员离树后调用；
 	# 直接传对象方法会在协调器释放后变成指向 null 的 Callable。
 	var completion_callback := func(succeeded: bool) -> void: _handle_completion(succeeded)
-	var accepted := actor._try_apply_character_status(
+	var accepted := actor._request_character_status(
 		_target_state, _transition_duration, completion_callback
 	)
 	_request_returned = true
@@ -65,7 +65,7 @@ func start() -> bool:
 	if _completion_received:
 		_finish(_completion_succeeded)
 	elif not accepted:
-		# 内置演员会在拒绝时同步回调；为不守约的自定义演员提供兜底。
+		# 内置演员会在拒绝时同步回调；扩展钩子返回 false 时由这里兜底。
 		_finish(false)
 	return accepted
 
@@ -109,10 +109,10 @@ func _finish(succeeded: bool) -> void:
 	_clear_callbacks()
 
 
-func _get_actor() -> KND_Actor:
+func _get_actor() -> KonadoActor:
 	if _actor_ref == null:
 		return null
-	return _actor_ref.get_ref() as KND_Actor
+	return _actor_ref.get_ref() as KonadoActor
 
 
 func _call(callback: Callable, arguments: Array = []) -> Variant:

@@ -1,6 +1,6 @@
 @tool
 extends RefCounted
-class_name KND_ActorStateTransitionController
+class_name KonadoActorStateTransitionController
 
 ## 角色状态转场控制器。
 ## 支持状态帧时使用预乘 Alpha shader 做真正交融；否则只淡变稳定挂载层。
@@ -11,9 +11,9 @@ signal status_applied(status_name: String)
 signal transition_cancelled(status_name: String)
 signal transition_finished(status_name: String, succeeded: bool)
 
-const BLEND_SHADER := preload("res://addons/konado/shader/character_state_blend.gdshader")
-const TRANSITION_FRAME_SCRIPT_DIRECTORY := "res://addons/konado/scripts/character/"
-const TRANSITION_FRAME_SCRIPT_NAME := "knd_character_transition_frame.gd"
+const BLEND_SHADER := preload("res://addons/konado/assets/shaders/character_state_blend.gdshader")
+const TRANSITION_FRAME_SCRIPT_DIRECTORY := "res://addons/konado/runtime/stage/character/"
+const TRANSITION_FRAME_SCRIPT_NAME := "konado_character_transition_frame.gd"
 
 var _host: Node
 var _visual_provider: Callable

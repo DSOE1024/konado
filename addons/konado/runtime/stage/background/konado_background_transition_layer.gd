@@ -1,6 +1,5 @@
 @tool
 extends Control
-class_name KND_BackgroundTransitionLayer
 
 ## 背景场景转场层。
 ## 旧版背景 shader 需要 current_texture / target_texture 两张纹理。
@@ -8,34 +7,40 @@ class_name KND_BackgroundTransitionLayer
 ## 只有显式声明 DIRECT_TEXTURE 且能提供有效纹理的简单静态背景才绕过场景捕获。
 
 signal transition_finished(
-	old_background: KND_BackgroundSceneBase, new_background: KND_BackgroundSceneBase
+	old_background: KonadoBackgroundSceneBase, new_background: KonadoBackgroundSceneBase
 )
 
 const TRANSITION_CONFIGS := {
 	"erase":
 	{
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/erase_effect.gdshader"),
+		"shader":
+		preload("res://addons/konado/assets/shaders/background_transitions/erase_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
 	"blinds":
 	{
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/blinds_effect.gdshader"),
+		"shader":
+		preload("res://addons/konado/assets/shaders/background_transitions/blinds_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
 	"wave":
 	{
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/wave_effect.gdshader"),
+		"shader":
+		preload("res://addons/konado/assets/shaders/background_transitions/wave_effect.gdshader"),
 		"duration": 1.0,
 		"progress_target": 1.8,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
 	"fade":
 	{
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/alpha_fade_effect.gdshader"),
+		"shader":
+		preload(
+			"res://addons/konado/assets/shaders/background_transitions/alpha_fade_effect.gdshader"
+		),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
@@ -43,14 +48,19 @@ const TRANSITION_CONFIGS := {
 	"vortex":
 	{
 		"shader":
-		preload("res://addons/konado/shader/bg_trans_effects/vortex_swap_effect.gdshader"),
+		preload(
+			"res://addons/konado/assets/shaders/background_transitions/vortex_swap_effect.gdshader"
+		),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
 	"windmill":
 	{
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/windmill_effect.gdshader"),
+		"shader":
+		preload(
+			"res://addons/konado/assets/shaders/background_transitions/windmill_effect.gdshader"
+		),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
@@ -58,14 +68,17 @@ const TRANSITION_CONFIGS := {
 	"cyberglitch":
 	{
 		"shader":
-		preload("res://addons/konado/shader/bg_trans_effects/cyber_glitch_effect.gdshader"),
+		preload(
+			"res://addons/konado/assets/shaders/background_transitions/cyber_glitch_effect.gdshader"
+		),
 		"duration": 1.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
 	},
 	"blink":
 	{
-		"shader": preload("res://addons/konado/shader/bg_trans_effects/blink_effect.gdshader"),
+		"shader":
+		preload("res://addons/konado/assets/shaders/background_transitions/blink_effect.gdshader"),
 		"duration": 3.0,
 		"progress_target": 1.0,
 		"tween_trans": Tween.TRANS_LINEAR,
@@ -81,8 +94,8 @@ var _shader_rect: ColorRect
 var _shader_material: ShaderMaterial
 var _transition_tween: Tween
 var _fallback_texture: Texture2D
-var _old_background: KND_BackgroundSceneBase
-var _new_background: KND_BackgroundSceneBase
+var _old_background: KonadoBackgroundSceneBase
+var _new_background: KonadoBackgroundSceneBase
 var _is_transitioning: bool = false
 var _transition_generation: int = 0
 
@@ -108,9 +121,10 @@ func is_transitioning() -> bool:
 
 
 func play_transition(
-	old_background: KND_BackgroundSceneBase,
-	new_background: KND_BackgroundSceneBase,
-	effect_name: String
+	old_background: KonadoBackgroundSceneBase,
+	new_background: KonadoBackgroundSceneBase,
+	effect_name: String,
+	duration: float = -1.0
 ) -> void:
 	if not supports_effect(effect_name):
 		push_error("背景 shader 转场不存在：" + effect_name)
@@ -144,7 +158,8 @@ func play_transition(
 				effect_name,
 				current_texture if current_texture else _get_fallback_texture(),
 				target_texture,
-				generation
+				generation,
+				duration
 			)
 			return
 
@@ -157,7 +172,7 @@ func play_transition(
 	# 避免转场真正开始前舞台空出来闪几帧黑。
 	_move_background_to_root(_new_background, _target_root)
 
-	call_deferred("_start_shader_transition", effect_name, generation)
+	call_deferred("_start_shader_transition", effect_name, generation, duration)
 
 
 func cancel_transition(queue_backgrounds: bool = true) -> void:
@@ -269,7 +284,7 @@ func _prepare_viewport_root(root: Control) -> void:
 	_set_full_rect(root, _get_transition_size())
 
 
-func _move_background_to_root(background: KND_BackgroundSceneBase, root: Control) -> void:
+func _move_background_to_root(background: KonadoBackgroundSceneBase, root: Control) -> void:
 	if background == null:
 		return
 	var parent := background.get_parent()
@@ -280,7 +295,7 @@ func _move_background_to_root(background: KND_BackgroundSceneBase, root: Control
 	_set_full_rect(background, root.size)
 
 
-func _start_shader_transition(effect_name: String, generation: int) -> void:
+func _start_shader_transition(effect_name: String, generation: int, duration: float) -> void:
 	# call_deferred 可能在节点离开场景树后才真正调用，读取 process_frame 前先失效。
 	if not _is_active_generation(generation):
 		return
@@ -311,11 +326,15 @@ func _start_shader_transition(effect_name: String, generation: int) -> void:
 	_shader_material.set_shader_parameter("target_texture", _target_viewport.get_texture())
 	_shader_rect.visible = true
 
-	_play_shader_tween(config, generation)
+	_play_shader_tween(config, generation, duration)
 
 
 func _start_shader_transition_with_textures(
-	effect_name: String, current_texture: Texture2D, target_texture: Texture2D, generation: int
+	effect_name: String,
+	current_texture: Texture2D,
+	target_texture: Texture2D,
+	generation: int,
+	duration: float
 ) -> void:
 	if not _is_active_generation(generation):
 		return
@@ -325,13 +344,13 @@ func _start_shader_transition_with_textures(
 	_shader_material.set_shader_parameter("current_texture", current_texture)
 	_shader_material.set_shader_parameter("target_texture", target_texture)
 	_shader_rect.visible = true
-	_play_shader_tween(config, generation)
+	_play_shader_tween(config, generation, duration)
 
 
-func _play_shader_tween(config: Dictionary, generation: int) -> void:
+func _play_shader_tween(config: Dictionary, generation: int, duration_override: float) -> void:
 	if not _is_active_generation(generation):
 		return
-	var duration := float(config["duration"])
+	var duration := duration_override if duration_override >= 0.0 else float(config["duration"])
 	var progress_target := float(config["progress_target"])
 	if duration <= 0.0:
 		_finish_shader_transition(generation)
@@ -394,13 +413,13 @@ func _get_transition_size() -> Vector2i:
 	return Vector2i(max(2, int(rect_size.x)), max(2, int(rect_size.y)))
 
 
-func _get_transition_texture(background: KND_BackgroundSceneBase) -> Texture2D:
+func _get_transition_texture(background: KonadoBackgroundSceneBase) -> Texture2D:
 	if background == null:
 		return null
 	return background.get_transition_texture()
 
 
-func _can_use_direct_transition_texture(background: KND_BackgroundSceneBase) -> bool:
+func _can_use_direct_transition_texture(background: KonadoBackgroundSceneBase) -> bool:
 	if background == null:
 		return true
 	return not background.requires_viewport_capture()
