@@ -1,7 +1,9 @@
 extends SceneTree
 
-const DIALOGUE_MANAGER_SCENE := preload("res://addons/konado/template/default/konado_dialogue.tscn")
-const DIALOGUE_BOX_SCENE := preload("res://addons/konado/template/default/knd_dialogue_box.tscn")
+const DIALOGUE_MANAGER_SCENE := preload(
+	"res://addons/konado/templates/default/dialogue_runtime.tscn"
+)
+const DIALOGUE_BOX_SCENE := preload("res://addons/konado/templates/default/dialogue_box.tscn")
 
 var _failures: int = 0
 
@@ -21,7 +23,7 @@ class WarningCapture:
 		error_type: int,
 		_script_backtraces: Array[ScriptBacktrace]
 	) -> void:
-		if error_type == Logger.ERROR_TYPE_WARNING and code.begins_with("KND_I18n:"):
+		if error_type == Logger.ERROR_TYPE_WARNING and code.begins_with("KonadoStoryLocalization:"):
 			fallback_warnings.append(code)
 
 
@@ -47,73 +49,55 @@ class RuntimeErrorCapture:
 class FakeLocalizedScriptService:
 	extends Node
 
-	var localized_shot: KND_Shot
-	var restore_node_id: String = ""
+	var localized_shot: KonadoShot
 
 	func load_localized_script(
 		_script_path: String, _locale: String = "", _warn_on_fallback: bool = true
-	) -> KND_Shot:
+	) -> KonadoShot:
 		return localized_shot
 
-	func choose_restore_node_id(
-		_source_shot: KND_Shot, _localized_shot: KND_Shot, current_node_id: String
-	) -> String:
-		return restore_node_id if not restore_node_id.is_empty() else current_node_id
 
-	func unregister_dialogue_manager(_manager: Node) -> void:
-		pass
-
-
-func _create_manager() -> KND_DialogueManager:
-	var manager := DIALOGUE_MANAGER_SCENE.instantiate() as KND_DialogueManager
-	manager.init_onstart = false
-	manager.check_visable = false
+func _create_manager() -> KonadoDialogueManager:
+	var manager := DIALOGUE_MANAGER_SCENE.instantiate() as KonadoDialogueManager
+	manager.initialize_on_ready = false
+	manager.require_visible_in_tree = false
 	manager.enable_overlay_log = false
-	manager.auto_show_dialogue_box = true
-	manager._typing_interval = 0.001
-	manager._konado_dialogue_box.enable_typing_effect_audio = false
+	manager.auto_show_dialogue_box = false
+	manager.typing_interval = 0.001
+	manager.dialogue_box.enable_typing_effect_audio = false
 	root.add_child(manager)
 	await process_frame
-	manager._konado_dialogue_box.fade_duration = 0.01
+	manager.dialogue_box.fade_duration = 0.01
 	return manager
 
 
-func _make_dialogue(node_id: String, content: String) -> KND_Dialogue:
-	var dialogue := KND_Dialogue.new()
-	dialogue.dialog_type = KND_Dialogue.Type.ORDINARY_DIALOG
-	dialogue.node_id = node_id
-	dialogue.dialog_content = content
-	return dialogue
+func _compile_shot(source: String, path := "") -> KonadoShot:
+	var compiler := KonadoScriptCompiler.new()
+	compiler.set_console_output_enabled(false)
+	var shot := compiler.compile_string(source, path)
+	_expect(shot != null, "fixture compiles: %s" % [compiler.get_errors()])
+	return shot
 
 
 func _make_visibility_shot(
 	id_prefix: String, speaker: String, content: String, duration: float
-) -> KND_Shot:
-	var show := KND_Dialogue.new()
-	show.dialog_type = KND_Dialogue.Type.SHOW_TEXTBOX
-	show.node_id = "show_" + id_prefix
-	show.next_id = "line_" + id_prefix
-	show.textbox_duration = duration
-	var line := _make_dialogue("line_" + id_prefix, content)
-	line.character_id = speaker
-	line.next_id = "hide_" + id_prefix
-	var hide := KND_Dialogue.new()
-	hide.dialog_type = KND_Dialogue.Type.HIDE_TEXTBOX
-	hide.node_id = "hide_" + id_prefix
-	hide.textbox_duration = duration
-	return _make_shot_from_dialogues([show, line, hide])
+) -> KonadoShot:
+	return _compile_shot(
+		(
+			(
+				"showtextbox [duration=%s] [id=show_%s]\n"
+				+ '"%s" "%s" [id=line_%s]\n'
+				+ "hidetextbox [duration=%s] [id=hide_%s]\n"
+				+ "end [id=end_%s]"
+			)
+			% [duration, id_prefix, speaker, content, id_prefix, duration, id_prefix, id_prefix]
+		),
+		"",
+	)
 
 
-func _make_shot(content: String) -> KND_Shot:
-	return _make_shot_from_dialogues([_make_dialogue("start", content)])
-
-
-func _make_shot_from_dialogues(dialogues: Array) -> KND_Shot:
-	var shot := KND_Shot.new()
-	shot.dialogues.assign(dialogues)
-	if not dialogues.is_empty():
-		shot.start_node_id = dialogues[0].node_id
-	return shot
+func _make_shot(content: String) -> KonadoShot:
+	return _compile_shot('"Kona" "%s" [id=start]\nend [id=done]' % content)
 
 
 func _free_node(node: Node) -> void:
@@ -122,7 +106,7 @@ func _free_node(node: Node) -> void:
 	await process_frame
 
 
-func _wait_for_state(manager: KND_DialogueManager, expected_state: int) -> void:
+func _wait_for_state(manager: KonadoDialogueManager, expected_state: int) -> void:
 	for _frame: int in range(30):
 		if manager.dialogue_state == expected_state:
 			return
@@ -130,13 +114,18 @@ func _wait_for_state(manager: KND_DialogueManager, expected_state: int) -> void:
 	_expect(false, "dialogue manager reaches state %d" % expected_state)
 
 
-func _wait_for_node_and_state(
-	manager: KND_DialogueManager, expected_node: String, expected_state: int
+func _wait_for_instruction_and_state(
+	manager: KonadoDialogueManager, expected_key: String, expected_state: int
 ) -> void:
 	await _wait_for_condition(
 		func() -> bool:
-			return manager.cur_node_id == expected_node and manager.dialogue_state == expected_state,
-		"dialogue reaches node %s in state %d" % [expected_node, expected_state],
+			var instruction := manager._current_instruction()
+			return (
+				instruction != null
+				and instruction.stable_key() == expected_key
+				and manager.dialogue_state == expected_state
+			),
+		"dialogue reaches instruction %s in state %d" % [expected_key, expected_state],
 	)
 
 
@@ -149,17 +138,27 @@ func _wait_for_condition(condition: Callable, message: String) -> void:
 
 
 func _wait_for_typing_connection_count(
-	manager: KND_DialogueManager, expected_count: int, message: String
+	manager: KonadoDialogueManager, expected_count: int, message: String
 ) -> void:
 	for _frame: int in range(60):
-		if manager._konado_dialogue_box.typing_completed.get_connections().size() == expected_count:
+		if manager.dialogue_box.typing_completed.get_connections().size() == expected_count:
 			return
 		await process_frame
 	_expect_equal(
-		manager._konado_dialogue_box.typing_completed.get_connections().size(),
+		manager.dialogue_box.typing_completed.get_connections().size(),
 		expected_count,
 		message,
 	)
+
+
+func _finish_current_dialogue(manager: KonadoDialogueManager) -> void:
+	if manager._dialogue_typing:
+		manager.dialogue_box.skip_typing_anim()
+		await _wait_for_condition(
+			func() -> bool: return not manager._dialogue_typing,
+			"typewriter publishes its completion",
+		)
+	manager._process_next()
 
 
 func _expect(condition: bool, message: String) -> void:

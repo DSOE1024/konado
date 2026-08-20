@@ -20,18 +20,19 @@ func _init() -> void:
 		"exported KS resource does not contain plaintext dialogue"
 	)
 
-	var shot := ResourceLoader.load(SCRIPT_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as KND_Shot
-	_expect(shot != null, "exported KS resource loads as KND_Shot")
+	var shot := ResourceLoader.load(SCRIPT_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as KonadoShot
+	_expect(shot != null, "exported KS resource loads as KonadoShot")
 	if shot != null:
-		_expect(shot.is_script_protected(), "exported KND_Shot contains a protected payload")
-		_expect(shot.ensure_script_ready(), "exported KND_Shot decrypts at runtime")
-		var dialogues := shot.dialogues
-		_expect(not dialogues.is_empty(), "exported KND_Shot restores dialogue nodes")
+		_expect(shot.is_script_protected(), "exported KonadoShot contains a protected payload")
+		_expect(shot.ensure_script_ready(), "exported KonadoShot decrypts at runtime")
+		_expect(shot.program != null, "exported KonadoShot restores its Program")
 		_expect(
-			_has_dialogue_content(dialogues, PLAINTEXT_MARKER),
-			"decrypted KND_Shot restores dialogue content"
+			_has_dialogue_content(shot.program, PLAINTEXT_MARKER),
+			"decrypted KonadoShot restores dialogue content"
 		)
-		_expect(not shot.is_script_protected(), "decrypted KND_Shot releases its encrypted buffers")
+		_expect(
+			not shot.is_script_protected(), "decrypted KonadoShot releases its encrypted buffers"
+		)
 
 	if _failures == 0:
 		print("PASS: exported script protection")
@@ -58,26 +59,28 @@ func _expect_script_loads(path: String) -> void:
 		not FileAccess.get_file_as_bytes(protected_path).is_empty(),
 		"protected KS resource is present: %s" % path
 	)
-	var shot := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as KND_Shot
+	var shot := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as KonadoShot
 	_expect(shot != null, "exported KS resource loads: %s" % path)
 	if shot != null:
 		_expect(shot.is_script_protected(), "exported KS resource is protected: %s" % path)
-		var stored_dialogues: Variant = shot.get("_dialogues")
-		_expect(
-			stored_dialogues is Array and stored_dialogues.is_empty(),
-			"exported KS resource stores no plaintext dialogue nodes: %s" % path
-		)
+		_expect(shot.program == null, "exported KS resource stores no plaintext Program: %s" % path)
 		_expect(shot.ensure_script_ready(), "exported KS resource decrypts: %s" % path)
-		_expect(not shot.dialogues.is_empty(), "exported KS resource restores nodes: %s" % path)
+		_expect(shot.instruction_count() > 0, "exported KS resource restores Program: %s" % path)
 		_expect(
 			not shot.is_script_protected(),
 			"exported KS resource clears protected buffers: %s" % path
 		)
 
 
-func _has_dialogue_content(dialogues: Array[KND_Dialogue], expected: String) -> bool:
-	for dialogue in dialogues:
-		if dialogue.dialog_content == expected:
+func _has_dialogue_content(program: KonadoProgram, expected: String) -> bool:
+	if program == null:
+		return false
+	for pc in range(program.instruction_count()):
+		var instruction := program.instruction_at(pc)
+		if (
+			instruction.opcode() == KonadoOpcode.Type.DIALOGUE
+			and instruction.value(&"content") == expected
+		):
 			return true
 	return false
 

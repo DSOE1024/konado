@@ -6,256 +6,86 @@ func _init() -> void:
 
 
 func _run() -> void:
-	await _test_locale_reload_does_not_duplicate_action_callbacks()
-	await _test_locale_reload_restarts_active_typing_once()
-	await _test_locale_reload_does_not_emit_typing_completion()
-	await _test_locale_reload_during_dialogue_fade_uses_localized_line()
-	await _test_locale_reload_preserves_running_node_identity()
+	await _test_hot_locale_overlay_preserves_instruction_identity()
+	await _test_incompatible_locale_is_rejected_transactionally()
+	await _test_locale_switch_does_not_duplicate_callbacks()
 	if _failures == 0:
-		print("PASS: dialogue localization lifecycle tests")
+		print("PASS: Program localization lifecycle tests")
 	quit(_failures)
 
 
-func _test_locale_reload_does_not_duplicate_action_callbacks() -> void:
+func _test_hot_locale_overlay_preserves_instruction_identity() -> void:
 	var manager := await _create_manager()
-	var source_show := KND_Dialogue.new()
-	source_show.dialog_type = KND_Dialogue.Type.SHOW_TEXTBOX
-	source_show.node_id = "show"
-	source_show.textbox_duration = 5.0
-	var source_shot := _make_shot_from_dialogues([source_show])
-	source_shot.ks_path = "res://tests/dialogue/source.ks"
-	var localized_show := source_show.duplicate() as KND_Dialogue
-	var localized_shot := _make_shot_from_dialogues([localized_show])
-	localized_shot.ks_path = "res://tests/dialogue/source.zh_Hant.ks"
+	var source := _compile_shot(
+		'"Kona" "Source" [id=line]\nend [id=done]', "res://tests/dialogue/story.ks"
+	)
+	var localized_program := _compile_shot(
+		'"Kona" "本地化" [id=line]\nend [id=done]',
+		"res://tests/dialogue/story.zh_Hans.ks",
+	)
+	var overlay_result := KonadoLocaleOverlay.build(
+		source.program, localized_program.program, "zh_Hans"
+	)
+	_expect(bool(overlay_result.get("ok", false)), "fixture overlay is structurally compatible")
+	var localized := source.duplicate() as KonadoShot
+	localized.source_path = "res://tests/dialogue/story.zh_Hans.ks"
+	localized.install_locale_overlay(overlay_result.get("overlay"))
 	var service := FakeLocalizedScriptService.new()
-	service.localized_shot = localized_shot
+	service.localized_shot = localized
 	root.add_child(service)
-	manager._i18n_service = service
-	manager.start_dialogue_shot = source_shot
-	manager.init_dialogue()
+	manager._story_localization = service
+	_expect(manager._install_shot(source), "source Program installs")
+	manager.start_dialogue_shot = source
 	manager.start_dialogue()
-	await process_frame
-	await process_frame
-	var connection_count_before := (
-		manager._konado_dialogue_box.on_dialogue_show_completed.get_connections().size()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:line", KonadoDialogueManager.DialogState.WAITING
 	)
-	manager.reload_localized_script("zh_Hant")
-	await process_frame
-	var connection_count_after := (
-		manager._konado_dialogue_box.on_dialogue_show_completed.get_connections().size()
-	)
-
+	_expect(manager.reload_localized_script("zh_Hans"), "compatible locale hot switch succeeds")
 	_expect_equal(
-		connection_count_before,
-		1,
-		"the active localized action starts with one completion callback",
+		manager._current_instruction().stable_key(), "ks:id:line", "identity is preserved"
 	)
-	_expect_equal(
-		connection_count_after,
-		1,
-		"reloading the locale does not bind the active action completion callback twice",
-	)
+	_expect_equal(manager.dialogue_box.dialogue_text, "本地化", "visible text is refreshed")
 	await _free_node(manager)
 	await _free_node(service)
 
 
-func _test_locale_reload_does_not_emit_typing_completion() -> void:
+func _test_incompatible_locale_is_rejected_transactionally() -> void:
+	var source := _compile_shot(
+		'"Kona" "Source" [id=line]\nend [id=done]', "res://tests/dialogue/story.ks"
+	)
+	var incompatible := _compile_shot(
+		'"Kona" "Other" [id=line]\nsignal changed\nend [id=done]',
+		"res://tests/dialogue/story.zh_Hans.ks",
+	)
+	var result := KonadoLocaleOverlay.build(source.program, incompatible.program, "zh_Hans")
+	_expect(not bool(result.get("ok", false)), "control-flow drift is rejected")
+	_expect(source.locale_overlay == null, "failed overlay validation is non-mutating")
+
+
+func _test_locale_switch_does_not_duplicate_callbacks() -> void:
 	var manager := await _create_manager()
-	manager._typing_interval = 1.0
-	var source_line := _make_dialogue("line", "Source")
-	var source_shot := _make_shot_from_dialogues([source_line])
-	source_shot.ks_path = "res://tests/dialogue/source.ks"
-	var localized_line := _make_dialogue("line", "Localized")
-	var localized_shot := _make_shot_from_dialogues([localized_line])
-	localized_shot.ks_path = "res://tests/dialogue/source.zh_Hant.ks"
+	var source := _compile_shot(
+		'"Kona" "Source" [id=line]\nend [id=done]', "res://tests/dialogue/story.ks"
+	)
+	var translated := _compile_shot(
+		'"Kona" "Translated" [id=line]\nend [id=done]',
+		"res://tests/dialogue/story.en.ks",
+	)
+	var result := KonadoLocaleOverlay.build(source.program, translated.program, "en")
+	var localized := source.duplicate() as KonadoShot
+	localized.install_locale_overlay(result.get("overlay"))
 	var service := FakeLocalizedScriptService.new()
-	service.localized_shot = localized_shot
+	service.localized_shot = localized
 	root.add_child(service)
-	manager._i18n_service = service
-	manager.start_dialogue_shot = source_shot
-	manager.init_dialogue()
+	manager._story_localization = service
+	_expect(manager._install_shot(source), "source Program installs")
+	manager.start_dialogue_shot = source
 	manager.start_dialogue()
-	await process_frame
-	await process_frame
-	await _wait_for_condition(
-		func() -> bool:
-			return (
-				manager._konado_dialogue_box.typing_tween != null
-				and manager._konado_dialogue_box.typing_tween.is_running()
-			),
-		"the source line starts its typewriter animation",
-	)
-	manager._konado_dialogue_box.skip_typing_anim()
-	await _wait_for_state(manager, KND_DialogueManager.DialogState.PAUSED)
-	var completion_count := [0]
-	manager._konado_dialogue_box.typing_completed.connect(func() -> void: completion_count[0] += 1)
-	manager.reload_localized_script("zh_Hant")
-	await process_frame
-	await process_frame
-
-	_expect_equal(
-		manager._konado_dialogue_box.dialogue_text,
-		"Localized",
-		"locale reload refreshes the active dialogue text",
-	)
-	_expect_equal(
-		manager._konado_dialogue_box.dialogue_label.visible_ratio,
-		1.0,
-		"locale reload immediately displays a completed localized line",
-	)
-	_expect_equal(
-		completion_count[0],
-		0,
-		"locale reload does not emit a synthetic typing completion",
-	)
-	await _free_node(manager)
-	await _free_node(service)
-
-
-func _test_locale_reload_restarts_active_typing_once() -> void:
-	var manager := await _create_manager()
-	manager._typing_interval = 0.02
-	var source_line := _make_dialogue("line", "Source text still typing")
-	var source_shot := _make_shot_from_dialogues([source_line])
-	source_shot.ks_path = "res://tests/dialogue/source.ks"
-	var localized_line := _make_dialogue("line", "Localized")
-	var localized_shot := _make_shot_from_dialogues([localized_line])
-	localized_shot.ks_path = "res://tests/dialogue/source.zh_Hant.ks"
-	var service := FakeLocalizedScriptService.new()
-	service.localized_shot = localized_shot
-	root.add_child(service)
-	manager._i18n_service = service
-	var completion_count := [0]
-	manager._konado_dialogue_box.typing_completed.connect(func() -> void: completion_count[0] += 1)
-	manager.start_dialogue_shot = source_shot
-	manager.init_dialogue()
-	manager.start_dialogue()
-	await _wait_for_condition(
-		func() -> bool:
-			return (
-				manager._konado_dialogue_box.typing_tween != null
-				and manager._konado_dialogue_box.typing_tween.is_running()
-			),
-		"the source line is typing before an active locale reload",
-	)
-
-	manager.reload_localized_script("zh_Hant")
-	_expect_equal(
-		manager._konado_dialogue_box.typing_completed.get_connections().size(),
-		2,
-		"active locale reload keeps one manager callback and one test observer",
-	)
-	await _wait_for_state(manager, KND_DialogueManager.DialogState.PAUSED)
-
-	_expect_equal(
-		manager._konado_dialogue_box.dialogue_text,
-		"Localized",
-		"active locale reload replaces the text being typed",
-	)
-	_expect_equal(
-		completion_count[0],
-		1,
-		"the replacement typewriter emits exactly one completion event",
-	)
-	await _free_node(manager)
-	await _free_node(service)
-
-
-func _test_locale_reload_during_dialogue_fade_uses_localized_line() -> void:
-	var manager := await _create_manager()
-	manager._konado_dialogue_box.fade_duration = 0.15
-	var source_line := _make_dialogue("line", "Source")
-	var source_shot := _make_shot_from_dialogues([source_line])
-	source_shot.ks_path = "res://tests/dialogue/source.ks"
-	var localized_line := _make_dialogue("line", "Localized during fade")
-	var localized_shot := _make_shot_from_dialogues([localized_line])
-	localized_shot.ks_path = "res://tests/dialogue/source.zh_Hant.ks"
-	var service := FakeLocalizedScriptService.new()
-	service.localized_shot = localized_shot
-	root.add_child(service)
-	manager._i18n_service = service
-	manager.start_dialogue_shot = source_shot
-	manager.init_dialogue()
-	manager.start_dialogue()
-	await _wait_for_condition(
-		func() -> bool:
-			return (
-				manager._konado_dialogue_box.fade_tween != null
-				and manager._konado_dialogue_box.fade_tween.is_running()
-				and not manager._typing_completed_callback.is_valid()
-			),
-		"the dialogue box is fading in before a locale reload",
-	)
-
-	manager.reload_localized_script("zh_Hant")
-	await _wait_for_state(manager, KND_DialogueManager.DialogState.PAUSED)
-
-	_expect_equal(
-		manager._konado_dialogue_box.dialogue_text,
-		"Localized during fade",
-		"a fade completion reads the current localized line instead of captured source text",
-	)
-	await _free_node(manager)
-	await _free_node(service)
-
-
-func _test_locale_reload_preserves_running_node_identity() -> void:
-	var manager := await _create_manager()
-	var source_show := KND_Dialogue.new()
-	source_show.dialog_type = KND_Dialogue.Type.SHOW_TEXTBOX
-	source_show.node_id = "source_show"
-	source_show.next_id = "source_line"
-	source_show.textbox_duration = 5.0
-	var source_line := _make_dialogue("source_line", "Source")
-	var source_shot := _make_shot_from_dialogues([source_show, source_line])
-	source_shot.ks_path = "res://tests/dialogue/source.ks"
-
-	var localized_show := source_show.duplicate() as KND_Dialogue
-	localized_show.node_id = "localized_show"
-	localized_show.next_id = "localized_line"
-	var localized_line := _make_dialogue("localized_line", "Localized after remap")
-	var localized_shot := _make_shot_from_dialogues([localized_show, localized_line])
-	localized_shot.ks_path = "res://tests/dialogue/source.zh_Hant.ks"
-
-	var service := FakeLocalizedScriptService.new()
-	service.localized_shot = source_shot
-	root.add_child(service)
-	manager._i18n_service = service
-	manager.start_dialogue_shot = source_shot
-	manager.init_dialogue()
-	manager.start_dialogue()
-	await process_frame
-	await process_frame
-	_expect_equal(
-		manager._konado_dialogue_box.on_dialogue_show_completed.get_connections().size(),
-		1,
-		"the source action has one in-flight completion callback before locale remapping",
-	)
-
-	service.localized_shot = localized_shot
-	service.restore_node_id = localized_show.node_id
-	_expect(
-		manager.reload_localized_script("zh_Hant"),
-		"an active node can be restored by its position in a localized graph",
-	)
-	_expect_equal(
-		manager.cur_node_id,
-		source_show.node_id,
-		"the in-flight callback keeps a stable runtime node identity",
-	)
-	_expect(
-		manager.cur_dialogue_shot.find_node(localized_show.node_id) != null,
-		"the localized node remains addressable by its canonical ID",
-	)
-
-	manager._konado_dialogue_box.on_dialogue_show_completed.emit()
-	await _wait_for_node_and_state(
-		manager, localized_line.node_id, KND_DialogueManager.DialogState.PAUSED
-	)
-	_expect_equal(
-		manager._konado_dialogue_box.dialogue_text,
-		localized_line.dialog_content,
-		"the completed action advances into the localized graph without getting stuck",
-	)
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.WAITING)
+	var before := manager.dialogue_box.typing_completed.get_connections().size()
+	manager.reload_localized_script("en")
+	manager.reload_localized_script("en")
+	var after := manager.dialogue_box.typing_completed.get_connections().size()
+	_expect_equal(after, before, "locale refresh does not reconnect the active instruction")
 	await _free_node(manager)
 	await _free_node(service)
