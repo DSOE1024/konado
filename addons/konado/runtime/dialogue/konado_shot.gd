@@ -247,6 +247,8 @@ func install_locale_overlay(value: KonadoLocaleOverlay) -> bool:
 
 
 func instruction_count() -> int:
+	if not ensure_script_ready():
+		return 0
 	return program.instruction_count() if program != null and program.is_valid() else 0
 
 
@@ -267,6 +269,8 @@ func pc_for_key(key: String) -> int:
 
 
 func key_for_pc(pc: int) -> String:
+	if not ensure_script_ready():
+		return ""
 	return program.key_for_pc(pc) if program != null and program.is_valid() else ""
 
 
@@ -281,4 +285,6 @@ func instruction_at(pc: int) -> KonadoInstruction:
 
 
 func program_fingerprint() -> String:
+	if not ensure_script_ready():
+		return ""
 	return program.fingerprint() if program != null and program.is_valid() else ""

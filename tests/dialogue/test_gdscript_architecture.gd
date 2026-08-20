@@ -797,8 +797,11 @@ func _test_script_protection() -> void:
 	shot.install_program(program)
 	_expect(shot.protect_script_for_export(key), "KonadoShot accepts export-time protection")
 	_expect(shot.is_script_protected(), "KonadoShot records protected export state")
-	_expect(shot.ensure_script_ready(), "KonadoShot decrypts on first runtime access")
-	_expect_equal(shot.instruction_count(), 2, "KonadoShot restores its compact Program")
+	_expect_equal(
+		shot.instruction_count(),
+		2,
+		"KonadoShot restores its compact Program through its first public read"
+	)
 	_expect_equal(
 		shot.instruction_at(0).value(&"content"),
 		content,
