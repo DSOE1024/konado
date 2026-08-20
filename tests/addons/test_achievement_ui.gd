@@ -1,7 +1,7 @@
 extends SceneTree
 
-const DIALOGUE_SCENE := preload("res://addons/konado/template/default/konado_dialogue.tscn")
-const SETTINGS_PANEL_SCENE := preload("res://addons/konado_settings/scenes/settings_panel.tscn")
+const DIALOGUE_SCENE := preload("res://addons/konado/templates/default/dialogue_runtime.tscn")
+const SETTINGS_PANEL_SCENE := preload("res://addons/konado_settings/ui/konado_settings_panel.tscn")
 const DIALOGUE_LAYER := 10
 
 var _failures: int = 0
@@ -12,7 +12,7 @@ func _init() -> void:
 
 
 func _run() -> void:
-	var manager := root.get_node_or_null("KND_AchievementManager")
+	var manager := root.get_node_or_null("KonadoAchievements")
 	_expect(manager != null, "achievement manager autoload is available")
 	if manager == null:
 		_finish()
@@ -33,20 +33,14 @@ func _run() -> void:
 
 func _test_builtin_layer_contract() -> void:
 	var dialogue := DIALOGUE_SCENE.instantiate()
-	var stage_layer := dialogue.get_node("KonadoUI/CanvasLayer") as CanvasLayer
-	var dialogue_layer := dialogue.get_node("KonadoUI/CanvasLayer2") as CanvasLayer
-	var save_layer := dialogue.get_node("KonadoUI/CanvasLayer3") as CanvasLayer
+	var stage_layer := dialogue.get_node("KonadoUI/StageLayer") as CanvasLayer
+	var dialogue_layer := dialogue.get_node("KonadoUI/DialogueLayer") as CanvasLayer
 	var system_layer := dialogue.get_node("KonadoUI/SystemLayer") as CanvasLayer
 	_expect_equal(stage_layer.layer, 1, "stage rendering uses the documented layer")
 	_expect_equal(dialogue_layer.layer, 10, "dialogue UI renders above the stage")
-	_expect_equal(save_layer.layer, 50, "save UI renders above dialogue UI")
 	_expect_equal(system_layer.layer, 120, "runtime errors render above all built-in UI")
 	_expect(
-		(
-			stage_layer.layer < dialogue_layer.layer
-			and dialogue_layer.layer < save_layer.layer
-			and save_layer.layer < system_layer.layer
-		),
+		stage_layer.layer < dialogue_layer.layer and dialogue_layer.layer < system_layer.layer,
 		"built-in UI layers have an explicit monotonic order"
 	)
 	dialogue.free()

@@ -1,10 +1,12 @@
 extends SceneTree
 
 const ACHIEVEMENT_MANAGER_SCRIPT := preload(
-	"res://addons/konado_achievement/achievement_manager.gd"
+	"res://addons/konado_achievement/runtime/konado_achievement_manager.gd"
 )
-const SETTINGS_MANAGER_SCRIPT := preload("res://addons/konado_settings/scripts/settings_manager.gd")
-const WEBTOOL_SCRIPT := preload("res://addons/konado_webtool/konado_webtool.gd")
+const SETTINGS_MANAGER_SCRIPT := preload(
+	"res://addons/konado_settings/runtime/konado_settings_manager.gd"
+)
+const WEBTOOL_SCRIPT := preload("res://addons/konado_web_tool/runtime/konado_web_tool.gd")
 
 const ACHIEVEMENT_SAVE_PATH := "user://konado_test_achievements.json"
 const SETTINGS_SAVE_PATH := "user://konado_test_settings.cfg"
@@ -162,14 +164,14 @@ func _test_webtool_configuration() -> void:
 	webtool.free()
 
 
-func _create_runtime_category() -> KND_SettingCategory:
-	var category := KND_SettingCategory.new()
+func _create_runtime_category() -> KonadoSettingCategory:
+	var category := KonadoSettingCategory.new()
 	category.id = "runtime"
 	category.display_name = "Runtime"
-	var item := KND_SettingItem.new()
+	var item := KonadoSettingItem.new()
 	item.key = "enabled"
 	item.label = "Enabled"
-	item.type = KND_SettingItem.Type.TOGGLE
+	item.type = KonadoSettingItem.Type.TOGGLE
 	item.default_value = false
 	item.platforms.append("all")
 	category.items.append(item)
