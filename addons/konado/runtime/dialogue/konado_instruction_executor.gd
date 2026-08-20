@@ -5,6 +5,7 @@ class_name KonadoInstructionExecutor
 
 var _host_ref: WeakRef
 var _handlers: Dictionary = {}
+var _failure_reason := ""
 
 
 func _init(host: KonadoDialogueManager) -> void:
@@ -17,6 +18,7 @@ func _init(host: KonadoDialogueManager) -> void:
 
 
 func execute(instruction: KonadoInstruction, token: Dictionary) -> int:
+	_failure_reason = ""
 	var host := _host_ref.get_ref() as KonadoDialogueManager
 	if host == null:
 		return KonadoVirtualMachine.Result.FAILED
@@ -28,6 +30,15 @@ func execute(instruction: KonadoInstruction, token: Dictionary) -> int:
 	if result == KonadoVirtualMachine.Result.COMPLETED and host._token_is_active(token):
 		host._complete_instruction(token, instruction.next_pc())
 	return result
+
+
+func get_failure_reason() -> String:
+	return _failure_reason
+
+
+func _failed(reason: String) -> int:
+	_failure_reason = reason if not reason.is_empty() else "指令执行失败"
+	return KonadoVirtualMachine.Result.FAILED
 
 
 func _dialogue(
@@ -182,7 +193,7 @@ func _condition(
 ) -> int:
 	var target := _condition_target(host, instruction)
 	if not bool(target.get("ok", false)):
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed("condition：%s" % String(target.get("reason", "条件求值失败")))
 	host._complete_instruction(token, int(target.get("pc", KonadoProgram.INVALID_PC)))
 	return KonadoVirtualMachine.Result.COMPLETED
 
@@ -274,7 +285,7 @@ func _camera_move_async(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, _token: Dictionary
 ) -> int:
 	if host.camera_controller == null:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed("camera.move.async：camera_controller 未配置")
 	var accepted := (
 		host
 		. camera_controller
@@ -284,52 +295,92 @@ func _camera_move_async(
 			String(instruction.value(&"transition")),
 		)
 	)
-	return KonadoVirtualMachine.Result.COMPLETED if accepted else KonadoVirtualMachine.Result.FAILED
+	return (
+		KonadoVirtualMachine.Result.COMPLETED
+		if accepted
+		else _failed(host.camera_controller.get_last_error())
+	)
 
 
 func _camera_reset_async(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, _token: Dictionary
 ) -> int:
 	if host.camera_controller == null:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed("camera.reset.async：camera_controller 未配置")
 	var accepted := host.camera_controller.reset_camera_async(
 		float(instruction.value(&"duration")), String(instruction.value(&"transition"))
 	)
-	return KonadoVirtualMachine.Result.COMPLETED if accepted else KonadoVirtualMachine.Result.FAILED
+	return (
+		KonadoVirtualMachine.Result.COMPLETED
+		if accepted
+		else _failed(host.camera_controller.get_last_error())
+	)
 
 
 func _camera_shake_async(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, _token: Dictionary
 ) -> int:
 	if host.camera_controller == null:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed("camera.shake.async：camera_controller 未配置")
 	var accepted := host.camera_controller.shake_camera_async(float(instruction.value(&"duration")))
-	return KonadoVirtualMachine.Result.COMPLETED if accepted else KonadoVirtualMachine.Result.FAILED
+	return (
+		KonadoVirtualMachine.Result.COMPLETED
+		if accepted
+		else _failed(host.camera_controller.get_last_error())
+	)
 
 
 func _camera_stop_async(
 	host: KonadoDialogueManager, _instruction: KonadoInstruction, _token: Dictionary
 ) -> int:
 	if host.camera_controller == null:
-		return KonadoVirtualMachine.Result.FAILED
-	return (
-		KonadoVirtualMachine.Result.COMPLETED
-		if host.camera_controller.finish_async_operations()
-		else KonadoVirtualMachine.Result.FAILED
-	)
+		return _failed("camera.stop.async：camera_controller 未配置")
+	if host.camera_controller.finish_async_operations():
+		return KonadoVirtualMachine.Result.COMPLETED
+	return _failed(host.camera_controller.get_last_error())
 
 
 func _condition_target(host: KonadoDialogueManager, instruction: KonadoInstruction) -> Dictionary:
-	var value := host._read_variable(
-		String(instruction.value(&"variable")), bool(instruction.value(&"persistent"))
+	var variable_name := String(instruction.value(&"variable"))
+	var persistent := bool(instruction.value(&"persistent"))
+	var left := _condition_variable(host, variable_name, persistent)
+	if not bool(left.get("ok", false)):
+		return left
+	var encoded_target := instruction.value(&"target")
+	if encoded_target is Dictionary and encoded_target.get("kind") == "variable":
+		var target_name := String(encoded_target.get("name", ""))
+		var target_persistent := bool(encoded_target.get("persistent", false))
+		var right := _condition_variable(host, target_name, target_persistent)
+		if not bool(right.get("ok", false)):
+			return right
+		encoded_target = right["value"]
+	var comparison := host._compare_values(
+		left["value"], encoded_target, int(instruction.value(&"operator"))
 	)
-	var target := host._resolve_operand(instruction.value(&"target"))
-	var comparison := host._compare_values(value, target, int(instruction.value(&"operator")))
 	if not bool(comparison.get("ok", false)):
-		return comparison
+		return {
+			"ok": false,
+			"reason": String(comparison.get("reason", "条件左右值类型不兼容")),
+		}
 	return {
 		"ok": true,
 		"pc": instruction.true_pc() if bool(comparison.value) else instruction.false_pc(),
+	}
+
+
+func _condition_variable(host: KonadoDialogueManager, name: String, persistent: bool) -> Dictionary:
+	var exists := (
+		host.variable_store != null and host.variable_store.has(name)
+		if persistent
+		else host._temp_variables.has(name)
+	)
+	if exists:
+		return {"ok": true, "value": host._read_variable(name, persistent)}
+	var scope := "持久" if persistent else "临时"
+	var prefix := "%" if persistent else "$"
+	return {
+		"ok": false,
+		"reason": "找不到%s变量 '%s%s'" % [scope, prefix, name],
 	}
 
 
@@ -352,7 +403,7 @@ func _camera_move(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, token: Dictionary
 ) -> int:
 	if host.camera_controller == null:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed("camera.move：camera_controller 未配置")
 	var accepted := host.camera_controller.move_to_marker(
 		String(instruction.value(&"camera")),
 		float(instruction.value(&"duration")),
@@ -360,7 +411,7 @@ func _camera_move(
 		String(instruction.value(&"transition"))
 	)
 	if not accepted:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed(host.camera_controller.get_last_error())
 	host._set_waiting_token(token)
 	return KonadoVirtualMachine.Result.WAITING
 
@@ -369,7 +420,7 @@ func _camera_reset(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, token: Dictionary
 ) -> int:
 	if host.camera_controller == null:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed("camera.reset：camera_controller 未配置")
 	var accepted := host.camera_controller.reset_camera(
 		true,
 		float(instruction.value(&"duration")),
@@ -377,7 +428,7 @@ func _camera_reset(
 		String(instruction.value(&"transition"))
 	)
 	if not accepted:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed(host.camera_controller.get_last_error())
 	host._set_waiting_token(token)
 	return KonadoVirtualMachine.Result.WAITING
 
@@ -386,12 +437,12 @@ func _camera_shake(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, token: Dictionary
 ) -> int:
 	if host.camera_controller == null:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed("camera.shake：camera_controller 未配置")
 	var accepted := host.camera_controller.shake_camera(
 		float(instruction.value(&"duration")), host._complete_instruction.bind(token)
 	)
 	if not accepted:
-		return KonadoVirtualMachine.Result.FAILED
+		return _failed(host.camera_controller.get_last_error())
 	host._set_waiting_token(token)
 	return KonadoVirtualMachine.Result.WAITING
 

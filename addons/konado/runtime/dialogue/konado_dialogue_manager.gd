@@ -158,14 +158,8 @@ func _ready() -> void:
 		save_panel.set_save_system(save_system)
 	_setup_logger()
 
-	if stage_controller != null and camera_controller != null:
-		if not stage_controller.background_change_finished.is_connected(
-			_refresh_camera_markers_on_background_change
-		):
-			stage_controller.background_change_finished.connect(_refresh_camera_markers_on_background_change)
-
 	if initialize_on_ready:
-		init_dialogue(start_dialogue if start_on_ready else Callable())
+		_initialize_on_ready.call_deferred()
 
 
 func _exit_tree() -> void:
@@ -176,9 +170,16 @@ func _exit_tree() -> void:
 		OS.remove_logger(_logger)
 
 
-func _refresh_camera_markers_on_background_change(succeeded: bool) -> void:
-	if succeeded and camera_controller != null:
-		camera_controller.refresh_camera_markers()
+func _initialize_on_ready() -> void:
+	if not is_inside_tree() or not initialize_on_ready:
+		return
+	# A parent may explicitly select or initialize a shot from its own _ready().
+	# Preserve that configuration instead of replacing it with the exported shot.
+	if current_shot != null:
+		if start_on_ready and not _shot_active:
+			start_dialogue()
+		return
+	init_dialogue(start_dialogue if start_on_ready else Callable())
 
 
 func init_dialogue(callback: Callable = Callable()) -> void:
@@ -214,9 +215,6 @@ func start_dialogue() -> void:
 	if not _vm.has_state():
 		_vm.synchronize_state(KonadoRuntimeState.capture(self))
 	shot_start.emit()
-	# 提前收集一次相机机位，确保 camera.move 能在首条指令前可用
-	if camera_controller != null:
-		camera_controller.refresh_camera_markers()
 	_schedule_pump()
 
 
@@ -286,7 +284,14 @@ func _pump() -> void:
 				break
 			continue
 		if result == KonadoVirtualMachine.Result.FAILED:
-			_fail_current("指令执行失败：%s" % KonadoOpcode.name_of(instruction.opcode()))
+			var failure_reason := _executor.get_failure_reason()
+			_fail_current(
+				(
+					failure_reason
+					if not failure_reason.is_empty()
+					else "指令执行失败：%s" % KonadoOpcode.name_of(instruction.opcode())
+				)
+			)
 			break
 		if not _active_token.is_empty():
 			_fail_current("指令执行器未提交原子事务")

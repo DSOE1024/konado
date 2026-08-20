@@ -1,11 +1,23 @@
 extends "res://tests/dialogue/dialogue_lifecycle_test_base.gd"
 
 
+class VariableConfigHost:
+	extends Control
+
+	var manager: KonadoDialogueManager
+
+	func _ready() -> void:
+		manager.variable_store.set_value("love", 0)
+
+
 func _init() -> void:
 	call_deferred("_run")
 
 
 func _run() -> void:
+	await _test_auto_start_waits_for_parent_configuration()
+	await _test_missing_condition_variable_reports_its_name()
+	await _test_nested_condition_choice_reaches_branch()
 	await _test_set_shot_and_complete_dialogue()
 	await _test_visibility_commands_are_atomic()
 	await _test_screen_text_completion_lifecycle()
@@ -17,6 +29,89 @@ func _run() -> void:
 	if _failures == 0:
 		print("PASS: atomic dialogue lifecycle tests")
 	quit(_failures)
+
+
+func _test_auto_start_waits_for_parent_configuration() -> void:
+	var host := VariableConfigHost.new()
+	var manager := DIALOGUE_MANAGER_SCENE.instantiate() as KonadoDialogueManager
+	manager.require_visible_in_tree = false
+	manager.enable_overlay_log = false
+	manager.auto_show_dialogue_box = false
+	manager.typing_interval = 0.001
+	manager.dialogue_box.enable_typing_effect_audio = false
+	manager.start_dialogue_shot = _compile_shot(
+		(
+			"if %love <= 0:\n"
+			+ '\t"Kona" "configured" [id=configured]\n'
+			+ "else:\n"
+			+ '\t"Kona" "wrong" [id=wrong]\n'
+			+ "endif\nend"
+		)
+	)
+	host.manager = manager
+	host.add_child(manager)
+	root.add_child(host)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:configured", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"configured",
+		"automatic playback observes variables configured by the parent ready callback",
+	)
+	await _free_node(host)
+
+
+func _test_missing_condition_variable_reports_its_name() -> void:
+	var manager := await _create_manager()
+	manager.set_shot(_compile_shot("if %missing == 1:\n\tend\nendif"))
+	var result := manager._executor._condition_target(manager, manager._current_instruction())
+	_expect(not bool(result.get("ok", false)), "an undefined condition variable is rejected")
+	_expect(
+		String(result.get("reason", "")).contains("%missing"),
+		"condition diagnostics identify the undefined variable instead of only naming the opcode",
+	)
+	await _free_node(manager)
+
+
+func _test_nested_condition_choice_reaches_branch() -> void:
+	var manager := await _create_manager()
+	manager.set_shot(
+		_compile_shot(
+			(
+				'choice "Right" -> right [id=main_choice]\n'
+				+ "branch right\n"
+				+ "\tset $right = 5\n"
+				+ "\tif $right == 5:\n"
+				+ '\t\tchoice "Back" -> no [id=nested_choice]\n'
+				+ "\tendif\n"
+				+ "\tend\n"
+				+ "branch no\n"
+				+ '\t"Kona" "returned" [id=returned]\n'
+				+ "\tend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:main_choice", KonadoDialogueManager.DialogState.WAITING
+	)
+	var main_option: Dictionary = manager._current_instruction().value(&"options")[0]
+	manager._on_option_triggered(main_option, manager._playback_generation)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:nested_choice", KonadoDialogueManager.DialogState.WAITING
+	)
+	var nested_option: Dictionary = manager._current_instruction().value(&"options")[0]
+	manager._on_option_triggered(nested_option, manager._playback_generation)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:returned", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"returned",
+		"a choice nested in a conditional branch resolves its compiled target",
+	)
+	await _free_node(manager)
 
 
 func _test_set_shot_and_complete_dialogue() -> void:
