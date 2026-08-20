@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://djdy733ored5q"
-path="res://.godot/imported/04.png-052627d31725a3849fa4b3913ab6aff6.ctex"
+uid="uid://wbfhu2nd82rr"
+path="res://.godot/imported/transition_demo_background.png-fb2eac1e39ba600f101f20a0d887a0fd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sample/demo/sample_arts/04.png"
-dest_files=["res://.godot/imported/04.png-052627d31725a3849fa4b3913ab6aff6.ctex"]
+source_file="res://sample/demo/artwork/transition_demo_background.png"
+dest_files=["res://.godot/imported/transition_demo_background.png-fb2eac1e39ba600f101f20a0d887a0fd.ctex"]
 
 [params]
 

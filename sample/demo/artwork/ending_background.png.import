@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bb7nhjioefh8a"
-path="res://.godot/imported/示例-咖啡馆-背景.png-f1b89582e3e54165f5712984dbb2b5ba.ctex"
+uid="uid://cyhlk1hod47gb"
+path="res://.godot/imported/ending_background.png-212fc0da3355e8d8fb592dbb2b4d948f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sample/demo/sample_arts/示例-咖啡馆-背景.png"
-dest_files=["res://.godot/imported/示例-咖啡馆-背景.png-f1b89582e3e54165f5712984dbb2b5ba.ctex"]
+source_file="res://sample/demo/artwork/ending_background.png"
+dest_files=["res://.godot/imported/ending_background.png-212fc0da3355e8d8fb592dbb2b4d948f.ctex"]
 
 [params]
 

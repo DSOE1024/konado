@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dwty5qfxsqcyo"]
 
-[ext_resource type="Script" uid="uid://ca0g17r6mh3hi" path="res://addons/konado/scripts/background/knd_background_scene_base.gd" id="1_0ki5s"]
-[ext_resource type="Texture2D" uid="uid://bb7nhjioefh8a" path="res://sample/demo/sample_arts/示例-咖啡馆-背景.png" id="2_0ki5s"]
-[ext_resource type="Script" uid="uid://dbvsg63rj1tnx" path="res://addons/konado/cam/konado_camera.gd" id="3_fr4rs"]
+[ext_resource type="Script" uid="uid://ca0g17r6mh3hi" path="res://addons/konado/runtime/stage/background/konado_background_scene_base.gd" id="1_0ki5s"]
+[ext_resource type="Texture2D" uid="uid://bb7nhjioefh8a" path="res://sample/demo/artwork/cafe_background.png" id="2_0ki5s"]
+[ext_resource type="Script" uid="uid://dbvsg63rj1tnx" path="res://addons/konado/runtime/camera/konado_camera_marker.gd" id="3_fr4rs"]
 
 [node name="BgPara" type="Control" unique_id=2109119121]
 layout_mode = 3
@@ -24,17 +24,17 @@ scroll_scale = Vector2(0.1, 0.1)
 scale = Vector2(1.6, 1.6)
 texture = ExtResource("2_0ki5s")
 
-[node name="KonadoCamera2D" type="Camera2D" parent="." unique_id=665198934]
+[node name="CameraMarkerCam1" type="Camera2D" parent="." unique_id=665198934]
 position = Vector2(650, 397)
 zoom = Vector2(1.5, 1.5)
 enabled = false
 script = ExtResource("3_fr4rs")
 metadata/_custom_type_script = "uid://dbvsg63rj1tnx"
 
-[node name="KonadoCamera2D2" type="Camera2D" parent="." unique_id=326912723]
+[node name="CameraMarkerCam2" type="Camera2D" parent="." unique_id=326912723]
 position = Vector2(924, 476)
 zoom = Vector2(1.2, 1.2)
 enabled = false
 script = ExtResource("3_fr4rs")
-camera_setup = "cam2"
+marker_id = "cam2"
 metadata/_custom_type_script = "uid://dbvsg63rj1tnx"

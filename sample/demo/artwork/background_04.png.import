@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://obinhywgvblv"
-path="res://.godot/imported/春季.jpg-0573d649ae5a659a4ded8932bbd5d57f.ctex"
+uid="uid://djdy733ored5q"
+path="res://.godot/imported/background_04.png-928a9d227ec076ca1552ce19c864474f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sample/demo/sample_arts/春季.jpg"
-dest_files=["res://.godot/imported/春季.jpg-0573d649ae5a659a4ded8932bbd5d57f.ctex"]
+source_file="res://sample/demo/artwork/background_04.png"
+dest_files=["res://.godot/imported/background_04.png-928a9d227ec076ca1552ce19c864474f.ctex"]
 
 [params]
 
