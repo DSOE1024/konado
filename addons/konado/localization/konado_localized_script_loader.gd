@@ -1,24 +1,16 @@
 extends RefCounted
 
-var _locale_catalog: RefCounted
 var _warned_fallbacks := {}
 
 
-func _init(locale_catalog: RefCounted) -> void:
-	_locale_catalog = locale_catalog
-
-
 func get_script_candidates(script_path: String, locale: String) -> PackedStringArray:
-	var normalized: String = _locale_catalog.normalize_locale(locale)
 	var base_path := get_base_script_path(script_path)
 	var extension := base_path.get_extension()
 	var stem := base_path.trim_suffix("." + extension) if not extension.is_empty() else base_path
 	var candidates := PackedStringArray()
 
-	_append_localized_candidate(candidates, stem, normalized, extension)
-	var language := normalized.get_slice("_", 0)
-	if language != normalized:
-		_append_localized_candidate(candidates, stem, language, extension)
+	for candidate_locale: String in _get_locale_fallbacks(locale):
+		_append_localized_candidate(candidates, stem, candidate_locale, extension)
 	_append_unique(candidates, base_path)
 	return candidates
 
@@ -27,7 +19,7 @@ func resolve_script_path(
 	script_path: String, locale: String, warn_on_fallback: bool = true
 ) -> String:
 	if script_path.strip_edges().is_empty():
-		push_error("KND_I18n: script path is empty")
+		push_error("KonadoStoryLocalization: script path is empty")
 		return ""
 
 	var candidates := get_script_candidates(script_path, locale)
@@ -38,48 +30,56 @@ func resolve_script_path(
 		if index > 0 and warn_on_fallback:
 			_warn_fallback_once(script_path, locale, candidate)
 		return candidate
-	push_error("KND_I18n: no script found for %s" % script_path)
+	push_error("KonadoStoryLocalization: no script found for %s" % script_path)
 	return ""
 
 
 func load_localized_script(
 	script_path: String, locale: String, warn_on_fallback: bool = true
-) -> KND_Shot:
+) -> KonadoShot:
+	var base_path := get_base_script_path(script_path)
+	var base_shot := _load_shot(base_path)
+	if base_shot == null or base_shot.program == null:
+		push_error("KonadoStoryLocalization: failed to load default script %s" % base_path)
+		return null
 	var resolved_path := resolve_script_path(script_path, locale, warn_on_fallback)
 	if resolved_path.is_empty():
 		return null
+	var runtime_shot := base_shot.duplicate() as KonadoShot
+	runtime_shot.source_path = resolved_path
+	if resolved_path == base_path:
+		runtime_shot.install_locale_overlay(null)
+		return runtime_shot
+	return _apply_locale_overlay(runtime_shot, base_shot, resolved_path, locale)
 
-	var shot: KND_Shot
-	if ResourceLoader.exists(resolved_path):
-		shot = ResourceLoader.load(resolved_path) as KND_Shot
-	if shot == null and FileAccess.file_exists(resolved_path):
-		shot = KS_Compiler.new().compile_file(resolved_path)
-	if shot == null:
-		push_error("KND_I18n: failed to load localized script %s" % resolved_path)
+
+func _apply_locale_overlay(
+	runtime_shot: KonadoShot, base_shot: KonadoShot, resolved_path: String, locale: String
+) -> KonadoShot:
+	var localized_shot := _load_shot(resolved_path)
+	if localized_shot == null or localized_shot.program == null:
+		push_error("KonadoStoryLocalization: failed to load localized script %s" % resolved_path)
+		return null
+	var result := KonadoLocaleOverlay.build(base_shot.program, localized_shot.program, locale)
+	if not bool(result.get("ok", false)):
+		for error: String in result.get("errors", []):
+			push_error("KonadoStoryLocalization: %s: %s" % [resolved_path, error])
+		return null
+	if not runtime_shot.install_locale_overlay(result["overlay"]):
+		push_error(
+			"KonadoStoryLocalization: localized overlay does not match %s" % base_shot.source_path
+		)
+		return null
+	return runtime_shot
+
+
+func _load_shot(path: String) -> KonadoShot:
+	var shot: KonadoShot
+	if ResourceLoader.exists(path):
+		shot = ResourceLoader.load(path) as KonadoShot
+	if shot == null and FileAccess.file_exists(path):
+		shot = KonadoScriptCompiler.new().compile_file(path)
 	return shot
-
-
-func choose_restore_node_id(
-	previous_shot: KND_Shot, localized_shot: KND_Shot, previous_node_id: String
-) -> String:
-	if localized_shot == null:
-		return ""
-	if not previous_node_id.is_empty() and localized_shot.find_node(previous_node_id) != null:
-		return previous_node_id
-
-	var previous_index := -1
-	if previous_shot != null:
-		for index in range(previous_shot.dialogues.size()):
-			if previous_shot.dialogues[index].node_id == previous_node_id:
-				previous_index = index
-				break
-	if previous_index >= 0 and previous_index < localized_shot.dialogues.size():
-		return localized_shot.dialogues[previous_index].node_id
-	if not localized_shot.start_node_id.is_empty():
-		return localized_shot.start_node_id
-	if not localized_shot.dialogues.is_empty():
-		return localized_shot.dialogues[0].node_id
-	return ""
 
 
 func get_base_script_path(script_path: String) -> String:
@@ -100,7 +100,31 @@ func get_script_locale(script_path: String) -> String:
 	var extension := script_path.get_extension()
 	var without_extension := script_path.trim_suffix("." + extension)
 	var suffix := without_extension.get_file().get_extension()
-	return _locale_catalog.normalize_locale(suffix)
+	return TranslationServer.standardize_locale(suffix)
+
+
+func _get_locale_fallbacks(locale: String) -> PackedStringArray:
+	var requested := locale.strip_edges()
+	if requested.is_empty():
+		requested = TranslationServer.get_locale()
+	var exact := TranslationServer.standardize_locale(requested)
+	var expanded := TranslationServer.standardize_locale(requested, true)
+	var fallbacks := PackedStringArray()
+	_append_unique(fallbacks, exact)
+	_append_unique(fallbacks, expanded)
+
+	# Godot can expand a regional locale such as zh_CN to zh_Hans_CN. Localized
+	# scripts commonly use the language + script form (zh_Hans), so include it
+	# before falling back to the base language.
+	var expanded_parts := expanded.split("_", false)
+	if expanded_parts.size() >= 2 and expanded_parts[1].length() == 4:
+		_append_unique(fallbacks, "%s_%s" % [expanded_parts[0], expanded_parts[1]])
+	var exact_parts := exact.split("_", false)
+	if exact_parts.size() >= 2 and exact_parts[1].length() == 4:
+		_append_unique(fallbacks, "%s_%s" % [exact_parts[0], exact_parts[1]])
+	if not exact_parts.is_empty():
+		_append_unique(fallbacks, exact_parts[0])
+	return fallbacks
 
 
 func _looks_like_locale_suffix(suffix: String) -> bool:
@@ -163,11 +187,19 @@ func _resource_exists(path: String) -> bool:
 func _warn_fallback_once(
 	script_path: String, requested_locale: String, resolved_path: String
 ) -> void:
-	var normalized: String = _locale_catalog.normalize_locale(requested_locale)
+	var effective_locale := (
+		requested_locale
+		if not requested_locale.strip_edges().is_empty()
+		else TranslationServer.get_locale()
+	)
+	var normalized := TranslationServer.standardize_locale(effective_locale)
 	var warning_key := "%s|%s|%s" % [script_path, normalized, resolved_path]
 	if _warned_fallbacks.has(warning_key):
 		return
 	_warned_fallbacks[warning_key] = true
 	push_warning(
-		"KND_I18n: %s is unavailable for %s; using %s" % [script_path, normalized, resolved_path]
+		(
+			"KonadoStoryLocalization: %s is unavailable for %s; using %s"
+			% [script_path, normalized, resolved_path]
+		)
 	)
