@@ -6,8 +6,8 @@ the narrative scripting language used by Konado.
 
 ## Features
 
-- Context-aware completion for commands, actors, actor states, motions, backgrounds,
-  audio, cameras, branches, variables, and script paths
+- Context-aware completion for commands, named parameters, actors, actor states,
+  motions, backgrounds, audio, cameras, branches, variables, and script paths
 - Real-time syntax and project-resource diagnostics
 - Up to three ranked quick fixes for common authoring mistakes
 - Hover documentation and command signatures

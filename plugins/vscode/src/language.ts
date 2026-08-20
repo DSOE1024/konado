@@ -3,6 +3,8 @@ import {
 	CAMERA_TRANSITIONS,
 	CONTEXT_KEYWORDS,
 	ROOT_KEYWORDS,
+	commandKey,
+	namedParametersForCommand,
 } from "./catalog";
 
 export interface Token {
@@ -36,6 +38,7 @@ export interface SymbolReference {
 	end: number;
 	role: "definition" | "reference";
 	scopeName?: string;
+	optional?: boolean;
 }
 
 export interface TextEditSpec {
@@ -80,8 +83,21 @@ export interface ProjectSnapshot {
 	hasUri(uri: string): boolean;
 }
 
+interface NamedParameter {
+	name: string;
+	value: string;
+	start: number;
+	end: number;
+}
+
+interface ParsedStatementParameters {
+	base: string;
+	parameters: NamedParameter[];
+	malformedStart?: number;
+}
+
 const IDENTIFIER = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
-const VARIABLE = /^[%$][\p{L}_][\p{L}\p{N}_]*$/u;
+const VARIABLE = /^[%$][\p{L}_][\p{L}\p{N}_-]*$/u;
 const NUMBER = /^[-+]?(?:\d+(?:\.\d+)?|\.\d+)$/;
 const INTEGER = /^[-+]?\d+$/;
 const COMPARISON = /^(?:==|!=|>=|<=|>|<)$/;
@@ -218,7 +234,7 @@ function reference(
 function variablesInLine(line: string, lineNumber: number): SymbolReference[] {
 	const results: SymbolReference[] = [];
 	const { code } = splitCodeAndComment(line);
-	for (const match of code.matchAll(/[%$][\p{L}_][\p{L}\p{N}_]*/gu)) {
+	for (const match of code.matchAll(/[%$][\p{L}_][\p{L}\p{N}_-]*/gu)) {
 		const start = match.index;
 		const name = match[0];
 		results.push({
@@ -318,14 +334,285 @@ export function referencesForLine(
 			add(reference(tokens, 2, "achievements", lineNumber, "definition"));
 			break;
 		default:
-			if (tokens[0]?.quoted) {
-				add(reference(tokens, 0, "actors", lineNumber));
-				if (tokens.length >= 3) {
+			if (isDialogueTokens(tokens)) {
+				if (!VARIABLE.test(tokens[0]?.text ?? "")) {
+					const quotedSpeaker = tokens[0]?.quoted === true;
+					const interpolatedSpeaker =
+						quotedSpeaker &&
+						/[%$][\p{L}_][\p{L}\p{N}_-]*/u.test(
+							tokens[0]?.text ?? "",
+						);
+					const speaker = interpolatedSpeaker
+						? undefined
+						: reference(tokens, 0, "actors", lineNumber);
+					if (speaker && quotedSpeaker) {
+						speaker.optional = true;
+					}
+					add(speaker);
+				}
+				if (hasDialogueVoiceToken(tokens)) {
 					add(reference(tokens, 2, "voices", lineNumber));
 				}
 			}
 	}
 	return deduplicateReferences(results);
+}
+
+function isDialogueTokens(tokens: readonly Token[]): boolean {
+	if (tokens.length < 2 || !tokens[1]?.quoted) {
+		return false;
+	}
+	const first = tokens[0];
+	return Boolean(
+		first?.quoted ||
+		VARIABLE.test(first?.text ?? "") ||
+		!ROOT_SET.has(first?.text ?? ""),
+	);
+}
+
+function hasDialogueVoiceToken(tokens: readonly Token[]): boolean {
+	return tokens.length >= 3 && !tokens[2]?.text.startsWith("[");
+}
+
+function firstUnquotedBracket(content: string): number {
+	let quoted = false;
+	let escaped = false;
+	for (let index = 0; index < content.length; index += 1) {
+		const character = content[index];
+		if (escaped) {
+			escaped = false;
+			continue;
+		}
+		if (quoted && character === "\\") {
+			escaped = true;
+			continue;
+		}
+		if (character === '"') {
+			quoted = !quoted;
+			continue;
+		}
+		if (!quoted && character === "[") {
+			return index;
+		}
+	}
+	return -1;
+}
+
+function parseStatementParameters(content: string): ParsedStatementParameters {
+	const parameterStart = firstUnquotedBracket(content);
+	if (parameterStart < 0) {
+		return { base: content, parameters: [] };
+	}
+	const parameters: NamedParameter[] = [];
+	const suffix = content.slice(parameterStart);
+	const pattern =
+		/\s*\[\s*([\p{L}_][\p{L}\p{N}_-]*)\s*=\s*([^\s\[\]]+)\s*\]/uy;
+	let offset = 0;
+	while (offset < suffix.length) {
+		pattern.lastIndex = offset;
+		const match = pattern.exec(suffix);
+		if (!match) {
+			if (/^\s*$/u.test(suffix.slice(offset))) {
+				break;
+			}
+			if (
+				parameters.length > 0 &&
+				/^\s*:\s*$/u.test(suffix.slice(offset))
+			) {
+				return {
+					base: `${content.slice(0, parameterStart).trimEnd()}:`,
+					parameters,
+				};
+			}
+			return {
+				base: content.slice(0, parameterStart).trimEnd(),
+				parameters,
+				malformedStart: parameterStart + offset,
+			};
+		}
+		const whole = match[0];
+		const leadingWhitespace = whole.length - whole.trimStart().length;
+		parameters.push({
+			name: match[1] ?? "",
+			value: match[2] ?? "",
+			start: parameterStart + offset + leadingWhitespace,
+			end: parameterStart + pattern.lastIndex,
+		});
+		offset = pattern.lastIndex;
+	}
+	return {
+		base: content.slice(0, parameterStart).trimEnd(),
+		parameters,
+	};
+}
+
+function statementCommand(tokens: readonly Token[]): string {
+	if (isDialogueTokens(tokens)) {
+		return "dialogue";
+	}
+	return commandKey(tokens.map((token) => token.text));
+}
+
+function validateNamedParameters(
+	line: number,
+	tokens: readonly Token[],
+	parsed: ParsedStatementParameters,
+	diagnostics: DiagnosticSpec[],
+	commandOverride?: string,
+): void {
+	if (parsed.malformedStart !== undefined) {
+		diagnostics.push({
+			code: "syntax.named_parameter",
+			severity: "error",
+			line,
+			start: parsed.malformedStart,
+			end: Math.max(parsed.malformedStart + 1, parsed.base.length),
+			message:
+				"Expected a trailing named parameter in the form [name=value].",
+			messageZh: "命名参数应位于语句末尾并写成 [名称=值]。",
+		});
+		return;
+	}
+	if (parsed.parameters.length === 0) {
+		return;
+	}
+	const command = commandOverride ?? statementCommand(tokens);
+	const allowed = namedParametersForCommand(command);
+	const seen = new Set<string>();
+	for (const parameter of parsed.parameters) {
+		if (seen.has(parameter.name)) {
+			diagnostics.push({
+				code: "syntax.named_parameter_duplicate",
+				severity: "error",
+				line,
+				start: parameter.start,
+				end: parameter.end,
+				message: `Named parameter '${parameter.name}' is duplicated.`,
+				messageZh: `命名参数“${parameter.name}”重复。`,
+			});
+			continue;
+		}
+		seen.add(parameter.name);
+		const definition = allowed[parameter.name];
+		if (!definition) {
+			diagnostics.push({
+				code: "syntax.named_parameter_unknown",
+				severity: "error",
+				line,
+				start: parameter.start,
+				end: parameter.end,
+				message: `Named parameter '${parameter.name}' is not valid for this statement.`,
+				messageZh: `命名参数“${parameter.name}”不适用于当前语句。`,
+			});
+			continue;
+		}
+		if (
+			definition.type === "identifier" &&
+			!IDENTIFIER.test(parameter.value)
+		) {
+			diagnostics.push({
+				code: "syntax.named_parameter_value",
+				severity: "error",
+				line,
+				start: parameter.start,
+				end: parameter.end,
+				message: `Named parameter '${parameter.name}' requires an identifier.`,
+				messageZh: `命名参数“${parameter.name}”必须使用有效标识符。`,
+			});
+			continue;
+		}
+		if (definition.type === "number") {
+			if (!NUMBER.test(parameter.value)) {
+				diagnostics.push({
+					code: "syntax.named_parameter_value",
+					severity: "error",
+					line,
+					start: parameter.start,
+					end: parameter.end,
+					message: `Named parameter '${parameter.name}' requires a number.`,
+					messageZh: `命名参数“${parameter.name}”必须是数字。`,
+				});
+				continue;
+			}
+			const value = Number(parameter.value);
+			if (
+				definition.minimum !== undefined &&
+				value < definition.minimum
+			) {
+				diagnostics.push({
+					code: "syntax.named_parameter_range",
+					severity: "error",
+					line,
+					start: parameter.start,
+					end: parameter.end,
+					message: `Named parameter '${parameter.name}' cannot be less than ${definition.minimum}.`,
+					messageZh: `命名参数“${parameter.name}”不能小于 ${definition.minimum}。`,
+				});
+			}
+			if (
+				definition.exclusiveMinimum !== undefined &&
+				value <= definition.exclusiveMinimum
+			) {
+				diagnostics.push({
+					code: "syntax.named_parameter_range",
+					severity: "error",
+					line,
+					start: parameter.start,
+					end: parameter.end,
+					message: `Named parameter '${parameter.name}' must be greater than ${definition.exclusiveMinimum}.`,
+					messageZh: `命名参数“${parameter.name}”必须大于 ${definition.exclusiveMinimum}。`,
+				});
+			}
+		}
+	}
+	if (seen.has("speed") && seen.has("interval")) {
+		const parameter = parsed.parameters.find(
+			(item) => item.name === "interval",
+		);
+		if (parameter) {
+			diagnostics.push({
+				code: "syntax.named_parameter_conflict",
+				severity: "error",
+				line,
+				start: parameter.start,
+				end: parameter.end,
+				message:
+					"Dialogue parameters 'speed' and 'interval' cannot be used together.",
+				messageZh: "对话参数“speed”和“interval”不能同时设置。",
+			});
+		}
+	}
+	if (
+		seen.has("duration") &&
+		["cam", "asyncam"].includes(tokens[0]?.text ?? "")
+	) {
+		const action = tokens[1]?.text;
+		const positionalIndex =
+			action === "move" ? 4 : action === "reset" ? 3 : 2;
+		const positional = tokens[positionalIndex];
+		if (
+			positional &&
+			NUMBER.test(positional.text) &&
+			Number(positional.text) > 0
+		) {
+			const parameter = parsed.parameters.find(
+				(item) => item.name === "duration",
+			);
+			if (parameter) {
+				diagnostics.push({
+					code: "syntax.named_parameter_conflict",
+					severity: "error",
+					line,
+					start: parameter.start,
+					end: parameter.end,
+					message:
+						"Camera duration cannot be set both positionally and by [duration=...].",
+					messageZh:
+						"镜头时长不能同时使用位置参数和 [duration=...] 设置。",
+				});
+			}
+		}
+	}
 }
 
 export function extractReferences(source: string): SymbolReference[] {
@@ -341,7 +628,7 @@ export function extractReferences(source: string): SymbolReference[] {
 			content.endsWith("{")
 		) {
 			insideScreenText = true;
-		} else if (insideScreenText && content === "}") {
+		} else if (insideScreenText && tokens[0]?.text === "}") {
 			insideScreenText = false;
 		}
 	});
@@ -1108,8 +1395,10 @@ export function analyzeDocument(
 	const diagnostics: DiagnosticSpec[] = [];
 	const lines = source.split(/\r?\n/u);
 	const ifStack: number[] = [];
+	const stableIds = new Map<string, number>();
 	let insideScreenText = false;
 	let screenStart = -1;
+	let choiceGroupOpen = false;
 
 	lines.forEach((line, lineNumber) => {
 		const { code } = splitCodeAndComment(line);
@@ -1149,7 +1438,36 @@ export function analyzeDocument(
 			return;
 		}
 		if (insideScreenText) {
-			if (content === "}") {
+			if (tokens[0]?.text === "}") {
+				const closeParameters = parseStatementParameters(
+					code.trimEnd(),
+				);
+				validateNamedParameters(
+					lineNumber,
+					tokens,
+					closeParameters,
+					diagnostics,
+					"screentext",
+				);
+				const stableId = closeParameters.parameters.find(
+					(parameter) => parameter.name === "id",
+				);
+				if (stableId && IDENTIFIER.test(stableId.value)) {
+					const firstLine = stableIds.get(stableId.value);
+					if (firstLine !== undefined) {
+						diagnostics.push({
+							code: "semantic.duplicate_instruction_id",
+							severity: "error",
+							line: lineNumber,
+							start: stableId.start,
+							end: stableId.end,
+							message: `Instruction ID '${stableId.value}' is duplicated (first used on line ${firstLine + 1}).`,
+							messageZh: `指令 ID“${stableId.value}”重复（首次出现在第 ${firstLine + 1} 行）。`,
+						});
+					} else {
+						stableIds.set(stableId.value, lineNumber);
+					}
+				}
 				insideScreenText = false;
 			} else if (tokens.length !== 1 || !tokens[0]?.quoted) {
 				diagnostics.push(
@@ -1165,24 +1483,86 @@ export function analyzeDocument(
 			return;
 		}
 
-		if (tokens[0]?.quoted) {
-			if (tokens.length < 2 || !tokens[1]?.quoted || tokens.length > 3) {
+		const parsedParameters = parseStatementParameters(code.trimEnd());
+		const statementTokens = tokenizeLine(parsedParameters.base);
+		const statementContent = parsedParameters.base.trim();
+		validateNamedParameters(
+			lineNumber,
+			statementTokens,
+			parsedParameters,
+			diagnostics,
+		);
+		if (parsedParameters.malformedStart !== undefined) {
+			return;
+		}
+		const currentRoot = statementTokens[0]?.text.replace(/:$/u, "") ?? "";
+		if (currentRoot === "choice") {
+			if (choiceGroupOpen && parsedParameters.parameters.length > 0) {
+				const parameter = parsedParameters.parameters[0];
+				if (parameter) {
+					diagnostics.push({
+						code: "syntax.choice_group_parameter",
+						severity: "error",
+						line: lineNumber,
+						start: parameter.start,
+						end: parameter.end,
+						message:
+							"Named parameters for a consecutive choice group belong on its first item only.",
+						messageZh: "连续 choice 组的命名参数只能写在第一项。",
+					});
+				}
+			}
+			choiceGroupOpen = true;
+		} else {
+			choiceGroupOpen = false;
+		}
+		const stableId = parsedParameters.parameters.find(
+			(parameter) => parameter.name === "id",
+		);
+		if (stableId && IDENTIFIER.test(stableId.value)) {
+			const firstLine = stableIds.get(stableId.value);
+			if (firstLine !== undefined) {
+				diagnostics.push({
+					code: "semantic.duplicate_instruction_id",
+					severity: "error",
+					line: lineNumber,
+					start: stableId.start,
+					end: stableId.end,
+					message: `Instruction ID '${stableId.value}' is duplicated (first used on line ${firstLine + 1}).`,
+					messageZh: `指令 ID“${stableId.value}”重复（首次出现在第 ${firstLine + 1} 行）。`,
+				});
+			} else {
+				stableIds.set(stableId.value, lineNumber);
+			}
+		}
+
+		if (isDialogueTokens(statementTokens)) {
+			if (
+				statementTokens.length < 2 ||
+				!statementTokens[1]?.quoted ||
+				statementTokens.length > 3
+			) {
 				diagnostics.push(
 					diagnostic(
 						lineNumber,
-						tokens[0],
+						statementTokens[0],
 						"syntax.dialogue",
-						'Expected: "<actor>" "<dialogue>" [voice_id]',
-						'应为："<角色>" "<对话>" [语音 ID]',
+						'Expected: <actor|variable|"label"> "<dialogue>" [voice_id] [name=value ...]',
+						'应为：<演员|变量|"署名"> "<对话>" [语音 ID] [名称=值 ...]',
 					),
 				);
 			}
 			return;
 		}
 
-		validateCommand(lineNumber, content, tokens, diagnostics);
-		const root = tokens[0]?.text.replace(/:$/u, "");
-		if (root === "screentext" && content.endsWith("{")) {
+		validateCommand(
+			lineNumber,
+			statementContent,
+			statementTokens,
+			diagnostics,
+		);
+		const root = statementTokens[0]?.text.replace(/:$/u, "");
+		if (root === "screentext" && statementContent.endsWith("{")) {
 			insideScreenText = true;
 			screenStart = lineNumber;
 		} else if (root === "if") {
@@ -1382,6 +1762,9 @@ function appendProjectDiagnostics(
 				return definition.scopeName === item.scopeName;
 			});
 		if (definitions.length > 0) {
+			continue;
+		}
+		if (item.optional) {
 			continue;
 		}
 		const label = kindLabel(item.kind);

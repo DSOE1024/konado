@@ -1,3 +1,7 @@
+## 2.8.0
+
+- Updated dialogue syntax, named parameters, diagnostics, and project symbol navigation for KonadoScript 2.8.
+
 ## 2.7.2
 
 - Refine the KonadoScript file icon to match Visual Studio Code's compact

@@ -21,7 +21,11 @@ export function formatSource(source: string, indent: string): string {
 		if (root === "branch") {
 			inBranch = true;
 			depth = 0;
-		} else if (root === "else" || root === "endif" || content === "}") {
+		} else if (
+			root === "else" ||
+			root === "endif" ||
+			tokens[0]?.text === "}"
+		) {
 			depth = Math.max(inBranch ? 1 : 0, depth - 1);
 		}
 
@@ -37,7 +41,7 @@ export function formatSource(source: string, indent: string): string {
 		} else if (root === "screentext" && content.endsWith("{")) {
 			inScreenText = true;
 			depth += 1;
-		} else if (content === "}") {
+		} else if (tokens[0]?.text === "}") {
 			inScreenText = false;
 		}
 

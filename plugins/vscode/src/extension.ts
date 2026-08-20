@@ -6,7 +6,7 @@ import {
 	switchLocalization,
 	text,
 } from "./localization";
-import { ProjectIndex } from "./projectIndex";
+import { ProjectIndex } from "./project-index";
 import { registerLanguageProviders } from "./providers";
 
 export async function activate(

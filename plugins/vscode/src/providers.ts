@@ -8,6 +8,7 @@ import {
 	ROOT_KEYWORDS,
 	SNIPPETS,
 	commandKey,
+	namedParametersForCommand,
 } from "./catalog";
 import type { DiagnosticManager } from "./diagnostics";
 import { formatSource } from "./formatter";
@@ -22,7 +23,7 @@ import {
 	type SymbolReference,
 } from "./language";
 import { isChineseUi, text } from "./localization";
-import type { ProjectIndex } from "./projectIndex";
+import type { ProjectIndex } from "./project-index";
 
 const SELECTOR: vscode.DocumentSelector = {
 	language: "konadoscript",
@@ -153,6 +154,19 @@ class CompletionProvider implements vscode.CompletionItemProvider {
 				item.sortText = `1-${snippet.label}`;
 				items.push(item);
 			}
+			for (const candidate of [
+				...this.index.values("actors"),
+				...documentSymbols(document, "variables"),
+			]) {
+				const item = new vscode.CompletionItem(
+					candidate,
+					candidate.startsWith("$") || candidate.startsWith("%")
+						? vscode.CompletionItemKind.Variable
+						: vscode.CompletionItemKind.Class,
+				);
+				item.sortText = `0-${candidate}`;
+				items.push(item);
+			}
 			return new vscode.CompletionList(
 				filterCompletions(items, partial),
 				false,
@@ -172,10 +186,52 @@ class CompletionProvider implements vscode.CompletionItemProvider {
 			item.sortText = `0-${candidate}`;
 			items.push(item);
 		}
+		if (trailingSpace) {
+			items.push(...this.namedParameterItems(tokens, code));
+		}
 		return new vscode.CompletionList(
 			filterCompletions(items, partial),
 			false,
 		);
+	}
+
+	private namedParameterItems(
+		tokens: ReturnType<typeof tokenizeLine>,
+		line: string,
+	): vscode.CompletionItem[] {
+		const parameterIndex = tokens.findIndex((token) =>
+			token.text.startsWith("["),
+		);
+		const statementTokens =
+			parameterIndex < 0 ? tokens : tokens.slice(0, parameterIndex);
+		if (!isCompleteStatementForParameters(statementTokens)) {
+			return [];
+		}
+		const command = isDialogueStatement(statementTokens)
+			? "dialogue"
+			: commandKey(statementTokens.map((token) => token.text));
+		if (command === "if" && line.trim().endsWith(":")) {
+			return [];
+		}
+		const parameters = namedParametersForCommand(command);
+		return Object.entries(parameters).flatMap(([name, definition]) => {
+			if (new RegExp(`\\[\\s*${name}\\s*=`, "u").test(line)) {
+				return [];
+			}
+			const item = new vscode.CompletionItem(
+				`[${name}=]`,
+				vscode.CompletionItemKind.Property,
+			);
+			item.insertText = new vscode.SnippetString(
+				`[${name}=\${1:${definition.defaultValue}}]`,
+			);
+			item.detail = text(
+				`KonadoScript named parameter for ${command}`,
+				`${command} 的 KonadoScript 命名参数`,
+			);
+			item.sortText = `0-parameter-${name}`;
+			return [item];
+		});
 	}
 
 	private contextCandidates(
@@ -281,6 +337,66 @@ class CompletionProvider implements vscode.CompletionItemProvider {
 		}
 		return [];
 	}
+}
+
+function isDialogueStatement(tokens: ReturnType<typeof tokenizeLine>): boolean {
+	return Boolean(
+		tokens.length >= 2 &&
+		tokens[1]?.quoted &&
+		(tokens[0]?.quoted ||
+			tokens[0]?.text.startsWith("$") ||
+			tokens[0]?.text.startsWith("%") ||
+			!ROOT_KEYWORDS.includes(
+				tokens[0]?.text as (typeof ROOT_KEYWORDS)[number],
+			)),
+	);
+}
+
+function isCompleteStatementForParameters(
+	tokens: ReturnType<typeof tokenizeLine>,
+): boolean {
+	if (isDialogueStatement(tokens)) {
+		return tokens.length === 2 || tokens.length === 3;
+	}
+	const command = commandKey(tokens.map((token) => token.text));
+	const minimumTokens: Readonly<Record<string, number>> = {
+		showtextbox: 1,
+		hidetextbox: 1,
+		waitsignal: 2,
+		background: 2,
+		"actor show": 6,
+		"actor exit": 3,
+		"actor change": 4,
+		"actor move": 4,
+		"actor motion": 4,
+		"play bgm": 3,
+		"play sfx": 3,
+		stop: 1,
+		"stop bgm": 2,
+		choice: 4,
+		if: 4,
+		set: 3,
+		add: 3,
+		sub: 3,
+		mul: 3,
+		div: 3,
+		jump: 2,
+		jump_branch: 2,
+		signal: 2,
+		"achievement unlock": 3,
+		"achievement increment": 4,
+		"achievement set_flag": 4,
+		"cam move": 3,
+		"cam reset": 2,
+		"cam shake": 2,
+		"asyncam move": 3,
+		"asyncam reset": 2,
+		"asyncam shake": 2,
+		"asyncam stop": 2,
+		end: 1,
+	};
+	const minimum = minimumTokens[command];
+	return minimum !== undefined && tokens.length >= minimum;
 }
 
 class HoverProvider implements vscode.HoverProvider {
@@ -669,6 +785,9 @@ class SemanticTokensProvider implements vscode.DocumentSemanticTokensProvider {
 	): vscode.SemanticTokens {
 		const builder = new vscode.SemanticTokensBuilder(SEMANTIC_LEGEND);
 		for (const reference of extractReferences(document.getText())) {
+			if (reference.optional) {
+				continue;
+			}
 			builder.push(
 				reference.line,
 				reference.start,
@@ -815,7 +934,7 @@ function isScreenTextContent(
 			content.endsWith("{")
 		) {
 			inside = true;
-		} else if (inside && content === "}") {
+		} else if (inside && tokenizeLine(content)[0]?.text === "}") {
 			inside = false;
 		}
 	}

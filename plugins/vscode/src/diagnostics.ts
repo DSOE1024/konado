@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { analyzeDocument, type DiagnosticSpec } from "./language";
 import { isChineseUi, text } from "./localization";
-import type { ProjectIndex } from "./projectIndex";
+import type { ProjectIndex } from "./project-index";
 
 const VALIDATION_DELAY_MS = 150;
 

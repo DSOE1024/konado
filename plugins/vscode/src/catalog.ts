@@ -58,6 +58,121 @@ export interface CommandInfo {
 	descriptionZh: string;
 }
 
+export interface NamedParameterInfo {
+	type: "identifier" | "number";
+	defaultValue: string;
+	minimum?: number;
+	exclusiveMinimum?: number;
+}
+
+export const COMMON_NAMED_PARAMETERS: Readonly<
+	Record<string, NamedParameterInfo>
+> = {
+	id: { type: "identifier", defaultValue: "step_id" },
+};
+
+export const COMMAND_NAMED_PARAMETERS: Readonly<
+	Record<string, Readonly<Record<string, NamedParameterInfo>>>
+> = {
+	dialogue: {
+		speed: { type: "number", defaultValue: "1.0", exclusiveMinimum: 0 },
+		interval: { type: "number", defaultValue: "0.03", minimum: 0 },
+	},
+	background: {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"actor show": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"actor exit": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"actor change": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"actor move": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"actor motion": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	showtextbox: {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	hidetextbox: {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"cam move": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"cam reset": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"cam shake": {
+		duration: { type: "number", defaultValue: "1.0", minimum: 0 },
+	},
+	"asyncam move": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"asyncam reset": {
+		duration: { type: "number", defaultValue: "0.3", minimum: 0 },
+	},
+	"asyncam shake": {
+		duration: { type: "number", defaultValue: "1.0", minimum: 0 },
+	},
+};
+
+const PARAMETERIZED_COMMANDS = new Set([
+	"dialogue",
+	"screentext",
+	"showtextbox",
+	"hidetextbox",
+	"waitsignal",
+	"background",
+	"actor show",
+	"actor exit",
+	"actor change",
+	"actor move",
+	"actor motion",
+	"play bgm",
+	"play sfx",
+	"stop",
+	"stop bgm",
+	"choice",
+	"if",
+	"set",
+	"add",
+	"sub",
+	"mul",
+	"div",
+	"jump",
+	"jump_branch",
+	"signal",
+	"achievement unlock",
+	"achievement increment",
+	"achievement set_flag",
+	"cam move",
+	"cam reset",
+	"cam shake",
+	"asyncam move",
+	"asyncam reset",
+	"asyncam shake",
+	"asyncam stop",
+	"end",
+]);
+
+export function namedParametersForCommand(
+	command: string,
+): Readonly<Record<string, NamedParameterInfo>> {
+	if (!PARAMETERIZED_COMMANDS.has(command)) {
+		return {};
+	}
+	return {
+		...COMMON_NAMED_PARAMETERS,
+		...(COMMAND_NAMED_PARAMETERS[command] ?? {}),
+	};
+}
+
 export const COMMANDS: Readonly<Record<string, CommandInfo>> = {
 	screentext: {
 		signature: "screentext { ... }",
@@ -285,7 +400,7 @@ export const SNIPPETS: readonly SnippetInfo[] = [
 		labelZh: "对话",
 		detail: "Insert a character dialogue line",
 		detailZh: "插入角色对话",
-		body: '"${1:Character}" "${2:Dialogue content}"${3: voice_id}',
+		body: '${1:Character} "${2:Dialogue content}"${3: voice_id}',
 	},
 	{
 		label: "Screen text",

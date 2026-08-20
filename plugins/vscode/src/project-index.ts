@@ -8,11 +8,11 @@ import {
 } from "./language";
 
 const RESOURCE_SCHEMAS = {
-	actors: { name: "chara_name", target: "character_scene" },
+	actors: { name: "character_id", target: "character_scene" },
 	backgrounds: { name: "background_name", target: "background_scene" },
-	bgms: { name: "bgm_name", target: "bgm" },
-	sfx: { name: "se_name", target: "se" },
-	voices: { name: "voice_name", target: "voice" },
+	bgms: { name: "background_music_name", target: "stream" },
+	sfx: { name: "sound_effect_name", target: "stream" },
+	voices: { name: "voice_name", target: "stream" },
 } as const;
 
 const SCANNED_GLOB = "**/*.{ks,tres,tscn,gd}";

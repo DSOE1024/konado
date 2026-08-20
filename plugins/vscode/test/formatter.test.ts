@@ -34,4 +34,12 @@ describe("KonadoScript formatter", () => {
 		);
 		expect(formatSource(source, "\t")).toContain("# note");
 	});
+
+	it("formats a screen-text closing line with a stable ID", () => {
+		const source = 'screentext {\n"Opening"\n} [id=opening]';
+
+		expect(formatSource(source, "\t")).toBe(
+			'screentext {\n\t"Opening"\n} [id=opening]',
+		);
+	});
 });

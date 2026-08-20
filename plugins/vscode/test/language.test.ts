@@ -45,6 +45,52 @@ describe("KonadoScript semantic references", () => {
 		).toEqual(["$round", "$bonus", "%love"]);
 	});
 
+	it("distinguishes actors, speaker variables, and interpolated labels", () => {
+		const references = extractReferences(
+			[
+				'Kona "Static"',
+				'$speaker "Dynamic"',
+				'"Guest $index" "Label"',
+			].join("\n"),
+		);
+
+		expect(references).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ kind: "actors", name: "Kona" }),
+				expect.objectContaining({
+					kind: "variables",
+					name: "$speaker",
+				}),
+				expect.objectContaining({ kind: "variables", name: "$index" }),
+			]),
+		);
+		expect(
+			references.some(
+				(reference) =>
+					reference.kind === "actors" &&
+					reference.name === "Guest $index",
+			),
+		).toBe(false);
+	});
+
+	it("does not treat named dialogue parameters as voice resources", () => {
+		const parameterOnly = extractReferences(
+			'Kona "Hello" [speed=2.0] [id=intro]',
+		);
+		const withVoice = extractReferences(
+			'Kona "Hello" voice_01 [speed = 2.0]',
+		);
+
+		expect(
+			parameterOnly.some((reference) => reference.kind === "voices"),
+		).toBe(false);
+		expect(withVoice).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ kind: "voices", name: "voice_01" }),
+			]),
+		);
+	});
+
 	it("extracts actor state scope and branch roles", () => {
 		const references = extractReferences(
 			[
@@ -102,10 +148,13 @@ describe("KonadoScript diagnostics", () => {
 		const source = [
 			"screentext {",
 			'\t"Full-screen text with $score"',
-			"}",
+			"} [id=opening]",
 			"background bg_end fade",
 			"actor show Kona normal at 3",
-			'"Kona" "Hello, %player_name!" voice_01',
+			'Kona "Hello, %player_name!" voice_01 [speed=1.25] [id=intro]',
+			'Kona "Parameter only" [interval = 0.02]',
+			'$speaker "Selected dynamically"',
+			'"Guest $round" "Text label with interpolation"',
 			"if %love == 0:",
 			'\t"Kona" "Hello"',
 			"else:",
@@ -117,6 +166,46 @@ describe("KonadoScript diagnostics", () => {
 		].join("\n");
 
 		expect(analyzeDocument(source)).toEqual([]);
+	});
+
+	it("validates KonadoScript 2.8 named parameters", () => {
+		const valid = [
+			"screentext {",
+			'\t"Opening"',
+			"} [id=opening]",
+			'Kona "Fast dialogue" [speed=1.5] [id=intro_line]',
+			"actor show Kona normal at 3 [duration=0.25]",
+			"background bg_end fade [duration=0]",
+			"if %love == 1 [id=ending_check]:",
+			"\tend",
+			"endif",
+		].join("\n");
+		expect(analyzeDocument(valid)).toEqual([]);
+
+		const invalid = analyzeDocument(
+			[
+				"screentext {",
+				'\t"Opening"',
+				"} [speed=2]",
+				'Kona "Conflict" [speed=1.0] [interval=0.03]',
+				"actor show Kona normal at 3 [speed=2]",
+				"background bg_end fade [duration=-1]",
+				"end [id=not valid]",
+				'choice "First" -> first [id=choice_group]',
+				'choice "Second" -> second [id=choice_group]',
+				"branch first",
+				"\tend",
+				"branch second",
+				"\tend",
+			].join("\n"),
+		);
+		const codes = invalid.map((diagnostic) => diagnostic.code);
+		expect(codes).toContain("syntax.named_parameter_conflict");
+		expect(codes).toContain("syntax.named_parameter_unknown");
+		expect(codes).toContain("syntax.named_parameter_range");
+		expect(codes).toContain("syntax.named_parameter");
+		expect(codes).toContain("syntax.choice_group_parameter");
+		expect(codes).toContain("semantic.duplicate_instruction_id");
 	});
 
 	it("offers ranked fixes for misspelled commands", () => {

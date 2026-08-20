@@ -15,6 +15,9 @@
 			"include": "#commands"
 		},
 		{
+			"include": "#namedParameters"
+		},
+		{
 			"include": "#resourcePath"
 		},
 		{
@@ -75,15 +78,21 @@
 			]
 		},
 		"dialogue": {
-			"match": "^\\s*(\"(?:[^\"\\\\]|\\\\.)*\")\\s+(\"(?:[^\"\\\\]|\\\\.)*\")(?:\\s+([\\p{L}_][\\p{L}\\p{N}_-]*))?\\s*$",
+			"match": "^\\s*(?:(\"(?:[^\"\\\\]|\\\\.)*\")|([%$][\\p{L}_][\\p{L}\\p{N}_-]*)|([\\p{L}_][\\p{L}\\p{N}_-]*))\\s+(\"(?:[^\"\\\\]|\\\\.)*\")(?:\\s+([\\p{L}_][\\p{L}\\p{N}_-]*))?(?=\\s*(?:\\[|$))",
 			"captures": {
 				"1": {
-					"name": "entity.name.character.konado"
+					"name": "string.quoted.double.speaker.konado"
 				},
 				"2": {
-					"name": "string.quoted.double.dialogue.konado"
+					"name": "variable.other.readwrite.konado"
 				},
 				"3": {
+					"name": "entity.name.character.konado"
+				},
+				"4": {
+					"name": "string.quoted.double.dialogue.konado"
+				},
+				"5": {
 					"name": "entity.name.tag.voice.konado"
 				}
 			}
@@ -196,6 +205,37 @@
 			"match": "\\bres://[^\\s#]+\\.ks\\b",
 			"name": "string.other.link.resource.konado"
 		},
+		"namedParameters": {
+			"begin": "(\\[)\\s*([\\p{L}_][\\p{L}\\p{N}_-]*)\\s*(=)",
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.section.brackets.begin.konado"
+				},
+				"2": {
+					"name": "variable.parameter.konado"
+				},
+				"3": {
+					"name": "keyword.operator.assignment.konado"
+				}
+			},
+			"end": "(\\])",
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.section.brackets.end.konado"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#variables"
+				},
+				{
+					"include": "#constants"
+				}
+			]
+		},
 		"strings": {
 			"begin": "\"",
 			"beginCaptures": {
@@ -223,11 +263,11 @@
 		"variables": {
 			"patterns": [
 				{
-					"match": "%[\\p{L}_][\\p{L}\\p{N}_]*",
+					"match": "%[\\p{L}_][\\p{L}\\p{N}_-]*",
 					"name": "variable.other.persistent.konado"
 				},
 				{
-					"match": "\\$[\\p{L}_][\\p{L}\\p{N}_]*",
+					"match": "\\$[\\p{L}_][\\p{L}\\p{N}_-]*",
 					"name": "variable.other.temporary.konado"
 				}
 			]
