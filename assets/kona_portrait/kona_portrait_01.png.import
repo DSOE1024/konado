@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bhr7ry4erctor"
-path="res://.godot/imported/kona_love.png-c6a3797a252973f5597bc2575898fa42.ctex"
+uid="uid://d86es3yopbu2"
+path="res://.godot/imported/kona_portrait_01.png-d2a944d9c92184412c6dcce7437b8053.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/kona/kona_love.png"
-dest_files=["res://.godot/imported/kona_love.png-c6a3797a252973f5597bc2575898fa42.ctex"]
+source_file="res://assets/kona_portrait/kona_portrait_01.png"
+dest_files=["res://.godot/imported/kona_portrait_01.png-d2a944d9c92184412c6dcce7437b8053.ctex"]
 
 [params]
 
