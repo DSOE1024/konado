@@ -6,9 +6,12 @@ extends EditorExportPlugin
 const EXPORT_CACHE_ROOT := "user://.konado_export"
 const PROTECTED_RESOURCE_ROOT := "res://.konado_script_data"
 const EXPORT_PRESETS_PATH := "res://export_presets.cfg"
-const EXPORT_CREDENTIALS_PATH := "res://.godot/export_credentials.cfg"
+const EXPORT_CREDENTIALS_PATH := "res://.godot/konado_export_credentials.cfg"
 const EXPORT_KEY_OPTION := "konado/script_encryption_key"
-const EXPORT_KEY_HEX_LENGTH := KND_ScriptProtection.KEY_SIZE * 2
+const EXPORT_KEY_HEX_LENGTH := KonadoScriptProtection.KEY_SIZE * 2
+const PROJECT_LINKER_SCRIPT := preload(
+	"res://addons/konado/language/compiler/konado_script_project_linker.gd"
+)
 
 var _build_key := PackedByteArray()
 var _export_cache_dir := ""
@@ -17,6 +20,8 @@ var _key_generated := false
 var _protected_shot_count := 0
 var _failed_shot_count := 0
 var _last_protection_error := ""
+var _linked_entries := {}
+var _project_linker: RefCounted
 
 
 func _get_name() -> String:
@@ -66,7 +71,7 @@ func _is_chinese_editor() -> bool:
 func _export_begin(_features: PackedStringArray, is_debug: bool, path: String, _flags: int) -> void:
 	_start_export_key()
 	var export_kind := "调试" if is_debug else "正式"
-	if _build_key.size() != KND_ScriptProtection.KEY_SIZE:
+	if _build_key.size() != KonadoScriptProtection.KEY_SIZE:
 		push_error("[Konado] %s导出 %s：剧本密钥初始化失败。" % [export_kind, path])
 		return
 	var key_action := "生成并保存新" if _key_generated else "复用预设"
@@ -95,20 +100,29 @@ func _export_file(path: String, _type: String, _features: PackedStringArray) -> 
 
 func _protect_script(path: String) -> PackedByteArray:
 	_last_protection_error = ""
-	var source_shot := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as KND_Shot
+	if not _linked_entries.has(path):
+		if _project_linker == null:
+			_project_linker = PROJECT_LINKER_SCRIPT.new()
+		if not _project_linker.call("link_additional", path):
+			var messages := PackedStringArray()
+			for diagnostic: Dictionary in _project_linker.call("get_errors"):
+				messages.append(String(diagnostic.get("raw_message", "链接失败")))
+			return _protection_failure("跨剧本依赖校验失败：%s" % "; ".join(messages))
+		_linked_entries[path] = _project_linker.call("dependency_fingerprint")
+	var source_shot := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as KonadoShot
 	if source_shot == null:
 		return _protection_failure("无法加载待加密的剧本资源")
-	var protected_shot := source_shot.duplicate(true) as KND_Shot
+	var protected_shot := source_shot.duplicate(true) as KonadoShot
 	if protected_shot == null:
 		return _protection_failure("无法复制待加密的剧本资源")
 	if not protected_shot.protect_script_for_export(_build_key):
 		return _protection_failure("无法加密剧本资源")
-	if not protected_shot.dialogues.is_empty():
-		return _protection_failure("加密后仍残留明文剧本节点")
+	if protected_shot.program != null:
+		return _protection_failure("加密后仍残留明文 Program")
 	return _serialize_protected_shot(protected_shot, path)
 
 
-func _serialize_protected_shot(shot: KND_Shot, source_path: String) -> PackedByteArray:
+func _serialize_protected_shot(shot: KonadoShot, source_path: String) -> PackedByteArray:
 	if _export_cache_dir.is_empty():
 		return _protection_failure("剧本导出缓存目录尚未初始化")
 	var cache_path := _export_cache_dir.path_join("%s.res" % source_path.md5_text())
@@ -131,7 +145,7 @@ func _build_remap(protected_path: String) -> PackedByteArray:
 
 func _export_end() -> void:
 	if _failed_shot_count == 0:
-		print("[Konado] 剧本加密完成，共保护 %d 个 KND_Shot 资源。" % _protected_shot_count)
+		print("[Konado] 剧本加密完成，共保护 %d 个 KonadoShot 资源。" % _protected_shot_count)
 	else:
 		push_error("[Konado] 剧本加密失败，共有 %d 个资源未能保护。" % _failed_shot_count)
 	_cleanup_export_cache()
@@ -142,10 +156,14 @@ func _export_end() -> void:
 	_protected_shot_count = 0
 	_failed_shot_count = 0
 	_last_protection_error = ""
+	_linked_entries.clear()
+	_project_linker = null
 
 
 func _start_export_key() -> void:
 	_cleanup_export_cache()
+	_linked_entries.clear()
+	_project_linker = PROJECT_LINKER_SCRIPT.new()
 	_build_key.clear()
 	_export_cache_dir = EXPORT_CACHE_ROOT.path_join(
 		Crypto.new().generate_random_bytes(8).hex_encode()
@@ -157,17 +175,44 @@ func _start_export_key() -> void:
 	_last_protection_error = ""
 
 	var configured_key := String(get_option(EXPORT_KEY_OPTION)).strip_edges()
-	_key_generated = not _is_valid_key_hex(configured_key)
-	if _key_generated:
-		_build_key = Crypto.new().generate_random_bytes(KND_ScriptProtection.KEY_SIZE)
-		if not _persist_generated_key(_build_key.hex_encode()):
-			_build_key.clear()
-			_last_protection_error = "无法将自动生成的密钥保存到当前导出预设"
-	else:
+	if configured_key.is_empty():
+		configured_key = _load_persisted_key()
+		if _is_valid_key_hex(configured_key):
+			var preset := get_export_preset()
+			if preset != null:
+				preset.set(EXPORT_KEY_OPTION, configured_key)
+	if _is_valid_key_hex(configured_key):
 		_build_key = configured_key.to_lower().hex_decode()
+		# 同步手动配置的有效密钥，确保移除 Godot 通用凭据文件后仍可继续复用。
+		if not _persist_key(configured_key):
+			push_warning("[Konado] 无法同步剧本密钥到 Konado 独立凭据文件。")
+		return
+
+	_key_generated = true
+	_build_key = Crypto.new().generate_random_bytes(KonadoScriptProtection.KEY_SIZE)
+	if not _persist_key(_build_key.hex_encode()):
+		_build_key.clear()
+		_last_protection_error = "无法将自动生成的密钥保存到当前导出预设"
 
 
-func _persist_generated_key(key_hex: String) -> bool:
+func _load_persisted_key() -> String:
+	var preset := get_export_preset()
+	if preset == null:
+		return ""
+	var preset_section := _find_current_preset_section(preset.get_preset_name())
+	if preset_section.is_empty() or not FileAccess.file_exists(EXPORT_CREDENTIALS_PATH):
+		return ""
+	var credentials := ConfigFile.new()
+	if credentials.load(EXPORT_CREDENTIALS_PATH) != OK:
+		push_warning("[Konado] 无法读取 Konado 剧本导出凭据文件。")
+		return ""
+	return (
+		String(credentials.get_value(preset_section + ".options", EXPORT_KEY_OPTION, ""))
+		. strip_edges()
+	)
+
+
+func _persist_key(key_hex: String) -> bool:
 	var preset := get_export_preset()
 	if preset == null:
 		push_error("[Konado] 无法写回剧本密钥：当前导出预设不可用。")
@@ -186,12 +231,12 @@ func _persist_generated_key(key_hex: String) -> bool:
 		FileAccess.file_exists(EXPORT_CREDENTIALS_PATH)
 		and credentials.load(EXPORT_CREDENTIALS_PATH) != OK
 	):
-		push_error("[Konado] 无法读取 Godot 导出凭据文件。")
+		push_error("[Konado] 无法读取 Konado 剧本导出凭据文件。")
 		return false
 	credentials.set_value(preset_section + ".options", EXPORT_KEY_OPTION, key_hex)
 	var save_error := credentials.save(EXPORT_CREDENTIALS_PATH)
 	if save_error != OK:
-		push_error("[Konado] 无法保存 Godot 导出凭据：%s" % error_string(save_error))
+		push_error("[Konado] 无法保存 Konado 剧本导出凭据：%s" % error_string(save_error))
 		return false
 	return true
 
@@ -214,7 +259,7 @@ func _is_valid_key_hex(key_hex: String) -> bool:
 
 
 func _ensure_export_key() -> bool:
-	return _build_key.size() == KND_ScriptProtection.KEY_SIZE
+	return _build_key.size() == KonadoScriptProtection.KEY_SIZE
 
 
 func _announce_key() -> void:
