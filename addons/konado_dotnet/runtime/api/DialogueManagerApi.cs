@@ -1,14 +1,14 @@
 using Godot;
-using Konado.Wrapper;
+using Konado.Runtime.Resources;
 
-namespace Konado.Runtime.API;
+namespace Konado.Runtime.Api;
 
 /// <summary>
 /// Konado DialogueManager C# API，用于与 Konado DialogueManager 节点进行交互
 /// </summary>
-public sealed partial class DialogueManagerAPI : Node
+public sealed partial class DialogueManagerApi : Node
 {
-	private const string DialogueManagerScriptPath = "res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd";
+	private const string DialogueManagerScriptPath = "res://addons/konado/runtime/dialogue/konado_dialogue_manager.gd";
 
 	private Node? _source;
 	private bool _treeSignalsConnected;
@@ -39,8 +39,8 @@ public sealed partial class DialogueManagerAPI : Node
 			if (reportFailure)
 			{
 				GD.PrintErr(source == null
-					? "未找到 KND_DialogueManager 节点。请确保场景中已实例化 Konado 对话管理器。"
-					: "指定节点不是有效的 KND_DialogueManager。");
+					? "未找到 KonadoDialogueManager 节点。请确保场景中已实例化 Konado 对话管理器。"
+					: "指定节点不是有效的 KonadoDialogueManager。");
 			}
 			return false;
 		}
@@ -131,24 +131,26 @@ public sealed partial class DialogueManagerAPI : Node
 			&& node.HasSignal(GDScriptSignalName.DialogueLineStart)
 			&& node.HasSignal(GDScriptSignalName.DialogueLineEnd)
 			&& node.HasSignal(GDScriptSignalName.CustomSignal)
+			&& node.HasSignal(GDScriptSignalName.RuntimeFailed)
 			&& node.HasMethod(GDScriptMethodName.InitDialogue)
 			&& node.HasMethod(GDScriptMethodName.SetShot)
 			&& node.HasMethod(GDScriptMethodName.StartDialogue)
 			&& node.HasMethod(GDScriptMethodName.StopDialogue)
 			&& node.HasMethod(GDScriptMethodName.StartAutoplay)
-			&& node.HasMethod(GDScriptMethodName.SetCharaList)
-			&& node.HasMethod(GDScriptMethodName.SetBackgroundList)
-			&& node.HasMethod(GDScriptMethodName.SetBgmList)
 			&& node.HasMethod(GDScriptMethodName.GetDialogueVariable)
 			&& node.HasMethod(GDScriptMethodName.SaveGame)
 			&& node.HasMethod(GDScriptMethodName.LoadGame)
 			&& node.HasMethod(GDScriptMethodName.DeleteSave)
 			&& node.HasMethod(GDScriptMethodName.GetSaveInfo)
 			&& node.HasMethod(GDScriptMethodName.GetAllSaveInfo)
-			&& node.HasMethod(GDScriptMethodName.SetSaveStrategy)
-			&& node.HasMethod(GDScriptMethodName.GetSaveStrategy)
 			&& node.HasMethod(GDScriptMethodName.ReloadLocalizedScript)
-			&& node.HasMethod(GDScriptMethodName.EmitWaitSignal);
+			&& node.HasMethod(GDScriptMethodName.EmitWaitSignal)
+			&& node.HasMethod(GDScriptMethodName.CanRollback)
+			&& node.HasMethod(GDScriptMethodName.Rollback)
+			&& node.HasMethod(GDScriptMethodName.GetExecutionHistory)
+			&& node.HasMethod(GDScriptMethodName.ClearExecutionHistory)
+			&& node.HasMethod(GDScriptMethodName.CreateCheckpoint)
+			&& node.HasMethod(GDScriptMethodName.RestoreCheckpoint);
 	}
 
 	private Node? GetReadySource()
@@ -240,6 +242,15 @@ public sealed partial class DialogueManagerAPI : Node
 					(string content) => _customSignal?.Invoke(content));
 			ConnectSignal(source, GDScriptSignalName.CustomSignal, _customSignalCallable);
 		}
+
+		if (_runtimeFailedSignal != null)
+		{
+			if (!HasCallable(_runtimeFailedSignalCallable))
+				_runtimeFailedSignalCallable = Callable.From(
+					(string message, string instructionId, int sourceLine) =>
+						_runtimeFailedSignal?.Invoke(message, instructionId, sourceLine));
+			ConnectSignal(source, GDScriptSignalName.RuntimeFailed, _runtimeFailedSignalCallable);
+		}
 	}
 
 	private void DisconnectSignals(Node? source)
@@ -249,6 +260,7 @@ public sealed partial class DialogueManagerAPI : Node
 		DisconnectSignal(source, GDScriptSignalName.DialogueLineStart, _dialogueLineStartSignalCallable);
 		DisconnectSignal(source, GDScriptSignalName.DialogueLineEnd, _dialogueLineEndSignalCallable);
 		DisconnectSignal(source, GDScriptSignalName.CustomSignal, _customSignalCallable);
+		DisconnectSignal(source, GDScriptSignalName.RuntimeFailed, _runtimeFailedSignalCallable);
 	}
 
 	public override void _ExitTree()
@@ -264,6 +276,7 @@ public sealed partial class DialogueManagerAPI : Node
 		public static readonly StringName DialogueLineStart = "dialogue_line_start";
 		public static readonly StringName DialogueLineEnd = "dialogue_line_end";
 		public static readonly StringName CustomSignal = "custom_signal";
+		public static readonly StringName RuntimeFailed = "runtime_failed";
 	}
 
 	public delegate void ShotStartSignalHandler();
@@ -307,7 +320,7 @@ public sealed partial class DialogueManagerAPI : Node
 
 	}
 
-	public delegate void DialogueLineStartSignalHandler(string nodeId);
+	public delegate void DialogueLineStartSignalHandler(string instructionId);
 	private DialogueLineStartSignalHandler? _dialogueLineStartSignal;
 	private Callable _dialogueLineStartSignalCallable;
 	public event DialogueLineStartSignalHandler DialogueLineStart
@@ -327,7 +340,7 @@ public sealed partial class DialogueManagerAPI : Node
 		}
 	}
 
-	public delegate void DialogueLineEndSignalHandler(string nodeId);
+	public delegate void DialogueLineEndSignalHandler(string instructionId);
 	private DialogueLineEndSignalHandler? _dialogueLineEndSignal;
 	private Callable _dialogueLineEndSignalCallable;
 	public event DialogueLineEndSignalHandler DialogueLineEnd
@@ -367,6 +380,29 @@ public sealed partial class DialogueManagerAPI : Node
 		}
 	}
 
+	public delegate void RuntimeFailedSignalHandler(
+		string message,
+		string instructionId,
+		int sourceLine);
+	private RuntimeFailedSignalHandler? _runtimeFailedSignal;
+	private Callable _runtimeFailedSignalCallable;
+	public event RuntimeFailedSignalHandler RuntimeFailed
+	{
+		add
+		{
+			_runtimeFailedSignal += value;
+			if (GetReadySource() != null)
+				ConnectSignals();
+		}
+		remove
+		{
+			_runtimeFailedSignal -= value;
+			if (_runtimeFailedSignal is not null) return;
+			DisconnectSignal(_source, GDScriptSignalName.RuntimeFailed, _runtimeFailedSignalCallable);
+			_runtimeFailedSignalCallable = default;
+		}
+	}
+
 	public static class GDScriptMethodName
 	{
 		public static readonly StringName InitDialogue = "init_dialogue";
@@ -374,19 +410,30 @@ public sealed partial class DialogueManagerAPI : Node
 		public static readonly StringName StartDialogue = "start_dialogue";
 		public static readonly StringName StopDialogue = "stop_dialogue";
 		public static readonly StringName StartAutoplay = "start_autoplay";
-		public static readonly StringName SetCharaList = "set_chara_list";
-		public static readonly StringName SetBackgroundList = "set_background_list";
-		public static readonly StringName SetBgmList = "set_bgm_list";
 		public static readonly StringName GetDialogueVariable = "get_dialogue_variable";
 		public static readonly StringName SaveGame = "save_game";
 		public static readonly StringName LoadGame = "load_game";
 		public static readonly StringName DeleteSave = "delete_save";
 		public static readonly StringName GetSaveInfo = "get_save_info";
 		public static readonly StringName GetAllSaveInfo = "get_all_save_info";
-		public static readonly StringName SetSaveStrategy = "set_save_strategy";
-		public static readonly StringName GetSaveStrategy = "get_save_strategy";
 		public static readonly StringName ReloadLocalizedScript = "reload_localized_script";
 		public static readonly StringName EmitWaitSignal = "emit_wait_signal";
+		public static readonly StringName CanRollback = "can_rollback";
+		public static readonly StringName Rollback = "rollback";
+		public static readonly StringName GetExecutionHistory = "get_execution_history";
+		public static readonly StringName ClearExecutionHistory = "clear_execution_history";
+		public static readonly StringName CreateCheckpoint = "create_checkpoint";
+		public static readonly StringName RestoreCheckpoint = "restore_checkpoint";
+	}
+
+	public static class GDScriptPropertyName
+	{
+		public static readonly StringName CharacterList = "character_list";
+		public static readonly StringName BackgroundList = "background_list";
+		public static readonly StringName BgmList = "background_music_list";
+		public static readonly StringName VoiceList = "voice_list";
+		public static readonly StringName SoundEffectList = "sound_effect_list";
+		public static readonly StringName VariableStore = "variable_store";
 	}
 
 	/// <summary>
@@ -408,7 +455,7 @@ public sealed partial class DialogueManagerAPI : Node
 		GetReadySource()?.Call(GDScriptMethodName.SetShot, shot);
 	}
 
-	public void SetShot(KndShot shot)
+	public void SetShot(KonadoShot shot)
 	{
 		System.ArgumentNullException.ThrowIfNull(shot);
 		SetShot(shot.SourceResource);
@@ -435,19 +482,51 @@ public sealed partial class DialogueManagerAPI : Node
 		GetReadySource()?.Call(GDScriptMethodName.StartAutoplay, value);
 	}
 
-	public void SetCharaList(Resource charaList)
+	public Resource? CharacterList
 	{
-		GetReadySource()?.Call(GDScriptMethodName.SetCharaList, charaList);
+		get => GetReadySource()?.Get(GDScriptPropertyName.CharacterList).As<Resource>();
+		set => SetResourceProperty(GDScriptPropertyName.CharacterList, value);
 	}
 
-	public void SetBackgroundList(Resource backgroundList)
+	public Resource? BackgroundList
 	{
-		GetReadySource()?.Call(GDScriptMethodName.SetBackgroundList, backgroundList);
+		get => GetReadySource()?.Get(GDScriptPropertyName.BackgroundList).As<Resource>();
+		set => SetResourceProperty(GDScriptPropertyName.BackgroundList, value);
 	}
 
-	public void SetBgmList(Resource bgmList)
+	public Resource? BgmList
 	{
-		GetReadySource()?.Call(GDScriptMethodName.SetBgmList, bgmList);
+		get => GetReadySource()?.Get(GDScriptPropertyName.BgmList).As<Resource>();
+		set => SetResourceProperty(GDScriptPropertyName.BgmList, value);
+	}
+
+	public Resource? VoiceList
+	{
+		get => GetReadySource()?.Get(GDScriptPropertyName.VoiceList).As<Resource>();
+		set => SetResourceProperty(GDScriptPropertyName.VoiceList, value);
+	}
+
+	public Resource? SoundEffectList
+	{
+		get => GetReadySource()?.Get(GDScriptPropertyName.SoundEffectList).As<Resource>();
+		set => SetResourceProperty(GDScriptPropertyName.SoundEffectList, value);
+	}
+
+	public Resource? VariableStore
+	{
+		get => GetReadySource()?.Get(GDScriptPropertyName.VariableStore).As<Resource>();
+		set => SetResourceProperty(GDScriptPropertyName.VariableStore, value);
+	}
+
+	private void SetResourceProperty(StringName propertyName, Resource? value)
+	{
+		var source = GetReadySource();
+		if (source == null)
+			return;
+		if (value == null)
+			source.Set(propertyName, default);
+		else
+			source.Set(propertyName, value);
 	}
 
 	public Godot.Collections.Dictionary GetDialogueVariable(string key)
@@ -493,19 +572,6 @@ public sealed partial class DialogueManagerAPI : Node
 				.AsGodotArray<Godot.Collections.Dictionary>();
 	}
 
-	public void SetSaveStrategy(Godot.Collections.Dictionary strategy)
-	{
-		GetReadySource()?.Call(GDScriptMethodName.SetSaveStrategy, strategy);
-	}
-
-	public Godot.Collections.Dictionary GetSaveStrategy()
-	{
-		var source = GetReadySource();
-		return source == null
-			? new Godot.Collections.Dictionary()
-			: source.Call(GDScriptMethodName.GetSaveStrategy).AsGodotDictionary();
-	}
-
 	public bool ReloadLocalizedScript(string locale)
 	{
 		var source = GetReadySource();
@@ -516,5 +582,50 @@ public sealed partial class DialogueManagerAPI : Node
 	public void EmitWaitSignal(string signalName)
 	{
 		GetReadySource()?.Call(GDScriptMethodName.EmitWaitSignal, signalName);
+	}
+
+	public bool CanRollback(int steps = 1)
+	{
+		System.ArgumentOutOfRangeException.ThrowIfLessThan(steps, 1);
+		var source = GetReadySource();
+		return source != null && source.Call(GDScriptMethodName.CanRollback, steps).AsBool();
+	}
+
+	public bool Rollback(int steps = 1)
+	{
+		System.ArgumentOutOfRangeException.ThrowIfLessThan(steps, 1);
+		var source = GetReadySource();
+		return source != null && source.Call(GDScriptMethodName.Rollback, steps).AsBool();
+	}
+
+	public Godot.Collections.Array<Godot.Collections.Dictionary> GetExecutionHistory(int limit = 0)
+	{
+		System.ArgumentOutOfRangeException.ThrowIfNegative(limit);
+		var source = GetReadySource();
+		return source == null
+			? new Godot.Collections.Array<Godot.Collections.Dictionary>()
+			: source.Call(GDScriptMethodName.GetExecutionHistory, limit)
+				.AsGodotArray<Godot.Collections.Dictionary>();
+	}
+
+	public void ClearExecutionHistory()
+	{
+		GetReadySource()?.Call(GDScriptMethodName.ClearExecutionHistory);
+	}
+
+	public string CreateCheckpoint(string label = "")
+	{
+		var source = GetReadySource();
+		return source == null
+			? string.Empty
+			: source.Call(GDScriptMethodName.CreateCheckpoint, label).AsString();
+	}
+
+	public bool RestoreCheckpoint(string checkpointId)
+	{
+		System.ArgumentException.ThrowIfNullOrWhiteSpace(checkpointId);
+		var source = GetReadySource();
+		return source != null
+			&& source.Call(GDScriptMethodName.RestoreCheckpoint, checkpointId).AsBool();
 	}
 }

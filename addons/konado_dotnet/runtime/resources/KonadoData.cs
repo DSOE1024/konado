@@ -1,18 +1,18 @@
 using Godot;
 
-namespace Konado.Wrapper;
+namespace Konado.Runtime.Resources;
 
-public partial class KndData : Resource
+public partial class KonadoData : Resource
 {
 	private static GDScript? _sourceScript;
-	private const string SourceScriptPath = "res://addons/konado/scripts/knd_data/knd_data.gd";
+	private const string SourceScriptPath = "res://addons/konado/runtime/konado_data.gd";
 	protected GodotObject SourceObject { get; }
 
-	public KndData(GodotObject source) : this(source, LoadSourceScript(), "KND_Data")
+	public KonadoData(GodotObject source) : this(source, LoadSourceScript(), "KonadoData")
 	{
 	}
 
-	protected KndData(
+	protected KonadoData(
 		GodotObject source,
 		GDScript expectedSourceScript,
 		string expectedSourceName)
@@ -31,7 +31,7 @@ public partial class KndData : Resource
 		SourceObject = source;
 	}
 
-	public KndData() : this(LoadSourceScript().New().AsGodotObject())
+	public KonadoData() : this(LoadSourceScript().New().AsGodotObject())
 	{
 	}
 
@@ -41,7 +41,7 @@ public partial class KndData : Resource
 	{
 		if (!ResourceLoader.Exists(SourceScriptPath))
 		{
-			throw new System.InvalidOperationException("KND_Data source script not found!");
+			throw new System.InvalidOperationException("KonadoData source script not found!");
 		}
 
 		return _sourceScript ??= ResourceLoader.Load<GDScript>(SourceScriptPath);
