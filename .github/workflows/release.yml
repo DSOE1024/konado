@@ -58,15 +58,15 @@ jobs:
         run: |
           set -euo pipefail
           staging="$RUNNER_TEMP/konado-plugin-packages"
-          mkdir -p "$staging/konado" "$staging/konadotnet" build/plugins
+          mkdir -p "$staging/konado" "$staging/konado_dotnet" build/plugins
           cp -a addons/konado/. "$staging/konado/"
-          cp -a addons/konadotnet/. "$staging/konadotnet/"
+          cp -a addons/konado_dotnet/. "$staging/konado_dotnet/"
           cp LICENSE "$staging/konado/"
-          cp LICENSE "$staging/konadotnet/"
+          cp LICENSE "$staging/konado_dotnet/"
           (
             cd "$staging"
             zip -9 -r "$GITHUB_WORKSPACE/build/plugins/konado-${VERSION}.zip" konado
-            zip -9 -r "$GITHUB_WORKSPACE/build/plugins/konadotnet-${VERSION}.zip" konadotnet
+            zip -9 -r "$GITHUB_WORKSPACE/build/plugins/konado-dotnet-${VERSION}.zip" konado_dotnet
           )
 
       - name: Upload plugin archives
