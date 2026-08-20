@@ -14,4 +14,5 @@ screentext {
 }
 ```
 
-At least one quoted line is required. The player advances after each line.
+At least one quoted line is required. The player advances after each line. After the final
+line is acknowledged, the overlay fades out before the next instruction runs.
