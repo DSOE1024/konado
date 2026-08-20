@@ -11,40 +11,33 @@ trap cleanup EXIT
 run_godot_checked() {
 	local output
 	local status
+	local timeout_bin=""
+	local timeout_seconds="${GODOT_TEST_TIMEOUT_SECONDS:-120}"
+	if ! [[ "$timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
+		printf 'GODOT_TEST_TIMEOUT_SECONDS must be a positive integer.\n' >&2
+		return 2
+	fi
+	if command -v timeout >/dev/null 2>&1; then
+		timeout_bin="timeout"
+	elif command -v gtimeout >/dev/null 2>&1; then
+		timeout_bin="gtimeout"
+	fi
+
 	set +e
-	output="$(python3 - "$@" <<'PY'
-import os
-import subprocess
-import sys
-
-timeout_seconds = int(os.environ.get("GODOT_TEST_TIMEOUT_SECONDS", "120"))
-try:
-    completed = subprocess.run(
-        sys.argv[1:],
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        timeout=timeout_seconds,
-    )
-except subprocess.TimeoutExpired as error:
-    output = error.stdout or ""
-    if isinstance(output, bytes):
-        output = output.decode(errors="replace")
-    sys.stdout.write(output)
-    print(
-        f"Godot test exceeded the {timeout_seconds}-second timeout.",
-        file=sys.stderr,
-    )
-    raise SystemExit(124)
-
-sys.stdout.write(completed.stdout)
-raise SystemExit(completed.returncode)
-PY
-)"
+	if [ -n "$timeout_bin" ]; then
+		output="$(
+			"$timeout_bin" --signal=TERM --kill-after=5s "$timeout_seconds" "$@" 2>&1
+		)"
+	else
+		output="$("$@" 2>&1)"
+	fi
 	status=$?
 	set -e
 	printf '%s\n' "$output"
+	if [ "$status" -eq 124 ]; then
+		printf 'Godot test exceeded the %s-second timeout.\n' "$timeout_seconds" >&2
+		return "$status"
+	fi
 	if [ "$status" -ne 0 ]; then
 		return "$status"
 	fi
