@@ -1,27 +1,27 @@
 using Godot;
-using Konado.Runtime.API;
-using Konado.Wrapper;
+using Konado.Runtime.Api;
+using Konado.Runtime.Resources;
 
 namespace Konado.Sample;
 
 /// <summary>
-/// 这个是DialogueManagerAPI的使用示例
+/// 这个是DialogueManagerApi的使用示例
 /// </summary>
-public partial class DialogueManagerAPISample : Node
+public partial class DialogueManagerApiSample : Node
 {
 	public override void _Ready()
 	{
-		var interpreter = new KonadoScriptsInterpreter();
-		var shot = interpreter.ProcessScriptsToData("res://sample/demo/demo_01.ks");
+		var compiler = new KonadoScriptCompiler();
+		var shot = compiler.CompileFile("res://sample/demo/demo_01.ks");
 		if (shot == null)
 		{
 			GD.PushError("解析示例脚本失败。");
 			return;
 		}
 
-		GD.Print(shot.Dialogues.Count);
+		GD.Print($"Compiled {shot.InstructionCount} KonadoScript instructions.");
 
-		var dialogueManagerApi = KonadoAPI.DialogueManagerApi;
+		var dialogueManagerApi = KonadoApi.DialogueManagerApi;
 		if (dialogueManagerApi == null)
 			return;
 		if (!dialogueManagerApi.IsReady && !dialogueManagerApi.BindDialogueManager())
@@ -31,7 +31,7 @@ public partial class DialogueManagerAPISample : Node
 		StartDialogue(dialogueManagerApi, shot);
 	}
 
-	private static void StartDialogue(DialogueManagerAPI dialogueManagerApi, KndShot shot)
+	private static void StartDialogue(DialogueManagerApi dialogueManagerApi, KonadoShot shot)
 	{
 		dialogueManagerApi.ShotStart += () =>
 		{
@@ -42,16 +42,16 @@ public partial class DialogueManagerAPISample : Node
 		{
 			GD.Print("Shot End");
 		};
-		dialogueManagerApi.DialogueLineStart += (string nodeId) =>
+		dialogueManagerApi.DialogueLineStart += (string instructionId) =>
 		{
-			GD.Print(nodeId);
+			GD.Print(instructionId);
 		};
-		dialogueManagerApi.DialogueLineEnd += (string nodeId) =>
+		dialogueManagerApi.DialogueLineEnd += (string instructionId) =>
 		{
-			GD.Print(nodeId);
+			GD.Print(instructionId);
 		};
 
-		if (KonadoAPI.API?.IsApiReady != true)
+		if (KonadoApi.Instance?.IsApiReady != true)
 			return;
 
 		GD.Print("API Ready");
