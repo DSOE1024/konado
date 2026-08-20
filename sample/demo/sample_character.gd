@@ -1,4 +1,4 @@
-extends KND_CharacterSceneBase
+extends KonadoCharacterSceneBase
 
 ## 这个 demo 只演示 AnimatedSprite2D 的实现方式。
 ## 换成 Spine、Live2D 或视频时，保留基类入口，替换 _apply_status 内部逻辑即可。
@@ -38,7 +38,7 @@ func _get_current_status_transition_frame(target_space: CanvasItem) -> RefCounte
 	var sprite_node := _get_sprite()
 	if sprite_node == null or sprite_node.sprite_frames == null:
 		return null
-	return KND_CharacterTransitionFrame.from_animated_sprite(sprite_node, target_space)
+	return KonadoCharacterTransitionFrame.from_animated_sprite(sprite_node, target_space)
 
 
 func _get_status_transition_frame(
@@ -47,7 +47,7 @@ func _get_status_transition_frame(
 	var sprite_node := _get_sprite()
 	if sprite_node == null or sprite_node.sprite_frames == null:
 		return null
-	return KND_CharacterTransitionFrame.from_animated_sprite(
+	return KonadoCharacterTransitionFrame.from_animated_sprite(
 		sprite_node, target_space, StringName(resolved_status_name)
 	)
 

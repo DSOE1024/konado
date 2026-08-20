@@ -28,7 +28,7 @@ showtextbox 1.2
 
 # 对话语句：
 # 第一个""中为名字，第二个""中为对话内容，后面的编号为语音列表中的voice_name
-"Kona" "你好！欢迎来到我们的咖啡馆。" voice_01
+Kona "你好！欢迎来到我们的咖啡馆。" voice_01
 
 asyncam move cam2 linear 1.0
 
@@ -50,7 +50,7 @@ actor move Kona 1
 # 改变角色的表情
 actor change Kona 介绍说话
 
-"Kona" "和我一起用Konado做视觉小说吧！"
+Kona "和我一起用Konado做视觉小说吧！"
 
 asyncam move cam1 linear 1.0
 
@@ -61,6 +61,3 @@ asyncam reset linear 1.0
 
 # 跳转语句，可以打开demo_02继续看示例文件的分支部分。
 jump res://sample/demo/demo_02.ks
-
-# 结束语句，是关闭对话框的作用
-end
