@@ -74,8 +74,10 @@ func _test_camera_marker_contract() -> void:
 	viewport.size = Vector2i(320, 180)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	root.add_child(viewport)
+	var background_container := Node.new()
+	viewport.add_child(background_container)
 	var background := KonadoBackgroundSceneBase.new()
-	viewport.add_child(background)
+	background_container.add_child(background)
 
 	var marker := KonadoCameraMarker.new()
 	marker.marker_id = "close_up"
@@ -96,7 +98,7 @@ func _test_camera_marker_contract() -> void:
 
 	var render_camera := Camera2D.new()
 	render_camera.position = Vector2(10.0, 20.0)
-	background.add_child(render_camera)
+	viewport.add_child(render_camera)
 	await process_frame
 	_expect(render_camera.enabled, "an ordinary Camera2D remains available for custom rendering")
 	_expect_equal(
@@ -107,9 +109,8 @@ func _test_camera_marker_contract() -> void:
 
 	var manager := CAMERA_CONTROLLER_SCRIPT.new()
 	manager.active_camera = render_camera
-	manager.marker_root = background
+	manager.marker_root = background_container
 	viewport.add_child(manager)
-	manager.refresh_camera_markers()
 	_expect_equal(manager.camera_markers.size(), 1, "the disabled marker remains discoverable")
 	manager.move_to_marker("close_up", 0.0)
 	await process_frame
@@ -122,6 +123,31 @@ func _test_camera_marker_contract() -> void:
 		render_camera.zoom,
 		marker.zoom,
 		"camera commands still copy the disabled marker zoom to the rendering camera",
+	)
+
+	background_container.remove_child(background)
+	background.free()
+	var replacement_background := KonadoBackgroundSceneBase.new()
+	background_container.add_child(replacement_background)
+	var replacement_marker := KonadoCameraMarker.new()
+	replacement_marker.marker_id = "close_up"
+	replacement_marker.position = Vector2(48.0, 36.0)
+	replacement_marker.zoom = Vector2(0.8, 0.8)
+	replacement_background.add_child(replacement_marker)
+	_expect(
+		manager.move_to_marker_async("close_up", 0.0),
+		"camera commands replace a same-name stale marker without an external refresh",
+	)
+	await process_frame
+	_expect_equal(
+		render_camera.position,
+		replacement_marker.position,
+		"the replacement marker owns the next asynchronous camera move",
+	)
+	_expect(not manager.move_to_marker("missing", 0.0), "missing markers reject the command")
+	_expect(
+		manager.get_last_error().contains("可用机位：close_up"),
+		"marker failures expose the live set of available markers",
 	)
 	await _free_node(viewport)
 

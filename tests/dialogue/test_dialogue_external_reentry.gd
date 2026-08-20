@@ -121,4 +121,17 @@ func _test_camera_cancellation_preserves_configured_offset() -> void:
 	await process_frame
 	manager.cancel_pending_operations()
 	_expect_equal(camera.offset, Vector2(12.0, 8.0), "camera cancellation restores base offset")
+	camera.position = Vector2(30.0, 20.0)
+	camera.zoom = Vector2(1.2, 1.2)
+	_expect(manager.finish_async_operations(), "stopping an idle async camera is a valid no-op")
+	_expect_equal(
+		camera.position,
+		Vector2(30.0, 20.0),
+		"stopping an idle async camera never jumps to an obsolete target",
+	)
+	_expect_equal(
+		camera.zoom,
+		Vector2(1.2, 1.2),
+		"stopping an idle async camera preserves the configured zoom",
+	)
 	await _free_node(manager)
