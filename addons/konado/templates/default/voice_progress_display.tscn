@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d3ukxg25lmwx8"]
 
-[ext_resource type="Script" uid="uid://bqwm4xqor7m1p" path="res://addons/konado/scripts/dialoguebox/knd_voice_progress_display.gd" id="1_l57ji"]
+[ext_resource type="Script" uid="uid://bqwm4xqor7m1p" path="res://addons/konado/runtime/ui/dialogue_box/konado_voice_progress_display.gd" id="1_l57ji"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_voice_bg"]
 bg_color = Color(0, 0, 0, 0.45)

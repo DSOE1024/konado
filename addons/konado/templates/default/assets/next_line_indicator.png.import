@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://m3yl5jmfhhep"
-path="res://.godot/imported/love_progress.svg-f5d1574a72db3841c6a7fc92d279796b.ctex"
+uid="uid://d3u4s0bc2m7vq"
+path="res://.godot/imported/next_line_indicator.png-db1e3ed43657ff28a3b4dad04b5e9260.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/konado/template/default/progress/love_progress.svg"
-dest_files=["res://.godot/imported/love_progress.svg-f5d1574a72db3841c6a7fc92d279796b.ctex"]
+source_file="res://addons/konado/templates/default/assets/next_line_indicator.png"
+dest_files=["res://.godot/imported/next_line_indicator.png-db1e3ed43657ff28a3b4dad04b5e9260.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://vn8ookpi8m80"]
 
-[ext_resource type="Script" uid="uid://b6h45twralmd1" path="res://addons/konado/template/default/character/actor_motion_layer.gd" id="1_x4bn7"]
+[ext_resource type="Script" uid="uid://b6h45twralmd1" path="res://addons/konado/templates/default/character/konado_actor_motion_layer.gd" id="1_x4bn7"]
 
 [sub_resource type="Animation" id="Animation_e3j0a"]
 length = 0.001
@@ -320,7 +320,7 @@ grow_horizontal = 2
 grow_vertical = 2
 pivot_offset_ratio = Vector2(0.5, 0.5)
 
-[node name="ColorRect" type="ColorRect" parent="CharacterMount" unique_id=2101308053]
+[node name="PlaceholderVisual" type="ColorRect" parent="CharacterMount" unique_id=2101308053]
 visible = false
 layout_mode = 0
 offset_left = 765.0

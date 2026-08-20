@@ -1,6 +1,6 @@
 @tool
 extends Control
-class_name KND_ActorMotionLayer
+class_name KonadoActorMotionLayer
 
 ## 演员动作层。
 ## Slot 负责角色站位，MotionLayer 只负责临时舞台动作，例如震动、跳跃、弹一下。
@@ -34,7 +34,15 @@ func get_mount_node() -> Node:
 	return self
 
 
-func play_motion(motion_name: String, _params: Dictionary = {}) -> void:
+func has_motion(motion_name: String) -> bool:
+	return (
+		not motion_name.is_empty()
+		and animation_player != null
+		and animation_player.has_animation(motion_name)
+	)
+
+
+func play_motion(motion_name: String, params: Dictionary = {}) -> void:
 	if motion_name.is_empty():
 		motion_finished.emit(motion_name)
 		return
@@ -42,7 +50,17 @@ func play_motion(motion_name: String, _params: Dictionary = {}) -> void:
 
 	if animation_player and animation_player.has_animation(motion_name):
 		_reset_motion_target()
-		animation_player.play(motion_name)
+		var custom_speed := 1.0
+		if params.has("duration"):
+			var duration := float(params["duration"])
+			if duration <= 0.0:
+				motion_started.emit(motion_name)
+				_finish_motion(motion_name)
+				return
+			var animation := animation_player.get_animation(motion_name)
+			if animation != null and animation.length > 0.0:
+				custom_speed = animation.length / duration
+		animation_player.play(motion_name, -1.0, custom_speed)
 		animation_player.seek(0, true)
 		motion_started.emit(motion_name)
 		return

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://dcwk5so2ohcc2"]
 
-[ext_resource type="Script" uid="uid://mksyuojdc6ns" path="res://addons/konado/template/default/character/konado_actor.gd" id="1_gnto7"]
-[ext_resource type="PackedScene" uid="uid://vn8ookpi8m80" path="res://addons/konado/template/default/character/actor_motion_layer.tscn" id="2_lmolw"]
+[ext_resource type="Script" uid="uid://mksyuojdc6ns" path="res://addons/konado/templates/default/character/konado_actor.gd" id="1_gnto7"]
+[ext_resource type="PackedScene" uid="uid://vn8ookpi8m80" path="res://addons/konado/templates/default/character/konado_actor_motion_layer.tscn" id="2_lmolw"]
 
-[node name="character" type="Control" unique_id=1241920877 node_paths=PackedStringArray("motion_layer", "slot")]
+[node name="Character" type="Control" unique_id=1241920877 node_paths=PackedStringArray("motion_layer", "slot")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

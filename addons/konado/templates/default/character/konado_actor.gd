@@ -1,6 +1,6 @@
 @tool
 extends Control
-class_name KND_Actor
+class_name KonadoActor
 
 ## Konado对话角色类，用于在对话中显示角色
 
@@ -33,21 +33,21 @@ signal actor_status_change_finished(status_name: String, succeeded: bool)
 			animation_time = max(value, 0)
 
 @export var texture_rect: TextureRect
-@export var motion_layer: KND_ActorMotionLayer
+@export var motion_layer: KonadoActorMotionLayer
 
 ## 屏幕横向分块数，不得小于2，将屏幕宽度分为从左到右递增的块，每个块大小相同
-@export var h_division: int = 5:
+@export var horizontal_division: int = 5:
 	set(value):
-		if h_division != value:
-			h_division = clamp(value, 2, 5)
+		if horizontal_division != value:
+			horizontal_division = clamp(value, 2, 5)
 			if not _suspend_layout_update:
 				_on_resized()
 
 ## 当前角色横向位置所在区块分割线索引，从0开始，从左到右递增
-@export var h_character_position: int = 3:
+@export var horizontal_position: int = 3:
 	set(value):
-		if h_character_position != value:
-			h_character_position = clamp(value, 0, h_division)
+		if horizontal_position != value:
+			horizontal_position = clamp(value, 0, horizontal_division)
 			if not _suspend_layout_update:
 				_on_resized()
 
@@ -56,22 +56,18 @@ signal actor_status_change_finished(status_name: String, succeeded: bool)
 
 @export var slot: Control
 
-var _status_node: Node = null
+var _status_node: KonadoCharacterSceneBase = null
 var _move_tween: Tween
 var _suspend_layout_update := false
 var _is_visible := false
-var _status_transition: KND_ActorStateTransitionController
-var _last_character_scene_setup_succeeded := true
-var _last_motion_layer_scene_setup_succeeded := true
-var _last_character_status_request_accepted := true
+var _status_transition: KonadoActorStateTransitionController
 var _visual_setup_serial := 0
 var _character_status_request_serial := 0
-var _prevalidated_character_status_request := -1
 
 
 ## 判断角色是否在左侧区域（用于确定进场/退场方向）
 func _is_left_side() -> bool:
-	return h_character_position <= h_division / 2
+	return horizontal_position <= horizontal_division / 2
 
 
 ## 获取进场动画名称
@@ -121,7 +117,7 @@ func _exit_tree() -> void:
 		_status_transition.cancel()
 
 
-func _on_resized() -> void:
+func _on_resized(duration_override: float = -1.0) -> void:
 	if not slot:
 		print("警告：slot未赋值")
 		actor_moved.emit()
@@ -131,15 +127,19 @@ func _on_resized() -> void:
 		_move_tween.kill()
 		_move_tween = null
 
-	if use_tween and animation_time > 0.0:
+	var duration := duration_override if duration_override >= 0.0 else animation_time
+	if use_tween and duration > 0.0:
 		var tween: Tween = slot.create_tween()
 		_move_tween = tween
 		tween.set_parallel(true)
 		tween.tween_property(
 			slot,
 			"position:x",
-			-size.x / h_division * (h_division - h_character_position) + slot.size.x / 2,
-			animation_time
+			(
+				-size.x / horizontal_division * (horizontal_division - horizontal_position)
+				+ slot.size.x / 2
+			),
+			duration
 		)
 		await tween.finished
 		if _move_tween != tween:
@@ -149,28 +149,31 @@ func _on_resized() -> void:
 		actor_moved.emit()
 	else:
 		slot.position.x = (
-			-size.x / h_division * (h_division - h_character_position) + slot.size.x / 2
+			-size.x / horizontal_division * (horizontal_division - horizontal_position)
+			+ slot.size.x / 2
 		)
 
 		_layout_status_node()
 		actor_moved.emit()
 
 
-func set_stage_position(target_h_division: int, target_h_character_position: int) -> bool:
-	var next_h_division: int = clamp(target_h_division, 2, 5)
-	var next_position: int = clamp(target_h_character_position, 0, next_h_division)
-	if h_division == next_h_division and h_character_position == next_position:
+func set_stage_position(
+	target_h_division: int, target_h_character_position: int, duration: float = -1.0
+) -> bool:
+	var next_horizontal_division: int = clamp(target_h_division, 2, 5)
+	var next_position: int = clamp(target_h_character_position, 0, next_horizontal_division)
+	if horizontal_division == next_horizontal_division and horizontal_position == next_position:
 		return false
 	_suspend_layout_update = true
-	h_division = next_h_division
-	h_character_position = next_position
+	horizontal_division = next_horizontal_division
+	horizontal_position = next_position
 	_suspend_layout_update = false
-	_on_resized()
+	_on_resized(duration)
 	return true
 
 
 ## 返回舞台位置补间是否仍在进行。目标值会在补间开始时立即提交，调用方不能仅通过
-## h_division/h_character_position 判断角色是否已经真正到达目标位置。
+## horizontal_division/horizontal_position 判断角色是否已经真正到达目标位置。
 func _is_stage_position_moving() -> bool:
 	return _move_tween != null and _move_tween.is_valid()
 
@@ -191,7 +194,7 @@ func set_highlight(highlight: bool) -> void:
 
 ## 角色进场动画
 ## 根据角色位置自动判断进场方向（左/右），优先使用motion_layer的移动进场动画
-func enter_actor(play_anim: bool = true) -> void:
+func enter_actor(play_anim: bool = true, duration_override: float = -1.0) -> void:
 	if not play_anim:
 		emit_signal("actor_entered")
 		return
@@ -207,7 +210,10 @@ func enter_actor(play_anim: bool = true) -> void:
 		if motion_layer.animation_player.has_animation(anim_name):
 			_is_visible = false
 			_set_visibility(false)
-			play_actor_motion(anim_name)
+			var params := {}
+			if duration_override >= 0.0:
+				params["duration"] = duration_override
+			play_actor_motion(anim_name, params)
 			return
 
 	visual.visible = true
@@ -215,14 +221,15 @@ func enter_actor(play_anim: bool = true) -> void:
 
 	var tween: Tween = visual.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(visual, "modulate:a", 1.0, animation_time)
+	var duration := duration_override if duration_override >= 0.0 else animation_time
+	tween.tween_property(visual, "modulate:a", 1.0, duration)
 	tween.finished.connect(_on_enter_animation_finished)
 	tween.play()
 
 
 ## 角色退场动画
 ## 根据角色位置自动判断退场方向（左/右），优先使用motion_layer的移动退场动画
-func exit_actor(play_anim: bool = true) -> void:
+func exit_actor(play_anim: bool = true, duration_override: float = -1.0) -> void:
 	if not play_anim:
 		emit_signal("actor_exited")
 		self.queue_free()
@@ -238,23 +245,17 @@ func exit_actor(play_anim: bool = true) -> void:
 	if motion_layer and motion_layer.animation_player:
 		var anim_name := _get_exit_animation_name()
 		if motion_layer.animation_player.has_animation(anim_name):
-			play_actor_motion(anim_name)
+			var params := {}
+			if duration_override >= 0.0:
+				params["duration"] = duration_override
+			play_actor_motion(anim_name, params)
 			return
 
 	var tween: Tween = visual.create_tween()
-	tween.tween_property(visual, "modulate:a", 0.0, animation_time)
+	var duration := duration_override if duration_override >= 0.0 else animation_time
+	tween.tween_property(visual, "modulate:a", 0.0, duration)
 	tween.finished.connect(func(): self.queue_free())
 	tween.play()
-
-
-## 设置角色可见性（先不显示，等待进场动画开始后再显示）
-func set_visible(deferred: bool = true) -> void:
-	if deferred:
-		_is_visible = false
-		_set_visibility(false)
-	else:
-		_is_visible = true
-		_set_visibility(true)
 
 
 ## 设置可见性
@@ -264,73 +265,15 @@ func _set_visibility(visible: bool) -> void:
 		visual.visible = visible
 
 
-## 从左侧进场动画
-func enter_from_left() -> void:
-	_play_enter_motion("left_enter")
-
-
-## 从右侧进场动画
-func enter_from_right() -> void:
-	_play_enter_motion("right_enter")
-
-
-## 从左侧偏移进场动画（短距离移动+淡入）
-func enter_from_left_offset() -> void:
-	_play_enter_motion("left_enter_offset")
-
-
-## 从右侧偏移进场动画（短距离移动+淡入）
-func enter_from_right_offset() -> void:
-	_play_enter_motion("right_enter_offset")
-
-
-## 退场到左侧动画
-func exit_to_left() -> void:
-	play_actor_motion("left_exit")
-
-
-## 退场到右侧动画
-func exit_to_right() -> void:
-	play_actor_motion("right_exit")
-
-
-## 退场到左侧偏移动画（短距离移动+淡出）
-func exit_to_left_offset() -> void:
-	play_actor_motion("left_exit_offset")
-
-
-## 退场到右侧偏移动画（短距离移动+淡出）
-func exit_to_right_offset() -> void:
-	play_actor_motion("right_exit_offset")
-
-
-## 播放进场动画的通用方法
-func _play_enter_motion(motion_name: String) -> void:
-	_is_visible = false
-	_set_visibility(false)
-	play_actor_motion(motion_name)
-
-
 ## 进场动画完成回调
 func _on_enter_animation_finished() -> void:
 	actor_entered.emit()
 
 
-## 创建角色场景并应用初始状态。
-## 保留原有 void 签名，避免破坏外部 KND_Actor 子类的既有覆写。
-func set_character_scene(scene: PackedScene, initial_status: String = "") -> void:
+## 创建角色场景并应用初始状态。返回 false 时不会替换当前有效场景。
+func set_character_scene(scene: PackedScene, initial_status: String = "") -> bool:
 	var observed_serial := _visual_setup_serial
-	_last_character_scene_setup_succeeded = _set_character_scene_internal(
-		scene, initial_status, observed_serial
-	)
-
-
-## 事务调用入口。它仍通过 set_character_scene 动态分派，因此不会绕过外部子类的旧覆写。
-## 旧覆写无法报告结果时保持历史兼容，按成功处理；内置实现会返回准确结果。
-func _try_set_character_scene(scene: PackedScene, initial_status: String = "") -> bool:
-	_last_character_scene_setup_succeeded = true
-	set_character_scene(scene, initial_status)
-	return _last_character_scene_setup_succeeded
+	return _set_character_scene_internal(scene, initial_status, observed_serial)
 
 
 func _set_character_scene_internal(
@@ -368,20 +311,25 @@ func _set_character_scene_internal(
 		texture_rect.texture = null
 		texture_rect.visible = false
 	_layout_status_node()
-	if instance is CanvasItem:
-		(instance as CanvasItem).visible = true
+	var instance_node: Node = instance
+	if instance_node is CanvasItem:
+		(instance_node as CanvasItem).visible = true
 	return true
 
 
 func _prepare_character_scene_candidate(
 	scene: PackedScene, initial_status: String, mount: Node, observed_serial: int
-) -> Node:
+) -> KonadoCharacterSceneBase:
 	if scene == null:
 		push_error("正在试图设置一个空角色场景")
 		return null
 	var instance := scene.instantiate()
 	if instance == null:
 		push_error("角色场景实例化失败")
+		return null
+	if not instance is KonadoCharacterSceneBase:
+		push_error("角色场景必须继承 KonadoCharacterSceneBase")
+		instance.free()
 		return null
 	if instance is CanvasItem:
 		(instance as CanvasItem).visible = false
@@ -400,10 +348,10 @@ func _prepare_character_scene_candidate(
 	):
 		_discard_character_scene_candidate(instance)
 		return null
-	return instance
+	return instance as KonadoCharacterSceneBase
 
 
-func _discard_character_scene_candidate(instance: Node) -> void:
+func _discard_character_scene_candidate(instance: KonadoCharacterSceneBase) -> void:
 	if instance == null or not is_instance_valid(instance):
 		return
 	var parent := instance.get_parent()
@@ -416,60 +364,40 @@ func _discard_character_scene_candidate(instance: Node) -> void:
 ## 这里不判断图片、Spine、Live2D 或视频，避免主链路重新绑定到某一种媒体类型。
 func apply_character_status(
 	status_name: String, transition_duration: float = 0.0, completion: Callable = Callable()
-) -> void:
-	_ensure_status_transition()
-	# 这里把当前阶段的校验结论直接交给控制器，避免同一个调用栈重复校验。
-	# 延迟转场在最终提交状态时仍会重新校验，确保等待期间的资源变化不会被忽略。
-	var observed_request_serial := _character_status_request_serial
-	var request_serial := observed_request_serial
-	if _prevalidated_character_status_request != observed_request_serial:
-		if not _can_apply_character_status(status_name):
-			_last_character_status_request_accepted = false
-			if completion.is_valid():
-				completion.call(false)
-			return
-		if observed_request_serial != _character_status_request_serial:
-			_last_character_status_request_accepted = false
-			if completion.is_valid():
-				completion.call(false)
-			return
-		_character_status_request_serial += 1
-		request_serial = _character_status_request_serial
-	_last_character_status_request_accepted = _status_transition.request(
-		status_name, transition_duration, completion, true
-	)
-
-
-## 事务调用入口。保留 apply_character_status 的 void 签名和动态分派，内置实现同时报告
-## 请求是否通过校验并进入状态控制器；旧子类覆写按历史行为视为已接受。
-func _try_apply_character_status(
-	status_name: String, transition_duration: float = 0.0, completion: Callable = Callable()
 ) -> bool:
+	return _request_character_status(status_name, transition_duration, completion)
+
+
+## 协议入口由 Konado 自身持有：无论自定义演员是否覆写公共便捷方法，运行时都必须
+## 经过校验、重入所有权和完成回调约束。扩展异步表现应覆写
+## _submit_character_status_request()，而不是覆写此入口。
+func _request_character_status(
+	status_name: String, transition_duration: float, completion: Callable
+) -> bool:
+	_ensure_status_transition()
 	var observed_request_serial := _character_status_request_serial
-	# 有状态节点时在请求接收阶段只校验一次。没有状态节点时仍动态调用旧子类覆写；
-	# 内置实现会自行拒绝，而只覆写 void apply_character_status 的旧项目仍保持可用。
-	var should_prevalidate := _status_node != null
-	if should_prevalidate:
-		if not _can_apply_character_status(status_name):
-			if completion.is_valid():
-				completion.call(false)
-			return false
-		# 校验钩子属于用户扩展点：有效的重入请求取得所有权，无效请求不应抢占外层。
-		if observed_request_serial != _character_status_request_serial:
-			if completion.is_valid():
-				completion.call(false)
-			return false
+	if not _can_apply_character_status(status_name):
+		if completion.is_valid():
+			completion.call(false)
+		return false
+	if observed_request_serial != _character_status_request_serial:
+		if completion.is_valid():
+			completion.call(false)
+		return false
 	_character_status_request_serial += 1
 	var request_serial := _character_status_request_serial
-	_last_character_status_request_accepted = true
-	_prevalidated_character_status_request = request_serial if should_prevalidate else -1
-	apply_character_status(status_name, transition_duration, completion)
-	if _prevalidated_character_status_request == request_serial:
-		_prevalidated_character_status_request = -1
 	return (
 		request_serial == _character_status_request_serial
-		and _last_character_status_request_accepted
+		and _submit_character_status_request(status_name, transition_duration, completion)
 	)
+
+
+## 自定义演员的受控扩展点。调用前状态已经校验，返回 false 时必须同步调用
+## completion(false)；返回 true 后则必须最终且仅调用一次 completion。
+func _submit_character_status_request(
+	status_name: String, transition_duration: float, completion: Callable
+) -> bool:
+	return _status_transition.request(status_name, transition_duration, completion, true)
 
 
 func _cancel_character_status_transition() -> void:
@@ -489,31 +417,15 @@ func _apply_character_status_immediately(status_name: String) -> bool:
 func _apply_character_status_to_node(character_node: Node, status_name: String) -> bool:
 	if character_node == null or status_name.is_empty():
 		return false
-	# 优先使用正式协议；后面的 has_method 分支用于兼容未继承基类的用户场景。
-	if character_node is KND_CharacterSceneBase:
-		return (character_node as KND_CharacterSceneBase)._try_apply_status_compatible(status_name)
-	var method_name := _get_compatible_status_method(character_node)
-	if not method_name.is_empty():
-		character_node.call(method_name, status_name)
-		return true
-	push_warning("角色场景未实现 apply_status：" + status_name)
-	return false
-
-
-func _get_compatible_status_method(character_node: Node = null) -> StringName:
-	var target := character_node if character_node != null else _status_node
-	if target == null:
-		return &""
-	for method_name: StringName in [&"apply_status", &"change_status", &"set_status"]:
-		if target.has_method(method_name):
-			return method_name
-	return &""
+	if not character_node is KonadoCharacterSceneBase:
+		return false
+	return (character_node as KonadoCharacterSceneBase).apply_status(status_name)
 
 
 func _ensure_status_transition() -> void:
 	if _status_transition:
 		return
-	_status_transition = KND_ActorStateTransitionController.new(
+	_status_transition = KonadoActorStateTransitionController.new(
 		self,
 		_get_status_transition_visual,
 		_apply_character_status_immediately,
@@ -548,19 +460,8 @@ func play_actor_motion(motion_name: String, params: Dictionary = {}) -> void:
 	motion_layer.play_motion(motion_name, params)
 
 
-func set_character_texture(texture: Texture) -> void:
-	if not texture_rect:
-		return
-	if texture == null:
-		push_error("正在试图设置一个空角色图像")
-		return
-	_visual_setup_serial += 1
-	var setup_serial := _visual_setup_serial
-	_clear_status_node()
-	if setup_serial != _visual_setup_serial:
-		return
-	texture_rect.visible = true
-	texture_rect.texture = texture
+func can_play_actor_motion(motion_name: String) -> bool:
+	return motion_layer != null and motion_layer.has_motion(motion_name)
 
 
 func _clear_status_node() -> void:
@@ -579,16 +480,9 @@ func _clear_status_node() -> void:
 		status_node.queue_free()
 
 
-## 替换演员动作层。保留原有 void 签名，避免破坏外部 KND_Actor 子类的既有覆写。
-func set_motion_layer_scene(scene: PackedScene) -> void:
-	_last_motion_layer_scene_setup_succeeded = _set_motion_layer_scene_internal(scene)
-
-
-## 事务调用入口。旧覆写无法报告结果时按成功处理；内置实现会准确报告配置错误。
-func _try_set_motion_layer_scene(scene: PackedScene) -> bool:
-	_last_motion_layer_scene_setup_succeeded = true
-	set_motion_layer_scene(scene)
-	return _last_motion_layer_scene_setup_succeeded
+## 替换演员动作层。返回 false 时保留当前有效动作层。
+func set_motion_layer_scene(scene: PackedScene) -> bool:
+	return _set_motion_layer_scene_internal(scene)
 
 
 func _set_motion_layer_scene_internal(scene: PackedScene) -> bool:
@@ -599,8 +493,8 @@ func _set_motion_layer_scene_internal(scene: PackedScene) -> bool:
 		return false
 	var observed_serial := _visual_setup_serial
 	var instance := scene.instantiate()
-	if not (instance is KND_ActorMotionLayer):
-		push_warning("演员动作层场景必须继承 KND_ActorMotionLayer")
+	if not (instance is KonadoActorMotionLayer):
+		push_warning("演员动作层场景必须继承 KonadoActorMotionLayer")
 		if instance != null:
 			instance.free()
 		return false
@@ -621,7 +515,7 @@ func _set_motion_layer_scene_internal(scene: PackedScene) -> bool:
 		if previous_parent:
 			previous_parent.remove_child(previous_motion_layer)
 		previous_motion_layer.queue_free()
-	motion_layer = instance as KND_ActorMotionLayer
+	motion_layer = instance as KonadoActorMotionLayer
 	slot.add_child(motion_layer)
 	if motion_layer is Control:
 		motion_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -686,9 +580,10 @@ func _layout_character_scene_node(character_scene: Node, mount: Node) -> void:
 
 func _get_status_visual() -> CanvasItem:
 	if _status_node:
-		if _status_node is CanvasItem:
-			return _status_node as CanvasItem
-		var canvas_item := _find_canvas_item(_status_node)
+		var status_node: Node = _status_node
+		if status_node is CanvasItem:
+			return status_node as CanvasItem
+		var canvas_item := _find_canvas_item(status_node)
 		if canvas_item:
 			return canvas_item
 	if texture_rect:
@@ -705,12 +600,12 @@ func _get_status_transition_visual() -> CanvasItem:
 
 
 func _get_character_transition_frame(status_name: String) -> RefCounted:
-	if not (_status_node is KND_CharacterSceneBase):
+	if not (_status_node is KonadoCharacterSceneBase):
 		return null
 	var target_space := _get_status_transition_visual()
 	if target_space == null:
 		return null
-	var character_scene := _status_node as KND_CharacterSceneBase
+	var character_scene := _status_node as KonadoCharacterSceneBase
 	if status_name.is_empty():
 		return character_scene.get_current_status_transition_frame(target_space)
 	return character_scene.get_status_transition_frame(status_name, target_space)
@@ -719,9 +614,7 @@ func _get_character_transition_frame(status_name: String) -> RefCounted:
 func _can_apply_character_status(status_name: String) -> bool:
 	if status_name.is_empty() or _status_node == null:
 		return false
-	if _status_node is KND_CharacterSceneBase:
-		return (_status_node as KND_CharacterSceneBase).can_apply_status(status_name)
-	return not _get_compatible_status_method().is_empty()
+	return _status_node.can_apply_status(status_name)
 
 
 func _get_character_mount() -> Node:
@@ -754,10 +647,3 @@ func _find_texture_rect(node: Node) -> TextureRect:
 func set_actor_modulate(color: Color) -> void:
 	if slot:
 		slot.modulate = color
-
-
-## 只修改角色画面本体modulate（立绘、Live2D、Spine），动作层motion_layer不受影响
-func set_visual_modulate(color: Color) -> void:
-	var target_visual: CanvasItem = _get_status_visual()
-	if target_visual:
-		target_visual.modulate = color
