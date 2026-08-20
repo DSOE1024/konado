@@ -1,6 +1,6 @@
 @tool
 extends Resource
-class_name KND_SettingItem
+class_name KonadoSettingItem
 
 ## 设置类型枚举
 ## SLIDER: 滑块类型，用于数值调节

@@ -9,10 +9,10 @@ extends Node
 signal setting_changed(category: String, key: String, value: Variant)
 
 ## 保存设置的文件路径
-const SAVE_PATH := "user://knd_settings.cfg"
+const SAVE_PATH := "user://konado_settings.cfg"
 
 ## 默认设置的JSON文件路径
-const DEFAULT_JSON := "res://addons/konado_settings/resources/default_settings.json"
+const DEFAULT_JSON := "res://addons/konado_settings/data/default_settings.json"
 
 var save_path := SAVE_PATH
 
@@ -41,10 +41,10 @@ func get_setting(category: String, key: String) -> Variant:
 		return _values[category][key]
 	# 如果没有找到值，返回默认值
 	if _categories.has(category):
-		for item: KND_SettingItem in _categories[category].items:
+		for item: KonadoSettingItem in _categories[category].items:
 			if item.key == key:
 				return item.default_value
-	push_warning("KND_Settings: 未知设置 %s/%s" % [category, key])
+	push_warning("KonadoSettings: 未知设置 %s/%s" % [category, key])
 	return null
 
 
@@ -55,11 +55,11 @@ func get_setting(category: String, key: String) -> Variant:
 func set_setting(category: String, key: String, value: Variant) -> bool:
 	var item := _find_item(category, key)
 	if item == null:
-		push_warning("KND_Settings: 拒绝写入未知设置 %s/%s" % [category, key])
+		push_warning("KonadoSettings: 拒绝写入未知设置 %s/%s" % [category, key])
 		return false
 	var validation := _validate_value(item, value)
 	if not validation.valid:
-		push_warning("KND_Settings: 拒绝写入无效值 %s/%s" % [category, key])
+		push_warning("KonadoSettings: 拒绝写入无效值 %s/%s" % [category, key])
 		return false
 	var normalized_value: Variant = validation.value
 	var previous_value: Variant = _values[category][key]
@@ -69,55 +69,56 @@ func set_setting(category: String, key: String, value: Variant) -> bool:
 	if not _save_config():
 		_values[category][key] = previous_value
 		_rebuild_config()
-		push_error("KND_Settings: 保存设置 %s/%s 失败" % [category, key])
+		push_error("KonadoSettings: 保存设置 %s/%s 失败" % [category, key])
 		return false
+	_apply_runtime_setting(category, key, normalized_value)
 	setting_changed.emit(category, key, normalized_value)
 	return true
 
 
 ## 在运行时注册额外的设置分类
-## @param cat: 要注册的设置分类
-func register_category(cat: KND_SettingCategory) -> void:
-	if cat == null or cat.id.is_empty():
-		push_warning("KND_Settings: 忽略缺少有效 ID 的设置分类")
+## @param category: 要注册的设置分类
+func register_category(category: KonadoSettingCategory) -> void:
+	if category == null or category.id.is_empty():
+		push_warning("KonadoSettings: 忽略缺少有效 ID 的设置分类")
 		return
 	var item_keys: Dictionary = {}
-	for item: KND_SettingItem in cat.items:
+	for item: KonadoSettingItem in category.items:
 		if item == null or item.key.is_empty() or item_keys.has(item.key):
-			push_warning("KND_Settings: 分类 %s 包含无效或重复设置项" % cat.id)
+			push_warning("KonadoSettings: 分类 %s 包含无效或重复设置项" % category.id)
 			return
 		if not _validate_value(item, item.default_value).valid:
-			push_warning("KND_Settings: 分类 %s 的默认值无效：%s" % [cat.id, item.key])
+			push_warning("KonadoSettings: 分类 %s 的默认值无效：%s" % [category.id, item.key])
 			return
 		item_keys[item.key] = true
-	var previous_values: Dictionary = _values.get(cat.id, {})
+	var previous_values: Dictionary = _values.get(category.id, {})
 	var category_values: Dictionary = {}
-	_categories[cat.id] = cat
-	for item: KND_SettingItem in cat.items:
+	_categories[category.id] = category
+	for item: KonadoSettingItem in category.items:
 		var current_validation := _validate_value(item, previous_values.get(item.key))
 		category_values[item.key] = (
 			current_validation.value if current_validation.valid else item.default_value
 		)
-		if _saved_loaded and _config.has_section_key(cat.id, item.key):
-			var saved_value: Variant = _config.get_value(cat.id, item.key)
+		if _saved_loaded and _config.has_section_key(category.id, item.key):
+			var saved_value: Variant = _config.get_value(category.id, item.key)
 			var validation := _validate_value(item, saved_value)
 			if validation.valid:
 				category_values[item.key] = validation.value
 			else:
-				push_warning("KND_Settings: 忽略无效存档值 %s/%s" % [cat.id, item.key])
-	_values[cat.id] = category_values
+				push_warning("KonadoSettings: 忽略无效存档值 %s/%s" % [category.id, item.key])
+	_values[category.id] = category_values
 
 
 ## 将指定分类的所有设置重置为默认值
 ## @param category_id: 分类ID
 func reset_category(category_id: String) -> bool:
 	if not _categories.has(category_id):
-		push_warning("KND_Settings: 未知设置分类 %s" % category_id)
+		push_warning("KonadoSettings: 未知设置分类 %s" % category_id)
 		return false
-	var cat: KND_SettingCategory = _categories[category_id]
+	var category: KonadoSettingCategory = _categories[category_id]
 	var previous_values: Dictionary = _values[category_id].duplicate(true)
-	var changed_items: Array[KND_SettingItem] = []
-	for item: KND_SettingItem in cat.items:
+	var changed_items: Array[KonadoSettingItem] = []
+	for item: KonadoSettingItem in category.items:
 		if _values[category_id].get(item.key) != item.default_value:
 			_values[category_id][item.key] = item.default_value
 			changed_items.append(item)
@@ -126,9 +127,10 @@ func reset_category(category_id: String) -> bool:
 	if not _save_config():
 		_values[category_id] = previous_values
 		_rebuild_config()
-		push_error("KND_Settings: 重置分类失败：%s" % category_id)
+		push_error("KonadoSettings: 重置分类失败：%s" % category_id)
 		return false
-	for item: KND_SettingItem in changed_items:
+	for item: KonadoSettingItem in changed_items:
+		_apply_runtime_setting(category_id, item.key, item.default_value)
 		setting_changed.emit(category_id, item.key, item.default_value)
 	return true
 
@@ -137,42 +139,42 @@ func reset_category(category_id: String) -> bool:
 ## @return: 过滤后的分类数组
 func get_categories() -> Array:
 	var filtered_categories = []
-	for cat in _categories.values():
-		var filtered_cat = _filter_category_for_platform(cat)
-		if not filtered_cat.items.is_empty():
-			filtered_categories.append(filtered_cat)
+	for category in _categories.values():
+		var filtered_category = _filter_category_for_platform(category)
+		if not filtered_category.items.is_empty():
+			filtered_categories.append(filtered_category)
 	return filtered_categories
 
 
 ## 根据ID获取单个分类（根据当前平台过滤）
 ## @param id: 分类ID
 ## @return: 过滤后的分类对象
-func get_category(id: String) -> KND_SettingCategory:
-	var cat = _categories.get(id)
-	if cat:
-		return _filter_category_for_platform(cat)
-	return cat
+func get_category(id: String) -> KonadoSettingCategory:
+	var category = _categories.get(id)
+	if category:
+		return _filter_category_for_platform(category)
+	return category
 
 
 ## 根据平台过滤分类中的设置项
-## @param cat: 原始分类
+## @param category: 原始分类
 ## @return: 过滤后的分类
-func _filter_category_for_platform(cat: KND_SettingCategory) -> KND_SettingCategory:
-	var filtered_cat = KND_SettingCategory.new()
-	filtered_cat.id = cat.id
-	filtered_cat.display_name = cat.display_name
+func _filter_category_for_platform(category: KonadoSettingCategory) -> KonadoSettingCategory:
+	var filtered_category = KonadoSettingCategory.new()
+	filtered_category.id = category.id
+	filtered_category.display_name = category.display_name
 
-	for item: KND_SettingItem in cat.items:
+	for item: KonadoSettingItem in category.items:
 		if _is_item_visible(item):
-			filtered_cat.items.append(item)
+			filtered_category.items.append(item)
 
-	return filtered_cat
+	return filtered_category
 
 
 ## 检查设置项是否在当前平台可见
 ## @param item: 设置项
 ## @return: 是否可见
-func _is_item_visible(item: KND_SettingItem) -> bool:
+func _is_item_visible(item: KonadoSettingItem) -> bool:
 	if item.platforms.is_empty():
 		push_warning("建议补充配置platforms: [all]")
 	if item.platforms.has("all"):
@@ -198,7 +200,37 @@ func _is_item_visible(item: KND_SettingItem) -> bool:
 func _ready() -> void:
 	_detect_platform()  # 检测当前平台
 	_load_defaults()  # 加载默认设置
+	_extend_language_options_from_translation_server()
 	_load_saved()  # 加载已保存的设置
+	_apply_initial_locale()
+
+
+func _apply_initial_locale() -> void:
+	var locale: Variant = get_setting("display", "language")
+	if locale is String and not locale.is_empty():
+		TranslationServer.set_locale(locale)
+
+
+func _apply_runtime_setting(category: String, key: String, value: Variant) -> void:
+	if category == "display" and key == "language" and value is String:
+		TranslationServer.set_locale(value)
+
+
+## 将用户项目通过 Godot 原生翻译系统提供的语言加入设置选项。
+## 默认语言保持产品定义的顺序，项目自定义语言按规范语言码排序后追加。
+func _extend_language_options_from_translation_server() -> void:
+	var language_item := _find_item("display", "language")
+	if language_item == null:
+		return
+	var additional_locales := PackedStringArray()
+	for locale: String in TranslationServer.get_loaded_locales():
+		var normalized := TranslationServer.standardize_locale(locale)
+		if normalized.is_empty() or normalized in language_item.options:
+			continue
+		additional_locales.append(normalized)
+	additional_locales.sort()
+	for locale: String in additional_locales:
+		language_item.options.append(locale)
 
 
 ## 检测当前运行平台
@@ -229,46 +261,46 @@ func _detect_platform() -> void:
 ## 加载默认设置
 func _load_defaults() -> void:
 	if not FileAccess.file_exists(DEFAULT_JSON):
-		push_warning("KND_Settings: 未找到default_settings.json文件")
+		push_warning("KonadoSettings: 未找到default_settings.json文件")
 		return
 
 	var json_string := FileAccess.get_file_as_string(DEFAULT_JSON)
 	var json := JSON.new()
 	if json.parse(json_string) != OK:
-		push_warning("KND_Settings: 解析default_settings.json失败: " + json.get_error_message())
+		push_warning("KonadoSettings: 解析default_settings.json失败: " + json.get_error_message())
 		return
 
 	var data: Variant = json.get_data()
 	if not data is Dictionary or not data.get("categories") is Array:
-		push_warning("KND_Settings: default_settings.json必须包含categories数组")
+		push_warning("KonadoSettings: default_settings.json必须包含categories数组")
 		return
 
-	for cat_data: Variant in data["categories"]:
-		var cat := _parse_category(cat_data)
-		if cat:
-			if _categories.has(cat.id):
-				push_warning("KND_Settings: 忽略重复分类 %s" % cat.id)
+	for category_data: Variant in data["categories"]:
+		var category := _parse_category(category_data)
+		if category:
+			if _categories.has(category.id):
+				push_warning("KonadoSettings: 忽略重复分类 %s" % category.id)
 				continue
-			register_category(cat)
+			register_category(category)
 
 
 ## 解析分类数据
 ## @param data: 分类数据字典
 ## @return: 解析后的分类对象
-func _parse_category(data: Variant) -> KND_SettingCategory:
+func _parse_category(data: Variant) -> KonadoSettingCategory:
 	if not data is Dictionary:
-		push_warning("KND_Settings: 忽略非对象分类")
+		push_warning("KonadoSettings: 忽略非对象分类")
 		return null
 	if not data.get("id") is String or data["id"].is_empty() or not data.get("items") is Array:
-		push_warning("KND_Settings: 忽略结构无效的分类")
+		push_warning("KonadoSettings: 忽略结构无效的分类")
 		return null
 	if data.has("display_name") and not data["display_name"] is String:
-		push_warning("KND_Settings: 忽略名称无效的分类 %s" % data["id"])
+		push_warning("KonadoSettings: 忽略名称无效的分类 %s" % data["id"])
 		return null
 
-	var cat := KND_SettingCategory.new()
-	cat.id = data.get("id", "")
-	cat.display_name = data.get("display_name", "")
+	var category := KonadoSettingCategory.new()
+	category.id = data.get("id", "")
+	category.display_name = data.get("display_name", "")
 
 	var items_array: Array = data.get("items", [])
 	var item_keys: Dictionary = {}
@@ -276,33 +308,33 @@ func _parse_category(data: Variant) -> KND_SettingCategory:
 		var item := _parse_item(item_data)
 		if item:
 			if item_keys.has(item.key):
-				push_warning("KND_Settings: 忽略分类 %s 中的重复设置 %s" % [cat.id, item.key])
+				push_warning("KonadoSettings: 忽略分类 %s 中的重复设置 %s" % [category.id, item.key])
 				continue
 			item_keys[item.key] = true
-			cat.items.append(item)
+			category.items.append(item)
 
-	return cat
+	return category
 
 
 ## 解析设置项数据
 ## @param data: 设置项数据字典
 ## @return: 解析后的设置项对象
-func _parse_item(data: Variant) -> KND_SettingItem:
+func _parse_item(data: Variant) -> KonadoSettingItem:
 	if not data is Dictionary:
-		push_warning("KND_Settings: 忽略非对象设置项")
+		push_warning("KonadoSettings: 忽略非对象设置项")
 		return null
 	var data_error := _get_item_data_error(data)
 	if not data_error.is_empty():
-		push_warning("KND_Settings: 忽略%s" % data_error)
+		push_warning("KonadoSettings: 忽略%s" % data_error)
 		return null
-	var item_type: int = int(data.get("type", KND_SettingItem.Type.SLIDER))
+	var item_type: int = int(data.get("type", KonadoSettingItem.Type.SLIDER))
 
-	var item := KND_SettingItem.new()
+	var item := KonadoSettingItem.new()
 	item.key = data.get("key", "")
 	item.label = data.get("label", "")
 	item.type = item_type
 	item.default_value = data.get("default_value", 0.0)
-	if item.type == KND_SettingItem.Type.SLIDER:
+	if item.type == KonadoSettingItem.Type.SLIDER:
 		item.min_value = float(data.get("min_value", 0.0))
 		item.max_value = float(data.get("max_value", 1.0))
 		item.step = float(data.get("step", 0.01))
@@ -318,7 +350,7 @@ func _parse_item(data: Variant) -> KND_SettingItem:
 
 	var default_validation := _validate_value(item, item.default_value)
 	if not default_validation.valid:
-		push_warning("KND_Settings: 忽略默认值无效的设置项 %s" % item.key)
+		push_warning("KonadoSettings: 忽略默认值无效的设置项 %s" % item.key)
 		return null
 	item.default_value = default_validation.value
 	return item
@@ -327,7 +359,7 @@ func _parse_item(data: Variant) -> KND_SettingItem:
 func _get_item_data_error(data: Dictionary) -> String:
 	var error_message: String = ""
 	var item_key: Variant = data.get("key")
-	var item_type: Variant = data.get("type", KND_SettingItem.Type.SLIDER)
+	var item_type: Variant = data.get("type", KonadoSettingItem.Type.SLIDER)
 	var normalized_item_type: int = (
 		int(item_type) if typeof(item_type) in [TYPE_INT, TYPE_FLOAT] else -1
 	)
@@ -336,7 +368,7 @@ func _get_item_data_error(data: Dictionary) -> String:
 	elif (
 		typeof(item_type) not in [TYPE_INT, TYPE_FLOAT]
 		or float(item_type) != float(normalized_item_type)
-		or normalized_item_type not in KND_SettingItem.Type.values()
+		or normalized_item_type not in KonadoSettingItem.Type.values()
 	):
 		error_message = "类型无效的设置项 %s" % item_key
 	else:
@@ -344,7 +376,7 @@ func _get_item_data_error(data: Dictionary) -> String:
 			if data.has(string_field) and not data[string_field] is String:
 				error_message = "%s 无效的设置项 %s" % [string_field, item_key]
 				break
-	if error_message.is_empty() and normalized_item_type == KND_SettingItem.Type.SLIDER:
+	if error_message.is_empty() and normalized_item_type == KonadoSettingItem.Type.SLIDER:
 		for numeric_field: String in ["min_value", "max_value", "step", "default_value"]:
 			if (
 				data.has(numeric_field)
@@ -362,7 +394,7 @@ func _get_item_data_error(data: Dictionary) -> String:
 		error_message = "options 无效的设置项 %s" % item_key
 	if (
 		error_message.is_empty()
-		and normalized_item_type == KND_SettingItem.Type.OPTION
+		and normalized_item_type == KonadoSettingItem.Type.OPTION
 		and (not data.has("options") or data["options"].is_empty())
 	):
 		error_message = "缺少 options 的设置项 %s" % item_key
@@ -394,27 +426,27 @@ func _load_saved() -> void:
 				if validation.valid:
 					_values[category_id][key] = validation.value
 				else:
-					push_warning("KND_Settings: 忽略无效存档值 %s/%s" % [category_id, key])
+					push_warning("KonadoSettings: 忽略无效存档值 %s/%s" % [category_id, key])
 	_saved_loaded = true
 	if load_path != save_path:
-		push_warning("KND_Settings: 已从备份配置恢复。")
+		push_warning("KonadoSettings: 已从备份配置恢复。")
 
 
-func _find_item(category: String, key: String) -> KND_SettingItem:
-	if not _categories.has(category):
+func _find_item(category_id: String, key: String) -> KonadoSettingItem:
+	if not _categories.has(category_id):
 		return null
-	var cat: KND_SettingCategory = _categories[category]
-	for item: KND_SettingItem in cat.items:
+	var setting_category: KonadoSettingCategory = _categories[category_id]
+	for item: KonadoSettingItem in setting_category.items:
 		if item.key == key:
 			return item
 	return null
 
 
-func _validate_value(item: KND_SettingItem, value: Variant) -> Dictionary:
+func _validate_value(item: KonadoSettingItem, value: Variant) -> Dictionary:
 	var result := {"valid": false}
 	if item == null:
 		return result
-	if item.type == KND_SettingItem.Type.SLIDER:
+	if item.type == KonadoSettingItem.Type.SLIDER:
 		if typeof(value) in [TYPE_INT, TYPE_FLOAT]:
 			var numeric_value := float(value)
 			if (
@@ -423,10 +455,10 @@ func _validate_value(item: KND_SettingItem, value: Variant) -> Dictionary:
 				and numeric_value <= item.max_value
 			):
 				result = {"valid": true, "value": numeric_value}
-	elif item.type == KND_SettingItem.Type.TOGGLE:
+	elif item.type == KonadoSettingItem.Type.TOGGLE:
 		if value is bool:
 			result = {"valid": true, "value": value}
-	elif item.type == KND_SettingItem.Type.OPTION:
+	elif item.type == KonadoSettingItem.Type.OPTION:
 		if value is String and item.options.has(value):
 			result = {"valid": true, "value": value}
 	return result

@@ -1,7 +1,7 @@
 ## 设置分类类 - 将相关的设置项分组在一起
 @tool
 extends Resource
-class_name KND_SettingCategory
+class_name KonadoSettingCategory
 
 ## 分类的唯一标识符
 @export var id: String = ""
@@ -10,4 +10,4 @@ class_name KND_SettingCategory
 @export var display_name: String = ""
 
 ## 分类包含的设置项数组
-@export var items: Array[KND_SettingItem] = []
+@export var items: Array[KonadoSettingItem] = []

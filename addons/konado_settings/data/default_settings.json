@@ -2,22 +2,22 @@
 	"categories": [
 		{
 			"id": "audio",
-			"display_name": "音频",
+			"display_name": "KONADO_SETTINGS_AUDIO",
 			"items": [
 				{
 					"key": "master_volume",
-					"label": "主音量",
+					"label": "KONADO_SETTINGS_MASTER_VOLUME",
 					"type": 0,
 					"min_value": 0.0,
 					"max_value": 1.0,
 					"step": 0.01,
 					"default_value": 1.0,
 					"platforms": ["all"],
-					"tooltip": "调节游戏的整体音量"
+					"tooltip": "KONADO_SETTINGS_MASTER_VOLUME_TOOLTIP"
 				},
 				{
 					"key": "music_volume",
-					"label": "音乐音量",
+					"label": "KONADO_SETTINGS_MUSIC_VOLUME",
 					"type": 0,
 					"min_value": 0.0,
 					"max_value": 1.0,
@@ -27,7 +27,7 @@
 				},
 				{
 					"key": "sfx_volume",
-					"label": "音效音量",
+					"label": "KONADO_SETTINGS_SFX_VOLUME",
 					"type": 0,
 					"min_value": 0.0,
 					"max_value": 1.0,
@@ -37,7 +37,7 @@
 				},
 				{
 					"key": "voice_volume",
-					"label": "语音音量",
+					"label": "KONADO_SETTINGS_VOICE_VOLUME",
 					"type": 0,
 					"min_value": 0.0,
 					"max_value": 1.0,
@@ -49,11 +49,11 @@
 		},
 		{
 			"id": "text",
-			"display_name": "文本播放",
+			"display_name": "KONADO_SETTINGS_TEXT",
 			"items": [
 				{
 					"key": "text_speed",
-					"label": "文字速度",
+					"label": "KONADO_SETTINGS_TEXT_SPEED",
 					"type": 0,
 					"min_value": 0.01,
 					"max_value": 0.2,
@@ -63,7 +63,7 @@
 				},
 				{
 					"key": "auto_delay",
-					"label": "自动等待",
+					"label": "KONADO_SETTINGS_AUTO_DELAY",
 					"type": 0,
 					"min_value": 1.0,
 					"max_value": 5.0,
@@ -73,21 +73,21 @@
 				},
 				{
 					"key": "auto_mode",
-					"label": "自动模式",
+					"label": "KONADO_SETTINGS_AUTO_MODE",
 					"type": 1,
 					"default_value": false,
 					"platforms": ["all"]
 				},
 				{
 					"key": "skip_read",
-					"label": "跳过已读",
+					"label": "KONADO_SETTINGS_SKIP_READ",
 					"type": 1,
 					"default_value": false,
 					"platforms": ["all"]
 				},
 				{
 					"key": "skip_all",
-					"label": "跳过全部",
+					"label": "KONADO_SETTINGS_SKIP_ALL",
 					"type": 1,
 					"default_value": false,
 					"platforms": ["all"]
@@ -96,18 +96,18 @@
 		},
 		{
 			"id": "display",
-			"display_name": "画面",
+			"display_name": "KONADO_SETTINGS_DISPLAY",
 			"items": [
 				{
 					"key": "fullscreen",
-					"label": "全屏",
+					"label": "KONADO_SETTINGS_FULLSCREEN",
 					"type": 1,
 					"default_value": false,
 					"platforms": ["all"]
 				},
 				{
 					"key": "language",
-					"label": "语言",
+					"label": "KONADO_SETTINGS_LANGUAGE",
 					"type": 2,
 					"options": ["zh_Hans", "zh_Hant", "en", "ja", "ko"],
 					"default_value": "zh_Hans",
@@ -115,7 +115,7 @@
 				},
 				{
 					"key": "debug_mode",
-					"label": "调试模式",
+					"label": "KONADO_SETTINGS_DEBUG_MODE",
 					"type": 1,
 					"default_value": false,
 					"platforms": ["debug"]
