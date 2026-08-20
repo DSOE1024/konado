@@ -401,8 +401,9 @@ func screen_text(
 ) -> int:
 	if host.screen_text == null:
 		return KonadoVirtualMachine.Result.FAILED
-	host._await_signal(host.screen_text.display_finished, token)
-	host.screen_text.display(instruction.value(&"lines"))
+	var screen_text := host.screen_text
+	host._await_signal(screen_text.screen_text_hidden, token)
+	screen_text.display(instruction.value(&"lines"), "center", true)
 	return KonadoVirtualMachine.Result.WAITING
 
 

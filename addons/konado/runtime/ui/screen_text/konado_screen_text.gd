@@ -52,6 +52,8 @@ var _line_index: int = 0
 var _total_lines: int = 0
 var _is_waiting_input: bool = false
 var _display_generation: int = 0
+## 播放完成后是否自动隐藏（由外部通过 display() 的 auto_hide 参数控制）
+var _auto_hide_on_finish: bool = false
 
 
 func _ready() -> void:
@@ -65,7 +67,9 @@ func _ready() -> void:
 ## 显示 NVL 文本内容
 ## text_lines: 文本行列表
 ## align: 对齐方式（"left"/"center"/"right"）
-func display(text_lines: Array[String], align: String = "center") -> void:
+## auto_hide: 全部行播放完成后是否自动隐藏（默认 false，仅隐藏需由调用方显式触发）
+func display(text_lines: Array[String], align: String = "center", auto_hide: bool = false) -> void:
+	_auto_hide_on_finish = auto_hide
 	_display_generation += 1
 	var display_generation := _display_generation
 	_cancel_display_activity()
@@ -175,7 +179,16 @@ func skip_display() -> void:
 		next_line_indicator.hide()
 	for label in _line_labels:
 		label.modulate.a = 1.0
+	_finish_display(_display_generation)
+
+
+## 播放完成统一出口：发射 display_finished，并按需自动隐藏
+func _finish_display(display_generation: int) -> void:
+	if display_generation != _display_generation:
+		return
 	display_finished.emit()
+	if _auto_hide_on_finish:
+		hide_screen_text()
 
 
 ## 淡入当前行
@@ -183,7 +196,7 @@ func _reveal_current_line(display_generation: int = _display_generation) -> void
 	if display_generation != _display_generation:
 		return
 	if _line_index >= _total_lines:
-		display_finished.emit()
+		_finish_display(display_generation)
 		return
 
 	var label := _line_labels[_line_index]
@@ -251,7 +264,7 @@ func _on_click_advance() -> void:
 	_hide_indicator()
 
 	if _line_index >= _total_lines:
-		display_finished.emit()
+		_finish_display(_display_generation)
 	else:
 		_reveal_current_line(_display_generation)
 
