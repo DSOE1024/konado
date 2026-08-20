@@ -3,12 +3,12 @@
 importer="font_data_dynamic"
 type="FontFile"
 uid="uid://bvv7q2l5vr5lg"
-path="res://.godot/imported/NotoSansSC-VF.otf-a9b8cee38e2d912c0625bdc40a44b364.fontdata"
+path="res://.godot/imported/noto_sans_sc_variable.otf-b40c1b3744be1f13584584cdb225ff31.fontdata"
 
 [deps]
 
-source_file="res://addons/konado/fonts/NotoSansSC-VF.otf"
-dest_files=["res://.godot/imported/NotoSansSC-VF.otf-a9b8cee38e2d912c0625bdc40a44b364.fontdata"]
+source_file="res://addons/konado/assets/fonts/noto_sans_sc_variable.otf"
+dest_files=["res://.godot/imported/noto_sans_sc_variable.otf-b40c1b3744be1f13584584cdb225ff31.fontdata"]
 
 [params]
 

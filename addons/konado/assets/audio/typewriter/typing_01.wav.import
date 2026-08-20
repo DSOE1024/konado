@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://fdsf5bv3xln5"
-path="res://.godot/imported/typing_01.wav-5fe02fdce2fe6c3aeceff76da2e8e22d.sample"
+path="res://.godot/imported/typing_01.wav-75d1661b5359c609e441580b31a2f7f4.sample"
 
 [deps]
 
-source_file="res://addons/konado/audioeffect/typewriter/typing_01.wav"
-dest_files=["res://.godot/imported/typing_01.wav-5fe02fdce2fe6c3aeceff76da2e8e22d.sample"]
+source_file="res://addons/konado/assets/audio/typewriter/typing_01.wav"
+dest_files=["res://.godot/imported/typing_01.wav-75d1661b5359c609e441580b31a2f7f4.sample"]
 
 [params]
 

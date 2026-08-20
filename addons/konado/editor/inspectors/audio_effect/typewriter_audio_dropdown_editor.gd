@@ -2,7 +2,7 @@
 extends EditorProperty
 
 # 指定音效目录、支持的音频格式
-const TYPEWRITER_AUDIO_EFFECT_DIR: String = "res://addons/konado/audioeffect/typewriter/"
+const TYPEWRITER_AUDIO_EFFECT_DIR: String = "res://addons/konado/assets/audio/typewriter/"
 const SUPPORTED_FORMATS: Array[String] = ["wav", "ogg", "mp3"]
 
 # 核心变量：下拉控件实例、文件名-资源路径映射、防重复更新标记
@@ -56,7 +56,7 @@ func _update_property() -> void:
 	if updating:
 		return
 	# 获取当前编辑对象和属性名
-	var edited_obj: KND_DialogueBox = get_edited_object()
+	var edited_obj: KonadoDialogueBox = get_edited_object()
 	var prop_name: String = get_edited_property()
 	if not edited_obj or prop_name != "typing_effect_audio":
 		return
