@@ -1,3 +1,21 @@
+## 2.8.0
+
+### New Features
+
+- Added named parameters for per-line typewriter speed and actor, background, and camera transition durations
+- Unified dialogue syntax for static actors, actor variables, and interpolated text labels
+- Added stable instruction IDs, execution history, checkpoints, and rollback APIs
+
+### Improvements
+
+- Rebuilt the KonadoScript compiler and runtime for more reliable nested conditions, branches, and cross-script jumps
+- Significantly reduced memory usage and improved runtime performance for large scripts, with time-sliced execution for exceptionally long runs
+- Improved cancellation and state handling so stopped or replaced asynchronous commands cannot leave stale work behind
+- Adopted Godot's native `TranslationServer` and `.po` resources so locale selection, UI translation, and story localization share one locale state
+- Improved compiler diagnostics and standardized plugin structure and naming
+- Fixed Konado.NET activation and completed the localized API documentation
+- Simplified Godot's Create New Node list by hiding template-only implementation nodes
+
 ## 2.7.4 - Wontons
 
 ### Bug Fixes
