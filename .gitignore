@@ -9,6 +9,8 @@ PROJECT_OVERVIEW.md
 .vscode/settings.json
 .VSCodeCounter
 *.tmp
+*~
+extension_api.json
 docs/**/*.import
 docs/**/*.uid
 
