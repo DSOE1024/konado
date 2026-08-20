@@ -2,11 +2,21 @@ extends Node
 
 signal shot_start
 signal shot_end
-signal dialogue_line_start(node_id: String)
-signal dialogue_line_end(node_id: String)
+signal dialogue_line_start(instruction_id: String)
+signal dialogue_line_end(instruction_id: String)
 signal custom_signal(content: String)
+signal runtime_failed(message: String, instruction_id: String, source_line: int)
 
 var last_shot: Resource
+var character_list: Resource
+var background_list: Resource
+var background_music_list: Resource
+var voice_list: Resource
+var sound_effect_list: Resource
+var variable_store: Resource
+var rollback_calls := 0
+var history_cleared := false
+var restored_checkpoint := ""
 
 
 func init_dialogue(_callback: Callable = Callable()) -> void:
@@ -26,18 +36,6 @@ func stop_dialogue() -> void:
 
 
 func start_autoplay(_enabled: bool) -> void:
-	pass
-
-
-func set_chara_list(_value: Resource) -> void:
-	pass
-
-
-func set_background_list(_value: Resource) -> void:
-	pass
-
-
-func set_bgm_list(_value: Resource) -> void:
 	pass
 
 
@@ -65,17 +63,36 @@ func get_all_save_info() -> Array[Dictionary]:
 	return []
 
 
-func set_save_strategy(_strategy: Dictionary) -> void:
-	pass
-
-
-func get_save_strategy() -> Dictionary:
-	return {}
-
-
 func reload_localized_script(_locale: String = "") -> bool:
 	return true
 
 
 func emit_wait_signal(_signal_name: String) -> bool:
 	return true
+
+
+func can_rollback(steps := 1) -> bool:
+	return steps == 1
+
+
+func rollback(steps := 1) -> bool:
+	rollback_calls += steps
+	return steps == 1
+
+
+func get_execution_history(limit := 0) -> Array[Dictionary]:
+	var result: Array[Dictionary] = [{"instruction_id": "test"}]
+	return result if limit == 0 else result.slice(0, limit)
+
+
+func clear_execution_history() -> void:
+	history_cleared = true
+
+
+func create_checkpoint(label := "") -> String:
+	return "checkpoint:" + label
+
+
+func restore_checkpoint(checkpoint_id: String) -> bool:
+	restored_checkpoint = checkpoint_id
+	return not checkpoint_id.is_empty()

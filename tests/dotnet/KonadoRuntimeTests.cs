@@ -1,6 +1,9 @@
 using Godot;
-using Konado.Runtime.API;
-using Konado.Wrapper;
+#if TOOLS
+using Konado.Editor;
+#endif
+using Konado.Runtime.Api;
+using Konado.Runtime.Resources;
 using System;
 
 namespace Konado.Tests;
@@ -27,7 +30,17 @@ public sealed partial class KonadoRuntimeTests : Node
 
 	private async System.Threading.Tasks.Task RunTests()
 	{
-		var api = new DialogueManagerAPI();
+#if TOOLS
+		Check(
+			KonadoDotNetPlugin.IsCorePluginEnabled(
+				["res://addons/konado/plugin.cfg"]),
+			"Konado.NET must recognize the core plugin in Godot's PackedStringArray setting.");
+		Check(
+			!KonadoDotNetPlugin.IsCorePluginEnabled([]),
+			"Konado.NET must reject an editor plugin list without the core plugin.");
+#endif
+
+		var api = new DialogueManagerApi();
 		AddChild(api);
 		Check(!api.IsReady, "API must remain unbound before a manager enters the tree.");
 
@@ -38,11 +51,31 @@ public sealed partial class KonadoRuntimeTests : Node
 		AddChild(manager);
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 		Check(api.IsReady, "API must bind a manager added after its own _Ready().");
-		var forwardedShot = new KndShot();
+		var forwardedShot = new KonadoShot();
 		api.SetShot(forwardedShot);
 		Check(
 			manager.Get("last_shot").AsGodotObject() == forwardedShot.SourceResource,
-			"DialogueManagerAPI must forward KndShot resources to set_shot().");
+			"DialogueManagerApi must forward KonadoShot resources to set_shot().");
+		var characterList = new Resource();
+		api.CharacterList = characterList;
+		Check(
+			manager.Get("character_list").AsGodotObject() == characterList,
+			"DialogueManagerApi resource properties must map to the manager contract.");
+		Check(api.CanRollback(), "DialogueManagerApi must expose rollback capability.");
+		Check(api.Rollback(), "DialogueManagerApi must forward rollback requests.");
+		Check(
+			manager.Get("rollback_calls").AsInt32() == 1,
+			"DialogueManagerApi must preserve the requested rollback distance.");
+		Check(
+			api.GetExecutionHistory().Count == 1,
+			"DialogueManagerApi must expose immutable execution history records.");
+		api.ClearExecutionHistory();
+		Check(
+			manager.Get("history_cleared").AsBool(),
+			"DialogueManagerApi must forward history clearing.");
+		var checkpoint = api.CreateCheckpoint("dotnet");
+		Check(checkpoint == "checkpoint:dotnet", "Checkpoint identifiers must round-trip.");
+		Check(api.RestoreCheckpoint(checkpoint), "Checkpoint restore must be forwarded.");
 
 		manager.QueueFree();
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
@@ -55,86 +88,82 @@ public sealed partial class KonadoRuntimeTests : Node
 			"An incomplete forwarding contract must be rejected.");
 		incompleteManager.QueueFree();
 
-		var customDialogueScript = GD.Load<GDScript>(
-			"res://tests/dotnet/custom_dialogue.gd");
-		var customDialogue = customDialogueScript.New().AsGodotObject();
-		var wrapper = new Dialogue(customDialogue);
-		Check(
-			wrapper.SourceResource == customDialogue,
-			"Wrappers must accept GDScript subclasses of their source resource.");
-		var rejectedMismatchedShot = false;
-		try
-		{
-			_ = new KndShot(customDialogue);
-		}
-		catch (InvalidOperationException)
-		{
-			rejectedMismatchedShot = true;
-		}
-		Check(
-			rejectedMismatchedShot,
-			"KndShot must reject resources with a different source script.");
-
-		var interpreter = new KonadoScriptsInterpreter();
-		var compiledShot = interpreter.ProcessScriptsToData(
+		var compiler = new KonadoScriptCompiler();
+		var compiledShot = compiler.CompileFile(
 			"res://sample/demo/demo_01.ks");
 		Check(
 			compiledShot != null,
-			"Konado.NET must wrap compiler-produced KND_Shot script resources.");
+			"Konado.NET must wrap compiler-produced KonadoShot script resources.");
 		if (compiledShot != null)
 		{
 			Check(
-				compiledShot.Dialogues.Count > 0,
-				"Compiler-produced KND_Shot wrappers must expose dialogue nodes.");
-			var easingDialogue = interpreter.ParseSingleLine(
+				compiledShot.Program is { IsValid: true }
+					&& compiledShot.InstructionCount > 0,
+				"Compiler-produced KonadoShot wrappers must expose a valid Program.");
+			var easingInstruction = compiler.CompileLine(
 				"asyncam move cam1 ease_in_out 1.0",
 				1,
 				"res://tests/dotnet/easing.ks");
 			Check(
-				easingDialogue?.CamTweenType == "ease_in_out",
-				"Konado.NET must expose named camera easing modes.");
+				easingInstruction?.GetValue("transition").AsString() == "ease_in_out",
+				"Konado.NET must expose typed instruction operands.");
+			var instructionWithoutPath = compiler.CompileLine("end", 2);
+			Check(
+				instructionWithoutPath != null,
+				"CompileLine must support the optional source path used by GDScript.");
 		}
 
-		var protectedDialogue = new Dialogue
-		{
-			DialogueContent = "Konado.NET must transparently restore protected dialogue.",
-		};
-		var protectedShot = new KndShot
-		{
-			KsPath = "res://tests/dotnet/protected.ks",
-			Dialogues = new Godot.Collections.Array<Dialogue> { protectedDialogue },
-		};
+		var protectedShot = compiler.CompileFile(
+			"res://sample/demo/demo_01.ks");
+		Check(protectedShot != null, "Protection fixture must compile.");
+		var expectedFirstLine = protectedShot == null
+			? string.Empty
+			: FindFirstDialogueContent(protectedShot);
 		var buildKey = new byte[32];
 		for (var index = 0; index < buildKey.Length; index++)
 			buildKey[index] = (byte)index;
 		Check(
-			protectedShot.SourceResource.Call("protect_script_for_export", buildKey).AsBool(),
+			protectedShot != null
+				&& protectedShot.SourceResource.Call("protect_script_for_export", buildKey).AsBool(),
 			"Konado.NET test shot must accept export-time protection.");
 		Check(
-			protectedShot.SourceResource.Call("is_script_protected").AsBool(),
+			protectedShot != null
+				&& protectedShot.SourceResource.Call("is_script_protected").AsBool(),
 			"Konado.NET test shot must enter the protected state.");
 		Check(
-			protectedShot.Dialogues.Count == 1
-				&& protectedShot.Dialogues[0].DialogueContent
-					== protectedDialogue.DialogueContent,
-			"Konado.NET wrappers must transparently restore protected dialogue.");
+			protectedShot != null
+				&& expectedFirstLine.Length > 0
+				&& FindFirstDialogueContent(protectedShot) == expectedFirstLine,
+			"Konado.NET wrappers must transparently restore protected Programs.");
 		Check(
-			!protectedShot.SourceResource.Call("is_script_protected").AsBool(),
+			protectedShot != null
+				&& !protectedShot.SourceResource.Call("is_script_protected").AsBool(),
 			"Konado.NET wrappers must release protected buffers after restoration.");
 
-		var i18n = new InternationalizationAPI();
-		AddChild(i18n);
-		Check(i18n.IsReady, "Internationalization API must bind the KND_I18n autoload.");
+		var storyLocalization = new StoryLocalizationApi();
+		AddChild(storyLocalization);
 		Check(
-			i18n.NormalizeLocale("zh-TW") == "zh_Hant",
-			"Internationalization API must normalize legacy locale codes.");
-		var localizedShot = i18n.LoadLocalizedScript(
+			storyLocalization.IsReady,
+			"Story localization API must bind the KonadoStoryLocalization autoload.");
+		var localizedShot = storyLocalization.LoadLocalizedScript(
 			"res://sample/demo/demo_01.ks",
 			"en",
 			false);
 		Check(
-			localizedShot != null && localizedShot.Dialogues.Count > 0,
-			"Internationalization API must wrap localized KND_Shot script resources.");
+			localizedShot != null && localizedShot.InstructionCount > 0,
+			"Internationalization API must wrap localized KonadoShot script resources.");
+	}
+
+	private static string FindFirstDialogueContent(KonadoShot shot)
+	{
+		for (var pc = 0; pc < shot.InstructionCount; pc++)
+		{
+			var instruction = shot.InstructionAt(pc);
+			var content = instruction?.GetValue("content").AsString() ?? string.Empty;
+			if (content.Length > 0)
+				return content;
+		}
+		return string.Empty;
 	}
 
 	private void Check(bool condition, string message)
