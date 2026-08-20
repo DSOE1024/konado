@@ -1,7 +1,7 @@
 extends Control
 class_name KonadoDialogueManager
 
-## Konado 2.8 atomic Program runtime.
+## Konado 2.8 atomic Program runtime
 
 signal shot_start
 signal shot_end
@@ -157,6 +157,13 @@ func _ready() -> void:
 	if save_panel != null:
 		save_panel.set_save_system(save_system)
 	_setup_logger()
+
+	if stage_controller != null and camera_controller != null:
+		if not stage_controller.background_change_finished.is_connected(
+			_refresh_camera_markers_on_background_change
+		):
+			stage_controller.background_change_finished.connect(_refresh_camera_markers_on_background_change)
+
 	if initialize_on_ready:
 		init_dialogue(start_dialogue if start_on_ready else Callable())
 
@@ -167,6 +174,11 @@ func _exit_tree() -> void:
 		if _logger.error_caught.is_connected(_show_error):
 			_logger.error_caught.disconnect(_show_error)
 		OS.remove_logger(_logger)
+
+
+func _refresh_camera_markers_on_background_change(succeeded: bool) -> void:
+	if succeeded and camera_controller != null:
+		camera_controller.refresh_camera_markers()
 
 
 func init_dialogue(callback: Callable = Callable()) -> void:
@@ -202,6 +214,9 @@ func start_dialogue() -> void:
 	if not _vm.has_state():
 		_vm.synchronize_state(KonadoRuntimeState.capture(self))
 	shot_start.emit()
+	# 提前收集一次相机机位，确保 camera.move 能在首条指令前可用
+	if camera_controller != null:
+		camera_controller.refresh_camera_markers()
 	_schedule_pump()
 
 
