@@ -12,7 +12,36 @@ run_godot_checked() {
 	local output
 	local status
 	set +e
-	output="$("$@" 2>&1)"
+	output="$(python3 - "$@" <<'PY'
+import os
+import subprocess
+import sys
+
+timeout_seconds = int(os.environ.get("GODOT_TEST_TIMEOUT_SECONDS", "120"))
+try:
+    completed = subprocess.run(
+        sys.argv[1:],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=timeout_seconds,
+    )
+except subprocess.TimeoutExpired as error:
+    output = error.stdout or ""
+    if isinstance(output, bytes):
+        output = output.decode(errors="replace")
+    sys.stdout.write(output)
+    print(
+        f"Godot test exceeded the {timeout_seconds}-second timeout.",
+        file=sys.stderr,
+    )
+    raise SystemExit(124)
+
+sys.stdout.write(completed.stdout)
+raise SystemExit(completed.returncode)
+PY
+)"
 	status=$?
 	set -e
 	printf '%s\n' "$output"
@@ -58,4 +87,4 @@ printf '%s\n' \
 run_godot_checked "$godot_bin" \
 	--headless \
 	--path "$test_root" \
-	"$test_root/tests/dotnet/KonadoRuntimeTests.tscn"
+	"$test_root/tests/dotnet/konado_runtime_tests.tscn"

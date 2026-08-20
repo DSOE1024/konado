@@ -92,9 +92,16 @@ jobs:
       - name: Test parser and dialogue services
         run: |
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_gdscript_architecture.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_program_vm.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_lifecycle.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_external_reentry.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_localization_lifecycle.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_default_dialogue_template.gd
+
+      - name: Guard KonadoScript performance complexity
+        run: >-
+          python3 .github/scripts/run_godot_test.py
+          tests/dialogue/test_konado_script_performance.gd
 
       - name: Test background transitions
         run: >-
@@ -110,17 +117,18 @@ jobs:
 
       - name: Test KonadoScript editor integration
         run: |
-          python3 .github/scripts/run_godot_test.py tests/editor/test_ks_runtime_loader.gd
-          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_ks_editor_support.gd
-          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_ks_locale_selector.gd
-          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_ks_language_service.gd
-          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_ks_editor_services.gd
-          python3 .github/scripts/run_godot_test.py tests/editor/test_ks_documentation_examples.gd
+          python3 .github/scripts/run_godot_test.py tests/editor/test_konado_script_runtime_loader.gd
+          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_konado_script_editor_support.gd
+          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_konado_script_locale_selector.gd
+          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_konado_script_language_service.gd
+          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_konado_script_editor_services.gd
+          python3 .github/scripts/run_godot_test.py --editor tests/editor/test_project_migration.gd
+          python3 .github/scripts/run_godot_test.py tests/editor/test_konado_script_documentation_examples.gd
 
       - name: Test internationalization
         run: |
-          python3 .github/scripts/run_godot_test.py tests/i18n/test_knd_i18n.gd
-          python3 .github/scripts/run_godot_test.py tests/i18n/test_knd_i18n_autoload.gd
+          python3 .github/scripts/run_godot_test.py tests/localization/test_localization.gd
+          python3 .github/scripts/run_godot_test.py tests/localization/test_localization_autoload.gd
 
       - name: Test auxiliary plugins
         run: |
@@ -139,12 +147,16 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Compile Konado.NET
-        run: >-
-          dotnet build .github/scripts/Konado.CI.csproj
-          --configuration Release
-          --nologo
-          --warnaserror
+      - name: Compile Konado.NET runtime and editor integration
+        run: |
+          dotnet build .github/scripts/Konado.CI.csproj \
+            --configuration Release \
+            --nologo \
+            --warnaserror
+          dotnet build .github/scripts/Konado.CI.csproj \
+            --configuration Debug \
+            --nologo \
+            --warnaserror
 
       - name: Check C# formatting
         run: >-
@@ -215,6 +227,9 @@ jobs:
       - name: Test workflow helpers
         run: python -m unittest discover -s tests/tools -p "test_*.py"
 
+      - name: Check repository architecture
+        run: python tests/tools/repository_architecture_check.py
+
       - name: Check plugin resource boundaries
         run: >-
           python .github/scripts/check_plugin_resource_boundaries.py
@@ -226,4 +241,9 @@ jobs:
       - name: Check documentation resource paths
         run: >-
           python .github/scripts/check_doc_resource_paths.py
+          docs/zh/latest docs/en/latest docs/ja/latest docs/ko/latest docs/tc/latest
+
+      - name: Check Konado.NET documentation contracts
+        run: >-
+          python .github/scripts/check_dotnet_docs.py
           docs/zh/latest docs/en/latest docs/ja/latest docs/ko/latest docs/tc/latest
