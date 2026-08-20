@@ -1,7 +1,7 @@
 extends Node
 
 ## 是否启用 Web 开发者工具快捷键放行
-@export var enable_web_devtool: bool = true
+@export var developer_shortcuts_enabled: bool = true
 
 ## 是否允许在正式导出包中放行开发者快捷键
 @export var allow_in_release: bool = false
@@ -36,7 +36,7 @@ func _exit_tree() -> void:
 func refresh_shortcuts() -> void:
 	if not OS.has_feature("web"):
 		return
-	if enable_web_devtool and (OS.has_feature("debug") or allow_in_release):
+	if developer_shortcuts_enabled and (OS.has_feature("debug") or allow_in_release):
 		_inject_web_shortcut_handler()
 	else:
 		_remove_web_shortcut_handler()
@@ -88,7 +88,7 @@ func _inject_web_shortcut_handler() -> void:
 		)
 	)
 	if injected != true:
-		push_warning("KND_WebTool: 无法安装浏览器快捷键处理器")
+		push_warning("KonadoWebTool: 无法安装浏览器快捷键处理器")
 
 
 func _remove_web_shortcut_handler() -> void:
