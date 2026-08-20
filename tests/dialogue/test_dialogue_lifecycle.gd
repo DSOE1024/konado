@@ -8,6 +8,8 @@ func _init() -> void:
 func _run() -> void:
 	await _test_set_shot_and_complete_dialogue()
 	await _test_visibility_commands_are_atomic()
+	await _test_screen_text_completion_lifecycle()
+	await _test_replacement_clears_pending_screen_text()
 	await _test_replacement_cancels_stale_typing()
 	await _test_stop_cancels_all_pending_callbacks()
 	await _test_committed_variable_can_rollback_while_waiting()
@@ -50,6 +52,90 @@ func _test_visibility_commands_are_atomic() -> void:
 		"hidetextbox finishes before HALT",
 	)
 	_expect(manager.get_execution_history().size() >= 3, "visibility actions enter VM history")
+	await _free_node(manager)
+
+
+func _test_screen_text_completion_lifecycle() -> void:
+	var manager := await _create_manager()
+	manager.screen_text.fade_duration = 0.0
+	manager.screen_text.line_fade_duration = 0.0
+	var events: Array[String] = []
+	manager.screen_text.display_finished.connect(func() -> void: events.append("display_finished"))
+	manager.screen_text.screen_text_hidden.connect(
+		func() -> void: events.append("screen_text_hidden")
+	)
+	manager.set_shot(
+		_compile_shot(
+			(
+				'screentext {\n    "Opening"\n} [id=overlay]\n'
+				+ '"Kona" "After overlay" [id=after_overlay]\nend'
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:overlay", KonadoDialogueManager.DialogState.WAITING
+	)
+	await _wait_for_condition(
+		func() -> bool: return manager.screen_text._is_waiting_input,
+		"screen text waits for the final acknowledgement",
+	)
+	manager.screen_text._on_click_advance()
+	manager.screen_text.skip_display()
+	manager.screen_text.skip_display()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:after_overlay", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		events,
+		["display_finished", "screen_text_hidden"],
+		"screen text completes and hides exactly once before the next instruction",
+	)
+	_expect(not manager.screen_text.visible, "the following instruction starts without an overlay")
+	await _finish_current_dialogue(manager)
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
+
+	manager.screen_text.next_line_indicator = null
+	manager.screen_text.display(["Manual overlay"])
+	await _wait_for_condition(
+		func() -> bool: return manager.screen_text._is_waiting_input,
+		"screen text remains interactive without an optional next-line indicator",
+	)
+	manager.screen_text._on_click_advance()
+	await process_frame
+	_expect(manager.screen_text.visible, "direct display calls keep their existing visible default")
+	_expect_equal(events.count("display_finished"), 2, "direct display completion emits once")
+	_expect_equal(events.count("screen_text_hidden"), 1, "direct display does not auto-hide")
+	manager.screen_text.hide_screen_text()
+	manager.screen_text.show_screen_text()
+	await process_frame
+	manager.screen_text.hide_screen_text()
+	await _wait_for_condition(
+		func() -> bool: return not manager.screen_text.visible,
+		"an interrupted hide can be shown again and hidden explicitly",
+	)
+	await _free_node(manager)
+
+
+func _test_replacement_clears_pending_screen_text() -> void:
+	var manager := await _create_manager()
+	manager.screen_text.fade_duration = 0.0
+	manager.screen_text.line_fade_duration = 0.0
+	manager.set_shot(_compile_shot('screentext {\n    "Old overlay"\n}\nend'))
+	manager.start_dialogue()
+	await _wait_for_condition(
+		func() -> bool: return manager.screen_text._is_waiting_input,
+		"the original screen text starts before replacement",
+	)
+	manager.set_shot(_compile_shot('"Kona" "Replacement" [id=replacement]\nend'))
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:replacement", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect(
+		not manager.screen_text.visible,
+		"replacing a shot clears its uncommitted screen text overlay",
+	)
 	await _free_node(manager)
 
 
