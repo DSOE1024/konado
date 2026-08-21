@@ -17,6 +17,9 @@ signal actor_moved(succeeded: bool)
 signal actor_motion_started(actor_id: String, motion_name: String)
 ## 指定角色舞台动作完成的信号
 signal actor_motion_finished(actor_id: String, motion_name: String, succeeded: bool)
+## Internal request-scoped completion used by the atomic runtime. Public stage
+## signals above remain available for direct integrations.
+signal operation_finished(request_id: int, succeeded: bool, failure: Dictionary)
 
 ## 特效种类
 enum BackgroundTransitionEffect {
@@ -49,6 +52,13 @@ const ACTOR_STATE_REQUEST_COORDINATOR := preload(
 const BACKGROUND_TRANSITION_LAYER_SCRIPT := preload(
 	"res://addons/konado/runtime/stage/background/konado_background_transition_layer.gd"
 )
+const STAGE_OPERATION_TRACKER := preload(
+	"res://addons/konado/runtime/stage/konado_stage_operation_tracker.gd"
+)
+const STAGE_FAILURE_REPORTER := preload(
+	"res://addons/konado/runtime/stage/konado_stage_failure_reporter.gd"
+)
+const STAGE_UTILITIES := preload("res://addons/konado/runtime/stage/konado_stage_utilities.gd")
 
 ## 启用全局演员背景色调混合
 @export var background_tint_enabled: bool = true
@@ -82,6 +92,8 @@ var _actor_state_request_tokens: Dictionary[String, int] = {}
 var _actor_pending_states: Dictionary[String, String] = {}
 var _actor_state_requests: Dictionary = {}
 var _highlighted_actor_id: String = ""
+var _last_failure: Dictionary = {}
+var _operation_tracker_instance := STAGE_OPERATION_TRACKER.new()
 
 ## 演员模板
 @onready var _konado_actor_template: PackedScene = preload(
@@ -114,7 +126,37 @@ func _ready() -> void:
 func _on_background_change_finished(succeeded: bool) -> void:
 	if succeeded:
 		apply_background_tint_to_actors()
+	else:
+		var background_failure := _background_controller.get_last_failure()
+		if not background_failure.is_empty():
+			_last_failure = background_failure
+	var request_id := _operation_tracker().take_background_request()
+	_operation_tracker().complete(request_id, succeeded, _last_failure if not succeeded else {})
 	background_change_finished.emit(succeeded)
+
+
+## Allocates a request identity before a stage method is invoked, allowing the
+## caller to subscribe before even a synchronous rejection is emitted.
+func begin_operation_request() -> int:
+	return _operation_tracker().begin_request()
+
+
+func _operation_tracker() -> KonadoStageOperationTracker:
+	var callback := Callable(self, "_on_operation_finished")
+	if not _operation_tracker_instance.operation_finished.is_connected(callback):
+		_operation_tracker_instance.operation_finished.connect(callback)
+	return _operation_tracker_instance
+
+
+func _on_operation_finished(request_id: int, succeeded: bool, failure: Dictionary) -> void:
+	operation_finished.emit(request_id, succeeded, failure)
+
+
+## Returns the failure produced by the most recently rejected stage operation.
+## The atomic runtime reads this immediately when a completion signal reports
+## failure, so the final log retains the subsystem's exact cause.
+func get_last_failure() -> Dictionary:
+	return _last_failure.duplicate(true)
 
 
 ## 确保表演舞台的层级存在。
@@ -163,11 +205,11 @@ func _ensure_stage_nodes() -> void:
 		_effect_layer.color = Color(0, 0, 0, 0)
 		add_child(_effect_layer)
 
-	_set_full_rect(_background)
-	_set_full_rect(_background_container)
-	_set_full_rect(_background_transition_layer)
-	_set_full_rect(_actor_layer)
-	_set_full_rect(_effect_layer)
+	STAGE_UTILITIES.set_full_rect(_background)
+	STAGE_UTILITIES.set_full_rect(_background_container)
+	STAGE_UTILITIES.set_full_rect(_background_transition_layer)
+	STAGE_UTILITIES.set_full_rect(_actor_layer)
+	STAGE_UTILITIES.set_full_rect(_effect_layer)
 
 	## 层级顺序固定为：背景场景 -> shader 转场 -> 角色 -> 全屏效果。
 	if _background.get_parent() == self:
@@ -178,20 +220,6 @@ func _ensure_stage_nodes() -> void:
 		move_child(_actor_layer, min(2, get_child_count() - 1))
 	if _effect_layer.get_parent() == self:
 		move_child(_effect_layer, get_child_count() - 1)
-
-
-func _set_full_rect(control: Control) -> void:
-	if control == null:
-		return
-	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	control.set_anchors_preset(Control.PRESET_FULL_RECT, true)
-	control.offset_left = 0.0
-	control.offset_top = 0.0
-	control.offset_right = 0.0
-	control.offset_bottom = 0.0
-	control.position = Vector2.ZERO
-	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	control.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 
 ## 返回舞台上的演员实例。
@@ -211,6 +239,7 @@ func get_actor(actor_id: String) -> KonadoActor:
 
 ## 清空背景
 func clean_background(effects_type: BackgroundTransitionEffect) -> void:
+	_operation_tracker().supersede_background(background_id)
 	_ensure_stage_nodes()
 	background_id = ""
 	_background_controller.clear(_background_effect_name(effects_type))
@@ -221,15 +250,33 @@ func change_background_scene(
 	scene: PackedScene,
 	name: String,
 	effects_type: BackgroundTransitionEffect,
-	duration: float = -1.0
+	duration: float = -1.0,
+	report_errors := true,
+	request_id := 0,
 ) -> void:
+	_last_failure.clear()
+	_operation_tracker().register_background(request_id, background_id)
 	_ensure_stage_nodes()
 	if scene == null:
-		push_error("切换背景失败：背景场景为空")
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record(
+				&"stage.background_scene_missing",
+				"切换背景失败：背景场景为空",
+				"background",
+				"background",
+				name,
+				report_errors,
+			)
+		)
+		_operation_tracker().take_background_request()
+		_operation_tracker().complete(request_id, false, _last_failure)
 		background_change_finished.emit(false)
 		return
 	background_id = name
-	_background_controller.change(scene, name, _background_effect_name(effects_type), duration)
+	_background_controller.change(
+		scene, name, _background_effect_name(effects_type), duration, report_errors
+	)
 
 
 func _background_effect_name(effects_type: BackgroundTransitionEffect) -> String:
@@ -252,12 +299,22 @@ func show_actor(
 	state: String,
 	character_scene: PackedScene = null,
 	motion_layer_scene: PackedScene = null,
-	duration: float = -1.0
+	duration: float = -1.0,
+	report_errors := true,
+	request_id := 0,
 ) -> void:
+	_last_failure.clear()
 	var existing_actor := get_actor(actor_id) as KonadoActor
 	if existing_actor != null:
 		_update_existing_actor(
-			existing_actor, actor_id, horizontal_division, horizontal_position, state, duration
+			existing_actor,
+			actor_id,
+			horizontal_division,
+			horizontal_position,
+			state,
+			duration,
+			report_errors,
+			request_id,
 		)
 		return
 
@@ -267,8 +324,18 @@ func show_actor(
 		actor_states.erase(actor_id)
 
 	if character_scene == null:
-		push_error("显示角色失败：角色[%s]没有配置角色场景" % actor_id)
-		_emit_actor_shown(false)
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_scene_missing",
+				"显示角色失败：角色[%s]没有配置角色场景" % actor_id,
+				"actor.show",
+				actor_id,
+				report_errors,
+				"目标状态=%s" % state,
+			)
+		)
+		_emit_actor_shown(false, request_id)
 		return
 
 	var initial_horizontal_division: int = clamp(horizontal_division, 2, 5)
@@ -285,8 +352,17 @@ func show_actor(
 	var node_name: String = str(actor_state["id"])
 	var temp_node: KonadoActor = _konado_actor_template.instantiate() as KonadoActor
 	if temp_node == null:
-		push_error("显示角色失败：无法实例化演员模板")
-		_emit_actor_shown(false)
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_template_failed",
+				"显示角色失败：无法实例化演员模板",
+				"actor.show",
+				actor_id,
+				report_errors,
+			)
+		)
+		_emit_actor_shown(false, request_id)
 		return
 	var state_request_token := _begin_actor_state_request(actor_id)
 	# 初始化阶段使用内部名称并隐藏根节点。这样角色场景能够正常进入 SceneTree、执行
@@ -299,23 +375,55 @@ func show_actor(
 	temp_node.actor_motion_finished.connect(_on_actor_motion_finished.bind(actor_id))
 	_actor_layer.add_child(temp_node)
 	if not temp_node.set_motion_layer_scene(motion_layer_scene):
-		push_warning("显示角色失败：角色[%s]的动作层配置无效" % actor_id)
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_motion_layer_invalid",
+				"显示角色失败：角色[%s]的动作层配置无效" % actor_id,
+				"actor.show",
+				actor_id,
+				report_errors,
+				"",
+				true,
+			)
+		)
 		if _is_actor_state_request_current(actor_id, state_request_token):
 			_invalidate_actor_state_request(actor_id)
 		_discard_pending_actor(temp_node)
-		_emit_actor_shown(false)
+		_emit_actor_shown(false, request_id)
 		return
 	if not temp_node.set_character_scene(character_scene, state):
-		push_warning("显示角色失败：角色[%s]无法应用状态[%s]" % [actor_id, state])
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_state_invalid",
+				"显示角色失败：角色[%s]无法应用状态[%s]" % [actor_id, state],
+				"actor.show",
+				actor_id,
+				report_errors,
+				"目标状态=%s" % state,
+				true,
+			)
+		)
 		if _is_actor_state_request_current(actor_id, state_request_token):
 			_invalidate_actor_state_request(actor_id)
 		_discard_pending_actor(temp_node)
-		_emit_actor_shown(false)
+		_emit_actor_shown(false, request_id)
 		return
 	if not _is_actor_state_request_current(actor_id, state_request_token):
 		# 初始化期间若同一演员已被更新请求取代，不允许旧请求进入场景树。
 		_discard_pending_actor(temp_node)
-		_emit_actor_shown(false)
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_request_superseded",
+				"显示角色失败：角色[%s]的请求已被更新操作取代" % actor_id,
+				"actor.show",
+				actor_id,
+				report_errors,
+			)
+		)
+		_emit_actor_shown(false, request_id)
 		return
 	# 初始化事务成功后才使用公开名称并写入运行时索引。
 	temp_node.name = node_name
@@ -323,12 +431,10 @@ func show_actor(
 	actor_states[actor_state["id"]] = actor_state
 	# 角色场景创建完成后应用色调混合，确保新角色在显示前就已带有正确的色调
 	apply_background_tint_to_actors()
-	# 添加到演员节点字典
 	actor_instances[actor_id] = temp_node
-	# 移动信号
-	temp_node.actor_moved.connect(_on_actor_moved)
+	temp_node.actor_moved.connect(_on_actor_moved.bind(actor_id))
 	temp_node.actor_entered.connect(
-		_on_actor_entered.bind(actor_id, state), ConnectFlags.CONNECT_ONE_SHOT
+		_on_actor_entered.bind(actor_id, state, request_id), ConnectFlags.CONNECT_ONE_SHOT
 	)
 	temp_node.use_tween = true
 	temp_node.visible = true
@@ -341,7 +447,9 @@ func _update_existing_actor(
 	horizontal_division: int,
 	horizontal_position: int,
 	state: String,
-	duration: float = -1.0
+	duration: float = -1.0,
+	report_errors := true,
+	request_id := 0,
 ) -> void:
 	var previous_state := ""
 	if actor_states.has(actor_id):
@@ -371,6 +479,7 @@ func _update_existing_actor(
 
 	var waits := {
 		"succeeded": true,
+		"failure": {},
 		"state_done": not state_changed,
 		"movement_done":
 		not (
@@ -394,7 +503,7 @@ func _update_existing_actor(
 			print("复用已有演员：" + str(actor_id) + " 演员状态：" + committed_state)
 		else:
 			waits.succeeded = false
-		_emit_actor_shown(bool(waits.succeeded))
+		_emit_actor_shown(bool(waits.succeeded), request_id, waits.failure)
 
 	var movement_exit_handler_ref := [Callable()]
 	var movement_handler := func() -> void:
@@ -416,6 +525,14 @@ func _update_existing_actor(
 				return
 			waits.movement_done = true
 			waits.succeeded = false
+			waits.failure = {
+				"code": "stage.actor_node_removed",
+				"message": "显示角色失败：角色[%s]在操作完成前离开舞台" % actor_id,
+				"subsystem": "stage",
+				"operation": "actor.show",
+				"resource_kind": "actor",
+				"resource_id": actor_id,
+			}
 			var active_actor := actor_ref.get_ref() as KonadoActor
 			if active_actor != null and active_actor.actor_moved.is_connected(movement_handler):
 				active_actor.actor_moved.disconnect(movement_handler)
@@ -446,8 +563,18 @@ func _update_existing_actor(
 			state,
 			duration if duration >= 0.0 else 0.0,
 			"显示角色失败：角色[%s]无法应用状态[%s]" % [actor_id, state],
-			func(succeeded: bool, actor_exited: bool, _owned_request: bool) -> void:
+			"actor.show",
+			report_errors,
+			func(succeeded: bool, actor_exited: bool, owned_request: bool) -> void:
 				waits.succeeded = waits.succeeded and succeeded
+				if not succeeded:
+					waits.failure = (
+						_last_failure.duplicate(true)
+						if owned_request
+						else _operation_tracker().superseded_failure(
+							"actor.show", "actor", actor_id
+						)
+					)
 				# 演员离树后移动信号也不会再到达；两个等待必须一起释放。
 				if actor_exited:
 					waits.movement_done = true
@@ -458,12 +585,16 @@ func _update_existing_actor(
 	finish_if_ready.call()
 
 
-func _on_actor_entered(actor_id: String, state: String) -> void:
-	_emit_actor_shown(true)
+func _on_actor_entered(actor_id: String, state: String, request_id := 0) -> void:
+	_emit_actor_shown(true, request_id)
 	print("新建了演员：" + str(actor_id) + " 演员状态：" + str(state))
 
 
-func _emit_actor_shown(succeeded: bool) -> void:
+func _emit_actor_shown(succeeded: bool, request_id := 0, failure: Dictionary = {}) -> void:
+	var result_failure := failure
+	if not succeeded and result_failure.is_empty():
+		result_failure = _last_failure.duplicate(true)
+	_operation_tracker().complete(request_id, succeeded, result_failure)
 	actor_shown.emit(succeeded)
 
 
@@ -484,6 +615,8 @@ func _request_actor_state(
 	target_state: String,
 	transition_duration: float,
 	failure_message: String,
+	operation: String,
+	report_errors: bool,
 	completion: Callable
 ) -> bool:
 	var previous_request := _capture_actor_state_request(actor_id)
@@ -497,7 +630,18 @@ func _request_actor_state(
 		if failure_reported[0]:
 			return
 		failure_reported[0] = true
-		push_warning(failure_message)
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_state_invalid",
+				failure_message,
+				operation,
+				actor_id,
+				report_errors,
+				"目标状态=%s" % target_state,
+				true,
+			)
+		)
 	var coordinator := ACTOR_STATE_REQUEST_COORDINATOR.new(
 		actor,
 		target_state,
@@ -571,10 +715,28 @@ func _invalidate_actor_state_request(actor_id: String) -> void:
 
 
 ## 切换演员的状态
-func change_actor_state(actor_id: String, state_id: String, duration: float = -1.0) -> void:
+func change_actor_state(
+	actor_id: String,
+	state_id: String,
+	duration: float = -1.0,
+	report_errors := true,
+	request_id := 0,
+) -> void:
+	_last_failure.clear()
 	var actor: KonadoActor = get_actor(actor_id)
 	if actor == null:
-		push_error("切换角色状态失败：角色ID[%s]，目标状态ID[%s]，未找到角色节点" % [actor_id, state_id])
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_not_present",
+				"切换角色状态失败：角色ID[%s]，目标状态ID[%s]，未找到角色节点" % [actor_id, state_id],
+				"actor.change",
+				actor_id,
+				report_errors,
+				"目标状态=%s" % state_id,
+			)
+		)
+		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_state_changed.emit(false)
 		return
 
@@ -589,27 +751,81 @@ func change_actor_state(actor_id: String, state_id: String, duration: float = -1
 		state_id,
 		transition_duration,
 		"切换角色状态失败：角色[%s]无法应用状态[%s]" % [actor_id, state_id],
+		"actor.change",
+		report_errors,
 		func(succeeded: bool, _actor_exited: bool, owned_request: bool) -> void:
 			if succeeded and owned_request:
 				print("切换" + actor_id + "到" + str(state_id) + "状态")
-			actor_state_changed.emit(succeeded and owned_request)
+			var completed := succeeded and owned_request
+			var completion_failure := {}
+			if not completed:
+				completion_failure = (
+					_last_failure
+					if owned_request
+					else _operation_tracker().superseded_failure("actor.change", "actor", actor_id)
+				)
+			_operation_tracker().complete(request_id, completed, completion_failure)
+			actor_state_changed.emit(completed)
 	)
 
 
 ## 播放指定演员的舞台层动作，例如 shake、jump_twice、bounce。
 ## 这里不进入角色场景，避免把整体位移和内部表情/媒体播放混在一起。
-func play_actor_motion(actor_id: String, motion_name: String, params: Dictionary = {}) -> void:
+func play_actor_motion(
+	actor_id: String,
+	motion_name: String,
+	params: Dictionary = {},
+	report_errors := true,
+	request_id := 0,
+) -> void:
+	_last_failure.clear()
+	_operation_tracker().register_actor_motion(actor_id, motion_name, request_id)
 	if motion_name.is_empty():
-		push_error("播放演员动作失败：角色ID[%s]，动作名为空" % actor_id)
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_motion_empty",
+				"播放演员动作失败：角色ID[%s]，动作名为空" % actor_id,
+				"actor.motion",
+				actor_id,
+				report_errors,
+			)
+		)
+		_operation_tracker().take_actor_motion(actor_id, motion_name)
+		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_motion_finished.emit(actor_id, motion_name, false)
 		return
 	var actor: KonadoActor = get_actor(actor_id) as KonadoActor
 	if actor == null:
-		push_error("播放演员动作失败：角色ID[%s]，动作[%s]，未找到角色节点" % [actor_id, motion_name])
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_not_present",
+				"播放演员动作失败：角色ID[%s]，动作[%s]，未找到角色节点" % [actor_id, motion_name],
+				"actor.motion",
+				actor_id,
+				report_errors,
+				"目标动作=%s" % motion_name,
+			)
+		)
+		_operation_tracker().take_actor_motion(actor_id, motion_name)
+		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_motion_finished.emit(actor_id, motion_name, false)
 		return
 	if not actor.can_play_actor_motion(motion_name):
-		push_error("播放演员动作失败：角色[%s]没有动作[%s]" % [actor_id, motion_name])
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_motion_missing",
+				"播放演员动作失败：角色[%s]没有动作[%s]" % [actor_id, motion_name],
+				"actor.motion",
+				actor_id,
+				report_errors,
+				"目标动作=%s" % motion_name,
+			)
+		)
+		_operation_tracker().take_actor_motion(actor_id, motion_name)
+		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_motion_finished.emit(actor_id, motion_name, false)
 		return
 	actor.play_actor_motion(motion_name, params)
@@ -628,21 +844,51 @@ func highlight_actor(actor_id: String) -> void:
 
 
 ## 从舞台移除指定演员。
-func remove_actor(actor_id: String, duration: float = -1.0) -> void:
+func remove_actor(
+	actor_id: String, duration: float = -1.0, report_errors := true, request_id := 0
+) -> void:
+	_last_failure.clear()
 	_invalidate_actor_state_request(actor_id)
 	if _highlighted_actor_id == actor_id:
 		_highlighted_actor_id = ""
 	if not actor_states.has(actor_id):
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_not_present",
+				"移出演员失败：角色ID[%s]不在舞台上" % actor_id,
+				"actor.exit",
+				actor_id,
+				report_errors,
+			)
+		)
+		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_removed.emit(false)
 		return
 	var actor := get_actor(actor_id)
 	actor_states.erase(actor_id)
 	actor_instances.erase(actor_id)
 	if actor == null:
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_node_missing",
+				"移出演员失败：角色ID[%s]的舞台节点不存在" % actor_id,
+				"actor.exit",
+				actor_id,
+				report_errors,
+			)
+		)
+		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_removed.emit(false)
 		return
 	actor._cancel_character_status_transition()
-	actor.tree_exited.connect(func(): actor_removed.emit(true), ConnectFlags.CONNECT_ONE_SHOT)
+	actor.tree_exited.connect(
+		func() -> void:
+			_operation_tracker().complete(request_id, true)
+			actor_removed.emit(true),
+		ConnectFlags.CONNECT_ONE_SHOT,
+	)
 	actor.exit_actor(true, duration)
 
 
@@ -651,7 +897,6 @@ func remove_all_actors(immediate: bool = false) -> void:
 	_actor_state_request_tokens.clear()
 	_actor_pending_states.clear()
 	actor_states.clear()
-	# 清空演员节点字典
 	actor_instances.clear()
 	_highlighted_actor_id = ""
 	for node in _actor_layer.get_children():
@@ -667,20 +912,43 @@ func remove_all_actors(immediate: bool = false) -> void:
 
 
 ## 移动演员的方法
-func move_actor(actor_id: String, target_h_division: int, duration: float = -1.0) -> void:
+func move_actor(
+	actor_id: String,
+	target_h_division: int,
+	duration: float = -1.0,
+	report_errors := true,
+	request_id := 0,
+) -> void:
+	_last_failure.clear()
+	_operation_tracker().register_actor_move(actor_id, request_id)
 	var actor: KonadoActor = get_actor(actor_id) as KonadoActor
 	if actor == null:
-		push_error("移动角色失败：角色ID[%s]，未找到角色节点" % actor_id)
+		_last_failure = (
+			STAGE_FAILURE_REPORTER
+			. record_actor(
+				&"stage.actor_not_present",
+				"移动角色失败：角色ID[%s]，未找到角色节点" % actor_id,
+				"actor.move",
+				actor_id,
+				report_errors,
+			)
+		)
+		_operation_tracker().take_actor_move(actor_id)
+		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_moved.emit(false)
 		return
 	if not actor.set_stage_position(actor.horizontal_division, target_h_division, duration):
 		# 目标值在补间开始时就会更新。重复请求同一目标时必须继续等待正在运行的
 		# 补间，不能提前释放 KonadoScript 的移动指令。
 		if not actor._is_stage_position_moving():
+			_operation_tracker().take_actor_move(actor_id)
+			_operation_tracker().complete(request_id, true)
 			actor_moved.emit(true)
 
 
-func _on_actor_moved() -> void:
+func _on_actor_moved(actor_id := "") -> void:
+	var request_id := _operation_tracker().take_actor_move(actor_id)
+	_operation_tracker().complete(request_id, true)
 	actor_moved.emit(true)
 
 
@@ -689,6 +957,8 @@ func _on_actor_motion_started(motion_name: String, actor_id: String) -> void:
 
 
 func _on_actor_motion_finished(motion_name: String, actor_id: String) -> void:
+	var request_id := _operation_tracker().take_actor_motion(actor_id, motion_name)
+	_operation_tracker().complete(request_id, true)
 	actor_motion_finished.emit(actor_id, motion_name, true)
 
 
@@ -699,7 +969,6 @@ func apply_background_tint_to_actors() -> void:
 		return
 
 	var raw_color: Color = current_background.get_scene_tint_color()
-	# 默认禁用
 	var total_intensity: float = 0.0
 	if background_tint_enabled:
 		total_intensity = clamp(
@@ -715,30 +984,12 @@ func apply_background_tint_to_actors() -> void:
 
 ## 捕获舞台的逻辑状态；角色场景节点和转场 Tween 不进入快照。
 func capture_state() -> Dictionary:
-	var actors: Array[Dictionary] = []
-	for actor_id in actor_states:
-		var actor_data: Dictionary = actor_states[actor_id]
-		(
-			actors
-			. append(
-				{
-					"id": String(actor_id),
-					"horizontal_division": int(actor_data.get("horizontal_division", 5)),
-					"position": int(actor_data.get("horizontal_position", 0)),
-					"state": String(actor_data.get("state", "")),
-				}
-			)
-		)
-	actors.sort_custom(func(left: Dictionary, right: Dictionary) -> bool: return left.id < right.id)
-	return {
-		"background": background_id,
-		"actors": actors,
-		"highlighted_actor": _highlighted_actor_id,
-	}
+	return STAGE_UTILITIES.capture_state(background_id, actor_states, _highlighted_actor_id)
 
 
 ## 中止所有未完成的舞台操作，为确定性恢复建立干净边界。
 func cancel_pending_operations() -> void:
+	_operation_tracker().cancel()
 	_background_controller.cancel_pending()
 	for actor_id in actor_states:
 		_invalidate_actor_state_request(String(actor_id))

@@ -17,6 +17,7 @@ var _transition_layer: BACKGROUND_TRANSITION_LAYER_SCRIPT
 var _outgoing_background: KonadoBackgroundSceneBase
 var _pending_background: KonadoBackgroundSceneBase
 var _pending_transition_parts := 0
+var _last_failure: Dictionary = {}
 
 
 func setup(container: Control, transition_layer: BACKGROUND_TRANSITION_LAYER_SCRIPT) -> void:
@@ -45,21 +46,41 @@ func clear(effect_name: String) -> void:
 
 
 func change(
-	scene: PackedScene, background_id: String, effect_name: String, duration: float = -1.0
+	scene: PackedScene,
+	background_id: String,
+	effect_name: String,
+	duration: float = -1.0,
+	report_errors := true,
 ) -> void:
+	_last_failure.clear()
 	if scene == null:
-		push_error("切换背景失败：背景场景为空")
+		_reject(
+			&"stage.background_scene_missing",
+			"切换背景失败：背景场景为空",
+			background_id,
+			report_errors,
+		)
 		transition_finished.emit(false)
 		return
 	if _container == null or _transition_layer == null:
-		push_error("切换背景失败：舞台背景控制器尚未初始化")
+		_reject(
+			&"stage.background_controller_uninitialized",
+			"切换背景失败：舞台背景控制器尚未初始化",
+			background_id,
+			report_errors,
+		)
 		transition_finished.emit(false)
 		return
 
 	cancel_pending()
 	var instance := scene.instantiate()
 	if not (instance is KonadoBackgroundSceneBase):
-		push_error("背景场景必须继承 KonadoBackgroundSceneBase：" + background_id)
+		_reject(
+			&"stage.background_type_invalid",
+			"背景场景必须继承 KonadoBackgroundSceneBase：" + background_id,
+			background_id,
+			report_errors,
+		)
 		instance.free()
 		transition_finished.emit(false)
 		return
@@ -113,6 +134,23 @@ func cancel_pending() -> void:
 
 func get_pending_background() -> KonadoBackgroundSceneBase:
 	return _pending_background
+
+
+func get_last_failure() -> Dictionary:
+	return _last_failure.duplicate(true)
+
+
+func _reject(code: StringName, message: String, background_id: String, report_errors: bool) -> void:
+	_last_failure = {
+		"code": String(code),
+		"message": message,
+		"subsystem": "stage",
+		"operation": "background",
+		"resource_kind": "background",
+		"resource_id": background_id,
+	}
+	if report_errors:
+		push_error(message)
 
 
 func _prepare_background(background: KonadoBackgroundSceneBase) -> void:
