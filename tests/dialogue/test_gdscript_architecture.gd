@@ -1,7 +1,6 @@
 extends SceneTree
 
 const SAVE_SYSTEM_SCRIPT := preload("res://addons/konado/runtime/save/konado_save_system.gd")
-
 var _failures := 0
 
 

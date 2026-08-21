@@ -12,7 +12,9 @@ func _init() -> void:
 func _run() -> void:
 	await _test_line_start_reentry_replaces_program_safely()
 	await _test_line_end_reentry_does_not_advance_old_program()
+	await _test_jump_line_end_reentry_does_not_fail_replacement()
 	await _test_wait_signal_replacement_ignores_old_signal()
+	await _test_stage_completion_is_request_scoped()
 	await _test_voice_wait_contracts()
 	await _test_camera_cancellation_preserves_configured_offset()
 	if _failures == 0:
@@ -80,6 +82,54 @@ func _test_wait_signal_replacement_ignores_old_signal() -> void:
 		"ks:id:new",
 		"an old external signal cannot commit into a replacement Program",
 	)
+	await _free_node(manager)
+
+
+func _test_jump_line_end_reentry_does_not_fail_replacement() -> void:
+	var manager := await _create_manager()
+	var replaced := [false]
+	var failures: Array[Dictionary] = []
+	manager.runtime_failure_reported.connect(
+		func(failure: Dictionary) -> void: failures.append(failure)
+	)
+	manager.dialogue_line_end.connect(
+		func(_id: String) -> void:
+			if replaced[0]:
+				return
+			replaced[0] = true
+			manager.set_shot(_compile_shot('"Kona" "replacement" [id=new]\nend'))
+			manager.start_dialogue()
+	)
+	manager.set_shot(_compile_shot("jump res://sample/demo/demo_03_variable.ks [id=old_jump]\nend"))
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:new", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(failures.size(), 0, "a superseded jump is cancellation, not a runtime failure")
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"replacement",
+		"jump line-end callbacks cannot cancel the replacement Program",
+	)
+	await _free_node(manager)
+
+
+func _test_stage_completion_is_request_scoped() -> void:
+	var manager := await _create_manager()
+	manager.set_shot(_compile_shot("waitsignal hold [id=wait]\nend"))
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:wait", KonadoDialogueManager.DialogState.WAITING
+	)
+	var token := manager._active_token.duplicate(true)
+	var fallback := KonadoExecutionFailure.new(&"stage.test_failed", "stage test failed")
+	var request_id := manager._begin_stage_operation(token, fallback)
+	manager.stage_controller.operation_finished.emit(request_id + 1, true, {})
+	await process_frame
+	_expect(manager._token_is_active(token), "an unrelated stage completion is ignored")
+	manager.stage_controller.operation_finished.emit(request_id, true, {})
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
+	_expect(not manager._token_is_active(token), "the matching stage completion commits once")
 	await _free_node(manager)
 
 

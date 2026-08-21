@@ -68,8 +68,16 @@ func _test_missing_condition_variable_reports_its_name() -> void:
 	var result := manager._executor._condition_target(manager, manager._current_instruction())
 	_expect(not bool(result.get("ok", false)), "an undefined condition variable is rejected")
 	_expect(
-		String(result.get("reason", "")).contains("%missing"),
+		String(result.get("message", "")).contains("%missing"),
 		"condition diagnostics identify the undefined variable instead of only naming the opcode",
+	)
+	_expect_equal(
+		result.get("code"), "variable.not_found", "condition failures expose a stable error code"
+	)
+	_expect_equal(
+		result.get("resource_id"),
+		"%missing",
+		"condition failures identify the exact variable resource",
 	)
 	await _free_node(manager)
 
@@ -267,7 +275,10 @@ func _test_stop_cancels_all_pending_callbacks() -> void:
 	manager.stop_dialogue()
 	_expect_equal(manager.dialogue_state, KonadoDialogueManager.DialogState.OFF, "stop is final")
 	_expect(manager._active_token.is_empty(), "stop invalidates the active transaction")
-	_expect_equal(manager._pending_connections.size(), 0, "stop disconnects awaited signals")
+	_expect(
+		manager._instruction_awaiter == null or manager._instruction_awaiter.pending_count() == 0,
+		"stop disconnects awaited signals",
+	)
 	_expect_equal(
 		manager.dialogue_box.typing_completed.get_connections().size(),
 		0,

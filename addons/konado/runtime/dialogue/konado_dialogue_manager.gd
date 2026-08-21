@@ -9,11 +9,18 @@ signal dialogue_line_start(instruction_id: String)
 signal dialogue_line_end(instruction_id: String)
 signal custom_signal(content: String)
 signal runtime_failed(message: String, instruction_id: String, source_line: int)
+signal runtime_failure_reported(failure: Dictionary)
 
 enum DialogState { OFF, EXECUTING, WAITING }
 
 const DIALOGUE_SERVICES := preload(
 	"res://addons/konado/runtime/dialogue/konado_dialogue_services.gd"
+)
+const INSTRUCTION_AWAITER := preload(
+	"res://addons/konado/runtime/dialogue/konado_instruction_awaiter.gd"
+)
+const RUNTIME_FAILURE_REPORTER := preload(
+	"res://addons/konado/runtime/dialogue/konado_runtime_failure_reporter.gd"
 )
 const SCRIPT_RUNTIME_DEBUGGER := preload(
 	"res://addons/konado/language/integration/konado_script_runtime_debugger.gd"
@@ -96,7 +103,7 @@ var _vm := KonadoVirtualMachine.new()
 var _executor: KonadoInstructionExecutor
 var _active_token: Dictionary = {}
 var _typing_completed_callback := Callable()
-var _pending_connections: Array[Dictionary] = []
+var _instruction_awaiter: KonadoInstructionAwaiter
 var _playback_generation := 0
 var _shot_active := false
 var _pumping := false
@@ -107,6 +114,7 @@ var _shot_program_cache: Dictionary = {}
 var _translation_reload_queued := false
 var _loaded_locale := ""
 var _save_feedback_generation := 0
+var _transition_failure: Dictionary = {}
 
 
 func _notification(what: int) -> void:
@@ -254,47 +262,69 @@ func _pump() -> void:
 	var count := 0
 	while _shot_active and dialogue_state == DialogState.EXECUTING:
 		if count >= MAX_IMMEDIATE_INSTRUCTIONS_PER_PUMP:
-			# This is a per-pump time-slice, not a total execution limit. Yielding
-			# keeps a large linear script responsive without misdiagnosing it as an
-			# infinite loop. A genuine no-wait loop is likewise unable to lock a
-			# frame and remains observable/cancellable by the host application.
+			# This per-pump time slice keeps large or cyclic scripts cancellable.
 			break
 		count += 1
 		var instruction := _current_instruction()
 		if instruction == null:
 			_finish_shot()
 			break
+		var instruction_context := _instruction_failure_context(instruction)
+		var execution_generation := _playback_generation
 		if SCRIPT_RUNTIME_DEBUGGER.before_instruction(self, instruction):
 			dialogue_state = DialogState.WAITING
 			break
 		_active_token = _vm.begin_patch(_capture_instruction_state(instruction))
 		if _active_token.is_empty():
-			_fail_current("VM 无法开始当前指令")
+			_fail_current("VM 无法开始当前指令", {}, instruction_context)
 			break
+		var token := _active_token.duplicate(true)
 		dialogue_line_start.emit(instruction.stable_key())
-		if not _token_is_active(_active_token):
+		if execution_generation != _playback_generation or not _token_is_active(token):
 			break
-		var result := _executor.execute(instruction, _active_token)
+		var result := _executor.execute(instruction, token)
+		# Public callbacks may replace or stop the current shot while an instruction
+		# is executing. Never apply the superseded transaction to the replacement.
+		if execution_generation != _playback_generation:
+			break
 		if result == KonadoVirtualMachine.Result.WAITING:
-			# Zero-duration transitions and already-satisfied awaitables may complete
-			# synchronously inside the handler. Only suspend if that transaction is
-			# still active; otherwise continue pumping the newly committed PC.
-			if not _active_token.is_empty():
+			# A zero-duration awaitable may have completed synchronously.
+			if _token_is_active(token):
 				dialogue_state = DialogState.WAITING
 				break
+			if not _active_token.is_empty():
+				break
 			continue
+		if result == KonadoVirtualMachine.Result.CANCELLED:
+			break
 		if result == KonadoVirtualMachine.Result.FAILED:
-			var failure_reason := _executor.get_failure_reason()
+			if not _token_is_active(token):
+				break
+			var failure := _executor.get_failure()
 			_fail_current(
 				(
-					failure_reason
-					if not failure_reason.is_empty()
-					else "指令执行失败：%s" % KonadoOpcode.name_of(instruction.opcode())
-				)
+					failure
+					if failure != null
+					else (
+						KonadoExecutionFailure
+						. new(
+							&"runtime.instruction_failed",
+							"指令执行失败：%s" % KonadoOpcode.name_of(instruction.opcode()),
+							{
+								"subsystem": "runtime",
+								"operation": KonadoOpcode.name_of(instruction.opcode())
+							},
+						)
+					)
+				),
+				token,
+				instruction_context,
 			)
 			break
+		if _token_is_active(token):
+			_fail_current("指令执行器未提交原子事务", token, instruction_context)
+			break
 		if not _active_token.is_empty():
-			_fail_current("指令执行器未提交原子事务")
 			break
 	_pumping = false
 	if _shot_active and dialogue_state == DialogState.EXECUTING:
@@ -329,7 +359,7 @@ func _complete_instruction(
 	if not _token_is_active(token):
 		return
 	if not _vm.commit_patch(token, next_pc, _capture_instruction_state(instruction)):
-		_fail_current("VM 提交失败")
+		_fail_current("VM 提交失败", token, _instruction_failure_context(instruction))
 		return
 	_active_token.clear()
 	_waiting_signal_name = ""
@@ -342,7 +372,14 @@ func _complete_instruction(
 
 
 func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
+	_transition_failure.clear()
 	if not _token_is_active(token):
+		_transition_failure = {
+			"code": "script.jump_transaction_inactive",
+			"message": "jump 指令的原子事务已失效",
+			"subsystem": "script",
+			"operation": "jump",
+		}
 		return false
 	var next_shot := _prepare_transition_target(target)
 	if next_shot == null:
@@ -350,6 +387,13 @@ func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
 	var entry_pc := next_shot.entry_pc()
 	dialogue_line_end.emit(_current_instruction().stable_key())
 	if not _token_is_active(token):
+		_transition_failure = {
+			"code": "script.jump_transaction_superseded",
+			"message": "jump 指令已被回调中的新执行事务取代",
+			"subsystem": "script",
+			"operation": "jump",
+			"superseded": true,
+		}
 		return false
 	var previous_shot := current_shot
 	var previous_temporary_variables := _temp_variables.duplicate(true)
@@ -361,6 +405,12 @@ func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
 	if not _vm.transition(token, next_shot.program, entry_pc, state_after):
 		current_shot = previous_shot
 		_temp_variables = previous_temporary_variables
+		_transition_failure = {
+			"code": "script.jump_vm_transition_failed",
+			"message": "VM 无法提交 jump 转场",
+			"subsystem": "vm",
+			"operation": "jump",
+		}
 		return false
 	_active_token.clear()
 	_dialogue_typing = false
@@ -377,13 +427,27 @@ func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
 func _prepare_transition_target(target: KonadoShot) -> KonadoShot:
 	var localized := _load_localized_shot(target)
 	if localized == null or not localized.ensure_script_ready() or localized.program == null:
-		push_error("Konado: jump 目标没有可执行 Program")
+		_transition_failure = {
+			"code": "script.jump_program_missing",
+			"message": "jump 目标没有可执行 Program",
+			"subsystem": "script",
+			"operation": "jump",
+		}
 		return null
 	var next_shot := localized.duplicate() as KonadoShot
 	if next_shot.entry_pc() == KonadoProgram.INVALID_PC:
-		push_error("Konado: jump 目标没有入口指令")
+		_transition_failure = {
+			"code": "script.jump_entry_missing",
+			"message": "jump 目标没有入口指令",
+			"subsystem": "script",
+			"operation": "jump",
+		}
 		return null
 	return next_shot
+
+
+func _get_transition_failure() -> Dictionary:
+	return _transition_failure.duplicate(true)
 
 
 func _finish_shot() -> void:
@@ -395,17 +459,34 @@ func _finish_shot() -> void:
 	shot_end.emit()
 
 
-func _fail_current(message: String) -> void:
-	var instruction := _current_instruction()
-	var key := instruction.stable_key() if instruction != null else ""
-	var line := instruction.source_line() if instruction != null else -1
-	if not _active_token.is_empty():
+func _fail_current(
+	failure_value: Variant, expected_token: Dictionary = {}, instruction_context: Dictionary = {}
+) -> void:
+	if not expected_token.is_empty() and not _token_is_active(expected_token):
+		return
+	if instruction_context.is_empty():
+		instruction_context = RUNTIME_FAILURE_REPORTER.capture_context(self, _current_instruction())
+	var failure := (
+		(
+			failure_value
+			if failure_value is KonadoExecutionFailure
+			else KonadoExecutionFailure.new(&"runtime.failed", String(failure_value))
+		)
+		as KonadoExecutionFailure
+	)
+	# Settle and cancel the failed generation before notifying user code. Signal
+	# listeners may install a recovery shot, which must outlive this callback.
+	if not expected_token.is_empty():
+		_vm.fail(expected_token)
+	elif not _active_token.is_empty():
 		_vm.fail(_active_token)
-	_active_token.clear()
-	push_error("Konado: %s (%s:%d)" % [message, key, line])
-	runtime_failed.emit(message, key, line)
 	_cancel_execution()
 	dialogue_state = DialogState.OFF
+	RUNTIME_FAILURE_REPORTER.publish(self, failure, instruction_context)
+
+
+func _instruction_failure_context(instruction: KonadoInstruction) -> Dictionary:
+	return RUNTIME_FAILURE_REPORTER.capture_context(self, instruction)
 
 
 func _current_instruction() -> KonadoInstruction:
@@ -426,61 +507,11 @@ func _set_waiting_token(token: Dictionary) -> void:
 
 
 func _await_signal(completion: Signal, token: Dictionary, two_arguments := false) -> void:
-	if completion.is_null() or not _token_is_active(token):
-		return
-	var callback := (
-		_on_two_argument_signal_completed.bind(token)
-		if two_arguments
-		else _on_signal_completed.bind(token)
-	)
-	completion.connect(callback, CONNECT_ONE_SHOT)
-	_pending_connections.append({"signal": completion, "callback": callback, "token": token})
-	_set_waiting_token(token)
+	_awaiter().await_signal(completion, token, two_arguments)
 
 
-func _await_result_signal(completion: Signal, token: Dictionary, motion := false) -> void:
-	if completion.is_null() or not _token_is_active(token):
-		return
-	var callback := (
-		_on_motion_signal_completed.bind(token)
-		if motion
-		else _on_result_signal_completed.bind(token)
-	)
-	completion.connect(callback, CONNECT_ONE_SHOT)
-	_pending_connections.append({"signal": completion, "callback": callback, "token": token})
-	_set_waiting_token(token)
-
-
-func _on_signal_completed(token: Dictionary) -> void:
-	_forget_connection_for(token)
-	_complete_instruction(token)
-
-
-func _on_two_argument_signal_completed(
-	_first: Variant, _second: Variant, token: Dictionary
-) -> void:
-	_forget_connection_for(token)
-	_complete_instruction(token)
-
-
-func _on_result_signal_completed(succeeded: bool, token: Dictionary) -> void:
-	_forget_connection_for(token)
-	if succeeded:
-		_complete_instruction(token)
-	elif _token_is_active(token):
-		_fail_current("表现操作执行失败")
-
-
-func _on_motion_signal_completed(
-	_actor_id: String, _motion_name: String, succeeded: bool, token: Dictionary
-) -> void:
-	_on_result_signal_completed(succeeded, token)
-
-
-func _forget_connection_for(token: Dictionary) -> void:
-	for index in range(_pending_connections.size() - 1, -1, -1):
-		if _pending_connections[index]["token"] == token:
-			_pending_connections.remove_at(index)
+func _begin_stage_operation(token: Dictionary, fallback: KonadoExecutionFailure) -> int:
+	return _awaiter().begin_stage_operation(stage_controller, token, fallback)
 
 
 func _cancel_execution() -> void:
@@ -500,12 +531,8 @@ func _cancel_pending_callbacks() -> void:
 	):
 		dialogue_box.typing_completed.disconnect(_typing_completed_callback)
 	_typing_completed_callback = Callable()
-	for connection in _pending_connections:
-		var completion: Signal = connection["signal"]
-		var callback: Callable = connection["callback"]
-		if not completion.is_null() and completion.is_connected(callback):
-			completion.disconnect(callback)
-	_pending_connections.clear()
+	if _instruction_awaiter != null:
+		_instruction_awaiter.cancel()
 	if dialogue_box != null:
 		dialogue_box.cancel_pending_operations()
 	if screen_text != null:
@@ -526,14 +553,26 @@ func _begin_dialogue_instruction(instruction: KonadoInstruction, token: Dictiona
 			int(instruction.value(&"speaker_kind")), String(instruction.value(&"speaker"))
 		)
 		if not bool(speaker_result.get("ok", false)):
-			_fail_current(String(speaker_result.get("error", "无法解析对话署名")))
+			_fail_current(
+				_services()._execution_failure(
+					speaker_result, &"dialogue.speaker_invalid", "无法解析对话署名"
+				),
+				token,
+				_instruction_failure_context(instruction),
+			)
 			return
 		var character := String(speaker_result.get("value", ""))
 		var voice := String(instruction.value(&"voice_id"))
 		if not voice.is_empty():
 			var voice_result := _play_voice_resource(voice)
 			if not bool(voice_result.get("ok", false)):
-				_fail_current("未找到语音资源：%s" % voice)
+				_fail_current(
+					_services()._execution_failure(
+						voice_result, &"audio.voice_failed", "无法播放语音 '%s'" % voice
+					),
+					token,
+					_instruction_failure_context(instruction),
+				)
 				return
 		elif dialogue_box != null:
 			dialogue_box.clear_voice_progress()
@@ -647,46 +686,14 @@ func _load_localized_shot(shot: KonadoShot) -> KonadoShot:
 	return _services()._load_localized_shot(shot)
 
 
-func _display_background_resource(name: String, effect: int, duration: float) -> bool:
-	return _services()._display_background(name, effect, duration)
-
-
-func _show_actor_resource(actor: String, state: String, position: int, duration: float) -> bool:
-	var target: KonadoCharacter
-	if character_list != null:
-		for character in character_list.characters:
-			if character.character_id == actor:
-				target = character
-				break
-	if target == null or target.character_scene == null:
-		push_error("Konado: 未找到角色资源 '%s'" % actor)
-		return false
-	stage_controller.show_actor(
-		actor,
-		horizontal_division,
-		position,
-		state,
-		target.character_scene,
-		target.actor_motion_layer,
-		duration
-	)
-	return true
-
-
-func _play_bgm_resource(name: String) -> bool:
-	return _services()._play_bgm(name)
-
-
 func _play_voice_resource(name: String) -> Dictionary:
 	return _services()._play_voice(name)
 
 
-func _play_sfx_resource(name: String) -> bool:
-	return _services()._play_sound_effect(name)
-
-
 func _read_variable(name: String, persistent: bool) -> Variant:
-	return variable_store.get_value(name) if persistent else _temp_variables.get(name)
+	if persistent:
+		return variable_store.get_value(name) if variable_store != null else null
+	return _temp_variables.get(name)
 
 
 func _resolve_operand(value: Variant) -> Variant:
@@ -699,13 +706,8 @@ func _compare_values(left: Variant, right: Variant, operator: int) -> Dictionary
 	return KonadoValueOperations.compare(left, right, operator)
 
 
-func _apply_variable_instruction(instruction: KonadoInstruction) -> bool:
-	var name := String(instruction.value(&"name"))
-	var operation := int(instruction.value(&"operation"))
-	var operand := _resolve_operand(instruction.value(&"operand"))
-	if bool(instruction.value(&"persistent")):
-		return variable_store.apply_operation(name, operation, operand)
-	return _services()._apply_temp_operation(name, operation, operand)
+func _apply_variable_instruction(instruction: KonadoInstruction) -> Dictionary:
+	return _services()._apply_variable_instruction(instruction)
 
 
 func _interpolate_variables(text: String) -> String:
@@ -953,6 +955,12 @@ func _services() -> RefCounted:
 	if _dialogue_services == null:
 		_dialogue_services = DIALOGUE_SERVICES.new(self)
 	return _dialogue_services
+
+
+func _awaiter() -> KonadoInstructionAwaiter:
+	if _instruction_awaiter == null:
+		_instruction_awaiter = INSTRUCTION_AWAITER.new(self)
+	return _instruction_awaiter
 
 
 func _on_setting_changed(category: String, key: String, value: Variant) -> void:
