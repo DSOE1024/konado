@@ -11,10 +11,12 @@ const MAX_CHOICES_PER_INSTRUCTION := 256
 const MAX_DIAGNOSTICS := 256
 
 var _errors: Array[String] = []
+var _warnings: Array[String] = []
 
 
 func validate_program(program: KonadoProgram) -> bool:
 	_errors.clear()
+	_warnings.clear()
 	if program == null:
 		_errors.append("编译器没有生成 Program IR")
 		return false
@@ -61,11 +63,7 @@ func _validate_reachability_and_exit(program: KonadoProgram) -> void:
 		for target: int in forward[pc]:
 			reverse[target].append(pc)
 	var reachable := _walk_graph(forward, PackedInt32Array([program.entry_pc]))
-	for pc in range(program.instruction_count()):
-		if _errors.size() >= MAX_DIAGNOSTICS:
-			return
-		if not reachable.has(pc):
-			_errors.append(_program_at(program, pc, "指令不可从程序入口到达"))
+	_warn_unreachable_regions(program, forward, reverse, reachable)
 	var terminals := PackedInt32Array()
 	for pc in range(program.instruction_count()):
 		if KonadoOpcode.is_terminal(program.opcode_at(pc)):
@@ -76,6 +74,32 @@ func _validate_reachability_and_exit(program: KonadoProgram) -> void:
 			return
 		if not reaches_terminal.has(pc):
 			_errors.append(_program_at(program, pc, "所在控制流区域无法到达终止指令"))
+
+
+func _warn_unreachable_regions(
+	program: KonadoProgram,
+	forward: Array[PackedInt32Array],
+	reverse: Array[PackedInt32Array],
+	reachable: Dictionary,
+) -> void:
+	# One diagnostic per disconnected region is actionable; one per instruction
+	# turns a single orphan branch into hundreds of duplicate warnings.
+	var visited := {}
+	for start_pc in range(program.instruction_count()):
+		if reachable.has(start_pc) or visited.has(start_pc):
+			continue
+		var representative := start_pc
+		var stack := [start_pc]
+		visited[start_pc] = true
+		while not stack.is_empty():
+			var pc := int(stack.pop_back())
+			representative = mini(representative, pc)
+			for neighbour: int in Array(forward[pc]) + Array(reverse[pc]):
+				if reachable.has(neighbour) or visited.has(neighbour):
+					continue
+				visited[neighbour] = true
+				stack.append(neighbour)
+		_warnings.append(_program_at(program, representative, "控制流区域不可从程序入口到达"))
 
 
 func _targets(program: KonadoProgram, pc: int) -> PackedInt32Array:
@@ -134,3 +158,7 @@ func _program_at(program: KonadoProgram, pc: int, message: String) -> String:
 
 func get_errors() -> Array[String]:
 	return _errors.duplicate()
+
+
+func get_warnings() -> Array[String]:
+	return _warnings.duplicate()

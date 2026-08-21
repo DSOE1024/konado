@@ -39,6 +39,13 @@ func _refresh_compiled_data(shot: KonadoShot, path: String) -> void:
 	compiler.set_console_output_enabled(false)
 	var compiled := compiler.compile_string(shot.get_source_code(), path)
 	if compiled == null:
+		# The source file is authoritative. Keeping the previous Program would make
+		# the editor show invalid new text while test runs execute stale old code.
+		shot.source_path = path
+		shot.dependent_characters.clear()
+		shot.dependencies.clear()
+		shot.install_program(null)
+		shot.emit_changed()
 		return
 	shot.source_path = path
 	shot.shot_id = compiled.shot_id

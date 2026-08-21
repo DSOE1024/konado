@@ -43,7 +43,9 @@ func update(new_source: String, new_path: String = "") -> bool:
 
 	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
-	_analysis = compiler.analyze_string(new_source, path)
+	# Live editor diagnostics include the same lowered Program graph and data-flow
+	# checks as a build. The compiler still parses this revision only once.
+	_analysis = compiler.analyze_string(new_source, path, true, true)
 	source = String(_analysis.get("source", ""))
 	source_sha256 = String(_analysis.get("source_sha256", ""))
 	valid = bool(_analysis.get("valid", false))

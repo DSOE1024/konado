@@ -596,7 +596,6 @@ func _test_source_saver() -> void:
 		shot.program != null and shot.program.is_valid(),
 		"source saver refreshes the compiled Program after a valid save",
 	)
-	var compiled_fingerprint := shot.program_fingerprint()
 	shot.set_source_code("endif_invalid")
 	_expect(ResourceSaver.save(shot, path) == OK, "invalid editor source can still be saved")
 	_expect(
@@ -604,8 +603,8 @@ func _test_source_saver() -> void:
 		"invalid save preserves the exact source for repair",
 	)
 	_expect(
-		shot.program != null and shot.program_fingerprint() == compiled_fingerprint,
-		"invalid save does not replace the last valid Program",
+		shot.program == null,
+		"invalid save cannot leave a stale executable Program attached to new source",
 	)
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
