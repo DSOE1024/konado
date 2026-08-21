@@ -118,6 +118,23 @@ func _test_achievements() -> void:
 		"story_branch_unlocked",
 		"achievement queries return deep copies"
 	)
+	var missing_result: Dictionary = manager.try_unlock_achievement("missing")
+	_expect_equal(
+		missing_result.get("operation"),
+		"achievement.unlock",
+		"structured achievement failures identify the exact operation",
+	)
+	_expect_equal(
+		missing_result.get("resource_id"),
+		"missing",
+		"structured achievement failures identify the exact resource",
+	)
+	var invalid_progress: Dictionary = manager.try_increment_progress("", 1.0)
+	_expect_equal(
+		invalid_progress.get("resource_kind"),
+		"progress_key",
+		"progress failures identify their resource kind",
+	)
 
 	var unlocked_ids: Array[String] = []
 	manager.achievement_unlocked.connect(

@@ -46,6 +46,7 @@ var _panel_canvas_layer: CanvasLayer = null
 var _popup_canvas_layer: CanvasLayer = null
 var _previous_focus_owner: Control = null
 var _focus_change_generation: int = 0
+var _last_storage_error := ""
 
 
 func _ready() -> void:
@@ -109,7 +110,8 @@ func _load_save_data() -> void:
 		_load_backup_save()
 
 
-func _save_data() -> bool:
+func _save_data(report_errors := true) -> bool:
+	_last_storage_error = ""
 	var data := {"unlocked": _unlocked.duplicate(true), "progress": _progress.duplicate(true)}
 	if custom_save_handler.is_valid():
 		custom_save_handler.call(data)
@@ -117,42 +119,68 @@ func _save_data() -> bool:
 	var temporary_path := save_path + ".tmp"
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if not file:
-		push_error("KonadoAchievement 无法写入临时存档：%s" % temporary_path)
+		_record_storage_error("无法写入临时存档：%s" % temporary_path, report_errors)
 		return false
 	file.store_string(JSON.stringify(data, "\t"))
 	file.flush()
 	var write_error := file.get_error()
 	file.close()
 	if write_error != OK:
-		push_error("KonadoAchievement 写入存档失败：%s" % error_string(write_error))
+		_record_storage_error("写入存档失败：%s" % error_string(write_error), report_errors)
 		return false
-	return _replace_save_file(temporary_path)
+	return _replace_save_file(temporary_path, report_errors)
 
 
 ## 通过 ID 直接解锁成就。如果是新解锁则返回 true。
 func unlock_achievement(achievement_id: String) -> bool:
+	var result := try_unlock_achievement(achievement_id)
+	_report_operation_failure(result)
+	return bool(result.get("ok", false)) and bool(result.get("changed", false))
+
+
+## 执行解锁并返回机器可读结果，不自行打印错误。供原子化运行时使用。
+func try_unlock_achievement(achievement_id: String) -> Dictionary:
 	if not _achievements.has(achievement_id):
-		push_warning("KonadoAchievement 未知成就：%s" % achievement_id)
-		return false
+		return _operation_failure(
+			&"achievement.not_found",
+			"未知成就 '%s'" % achievement_id,
+			achievement_id,
+			"achievement.unlock",
+		)
 	if _unlocked.get(achievement_id, false):
-		return false  # 已经解锁
+		return {"ok": true, "changed": false}
 	_unlocked[achievement_id] = true
-	if not _save_data():
+	if not _save_data(false):
 		_unlocked.erase(achievement_id)
-		return false
+		return _storage_failure("achievement.unlock", achievement_id)
 	_notify_unlocked(achievement_id)
-	return true
+	return {"ok": true, "changed": true}
 
 
 ## 增加计数器键值并自动检查相关成就。
 func increment_progress(key: String, amount: float = 1.0) -> void:
+	_report_operation_failure(try_increment_progress(key, amount))
+
+
+## 执行进度变更并返回机器可读结果，不自行打印错误。
+func try_increment_progress(key: String, amount: float = 1.0) -> Dictionary:
 	if key.is_empty() or not is_finite(amount):
-		push_warning("KonadoAchievement 拒绝无效计数进度：%s" % key)
-		return
+		return _operation_failure(
+			&"achievement.progress_invalid",
+			"无效计数进度 '%s'" % key,
+			key,
+			"achievement.progress",
+			"progress_key",
+		)
 	var current_value: Variant = _progress.get(key, 0.0)
 	if typeof(current_value) not in [TYPE_INT, TYPE_FLOAT]:
-		push_warning("KonadoAchievement 计数键与现有标志键冲突：%s" % key)
-		return
+		return _operation_failure(
+			&"achievement.progress_type_conflict",
+			"计数键与现有标志键冲突：%s" % key,
+			key,
+			"achievement.progress",
+			"progress_key",
+		)
 	var previous_progress: Dictionary = _progress.duplicate(true)
 	var previous_unlocked: Dictionary = _unlocked.duplicate(true)
 	_progress[key] = float(current_value) + amount
@@ -169,10 +197,10 @@ func increment_progress(key: String, amount: float = 1.0) -> void:
 			if _check_conditions(cond):
 				_unlocked[ach_id] = true
 				newly_unlocked.append(ach_id)
-	if not _save_data():
+	if not _save_data(false):
 		_progress = previous_progress
 		_unlocked = previous_unlocked
-		return
+		return _storage_failure("achievement.progress", key)
 	for ach_id: String in updated_achievements:
 		var cond: Dictionary = _achievements[ach_id].get("conditions", {})
 		achievement_progress_updated.emit(
@@ -180,13 +208,29 @@ func increment_progress(key: String, amount: float = 1.0) -> void:
 		)
 	for ach_id: String in newly_unlocked:
 		_notify_unlocked(ach_id)
+	return {"ok": true, "changed": true}
 
 
 ## 设置标志键值并自动检查相关成就。
 func set_flag(key: String, value: bool = true) -> void:
+	_report_operation_failure(try_set_flag(key, value))
+
+
+## 执行标志变更并返回机器可读结果，不自行打印错误。
+func try_set_flag(key: String, value: bool = true) -> Dictionary:
 	if key.is_empty():
-		push_warning("KonadoAchievement 拒绝空标志键")
-		return
+		return _operation_failure(
+			&"achievement.flag_invalid", "标志键不能为空", key, "achievement.flag", "flag_key"
+		)
+	var current_value: Variant = _progress.get(key)
+	if current_value != null and not current_value is bool:
+		return _operation_failure(
+			&"achievement.flag_type_conflict",
+			"标志键与现有计数键冲突：%s" % key,
+			key,
+			"achievement.flag",
+			"flag_key",
+		)
 	var previous_progress: Dictionary = _progress.duplicate(true)
 	var previous_unlocked: Dictionary = _unlocked.duplicate(true)
 	_progress[key] = value
@@ -200,12 +244,13 @@ func set_flag(key: String, value: bool = true) -> void:
 			if _check_conditions(cond):
 				_unlocked[ach_id] = true
 				newly_unlocked.append(ach_id)
-	if not _save_data():
+	if not _save_data(false):
 		_progress = previous_progress
 		_unlocked = previous_unlocked
-		return
+		return _storage_failure("achievement.flag", key)
 	for ach_id: String in newly_unlocked:
 		_notify_unlocked(ach_id)
+	return {"ok": true, "changed": true}
 
 
 ## 检查成就是否已解锁。
@@ -504,7 +549,7 @@ func _load_backup_save() -> void:
 		push_warning("KonadoAchievement 已从备份存档恢复。")
 
 
-func _replace_save_file(temporary_path: String) -> bool:
+func _replace_save_file(temporary_path: String, report_errors := true) -> bool:
 	var backup_path := save_path + ".bak"
 	var absolute_save := ProjectSettings.globalize_path(save_path)
 	var absolute_temporary := ProjectSettings.globalize_path(temporary_path)
@@ -514,18 +559,67 @@ func _replace_save_file(temporary_path: String) -> bool:
 	if FileAccess.file_exists(save_path):
 		var backup_error := DirAccess.rename_absolute(absolute_save, absolute_backup)
 		if backup_error != OK:
-			push_error("KonadoAchievement 无法创建存档备份：%s" % error_string(backup_error))
+			_record_storage_error("无法创建存档备份：%s" % error_string(backup_error), report_errors)
 			DirAccess.remove_absolute(absolute_temporary)
 			return false
 	var replace_error := DirAccess.rename_absolute(absolute_temporary, absolute_save)
 	if replace_error != OK:
-		push_error("KonadoAchievement 无法替换存档：%s" % error_string(replace_error))
+		_record_storage_error("无法替换存档：%s" % error_string(replace_error), report_errors)
 		if FileAccess.file_exists(backup_path):
 			DirAccess.rename_absolute(absolute_backup, absolute_save)
 		return false
 	if FileAccess.file_exists(backup_path):
 		DirAccess.remove_absolute(absolute_backup)
 	return true
+
+
+func _record_storage_error(message: String, report_errors: bool) -> void:
+	_last_storage_error = message
+	if report_errors:
+		push_error("KonadoAchievement %s" % message)
+
+
+func _storage_failure(operation: String, resource_id: String) -> Dictionary:
+	var resource_kind := "achievement"
+	if operation == "achievement.progress":
+		resource_kind = "progress_key"
+	elif operation == "achievement.flag":
+		resource_kind = "flag_key"
+	return _operation_failure(
+		&"achievement.storage_failed",
+		_last_storage_error if not _last_storage_error.is_empty() else "成就存档写入失败",
+		resource_id,
+		operation,
+		resource_kind,
+	)
+
+
+func _operation_failure(
+	code: StringName,
+	message: String,
+	resource_id: String,
+	operation: String,
+	resource_kind := "achievement",
+) -> Dictionary:
+	return {
+		"ok": false,
+		"code": String(code),
+		"message": message,
+		"subsystem": "achievement",
+		"operation": operation,
+		"resource_kind": resource_kind,
+		"resource_id": resource_id,
+	}
+
+
+func _report_operation_failure(result: Dictionary) -> void:
+	if bool(result.get("ok", false)):
+		return
+	var message := "KonadoAchievement %s" % String(result.get("message", "操作失败"))
+	if String(result.get("code", "")) == "achievement.storage_failed":
+		push_error(message)
+	else:
+		push_warning(message)
 
 
 func _notify_unlocked(achievement_id: String) -> void:
