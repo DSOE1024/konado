@@ -1,3 +1,4 @@
+jump_branch intro
+
 branch intro
-	choice "Again" -> intro
-	jump_branch intro
+	end
