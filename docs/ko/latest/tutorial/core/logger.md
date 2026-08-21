@@ -20,3 +20,7 @@ KonadoLogger는 Godot Logger 구현을 기반으로 한 로그 모듈입니다. 
 ## 로그 콜백
 
 `KonadoLogger` 인스턴스는 `error_caught(msg)`와 `message_caught(message, error)` 신호를 보냅니다. `KonadoDialogueManager`는 씬 트리에 들어갈 때 내부 로거를 만들어 Godot에 등록하고 `error_caught`로 화면 오버레이를 구동합니다. 로거는 전역 자동 로드 객체가 아닙니다. 별도의 `KonadoLogger`를 만드는 사용자 지정 연동은 `OS.add_logger()`로 등록하고 해제 전에 `OS.remove_logger()`를 호출하여 중복 기록이나 유효하지 않은 인스턴스가 남지 않게 해야 합니다.
+
+## 런타임 실패
+
+원자 명령 실행이 실패하면 `KonadoDialogueManager`는 최종 오류 한 건만 기록하고 `runtime_failure_reported(failure)` 신호를 보냅니다. `failure`에는 안정적인 오류 코드, 작업, 관련 리소스, 근본 원인, 소스 경로와 줄, 명령 ID, opcode, 프로그램 위치가 포함되어 오류 보고나 사용자 지정 디버깅 UI에 사용할 수 있습니다. 간단한 인터페이스인 `runtime_failed(message, instruction_id, source_line)`도 계속 제공됩니다.

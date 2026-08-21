@@ -20,3 +20,7 @@ When an error occurs, the dialogue scene overlays a log window to show the error
 ## Log Callback
 
 A `KonadoLogger` instance emits `error_caught(msg)` and `message_caught(message, error)`. When `KonadoDialogueManager` enters the scene tree, it creates and registers an internal logger with Godot and uses `error_caught` to drive its overlay; the logger is not a global autoload. A custom integration that creates another `KonadoLogger` must register it with `OS.add_logger()` and call `OS.remove_logger()` before freeing it to avoid duplicate logging or stale instances.
+
+## Runtime Failures
+
+When an atomic instruction fails, `KonadoDialogueManager` writes one final error and emits `runtime_failure_reported(failure)`. The payload contains a stable error code, operation, related resource, underlying cause, source path and line, instruction ID, opcode, and program counter for crash reporting or custom debugging UI. `runtime_failed(message, instruction_id, source_line)` remains available as the compact interface.

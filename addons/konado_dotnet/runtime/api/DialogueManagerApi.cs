@@ -132,6 +132,7 @@ public sealed partial class DialogueManagerApi : Node
 			&& node.HasSignal(GDScriptSignalName.DialogueLineEnd)
 			&& node.HasSignal(GDScriptSignalName.CustomSignal)
 			&& node.HasSignal(GDScriptSignalName.RuntimeFailed)
+			&& node.HasSignal(GDScriptSignalName.RuntimeFailureReported)
 			&& node.HasMethod(GDScriptMethodName.InitDialogue)
 			&& node.HasMethod(GDScriptMethodName.SetShot)
 			&& node.HasMethod(GDScriptMethodName.StartDialogue)
@@ -251,6 +252,18 @@ public sealed partial class DialogueManagerApi : Node
 						_runtimeFailedSignal?.Invoke(message, instructionId, sourceLine));
 			ConnectSignal(source, GDScriptSignalName.RuntimeFailed, _runtimeFailedSignalCallable);
 		}
+
+		if (_runtimeFailureReportedSignal != null && source.HasSignal(GDScriptSignalName.RuntimeFailureReported))
+		{
+			if (!HasCallable(_runtimeFailureReportedSignalCallable))
+				_runtimeFailureReportedSignalCallable = Callable.From(
+					(Godot.Collections.Dictionary failure) =>
+						_runtimeFailureReportedSignal?.Invoke(failure));
+			ConnectSignal(
+				source,
+				GDScriptSignalName.RuntimeFailureReported,
+				_runtimeFailureReportedSignalCallable);
+		}
 	}
 
 	private void DisconnectSignals(Node? source)
@@ -261,6 +274,10 @@ public sealed partial class DialogueManagerApi : Node
 		DisconnectSignal(source, GDScriptSignalName.DialogueLineEnd, _dialogueLineEndSignalCallable);
 		DisconnectSignal(source, GDScriptSignalName.CustomSignal, _customSignalCallable);
 		DisconnectSignal(source, GDScriptSignalName.RuntimeFailed, _runtimeFailedSignalCallable);
+		DisconnectSignal(
+			source,
+			GDScriptSignalName.RuntimeFailureReported,
+			_runtimeFailureReportedSignalCallable);
 	}
 
 	public override void _ExitTree()
@@ -277,6 +294,7 @@ public sealed partial class DialogueManagerApi : Node
 		public static readonly StringName DialogueLineEnd = "dialogue_line_end";
 		public static readonly StringName CustomSignal = "custom_signal";
 		public static readonly StringName RuntimeFailed = "runtime_failed";
+		public static readonly StringName RuntimeFailureReported = "runtime_failure_reported";
 	}
 
 	public delegate void ShotStartSignalHandler();
@@ -400,6 +418,34 @@ public sealed partial class DialogueManagerApi : Node
 			if (_runtimeFailedSignal is not null) return;
 			DisconnectSignal(_source, GDScriptSignalName.RuntimeFailed, _runtimeFailedSignalCallable);
 			_runtimeFailedSignalCallable = default;
+		}
+	}
+
+	/// <summary>
+	/// Detailed atomic-runtime failure data, including the stable code, operation,
+	/// resource, source path, source line, instruction ID and program counter.
+	/// </summary>
+	public delegate void RuntimeFailureReportedSignalHandler(
+		Godot.Collections.Dictionary failure);
+	private RuntimeFailureReportedSignalHandler? _runtimeFailureReportedSignal;
+	private Callable _runtimeFailureReportedSignalCallable;
+	public event RuntimeFailureReportedSignalHandler RuntimeFailureReported
+	{
+		add
+		{
+			_runtimeFailureReportedSignal += value;
+			if (GetReadySource() != null)
+				ConnectSignals();
+		}
+		remove
+		{
+			_runtimeFailureReportedSignal -= value;
+			if (_runtimeFailureReportedSignal is not null) return;
+			DisconnectSignal(
+				_source,
+				GDScriptSignalName.RuntimeFailureReported,
+				_runtimeFailureReportedSignalCallable);
+			_runtimeFailureReportedSignalCallable = default;
 		}
 	}
 

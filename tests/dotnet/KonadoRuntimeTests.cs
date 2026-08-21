@@ -51,6 +51,14 @@ public sealed partial class KonadoRuntimeTests : Node
 		AddChild(manager);
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 		Check(api.IsReady, "API must bind a manager added after its own _Ready().");
+		Godot.Collections.Dictionary? reportedFailure = null;
+		api.RuntimeFailureReported += failure => reportedFailure = failure;
+		manager.EmitSignal(
+			"runtime_failure_reported",
+			new Godot.Collections.Dictionary { ["code"] = "camera.move_rejected" });
+		Check(
+			reportedFailure?["code"].AsString() == "camera.move_rejected",
+			"DialogueManagerApi must forward structured runtime failure reports.");
 		var forwardedShot = new KonadoShot();
 		api.SetShot(forwardedShot);
 		Check(

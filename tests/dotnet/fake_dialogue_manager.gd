@@ -6,6 +6,7 @@ signal dialogue_line_start(instruction_id: String)
 signal dialogue_line_end(instruction_id: String)
 signal custom_signal(content: String)
 signal runtime_failed(message: String, instruction_id: String, source_line: int)
+signal runtime_failure_reported(failure: Dictionary)
 
 var last_shot: Resource
 var character_list: Resource

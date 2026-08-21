@@ -20,3 +20,7 @@ KonadoLogger 是基于Godot Logger实现的日志模块，支持日志级别、�
 ## 日志回调
 
 `KonadoLogger` 实例会发出 `error_caught(msg)` 和 `message_caught(message, error)` 信号。`KonadoDialogueManager` 会在进入场景树时创建并向 Godot 注册内部日志器，再使用 `error_caught` 驱动覆盖日志；它不是全局自动加载对象。自定义日志集成如果另行创建 `KonadoLogger`，必须使用 `OS.add_logger()` 注册，并在释放前使用 `OS.remove_logger()` 注销，避免重复记录或残留无效实例。
+
+## 运行时故障
+
+原子指令执行失败时，`KonadoDialogueManager` 只写入一条最终错误，并发出 `runtime_failure_reported(failure)` 信号。`failure` 包含稳定错误码、具体操作、相关资源、底层原因、源码路径与行号、指令 ID、操作码和程序位置，适合接入崩溃上报或自定义调试界面。`runtime_failed(message, instruction_id, source_line)` 作为简化接口保留。

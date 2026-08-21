@@ -46,7 +46,7 @@ if (dialogue is not null && shot is not null)
 
 ### 事件
 
-`ShotStart`、`ShotEnd`、`DialogueLineStart`、`DialogueLineEnd`、`CustomSignal` 和 `RuntimeFailed` 均为标准 C# 事件。`DialogueLineStart` 与 `DialogueLineEnd` 提供稳定指令 ID；`RuntimeFailed` 提供错误信息、指令 ID 和源码行号。
+`ShotStart`、`ShotEnd`、`DialogueLineStart`、`DialogueLineEnd`、`CustomSignal`、`RuntimeFailed` 和 `RuntimeFailureReported` 均为标准 C# 事件。`DialogueLineStart` 与 `DialogueLineEnd` 提供稳定指令 ID；`RuntimeFailed` 保留简化的兼容接口，`RuntimeFailureReported` 提供错误代码、具体操作、资源、源码路径、行号、指令 ID 和程序位置。
 
 ### 存档与回滚
 

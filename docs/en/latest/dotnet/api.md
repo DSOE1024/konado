@@ -46,7 +46,7 @@ Resource properties are `CharacterList`, `BackgroundList`, `BgmList`, `VoiceList
 
 ### Events
 
-`ShotStart`, `ShotEnd`, `DialogueLineStart`, `DialogueLineEnd`, `CustomSignal`, and `RuntimeFailed` are standard C# events. Line events provide a stable instruction ID. Runtime failures include the message, instruction ID, and source line.
+`ShotStart`, `ShotEnd`, `DialogueLineStart`, `DialogueLineEnd`, `CustomSignal`, `RuntimeFailed`, and `RuntimeFailureReported` are standard C# events. Line events provide a stable instruction ID. `RuntimeFailed` remains the compact compatibility event; `RuntimeFailureReported` includes the stable error code, operation, resource, source path and line, instruction ID, and program counter.
 
 ### Saves and rollback
 
