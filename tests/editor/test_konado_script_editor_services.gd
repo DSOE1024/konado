@@ -33,6 +33,7 @@ func _run() -> void:
 	_test_formatter()
 	_test_typed_completion()
 	_test_control_flow_analysis()
+	_test_lowered_program_diagnostics()
 	_test_localization_validation()
 	_test_editor_localization()
 	_test_quick_fixes()
@@ -163,6 +164,43 @@ func _test_control_flow_analysis() -> void:
 		),
 		"control-flow analysis reports unreferenced branches",
 	)
+	var compiler := KonadoScriptCompiler.new()
+	compiler.set_console_output_enabled(false)
+	var dead_branch := (
+		compiler
+		. compile_string(
+			'end\nbranch orphan\n\t"Kona" "Optional content"\n\tend',
+			"res://tests/dead-branch.ks",
+		)
+	)
+	_expect(dead_branch != null, "dead branch content is a warning rather than a build failure")
+	_expect(
+		compiler.get_warnings().any(func(item: String) -> bool: return "不可从程序入口到达" in item),
+		"compiler preserves a warning for unreachable executable instructions",
+	)
+
+
+func _test_lowered_program_diagnostics() -> void:
+	var actor_document := KonadoScriptDocument.new()
+	actor_document.update("actor change Kona happy\nend", "res://tests/external-stage.ks")
+	_expect(actor_document.valid, "externally prepared stage actors remain valid compositions")
+	_expect(
+		actor_document.get_diagnostics("zh_CN").any(
+			func(item: Dictionary) -> bool: return "无法在当前文件中确认角色" in String(item.get("message", ""))
+		),
+		"live editor diagnostics include lowered Program data-flow warnings",
+	)
+	var variable_document := KonadoScriptDocument.new()
+	variable_document.update("add $score 1\nend", "res://tests/undefined-temp.ks")
+	_expect(
+		not variable_document.valid, "undefined temporary variables fail full document analysis"
+	)
+	_expect(
+		variable_document.get_diagnostics("zh_CN").any(
+			func(item: Dictionary) -> bool: return "当前所有路径上尚未定义" in String(item.get("message", ""))
+		),
+		"live editor diagnostics expose Program data-flow errors before a build",
+	)
 
 
 func _test_localization_validation() -> void:
@@ -190,6 +228,17 @@ func _test_localization_validation() -> void:
 	_expect(
 		comparison["compatible"], "translated text may differ while structure remains compatible"
 	)
+	var resized_screen_text := (
+		KonadoScriptLocalizationValidator
+		. compare(
+			'screentext {\n    "First"\n    "Second"\n} [id=opening]\nend',
+			'screentext {\n    "合并后的本地化文本"\n} [id=opening]\nend',
+		)
+	)
+	_expect(
+		resized_screen_text["compatible"],
+		"localized screen text may use a locale-appropriate number of lines",
+	)
 	var translated_speaker := (
 		KonadoScriptLocalizationValidator
 		. compare(
@@ -210,8 +259,61 @@ func _test_localization_validation() -> void:
 	)
 	var changed_actor := KonadoScriptLocalizationValidator.compare('Kona "Hello"', 'Alice "你好"')
 	_expect(
-		not changed_actor["compatible"],
-		"localized scripts cannot replace a static actor identifier",
+		(
+			changed_actor["compatible"]
+			and changed_actor["diagnostics"].size() == 1
+			and changed_actor["diagnostics"][0].get("severity") == "warning"
+		),
+		"localized scripts may replace a static actor identifier with a warning",
+	)
+	var changed_staging := (
+		KonadoScriptLocalizationValidator
+		. compare(
+			"actor show Kona normal at 1\nbackground room fade\nend",
+			"actor show Alice winter at 3\nbackground snow wave\nend",
+		)
+	)
+	_expect(
+		(
+			changed_staging["compatible"]
+			and changed_staging["diagnostics"].all(
+				func(item: Dictionary) -> bool: return item.get("severity") == "warning"
+			)
+		),
+		"locale-specific actors, portraits and backgrounds remain compatible",
+	)
+	var changed_staging_opcode := (
+		KonadoScriptLocalizationValidator
+		. compare(
+			"actor show Kona normal at 1\nend",
+			"actor change Kona normal\nend",
+		)
+	)
+	_expect(
+		not changed_staging_opcode["compatible"],
+		"localized scripts cannot replace the type of a presentation instruction",
+	)
+	var changed_stable_id := (
+		KonadoScriptLocalizationValidator
+		. compare(
+			"actor show Kona normal at 1 [id=entrance]\nend",
+			"actor show Alice winter at 3 [id=localized_entrance]\nend",
+		)
+	)
+	_expect(
+		not changed_stable_id["compatible"],
+		"localized presentation instructions cannot replace a stable instruction ID",
+	)
+	var changed_dialogue_id := (
+		KonadoScriptLocalizationValidator
+		. compare(
+			'Kona "Hello" [id=greeting]',
+			'Alice "你好" [id=localized_greeting]',
+		)
+	)
+	_expect(
+		not changed_dialogue_id["compatible"],
+		"localized dialogue cannot replace a stable instruction ID",
 	)
 	var broken := (
 		KonadoScriptLocalizationValidator

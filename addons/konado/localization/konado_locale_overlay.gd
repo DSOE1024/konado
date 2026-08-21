@@ -50,16 +50,9 @@ static func build(
 			var name := StringName(field[0])
 			var base_value := base_instruction.value(name)
 			var localized_value := localized_instruction.value(name)
-			if (
-				base.opcode_at(pc) == KonadoOpcode.Type.DIALOGUE
-				and name == &"speaker"
-				and (
-					int(base_instruction.value(&"speaker_kind"))
-					!= KonadoScriptSyntaxTree.DialogueNode.SpeakerKind.TEXT
-				)
-			):
+			if _is_speaker_variable(base_instruction, name):
 				if localized_value != base_value:
-					errors.append("第 %d 行：本地化剧本不得修改演员或署名变量" % localized.line_for_pc(pc))
+					errors.append("第 %d 行：本地化剧本不得修改署名变量" % localized.line_for_pc(pc))
 				continue
 			if String(field[1]) == KonadoScriptCommandRegistry.CHOICES:
 				var choice_result := _localized_choices(
@@ -80,6 +73,18 @@ static func build(
 		if not localized_values.is_empty():
 			overlay.values[base.key_for_pc(pc)] = localized_values
 	return {"ok": errors.is_empty(), "errors": errors, "overlay": overlay}
+
+
+static func _is_speaker_variable(instruction: KonadoInstruction, name: StringName) -> bool:
+	if instruction.opcode() != KonadoOpcode.Type.DIALOGUE or name != &"speaker":
+		return false
+	return (
+		int(instruction.value(&"speaker_kind"))
+		in [
+			KonadoScriptSyntaxTree.DialogueNode.SpeakerKind.TEMPORARY_VARIABLE,
+			KonadoScriptSyntaxTree.DialogueNode.SpeakerKind.PERSISTENT_VARIABLE,
+		]
+	)
 
 
 static func _localized_choices(base: Array, localized: Array, line: int) -> Dictionary:

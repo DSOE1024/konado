@@ -3,7 +3,7 @@ class_name KonadoScriptCommandRegistry
 
 ## Canonical KonadoScript command contract shared by compiler, IDE and VM.
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 3
 const STRING := "string"
 const STRING_ARRAY := "string_array"
 const CHOICES := "choices"
@@ -115,10 +115,10 @@ const COMMANDS := {
 		"opcode": KonadoOpcode.Type.ACTOR_SHOW,
 		"operands":
 		[
-			["actor", STRING, false],
-			["state", STRING, false],
-			["position", VALUE, false],
-			["duration", VALUE, false]
+			["actor", STRING, true],
+			["state", STRING, true],
+			["position", VALUE, true],
+			["duration", VALUE, true]
 		],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
@@ -127,8 +127,7 @@ const COMMANDS := {
 	"actor.change":
 	{
 		"opcode": KonadoOpcode.Type.ACTOR_CHANGE,
-		"operands":
-		[["actor", STRING, false], ["state", STRING, false], ["duration", VALUE, false]],
+		"operands": [["actor", STRING, true], ["state", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -136,8 +135,7 @@ const COMMANDS := {
 	"actor.move":
 	{
 		"opcode": KonadoOpcode.Type.ACTOR_MOVE,
-		"operands":
-		[["actor", STRING, false], ["position", VALUE, false], ["duration", VALUE, false]],
+		"operands": [["actor", STRING, true], ["position", VALUE, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -145,7 +143,7 @@ const COMMANDS := {
 	"actor.exit":
 	{
 		"opcode": KonadoOpcode.Type.ACTOR_EXIT,
-		"operands": [["actor", STRING, false], ["duration", VALUE, false]],
+		"operands": [["actor", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -153,8 +151,7 @@ const COMMANDS := {
 	"actor.motion":
 	{
 		"opcode": KonadoOpcode.Type.ACTOR_MOTION,
-		"operands":
-		[["actor", STRING, false], ["motion", STRING, false], ["duration", VALUE, false]],
+		"operands": [["actor", STRING, true], ["motion", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -163,7 +160,7 @@ const COMMANDS := {
 	{
 		"opcode": KonadoOpcode.Type.BACKGROUND,
 		"operands":
-		[["background", STRING, false], ["effect", VALUE, false], ["duration", VALUE, false]],
+		[["background", STRING, true], ["effect", VALUE, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -171,7 +168,7 @@ const COMMANDS := {
 	"audio.bgm.play":
 	{
 		"opcode": KonadoOpcode.Type.BGM_PLAY,
-		"operands": [["resource", STRING, false]],
+		"operands": [["resource", STRING, true]],
 		"parameters": {},
 		"blocking": false,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -187,7 +184,7 @@ const COMMANDS := {
 	"audio.sfx.play":
 	{
 		"opcode": KonadoOpcode.Type.SFX_PLAY,
-		"operands": [["resource", STRING, false]],
+		"operands": [["resource", STRING, true]],
 		"parameters": {},
 		"blocking": false,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -288,7 +285,7 @@ const COMMANDS := {
 	{
 		"opcode": KonadoOpcode.Type.CAMERA_MOVE,
 		"operands":
-		[["camera", STRING, false], ["transition", STRING, false], ["duration", VALUE, false]],
+		[["camera", STRING, true], ["transition", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -296,7 +293,7 @@ const COMMANDS := {
 	"camera.reset":
 	{
 		"opcode": KonadoOpcode.Type.CAMERA_RESET,
-		"operands": [["transition", STRING, false], ["duration", VALUE, false]],
+		"operands": [["transition", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -304,7 +301,7 @@ const COMMANDS := {
 	"camera.shake":
 	{
 		"opcode": KonadoOpcode.Type.CAMERA_SHAKE,
-		"operands": [["duration", VALUE, false]],
+		"operands": [["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -320,7 +317,7 @@ const COMMANDS := {
 	"textbox.show":
 	{
 		"opcode": KonadoOpcode.Type.TEXTBOX_SHOW,
-		"operands": [["duration", VALUE, false]],
+		"operands": [["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -328,7 +325,7 @@ const COMMANDS := {
 	"textbox.hide":
 	{
 		"opcode": KonadoOpcode.Type.TEXTBOX_HIDE,
-		"operands": [["duration", VALUE, false]],
+		"operands": [["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -345,7 +342,7 @@ const COMMANDS := {
 	{
 		"opcode": KonadoOpcode.Type.CAMERA_MOVE_ASYNC,
 		"operands":
-		[["camera", STRING, false], ["transition", STRING, false], ["duration", VALUE, false]],
+		[["camera", STRING, true], ["transition", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": false,
 		"rollback": ROLLBACK_BARRIER
@@ -353,7 +350,7 @@ const COMMANDS := {
 	"camera.reset.async":
 	{
 		"opcode": KonadoOpcode.Type.CAMERA_RESET_ASYNC,
-		"operands": [["transition", STRING, false], ["duration", VALUE, false]],
+		"operands": [["transition", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": false,
 		"rollback": ROLLBACK_BARRIER
@@ -361,7 +358,7 @@ const COMMANDS := {
 	"camera.shake.async":
 	{
 		"opcode": KonadoOpcode.Type.CAMERA_SHAKE_ASYNC,
-		"operands": [["duration", VALUE, false]],
+		"operands": [["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": false,
 		"rollback": ROLLBACK_BARRIER

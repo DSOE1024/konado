@@ -173,7 +173,70 @@ func _test_compiler_and_overlay() -> void:
 	var actor_overlay := KonadoLocaleOverlay.build(
 		actor_source.program, actor_translation.program, "zh_Hans"
 	)
-	_expect(not bool(actor_overlay.get("ok", false)), "localized scripts cannot replace actors")
+	_expect(bool(actor_overlay.get("ok", false)), "localized scripts may replace actors")
+	if bool(actor_overlay.get("ok", false)):
+		actor_source.install_locale_overlay(actor_overlay.overlay)
+		_expect(
+			actor_source.instruction_at(0).value(&"speaker") == "Alice",
+			"localized actor identity reaches runtime dialogue operands",
+		)
+	var staging_source := (
+		compiler
+		. compile_string(
+			(
+				"actor show Kona normal at 1 [duration=0.2] [id=actor]\n"
+				+ "background room fade [duration=0.3] [id=background]\n"
+				+ "cam move cam1 linear 0.4 [id=camera]\n"
+				+ "play bgm morning [id=bgm]\n"
+				+ "end [id=end]"
+			),
+			"res://staging.ks",
+		)
+	)
+	var staging_translation := (
+		compiler
+		. compile_string(
+			(
+				"actor show Alice winter at 3 [duration=0.5] [id=actor]\n"
+				+ "background snow wave [duration=0.6] [id=background]\n"
+				+ "cam move cam2 ease_in_out 0.7 [id=camera]\n"
+				+ "play bgm winter [id=bgm]\n"
+				+ "end [id=end]"
+			),
+			"res://staging.zh_Hans.ks",
+		)
+	)
+	_expect(
+		staging_source != null and staging_translation != null,
+		"locale-specific presentation fixtures compile",
+	)
+	if staging_source != null and staging_translation != null:
+		_expect(
+			(
+				staging_source.program.control_flow_sha256
+				== staging_translation.program.control_flow_sha256
+			),
+			"presentation differences do not alter the control-flow fingerprint",
+		)
+		var staging_overlay := KonadoLocaleOverlay.build(
+			staging_source.program, staging_translation.program, "zh_Hans"
+		)
+		_expect(
+			bool(staging_overlay.get("ok", false)),
+			"locale overlay accepts different presentation resources and timing",
+		)
+		if bool(staging_overlay.get("ok", false)):
+			staging_source.install_locale_overlay(staging_overlay.overlay)
+			_expect(
+				(
+					staging_source.instruction_at(0).value(&"actor") == "Alice"
+					and staging_source.instruction_at(0).value(&"state") == "winter"
+					and staging_source.instruction_at(1).value(&"background") == "snow"
+					and staging_source.instruction_at(2).value(&"camera") == "cam2"
+					and staging_source.instruction_at(3).value(&"resource") == "winter"
+				),
+				"runtime instructions use locale-specific presentation operands",
+			)
 
 
 func _test_compiler_result_ownership() -> void:

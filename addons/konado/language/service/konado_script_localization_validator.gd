@@ -30,6 +30,11 @@ static func compare(
 			status = "missing"
 		elif base.get("signature") != translated.get("signature"):
 			status = "structure_changed"
+		elif (
+			not String(base.get("presentation_signature", "")).is_empty()
+			and base.get("presentation_signature") != translated.get("presentation_signature")
+		):
+			status = "presentation_changed"
 		(
 			rows
 			. append(
@@ -41,14 +46,14 @@ static func compare(
 				}
 			)
 		)
-		if status in ["missing", "extra", "structure_changed"]:
+		if status in ["missing", "extra", "structure_changed", "presentation_changed"]:
 			var line := int(translated.get("line", base.get("line", 1)))
 			var line_source := localized_source if not translated.is_empty() else default_source
 			(
 				diagnostics
 				. append(
 					{
-						"severity": "error",
+						"severity": "warning" if status == "presentation_changed" else "error",
 						"line": line,
 						"column": 1,
 						"end_line": line,
@@ -163,13 +168,11 @@ static func _collect_entries(source: String) -> Array[Dictionary]:
 			continue
 		if inside_screen_text and tokens[0].get("text") == "}":
 			inside_screen_text = false
-			var close_tokens := PackedStringArray()
-			for token: Dictionary in tokens:
-				close_tokens.append(String(token["text"]))
-			entries.append(_entry(line_index + 1, " ".join(close_tokens)))
+			var stable_id := _named_parameter_value(tokens, "id")
+			if not stable_id.is_empty() and not entries.is_empty():
+				entries[-1]["signature"] += "|id=%s" % stable_id
 			continue
 		if inside_screen_text and bool(tokens[0].get("quoted", false)):
-			entries.append(_entry(line_index + 1, "screen_text"))
 			continue
 		var command := String(tokens[0]["text"])
 		if command == "screentext":
@@ -177,20 +180,82 @@ static func _collect_entries(source: String) -> Array[Dictionary]:
 			entries.append(_entry(line_index + 1, "screentext {"))
 		elif _is_dialogue_tokens(tokens):
 			var speaker_signature := _dialogue_speaker_signature(tokens[0])
-			entries.append(_entry(line_index + 1, "dialogue_content|%s" % speaker_signature))
+			var presentation_signature := ""
+			if speaker_signature.begins_with("actor:"):
+				presentation_signature = speaker_signature
+				speaker_signature = "actor"
+			var stable_id := _named_parameter_value(tokens, "id")
+			if not stable_id.is_empty():
+				speaker_signature += "|id=%s" % stable_id
+			(
+				entries
+				. append(
+					_entry(
+						line_index + 1,
+						"dialogue_content|%s" % speaker_signature,
+						presentation_signature,
+					)
+				)
+			)
 		elif command == "choice":
 			var target := ""
 			for token_index: int in tokens.size():
 				if String(tokens[token_index]["text"]) == "->" and token_index + 1 < tokens.size():
 					target = String(tokens[token_index + 1]["text"])
 					break
+			var stable_id := _named_parameter_value(tokens, "id")
+			if not stable_id.is_empty():
+				target += "|id=%s" % stable_id
 			entries.append(_entry(line_index + 1, "choice|%s" % target))
+		elif _is_presentation_command(tokens):
+			(
+				entries
+				. append(
+					_entry(
+						line_index + 1,
+						_presentation_structure_signature(tokens),
+						_token_signature(tokens),
+					)
+				)
+			)
 		else:
-			var structural_tokens := PackedStringArray()
-			for token: Dictionary in tokens:
-				structural_tokens.append(String(token["text"]))
-			entries.append(_entry(line_index + 1, " ".join(structural_tokens)))
+			entries.append(_entry(line_index + 1, _token_signature(tokens)))
 	return entries
+
+
+static func _is_presentation_command(tokens: Array[Dictionary]) -> bool:
+	var command := String(tokens[0].get("text", ""))
+	return (
+		command in ["actor", "background", "play", "cam", "asyncam", "showtextbox", "hidetextbox"]
+	)
+
+
+static func _presentation_structure_signature(tokens: Array[Dictionary]) -> String:
+	var parts := PackedStringArray([String(tokens[0].get("text", ""))])
+	if parts[0] in ["actor", "play", "cam", "asyncam"] and tokens.size() > 1:
+		parts.append(String(tokens[1].get("text", "")))
+	var stable_id := _named_parameter_value(tokens, "id")
+	if not stable_id.is_empty():
+		parts.append("id=%s" % stable_id)
+	return "|".join(parts)
+
+
+static func _named_parameter_value(tokens: Array[Dictionary], parameter: String) -> String:
+	for index: int in range(tokens.size() - 3):
+		if (
+			String(tokens[index].get("text", "")) == "["
+			and String(tokens[index + 1].get("text", "")) == parameter
+			and String(tokens[index + 2].get("text", "")) == "="
+		):
+			return String(tokens[index + 3].get("text", ""))
+	return ""
+
+
+static func _token_signature(tokens: Array[Dictionary]) -> String:
+	var values := PackedStringArray()
+	for token: Dictionary in tokens:
+		values.append(String(token["text"]))
+	return " ".join(values)
 
 
 static func _is_dialogue_tokens(tokens: Array[Dictionary]) -> bool:
@@ -217,10 +282,11 @@ static func _dialogue_speaker_signature(token: Dictionary) -> String:
 	return "actor:%s" % value
 
 
-static func _entry(line: int, signature: String) -> Dictionary:
+static func _entry(line: int, signature: String, presentation_signature: String = "") -> Dictionary:
 	return {
 		"line": line,
 		"signature": signature,
+		"presentation_signature": presentation_signature,
 	}
 
 
@@ -250,6 +316,15 @@ static func _status_message(status: String, line: int, locale: String) -> String
 			. text(
 				"Localized script structure differs on line %d." % line,
 				"本地化剧本第 %d 行的结构与默认剧本不同。" % line,
+				locale,
+			)
+		),
+		"presentation_changed":
+		(
+			KonadoScriptEditorLocale
+			. text(
+				"Localized script uses different presentation parameters on line %d." % line,
+				"本地化剧本第 %d 行使用了不同的演出参数。" % line,
 				locale,
 			)
 		),
