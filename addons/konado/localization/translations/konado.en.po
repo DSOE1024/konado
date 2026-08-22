@@ -51,8 +51,29 @@ msgstr "Quit Game"
 msgid "KONADO_DEMO_START"
 msgstr "Start Game"
 
-msgid "KONADO_ERROR_SKIP"
-msgstr "Skip this error..."
+msgid "KONADO_RUNTIME_ERROR_TITLE"
+msgstr "KonadoScript Runtime Error"
+
+msgid "KONADO_RUNTIME_ERROR_UNKNOWN"
+msgstr "Unknown runtime error"
+
+msgid "KONADO_ERROR_RETRY"
+msgstr "Retry"
+
+msgid "KONADO_ERROR_SKIP_INSTRUCTION"
+msgstr "Skip Instruction"
+
+msgid "KONADO_ERROR_CONTINUE_TRUE"
+msgstr "Continue on True Branch"
+
+msgid "KONADO_ERROR_CONTINUE_FALSE"
+msgstr "Continue on False Branch"
+
+msgid "KONADO_ERROR_STOP"
+msgstr "Stop Dialogue"
+
+msgid "KONADO_ERROR_CLOSE"
+msgstr "Close"
 
 msgid "KONADO_LOAD_CONFIRM"
 msgstr "Loading will discard unsaved progress.\n\nContinue?"

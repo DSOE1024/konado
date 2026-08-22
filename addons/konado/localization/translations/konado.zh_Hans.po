@@ -51,8 +51,29 @@ msgstr "退出游戏"
 msgid "KONADO_DEMO_START"
 msgstr "开始游戏"
 
-msgid "KONADO_ERROR_SKIP"
-msgstr "跳过此错误……"
+msgid "KONADO_RUNTIME_ERROR_TITLE"
+msgstr "KonadoScript 运行错误"
+
+msgid "KONADO_RUNTIME_ERROR_UNKNOWN"
+msgstr "未知运行时错误"
+
+msgid "KONADO_ERROR_RETRY"
+msgstr "重试"
+
+msgid "KONADO_ERROR_SKIP_INSTRUCTION"
+msgstr "跳过当前指令"
+
+msgid "KONADO_ERROR_CONTINUE_TRUE"
+msgstr "按 true 分支继续"
+
+msgid "KONADO_ERROR_CONTINUE_FALSE"
+msgstr "按 false 分支继续"
+
+msgid "KONADO_ERROR_STOP"
+msgstr "停止对话"
+
+msgid "KONADO_ERROR_CLOSE"
+msgstr "关闭"
 
 msgid "KONADO_LOAD_CONFIRM"
 msgstr "读取会失去未保存的进度。\n\n你确定要这么做吗？"

@@ -51,8 +51,29 @@ msgstr "ゲーム終了"
 msgid "KONADO_DEMO_START"
 msgstr "ゲーム開始"
 
-msgid "KONADO_ERROR_SKIP"
-msgstr "このエラーをスキップ…"
+msgid "KONADO_RUNTIME_ERROR_TITLE"
+msgstr "KonadoScript 実行時エラー"
+
+msgid "KONADO_RUNTIME_ERROR_UNKNOWN"
+msgstr "不明な実行時エラー"
+
+msgid "KONADO_ERROR_RETRY"
+msgstr "再試行"
+
+msgid "KONADO_ERROR_SKIP_INSTRUCTION"
+msgstr "現在の命令をスキップ"
+
+msgid "KONADO_ERROR_CONTINUE_TRUE"
+msgstr "true 分岐で続行"
+
+msgid "KONADO_ERROR_CONTINUE_FALSE"
+msgstr "false 分岐で続行"
+
+msgid "KONADO_ERROR_STOP"
+msgstr "会話を停止"
+
+msgid "KONADO_ERROR_CLOSE"
+msgstr "閉じる"
 
 msgid "KONADO_LOAD_CONFIRM"
 msgstr "ロードすると未保存の進行状況は失われます。\n\n続行しますか？"
