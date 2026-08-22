@@ -3,7 +3,7 @@ class_name KonadoVirtualMachine
 
 ## Atomic Program counter and bounded execution history.
 
-enum Result { COMPLETED, WAITING, CANCELLED, FAILED, BARRIER }
+enum Result { COMPLETED, WAITING, CANCELLED, FAILED, BARRIER, SKIPPED }
 
 const DEFAULT_HISTORY_LIMIT := 512
 const DEFAULT_CHECKPOINT_LIMIT := 32
@@ -32,19 +32,20 @@ var _current_state: Dictionary = {}
 var _history_bytes_total := 0
 var _checkpoint_bytes_total := 0
 var _commit_serial := 0
+var _last_restore_preserved := true
 
 
 func install(new_program: KonadoProgram, start_pc := KonadoProgram.INVALID_PC) -> bool:
-	cancel()
-	program = null
-	pc = KonadoProgram.INVALID_PC
-	_current_state.clear()
-	clear_history()
 	if new_program == null or not new_program.is_valid():
 		return false
 	var target_pc := new_program.entry_pc if start_pc == KonadoProgram.INVALID_PC else start_pc
 	if target_pc < 0 or target_pc >= new_program.instruction_count():
 		return false
+	cancel()
+	program = null
+	pc = KonadoProgram.INVALID_PC
+	_current_state.clear()
+	clear_history()
 	program = new_program
 	pc = target_pc
 	return true
@@ -175,6 +176,10 @@ func fail(token: Dictionary) -> bool:
 	return true
 
 
+func _commit_skipped(token: Dictionary, next_pc: int) -> bool:
+	return _commit(token, program, next_pc, {}, Result.SKIPPED, true)
+
+
 func cancel() -> void:
 	generation += 1
 	_active_token.clear()
@@ -193,8 +198,9 @@ func can_rollback(steps := 1, allow_cancelling_active := false) -> bool:
 	return true
 
 
-func rollback(steps: int, restore: Callable) -> bool:
-	if not can_rollback(steps) or not restore.is_valid():
+func rollback(steps: int, restore: Callable, allow_cancelling_active := false) -> bool:
+	_last_restore_preserved = true
+	if not can_rollback(steps, allow_cancelling_active) or not restore.is_valid():
 		return false
 	var restored_state := _current_state.duplicate(true)
 	for offset in range(steps):
@@ -203,13 +209,19 @@ func rollback(steps: int, restore: Callable) -> bool:
 		)
 	var target := _record_from_end(steps - 1)
 	var previous_program := program
+	var previous_state := _current_state.duplicate(true)
 	program = target.get("_program_before") as KonadoProgram
 	if program == null:
 		program = previous_program
 		return false
 	if not bool(restore.call(restored_state)):
 		program = previous_program
+		# A restore implementation may have applied part of the candidate state before
+		# reporting failure. Reapply the last committed boundary so an active failure
+		# transaction remains safely retryable.
+		_last_restore_preserved = bool(restore.call(previous_state))
 		return false
+	_active_token.clear()
 	pc = int(target["pc"])
 	for _index in range(steps):
 		_pop_newest()
@@ -252,23 +264,46 @@ func _store_checkpoint(checkpoint_id: String, checkpoint_pc: int, state: Diction
 	return checkpoint_id
 
 
-func restore_checkpoint(checkpoint_id: String, restore: Callable) -> bool:
-	if not _checkpoints.has(checkpoint_id) or not restore.is_valid():
+func _can_restore_checkpoint(checkpoint_id: String, allow_cancelling_active := false) -> bool:
+	if (
+		not _checkpoints.has(checkpoint_id)
+		or (not allow_cancelling_active and not _active_token.is_empty())
+	):
 		return false
 	var checkpoint: Dictionary = _checkpoints[checkpoint_id]
 	var checkpoint_program := checkpoint.get("program") as KonadoProgram
-	if (
+	return not (
 		checkpoint_program == null
 		or not checkpoint_program.is_valid()
 		or checkpoint["fingerprint"] != checkpoint_program.fingerprint()
+		or int(checkpoint.get("pc", KonadoProgram.INVALID_PC)) < 0
+		or (
+			int(checkpoint.get("pc", KonadoProgram.INVALID_PC))
+			>= checkpoint_program.instruction_count()
+		)
+		or not checkpoint.get("state", {}) is Dictionary
+	)
+
+
+func restore_checkpoint(
+	checkpoint_id: String, restore: Callable, allow_cancelling_active := false
+) -> bool:
+	_last_restore_preserved = true
+	if (
+		not _can_restore_checkpoint(checkpoint_id, allow_cancelling_active)
+		or not restore.is_valid()
 	):
 		return false
-	cancel()
+	var checkpoint: Dictionary = _checkpoints[checkpoint_id]
+	var checkpoint_program := checkpoint.get("program") as KonadoProgram
 	var previous_program := program
+	var previous_state := _current_state.duplicate(true)
 	program = checkpoint_program
 	if not bool(restore.call(checkpoint["state"])):
 		program = previous_program
+		_last_restore_preserved = bool(restore.call(previous_state))
 		return false
+	cancel()
 	pc = int(checkpoint["pc"])
 	_current_state = checkpoint["state"].duplicate(true)
 	# Records after the restored boundary belong to an abandoned timeline and
@@ -314,6 +349,10 @@ func clear_history() -> void:
 	_checkpoints.clear()
 	_checkpoint_order.clear()
 	_checkpoint_bytes_total = 0
+
+
+func _last_failed_restore_preserved_state() -> bool:
+	return _last_restore_preserved
 
 
 func _clear_history_records(reset_serial: bool) -> void:

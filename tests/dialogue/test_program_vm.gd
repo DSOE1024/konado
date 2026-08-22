@@ -9,6 +9,7 @@ func _init() -> void:
 	_test_speaker_syntax()
 	_test_compiler_result_ownership()
 	_test_atomic_history()
+	_test_failed_restore_is_atomic()
 	_test_recursive_state_delta()
 	_test_partial_state_commit()
 	_test_instruction_patch_scope()
@@ -293,6 +294,85 @@ func _test_atomic_history() -> void:
 	_expect(vm.history()[0].pc == 0, "ring history remains chronologically ordered")
 
 
+func _test_failed_restore_is_atomic() -> void:
+	var compiler := KonadoScriptCompiler.new()
+	compiler.set_console_output_enabled(false)
+	var shot := compiler.compile_string("set $score = 1\nend", "res://tests/atomic-restore.ks")
+	_expect(shot != null, "atomic restore fixture compiles")
+	if shot == null:
+		return
+	var before := {"variables": {"score": 0}}
+	var after := {"variables": {"score": 1}}
+
+	var rollback_vm := KonadoVirtualMachine.new()
+	_expect(rollback_vm.install(shot.program), "rollback restore fixture installs")
+	var rollback_token := rollback_vm.begin(before)
+	_expect(rollback_vm.commit(rollback_token, 1, after), "rollback fixture commits state")
+	var suspended_token := rollback_vm.begin(after)
+	var rollback_restore_calls := 0
+	var failing_rollback_restore := func(_state: Dictionary) -> bool:
+		rollback_restore_calls += 1
+		return rollback_restore_calls > 1
+	_expect(
+		not rollback_vm.rollback(1, failing_rollback_restore, true),
+		"a failed rollback restore reports failure",
+	)
+	_expect(rollback_vm.program == shot.program, "failed rollback preserves the Program")
+	_expect(rollback_vm.pc == 1, "failed rollback preserves the program counter")
+	_expect(rollback_vm.snapshot_state() == after, "failed rollback reapplies committed state")
+	_expect(rollback_vm.history_size() == 1, "failed rollback preserves execution history")
+	_expect(
+		rollback_vm.fail(suspended_token),
+		"failed rollback preserves the suspended transaction for another recovery action",
+	)
+	var unrecoverable_vm := KonadoVirtualMachine.new()
+	_expect(unrecoverable_vm.install(shot.program), "unrecoverable restore fixture installs")
+	var unrecoverable_token := unrecoverable_vm.begin(before)
+	_expect(
+		unrecoverable_vm.commit(unrecoverable_token, 1, after),
+		"unrecoverable restore fixture commits state",
+	)
+	unrecoverable_vm.begin(after)
+	_expect(
+		not unrecoverable_vm.rollback(1, func(_state: Dictionary) -> bool: return false, true),
+		"rollback rejects a restore that cannot reapply either boundary",
+	)
+	_expect(
+		not unrecoverable_vm._last_failed_restore_preserved_state(),
+		"the VM exposes when a failed restore cannot safely preserve the suspended session",
+	)
+
+	var checkpoint_vm := KonadoVirtualMachine.new()
+	_expect(checkpoint_vm.install(shot.program), "checkpoint restore fixture installs")
+	var checkpoint := checkpoint_vm.create_checkpoint("before", before)
+	_expect(not checkpoint.is_empty(), "checkpoint restore fixture creates a checkpoint")
+	var checkpoint_token := checkpoint_vm.begin(before)
+	_expect(checkpoint_vm.commit(checkpoint_token, 1, after), "checkpoint fixture commits state")
+	var checkpoint_suspended_token := checkpoint_vm.begin(after)
+	var checkpoint_restore_calls := 0
+	var failing_checkpoint_restore := func(_state: Dictionary) -> bool:
+		checkpoint_restore_calls += 1
+		return checkpoint_restore_calls > 1
+	_expect(
+		not checkpoint_vm.restore_checkpoint(checkpoint, failing_checkpoint_restore, true),
+		"a failed checkpoint restore reports failure",
+	)
+	_expect(checkpoint_vm.program == shot.program, "failed checkpoint restore preserves Program")
+	_expect(checkpoint_vm.pc == 1, "failed checkpoint restore preserves the program counter")
+	_expect(
+		checkpoint_vm.snapshot_state() == after,
+		"failed checkpoint restore reapplies committed state",
+	)
+	_expect(
+		checkpoint_vm.history_size() == 1,
+		"failed checkpoint restore preserves execution history",
+	)
+	_expect(
+		checkpoint_vm.fail(checkpoint_suspended_token),
+		"failed checkpoint restore preserves the suspended transaction",
+	)
+
+
 func _test_cross_program_history() -> void:
 	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
@@ -454,8 +534,10 @@ func _test_vm_limits_and_barriers() -> void:
 		"VM rejects an out-of-range entry PC",
 	)
 	_expect(
-		disabled_vm.program == null, "failed installation leaves no partially installed Program"
+		disabled_vm.program == shot.program,
+		"failed installation preserves the previously installed Program",
 	)
+	_expect(disabled_vm.pc == 1, "failed installation preserves the program counter")
 
 
 func _test_save_codec() -> void:
