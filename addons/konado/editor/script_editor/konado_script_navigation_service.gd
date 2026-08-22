@@ -14,6 +14,7 @@ const RESOURCE_KINDS := [
 	"voices",
 	"states",
 	"motions",
+	"framings",
 	"cameras",
 	"scripts",
 ]
@@ -38,7 +39,7 @@ func resolve_targets(reference: Dictionary, source: String) -> Array[Dictionary]
 	if kind not in RESOURCE_KINDS:
 		return []
 	var targets: Array[Dictionary]
-	if kind in ["states", "motions"]:
+	if kind in ["states", "motions", "framings"]:
 		targets = _project_index.get_actor_scoped_targets(
 			String(reference.get("scope_name", "")), kind, name
 		)
@@ -166,6 +167,7 @@ func _kind_label(kind: String, chinese: bool) -> String:
 		"actors": ["actor", "演员"],
 		"states": ["actor state", "演员状态"],
 		"motions": ["actor motion", "演员动作"],
+		"framings": ["actor framing", "演员景别"],
 		"backgrounds": ["background", "背景"],
 		"background_music_tracks": ["background music", "背景音乐"],
 		"sfx": ["sound effect", "音效"],
