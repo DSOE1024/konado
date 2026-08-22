@@ -11,11 +11,12 @@ public sealed partial class DialogueManagerApi : Node
 	private const string DialogueManagerScriptPath = "res://addons/konado/runtime/dialogue/konado_dialogue_manager.gd";
 
 	private Node? _source;
+	private bool _sourceHasContract;
 	private bool _treeSignalsConnected;
 
 	public bool IsReady => _source != null
 		&& IsInstanceValid(_source)
-		&& HasDialogueManagerContract(_source);
+		&& _sourceHasContract;
 	public Node? Source => IsReady ? _source : null;
 
 	public override void _Ready()
@@ -50,6 +51,7 @@ public sealed partial class DialogueManagerApi : Node
 			DisconnectSignals(_source);
 			_source = target;
 		}
+		_sourceHasContract = true;
 
 		ConnectSignals();
 		if (reportFailure)
@@ -133,6 +135,7 @@ public sealed partial class DialogueManagerApi : Node
 			&& node.HasSignal(GDScriptSignalName.CustomSignal)
 			&& node.HasSignal(GDScriptSignalName.RuntimeFailed)
 			&& node.HasSignal(GDScriptSignalName.RuntimeFailureReported)
+			&& node.HasSignal(GDScriptSignalName.RuntimeFailureResolved)
 			&& node.HasMethod(GDScriptMethodName.InitDialogue)
 			&& node.HasMethod(GDScriptMethodName.SetShot)
 			&& node.HasMethod(GDScriptMethodName.StartDialogue)
@@ -146,12 +149,24 @@ public sealed partial class DialogueManagerApi : Node
 			&& node.HasMethod(GDScriptMethodName.GetAllSaveInfo)
 			&& node.HasMethod(GDScriptMethodName.ReloadLocalizedScript)
 			&& node.HasMethod(GDScriptMethodName.EmitWaitSignal)
+			&& HasProperty(node, GDScriptPropertyName.PendingRuntimeFailure)
+			&& node.HasMethod(GDScriptMethodName.ResolveRuntimeFailure)
 			&& node.HasMethod(GDScriptMethodName.CanRollback)
 			&& node.HasMethod(GDScriptMethodName.Rollback)
 			&& node.HasMethod(GDScriptMethodName.GetExecutionHistory)
 			&& node.HasMethod(GDScriptMethodName.ClearExecutionHistory)
 			&& node.HasMethod(GDScriptMethodName.CreateCheckpoint)
 			&& node.HasMethod(GDScriptMethodName.RestoreCheckpoint);
+	}
+
+	private static bool HasProperty(Node node, StringName propertyName)
+	{
+		foreach (var property in node.GetPropertyList())
+		{
+			if (property.ContainsKey("name") && property["name"].AsStringName() == propertyName)
+				return true;
+		}
+		return false;
 	}
 
 	private Node? GetReadySource()
@@ -168,6 +183,7 @@ public sealed partial class DialogueManagerApi : Node
 	{
 		DisconnectSignals(_source);
 		_source = null;
+		_sourceHasContract = false;
 	}
 
 	private static bool HasCallable(Callable callable)
@@ -264,6 +280,18 @@ public sealed partial class DialogueManagerApi : Node
 				GDScriptSignalName.RuntimeFailureReported,
 				_runtimeFailureReportedSignalCallable);
 		}
+
+		if (_runtimeFailureResolvedSignal != null && source.HasSignal(GDScriptSignalName.RuntimeFailureResolved))
+		{
+			if (!HasCallable(_runtimeFailureResolvedSignalCallable))
+				_runtimeFailureResolvedSignalCallable = Callable.From(
+					(Godot.Collections.Dictionary failure, StringName resolution) =>
+						_runtimeFailureResolvedSignal?.Invoke(failure, resolution));
+			ConnectSignal(
+				source,
+				GDScriptSignalName.RuntimeFailureResolved,
+				_runtimeFailureResolvedSignalCallable);
+		}
 	}
 
 	private void DisconnectSignals(Node? source)
@@ -278,6 +306,10 @@ public sealed partial class DialogueManagerApi : Node
 			source,
 			GDScriptSignalName.RuntimeFailureReported,
 			_runtimeFailureReportedSignalCallable);
+		DisconnectSignal(
+			source,
+			GDScriptSignalName.RuntimeFailureResolved,
+			_runtimeFailureResolvedSignalCallable);
 	}
 
 	public override void _ExitTree()
@@ -295,6 +327,7 @@ public sealed partial class DialogueManagerApi : Node
 		public static readonly StringName CustomSignal = "custom_signal";
 		public static readonly StringName RuntimeFailed = "runtime_failed";
 		public static readonly StringName RuntimeFailureReported = "runtime_failure_reported";
+		public static readonly StringName RuntimeFailureResolved = "runtime_failure_resolved";
 	}
 
 	public delegate void ShotStartSignalHandler();
@@ -449,6 +482,35 @@ public sealed partial class DialogueManagerApi : Node
 		}
 	}
 
+	/// <summary>
+	/// Raised after a paused runtime failure has been settled by a recovery action,
+	/// timeline restore, shot replacement, reinitialization, or playback stop.
+	/// </summary>
+	public delegate void RuntimeFailureResolvedSignalHandler(
+		Godot.Collections.Dictionary failure,
+		StringName resolution);
+	private RuntimeFailureResolvedSignalHandler? _runtimeFailureResolvedSignal;
+	private Callable _runtimeFailureResolvedSignalCallable;
+	public event RuntimeFailureResolvedSignalHandler RuntimeFailureResolved
+	{
+		add
+		{
+			_runtimeFailureResolvedSignal += value;
+			if (GetReadySource() != null)
+				ConnectSignals();
+		}
+		remove
+		{
+			_runtimeFailureResolvedSignal -= value;
+			if (_runtimeFailureResolvedSignal is not null) return;
+			DisconnectSignal(
+				_source,
+				GDScriptSignalName.RuntimeFailureResolved,
+				_runtimeFailureResolvedSignalCallable);
+			_runtimeFailureResolvedSignalCallable = default;
+		}
+	}
+
 	public static class GDScriptMethodName
 	{
 		public static readonly StringName InitDialogue = "init_dialogue";
@@ -466,6 +528,7 @@ public sealed partial class DialogueManagerApi : Node
 		public static readonly StringName GetAllSaveInfo = "get_all_save_info";
 		public static readonly StringName ReloadLocalizedScript = "reload_localized_script";
 		public static readonly StringName EmitWaitSignal = "emit_wait_signal";
+		public static readonly StringName ResolveRuntimeFailure = "resolve_runtime_failure";
 		public static readonly StringName CanRollback = "can_rollback";
 		public static readonly StringName Rollback = "rollback";
 		public static readonly StringName GetExecutionHistory = "get_execution_history";
@@ -483,6 +546,7 @@ public sealed partial class DialogueManagerApi : Node
 		public static readonly StringName SoundEffectList = "sound_effect_list";
 		public static readonly StringName VariableStore = "variable_store";
 		public static readonly StringName StageController = "stage_controller";
+		public static readonly StringName PendingRuntimeFailure = "pending_runtime_failure";
 	}
 
 	/// <summary>
@@ -687,6 +751,50 @@ public sealed partial class DialogueManagerApi : Node
 	public void EmitWaitSignal(string signalName)
 	{
 		GetReadySource()?.Call(GDScriptMethodName.EmitWaitSignal, signalName);
+	}
+
+	public Godot.Collections.Dictionary GetPendingRuntimeFailure()
+	{
+		var source = GetReadySource();
+		return source == null
+			? new Godot.Collections.Dictionary()
+			: source.Get(GDScriptPropertyName.PendingRuntimeFailure).AsGodotDictionary();
+	}
+
+	public string[] GetRuntimeRecoveryActions()
+	{
+		var failure = GetPendingRuntimeFailure();
+		return failure.ContainsKey("recovery_actions")
+			? failure["recovery_actions"].AsStringArray()
+			: [];
+	}
+
+	public bool ResolveRuntimeFailure(string action)
+	{
+		System.ArgumentException.ThrowIfNullOrWhiteSpace(action);
+		var source = GetReadySource();
+		return source != null
+			&& source.Call(GDScriptMethodName.ResolveRuntimeFailure, new StringName(action)).AsBool();
+	}
+
+	public bool RetryFailedInstruction()
+	{
+		return ResolveRuntimeFailure("retry");
+	}
+
+	public bool SkipFailedInstruction()
+	{
+		return ResolveRuntimeFailure("skip");
+	}
+
+	public bool ContinueFailedCondition(bool useTrueBranch)
+	{
+		return ResolveRuntimeFailure(useTrueBranch ? "continue_true" : "continue_false");
+	}
+
+	public bool StopAfterRuntimeFailure()
+	{
+		return ResolveRuntimeFailure("stop");
 	}
 
 	public bool CanRollback(int steps = 1)

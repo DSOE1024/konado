@@ -59,6 +59,33 @@ public sealed partial class KonadoRuntimeTests : Node
 		Check(
 			reportedFailure?["code"].AsString() == "camera.move_rejected",
 			"DialogueManagerApi must forward structured runtime failure reports.");
+		var resolvedAs = string.Empty;
+		api.RuntimeFailureResolved += (_, resolution) => resolvedAs = resolution.ToString();
+		manager.EmitSignal(
+			"runtime_failure_resolved",
+			new Godot.Collections.Dictionary { ["code"] = "camera.move_rejected" },
+			new StringName("retry"));
+		Check(
+			resolvedAs == "retry",
+			"DialogueManagerApi must forward the exact runtime recovery resolution.");
+		Check(
+			api.GetPendingRuntimeFailure()["code"].AsString() == "test.failure",
+			"DialogueManagerApi must expose the pending structured failure.");
+		Check(
+			Array.IndexOf(api.GetRuntimeRecoveryActions(), "skip") >= 0,
+			"DialogueManagerApi must expose the safe recovery action set.");
+		Check(api.RetryFailedInstruction(), "DialogueManagerApi must forward Retry.");
+		Check(
+			manager.Get("recovery_action").AsString() == "retry",
+			"Retry must retain its stable action identifier.");
+		Check(api.SkipFailedInstruction(), "DialogueManagerApi must forward Skip.");
+		Check(
+			api.ContinueFailedCondition(false),
+			"DialogueManagerApi must forward an explicit condition branch.");
+		Check(
+			manager.Get("recovery_action").AsString() == "continue_false",
+			"Condition recovery must preserve the selected branch.");
+		Check(api.StopAfterRuntimeFailure(), "DialogueManagerApi must forward Stop.");
 		var forwardedShot = new KonadoShot();
 		api.SetShot(forwardedShot);
 		Check(

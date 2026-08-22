@@ -7,6 +7,7 @@ signal dialogue_line_end(instruction_id: String)
 signal custom_signal(content: String)
 signal runtime_failed(message: String, instruction_id: String, source_line: int)
 signal runtime_failure_reported(failure: Dictionary)
+signal runtime_failure_resolved(failure: Dictionary, resolution: StringName)
 
 var last_shot: Resource
 var character_list: Resource
@@ -19,6 +20,13 @@ var stage_controller := preload("res://tests/dotnet/fake_stage_controller.gd").n
 var rollback_calls := 0
 var history_cleared := false
 var restored_checkpoint := ""
+var recovery_action := &""
+var pending_runtime_failure := {
+	"code": "test.failure",
+	"recoverable": true,
+	"recovery_actions":
+	PackedStringArray(["retry", "skip", "continue_true", "continue_false", "stop"]),
+}
 
 
 func init_dialogue(_callback: Callable = Callable()) -> void:
@@ -70,6 +78,13 @@ func reload_localized_script(_locale: String = "") -> bool:
 
 
 func emit_wait_signal(_signal_name: String) -> bool:
+	return true
+
+
+func resolve_runtime_failure(action: StringName) -> bool:
+	if action not in pending_runtime_failure.recovery_actions:
+		return false
+	recovery_action = action
 	return true
 
 
