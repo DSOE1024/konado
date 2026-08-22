@@ -99,6 +99,7 @@ func _actor_show(
 	var fallback := _actor_failure(&"stage.actor_show_failed", "actor.show", actor_id, state_id)
 	var request_id := host._begin_stage_operation(token, fallback)
 	var position: Vector2 = instruction.value(&"position", Vector2.ZERO)
+	var framing_id := StringName(instruction.value(&"framing", ""))
 	var result: Dictionary = (
 		host
 		. _services()
@@ -108,6 +109,7 @@ func _actor_show(
 			int(position.x),
 			float(instruction.value(&"duration")),
 			request_id,
+			framing_id,
 		)
 	)
 	if not bool(result.get("ok", false)):
@@ -181,6 +183,53 @@ func _actor_motion(
 			actor_id,
 			motion_name,
 			{"duration": float(instruction.value(&"duration"))},
+			false,
+			request_id,
+		)
+	)
+	return KonadoVirtualMachine.Result.WAITING
+
+
+func _actor_framing(
+	host: KonadoDialogueManager, instruction: KonadoInstruction, token: Dictionary
+) -> int:
+	if host.stage_controller == null:
+		return _missing_controller("actor.framing", "stage_controller")
+	var actor_id := String(instruction.value(&"actor"))
+	var framing_id := StringName(instruction.value(&"framing"))
+	if host.stage_controller.get_actor(actor_id) == null:
+		return _failed(
+			&"stage.actor_not_present",
+			"无法调整演员 '%s' 的景别：演员不在舞台上" % actor_id,
+			_actor_context("actor.framing", actor_id),
+		)
+	var fallback := _actor_failure(
+		&"stage.actor_framing_failed", "actor.framing", actor_id, "", "", String(framing_id)
+	)
+	if not bool(instruction.value(&"wait", true)):
+		var accepted := (
+			host
+			. stage_controller
+			. set_actor_framing(
+				actor_id,
+				framing_id,
+				float(instruction.value(&"duration")),
+				String(instruction.value(&"transition")),
+				false,
+			)
+		)
+		if not accepted:
+			return _failed_from_result(host.stage_controller.get_last_failure(), fallback)
+		return KonadoVirtualMachine.Result.COMPLETED
+	var request_id := host._begin_stage_operation(token, fallback)
+	(
+		host
+		. stage_controller
+		. set_actor_framing(
+			actor_id,
+			framing_id,
+			float(instruction.value(&"duration")),
+			String(instruction.value(&"transition")),
 			false,
 			request_id,
 		)
@@ -669,7 +718,11 @@ func _achievement_result(result: Dictionary, operation: String, resource_id: Str
 
 
 func _actor_context(
-	operation: String, actor_id: String, state_id := "", motion_name := ""
+	operation: String,
+	actor_id: String,
+	state_id := "",
+	motion_name := "",
+	framing_id := "",
 ) -> Dictionary:
 	var context := {
 		"subsystem": "stage",
@@ -681,16 +734,23 @@ func _actor_context(
 		context["cause"] = "目标状态=%s" % state_id
 	elif not motion_name.is_empty():
 		context["cause"] = "目标动作=%s" % motion_name
+	elif not framing_id.is_empty():
+		context["cause"] = "目标景别=%s" % framing_id
 	return context
 
 
 func _actor_failure(
-	code: StringName, operation: String, actor_id: String, state_id := "", motion_name := ""
+	code: StringName,
+	operation: String,
+	actor_id: String,
+	state_id := "",
+	motion_name := "",
+	framing_id := "",
 ) -> KonadoExecutionFailure:
 	return _make_failure(
 		code,
 		"演员 '%s' 的操作 '%s' 执行失败" % [actor_id, operation],
-		_actor_context(operation, actor_id, state_id, motion_name),
+		_actor_context(operation, actor_id, state_id, motion_name, framing_id),
 	)
 
 
