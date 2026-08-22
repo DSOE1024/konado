@@ -49,8 +49,8 @@ enabled=PackedStringArray("res://addons/konado/plugin.cfg", "res://addons/konado
 
 [internationalization]
 
-locale/locale_filter_mode=1
 locale/translations=PackedStringArray("res://addons/konado/localization/translations/konado.zh_Hans.po", "res://addons/konado/localization/translations/konado.zh_Hant.po", "res://addons/konado/localization/translations/konado.en.po", "res://addons/konado/localization/translations/konado.ja.po", "res://addons/konado/localization/translations/konado.ko.po")
+locale/locale_filter_mode=1
 
 [rendering]
 
