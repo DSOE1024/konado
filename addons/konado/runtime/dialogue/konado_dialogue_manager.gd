@@ -10,8 +10,9 @@ signal dialogue_line_end(instruction_id: String)
 signal custom_signal(content: String)
 signal runtime_failed(message: String, instruction_id: String, source_line: int)
 signal runtime_failure_reported(failure: Dictionary)
+signal runtime_failure_resolved(failure: Dictionary, resolution: StringName)
 
-enum DialogState { OFF, EXECUTING, WAITING }
+enum DialogState { OFF, EXECUTING, WAITING, FAILED }
 
 const DIALOGUE_SERVICES := preload(
 	"res://addons/konado/runtime/dialogue/konado_dialogue_services.gd"
@@ -22,6 +23,10 @@ const INSTRUCTION_AWAITER := preload(
 const RUNTIME_FAILURE_REPORTER := preload(
 	"res://addons/konado/runtime/dialogue/konado_runtime_failure_reporter.gd"
 )
+const RUNTIME_FAILURE_CONTROLLER := preload(
+	"res://addons/konado/runtime/dialogue/konado_runtime_failure_controller.gd"
+)
+const RUNTIME_TIMELINE := preload("res://addons/konado/runtime/dialogue/konado_runtime_timeline.gd")
 const SCRIPT_RUNTIME_DEBUGGER := preload(
 	"res://addons/konado/language/integration/konado_script_runtime_debugger.gd"
 )
@@ -79,9 +84,10 @@ const MAX_IMMEDIATE_INSTRUCTIONS_PER_PUMP := 4096
 
 @export_category("Log Tool")
 @export var enable_overlay_log := true
+@export var report_runtime_failures_to_console := true
 @export var error_tooltip_panel: ColorRect
 @export var error_tooltip_label: Label
-@export var error_skip_button: Button
+@export var error_action_container: Container
 
 @export_category("System")
 @export var save_system: SAVE_SYSTEM_SCRIPT
@@ -92,12 +98,15 @@ const MAX_IMMEDIATE_INSTRUCTIONS_PER_PUMP := 4096
 
 var dialogue_state := DialogState.OFF
 var current_shot: KonadoShot
+var pending_runtime_failure: Dictionary:
+	get:
+		return _failure_controller()._pending_report()
+
 var _achievement_manager: Node
 var _temp_variables: Dictionary = {}
 var _waiting_signal_name := ""
 var _dialog_data_id := 0
 var _story_localization: Node
-var _logger: KonadoLogger
 var _dialogue_services: RefCounted
 var _vm := KonadoVirtualMachine.new()
 var _executor: KonadoInstructionExecutor
@@ -110,16 +119,19 @@ var _pumping := false
 var _pump_scheduled := false
 var _dialogue_typing := false
 var _rng := RandomNumberGenerator.new()
-var _shot_program_cache: Dictionary = {}
 var _translation_reload_queued := false
 var _loaded_locale := ""
 var _save_feedback_generation := 0
 var _transition_failure: Dictionary = {}
+var _runtime_failure_controller: KonadoRuntimeFailureController
+var _runtime_timeline: KonadoRuntimeTimeline
 
 
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_TRANSLATION_CHANGED or not is_inside_tree():
 		return
+	if _runtime_failure_controller != null:
+		_runtime_failure_controller._refresh_overlay()
 	_queue_translation_reload()
 
 
@@ -164,7 +176,7 @@ func _ready() -> void:
 		save_system.set_dialogue_manager(self)
 	if save_panel != null:
 		save_panel.set_save_system(save_system)
-	_setup_logger()
+	_failure_controller()._setup_logger()
 
 	if initialize_on_ready:
 		_initialize_on_ready.call_deferred()
@@ -172,10 +184,8 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_cancel_execution()
-	if _logger != null:
-		if _logger.error_caught.is_connected(_show_error):
-			_logger.error_caught.disconnect(_show_error)
-		OS.remove_logger(_logger)
+	if _runtime_failure_controller != null:
+		_runtime_failure_controller._dispose()
 
 
 func _initialize_on_ready() -> void:
@@ -191,25 +201,44 @@ func _initialize_on_ready() -> void:
 
 
 func init_dialogue(callback: Callable = Callable()) -> void:
-	_cancel_execution()
 	var shot := _load_localized_shot(start_dialogue_shot)
+	if not _can_install_shot(shot):
+		return
+	var failure_report := _failure_controller()._detach_pending_report()
+	_cancel_execution()
 	if not _install_shot(shot):
+		_failure_controller()._publish_external_resolution(
+			failure_report, KonadoRuntimeFailureSession.RESOLUTION_CANCELLED
+		)
 		return
 	_reset_transient_interfaces()
 	if stage_controller != null:
 		stage_controller.character_list = character_list
 		stage_controller.remove_all_actors(true)
+	_failure_controller()._publish_external_resolution(
+		failure_report, KonadoRuntimeFailureSession.RESOLUTION_REINITIALIZE
+	)
 	if callback.is_valid():
 		callback.call()
 
 
 func set_shot(new_shot: KonadoShot) -> void:
+	var localized := _load_localized_shot(new_shot)
+	if not _can_install_shot(localized):
+		return
+	var failure_report := _failure_controller()._detach_pending_report()
 	_cancel_execution()
 	if screen_text != null:
 		screen_text.reset_screen_text()
-	var localized := _load_localized_shot(new_shot)
-	if _install_shot(localized):
-		start_dialogue_shot = localized
+	if not _install_shot(localized):
+		_failure_controller()._publish_external_resolution(
+			failure_report, KonadoRuntimeFailureSession.RESOLUTION_CANCELLED
+		)
+		return
+	start_dialogue_shot = localized
+	_failure_controller()._publish_external_resolution(
+		failure_report, KonadoRuntimeFailureSession.RESOLUTION_REPLACE_SHOT
+	)
 
 
 func start_dialogue() -> void:
@@ -228,8 +257,8 @@ func start_dialogue() -> void:
 
 func stop_dialogue() -> void:
 	var emit_end := _shot_active
+	var failure_report := _failure_controller()._detach_pending_report()
 	_cancel_execution()
-	dialogue_state = DialogState.OFF
 	_reset_transient_interfaces(false)
 	if stage_controller != null:
 		stage_controller.remove_all_actors()
@@ -240,18 +269,35 @@ func stop_dialogue() -> void:
 		dialogue_box.dismiss_dialogue_box()
 	if emit_end:
 		shot_end.emit()
+	_failure_controller()._publish_external_resolution(
+		failure_report, KonadoRuntimeFailureSession.ACTION_STOP
+	)
 
 
 func _install_shot(shot: KonadoShot) -> bool:
-	if shot == null or not shot.ensure_script_ready() or shot.program == null:
-		push_error("Konado: 镜头没有可执行 Program")
+	if not _can_install_shot(shot):
 		return false
-	current_shot = shot.duplicate() as KonadoShot
+	var installed_shot := shot.duplicate() as KonadoShot
+	if not _vm.install(installed_shot.program, installed_shot.entry_pc()):
+		push_error("Konado: 无法安装镜头 Program")
+		return false
+	current_shot = installed_shot
 	_remember_shot(current_shot)
 	_temp_variables.clear()
 	_waiting_signal_name = ""
 	dialogue_state = DialogState.OFF
-	return _vm.install(current_shot.program, current_shot.entry_pc())
+	return true
+
+
+func _can_install_shot(shot: KonadoShot) -> bool:
+	if shot == null or not shot.ensure_script_ready() or shot.program == null:
+		push_error("Konado: 镜头没有可执行 Program")
+		return false
+	var entry_pc := shot.entry_pc()
+	if entry_pc < 0 or entry_pc >= shot.program.instruction_count():
+		push_error("Konado: 镜头没有有效的入口指令")
+		return false
+	return true
 
 
 func _pump() -> void:
@@ -348,7 +394,9 @@ func _resume_from_debugger() -> void:
 func _complete_instruction(
 	token: Dictionary, next_pc := INVALID_NEXT, schedule_next := true
 ) -> void:
-	if not _token_is_active(token):
+	# A failed transaction intentionally retains its VM token for Retry. A cancelled
+	# async callback must never use that token to commit behind the recovery UI.
+	if dialogue_state == DialogState.FAILED or not _token_is_active(token):
 		return
 	var instruction := _current_instruction()
 	if instruction == null:
@@ -462,27 +510,7 @@ func _finish_shot() -> void:
 func _fail_current(
 	failure_value: Variant, expected_token: Dictionary = {}, instruction_context: Dictionary = {}
 ) -> void:
-	if not expected_token.is_empty() and not _token_is_active(expected_token):
-		return
-	if instruction_context.is_empty():
-		instruction_context = RUNTIME_FAILURE_REPORTER.capture_context(self, _current_instruction())
-	var failure := (
-		(
-			failure_value
-			if failure_value is KonadoExecutionFailure
-			else KonadoExecutionFailure.new(&"runtime.failed", String(failure_value))
-		)
-		as KonadoExecutionFailure
-	)
-	# Settle and cancel the failed generation before notifying user code. Signal
-	# listeners may install a recovery shot, which must outlive this callback.
-	if not expected_token.is_empty():
-		_vm.fail(expected_token)
-	elif not _active_token.is_empty():
-		_vm.fail(_active_token)
-	_cancel_execution()
-	dialogue_state = DialogState.OFF
-	RUNTIME_FAILURE_REPORTER.publish(self, failure, instruction_context)
+	_failure_controller()._handle_failure(failure_value, expected_token, instruction_context)
 
 
 func _instruction_failure_context(instruction: KonadoInstruction) -> Dictionary:
@@ -517,6 +545,7 @@ func _begin_stage_operation(token: Dictionary, fallback: KonadoExecutionFailure)
 func _cancel_execution() -> void:
 	_playback_generation += 1
 	_shot_active = false
+	dialogue_state = DialogState.OFF
 	_vm.cancel()
 	_active_token.clear()
 	_dialogue_typing = false
@@ -715,129 +744,43 @@ func _interpolate_variables(text: String) -> String:
 
 
 func can_rollback(steps := 1) -> bool:
-	return _vm.can_rollback(steps, true)
+	return _timeline().can_rollback(steps)
 
 
 func rollback(steps := 1) -> bool:
-	# A waiting instruction owns an uncommitted VM token. Rollback operates on
-	# committed boundaries, so cancel that transaction before inspecting history.
-	_cancel_active_instruction()
-	var ok := _vm.rollback(steps, _restore_runtime_state)
-	if ok:
-		_shot_active = true
-		dialogue_state = DialogState.EXECUTING
-		_schedule_pump()
-	else:
-		_cancel_pending_callbacks()
-	return ok
+	return _timeline().rollback(steps)
 
 
 func create_checkpoint(label := "") -> String:
-	return _vm.create_checkpoint(label, KonadoRuntimeState.capture(self))
+	return _timeline().create_checkpoint(label)
 
 
 func restore_checkpoint(checkpoint_id: String) -> bool:
-	_cancel_active_instruction()
-	var ok := _vm.restore_checkpoint(checkpoint_id, _restore_runtime_state)
-	if ok:
-		_shot_active = true
-		dialogue_state = DialogState.EXECUTING
-		_schedule_pump()
-	else:
-		_cancel_pending_callbacks()
-	return ok
+	return _timeline().restore_checkpoint(checkpoint_id)
 
 
 func get_execution_history(limit := 0) -> Array[Dictionary]:
-	return _vm.history(limit)
+	return _timeline().execution_history(limit)
 
 
 func clear_execution_history() -> void:
-	_vm.clear_history()
+	_timeline().clear_execution_history()
 
 
 func _capture_execution_snapshot() -> Dictionary:
-	if (
-		current_shot == null
-		or current_shot.source_path.is_empty()
-		or current_shot.source_path == "null"
-		or _vm.program == null
-		or _vm.pc == KonadoProgram.INVALID_PC
-	):
-		return {}
-	var state := _vm.snapshot_state()
-	if state.is_empty():
-		state = KonadoRuntimeState.capture(self)
-	return {
-		"execution":
-		{
-			"shot_path": current_shot.source_path,
-			"program_fingerprint": _vm.program.fingerprint(),
-			"instruction_id": _vm.program.key_for_pc(_vm.pc),
-		},
-		"runtime_state": state,
-	}
+	return _timeline().capture_execution_snapshot()
 
 
 func _restore_execution_snapshot(snapshot: Dictionary) -> bool:
-	var execution: Dictionary = snapshot.get("execution", {})
-	var runtime_state: Dictionary = snapshot.get("runtime_state", {})
-	var resolved := _resolve_snapshot_target(execution)
-	if resolved.is_empty():
-		return false
-	var shot: KonadoShot = resolved.shot
-	var pc := int(resolved.pc)
-	if not KonadoRuntimeState.validate(runtime_state, self):
-		return false
-	_cancel_execution()
-	current_shot = shot.duplicate() as KonadoShot
-	if not _vm.restore_boundary(current_shot.program, pc, runtime_state):
-		_enter_safe_off_state()
-		return false
-	if not KonadoRuntimeState.restore(runtime_state, self):
-		_enter_safe_off_state()
-		return false
-	_shot_active = true
-	dialogue_state = DialogState.EXECUTING
-	_schedule_pump()
-	return true
-
-
-func _restore_runtime_state(state: Dictionary) -> bool:
-	var execution: Dictionary = state.get("execution", {})
-	var shot_path := String(execution.get("shot_path", ""))
-	var expected_fingerprint := String(execution.get("program_fingerprint", ""))
-	if expected_fingerprint.is_empty():
-		return false
-	var shot := _shot_program_cache.get(expected_fingerprint) as KonadoShot
-	if shot == null and not shot_path.is_empty():
-		shot = _load_localized_shot(load(shot_path) as KonadoShot)
-	if shot == null and not shot_path.is_empty() and FileAccess.file_exists(shot_path):
-		shot = KonadoScriptCompiler.new().compile_file(shot_path)
-	if (
-		shot == null
-		or not shot.ensure_script_ready()
-		or shot.program == null
-		or shot.program_fingerprint() != expected_fingerprint
-		or _vm.program == null
-		or _vm.program.fingerprint() != expected_fingerprint
-	):
-		return false
-	var previous_shot := current_shot
-	current_shot = shot.duplicate() as KonadoShot
-	if not KonadoRuntimeState.restore(state, self):
-		current_shot = previous_shot
-		return false
-	return true
+	return _timeline().restore_execution_snapshot(snapshot)
 
 
 func _remember_shot(shot: KonadoShot) -> void:
-	if shot == null or shot.program == null or not shot.program.is_valid():
-		return
-	_shot_program_cache[shot.program_fingerprint()] = shot.duplicate() as KonadoShot
+	_timeline().remember_shot(shot)
 
 
 func _enter_safe_off_state() -> void:
+	var failure_report := _failure_controller()._detach_pending_report()
 	_cancel_execution()
 	if stage_controller != null:
 		stage_controller.remove_all_actors(true)
@@ -852,6 +795,9 @@ func _enter_safe_off_state() -> void:
 	current_shot = null
 	dialogue_state = DialogState.OFF
 	_reset_transient_interfaces()
+	_failure_controller()._publish_external_resolution(
+		failure_report, KonadoRuntimeFailureSession.RESOLUTION_CANCELLED
+	)
 
 
 func _cancel_active_instruction() -> void:
@@ -859,22 +805,8 @@ func _cancel_active_instruction() -> void:
 	_vm.cancel()
 	_active_token.clear()
 	_dialogue_typing = false
+	dialogue_state = DialogState.OFF
 	_cancel_pending_callbacks()
-
-
-func _resolve_snapshot_target(execution: Dictionary) -> Dictionary:
-	var shot_path := String(execution.get("shot_path", ""))
-	if shot_path.is_empty() or not ResourceLoader.exists(shot_path):
-		return {}
-	var shot := _load_localized_shot(load(shot_path) as KonadoShot)
-	if shot == null or not shot.ensure_script_ready() or shot.program == null:
-		return {}
-	if shot.program.fingerprint() != String(execution.get("program_fingerprint", "")):
-		return {}
-	var pc := shot.pc_for_key(String(execution.get("instruction_id", "")))
-	if pc == KonadoProgram.INVALID_PC:
-		return {}
-	return {"shot": shot, "pc": pc}
 
 
 func start_autoplay(value: bool) -> void:
@@ -963,6 +895,18 @@ func _awaiter() -> KonadoInstructionAwaiter:
 	return _instruction_awaiter
 
 
+func _failure_controller() -> KonadoRuntimeFailureController:
+	if _runtime_failure_controller == null:
+		_runtime_failure_controller = RUNTIME_FAILURE_CONTROLLER.new(self)
+	return _runtime_failure_controller
+
+
+func _timeline() -> KonadoRuntimeTimeline:
+	if _runtime_timeline == null:
+		_runtime_timeline = RUNTIME_TIMELINE.new(self)
+	return _runtime_timeline
+
+
 func _on_setting_changed(category: String, key: String, value: Variant) -> void:
 	_services()._apply_setting(category, key, value)
 
@@ -979,18 +923,5 @@ func _reset_transient_interfaces(reset_dialogue_box := true) -> void:
 		audio_controller.stop_voice()
 
 
-func _setup_logger() -> void:
-	if not enable_overlay_log:
-		return
-	_logger = KonadoLogger.new()
-	OS.add_logger(_logger)
-	_logger.error_caught.connect(_show_error, CONNECT_DEFERRED)
-	if error_skip_button != null and error_tooltip_panel != null:
-		error_skip_button.pressed.connect(error_tooltip_panel.hide)
-
-
-func _show_error(message: String) -> void:
-	if error_tooltip_label != null:
-		error_tooltip_label.text = message
-	if error_tooltip_panel != null:
-		error_tooltip_panel.show()
+func resolve_runtime_failure(action: StringName) -> bool:
+	return _failure_controller()._resolve(action)

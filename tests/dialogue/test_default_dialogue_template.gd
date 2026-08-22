@@ -21,6 +21,21 @@ func _run() -> void:
 	_expect(manager.save_panel_button != null, "default template exposes the save panel")
 	_expect(manager.achievement_button != null, "default template exposes achievements")
 	_expect(manager.save_panel != null, "default template contains a save panel")
+	_expect(
+		manager.error_tooltip_panel != null, "default template contains the runtime error overlay"
+	)
+	_expect(
+		manager.error_action_container != null,
+		"default template exposes the runtime recovery action container",
+	)
+	_expect(
+		manager.error_action_container is HFlowContainer,
+		"runtime recovery actions wrap on narrow viewports",
+	)
+	_expect(
+		manager.error_tooltip_label.get_parent() == manager.error_action_container.get_parent(),
+		"runtime diagnostics and actions share one responsive vertical layout",
+	)
 	if manager.save_panel != null:
 		_expect_equal(
 			manager.save_panel.slot_container.get_child_count(),

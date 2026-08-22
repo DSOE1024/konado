@@ -24,7 +24,7 @@ metadata/_snap_enabled = true
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
 gradient = SubResource("Gradient_6xj1n")
 
-[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("choice_controller", "dialogue_box", "screen_text", "stage_controller", "audio_controller", "quick_save_button", "quick_load_button", "save_panel_button", "auto_play_button", "achievement_button", "settings_button", "save_panel", "save_feedback_label", "error_tooltip_panel", "error_tooltip_label", "error_skip_button", "save_system", "settings_adapter", "camera_controller")]
+[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("choice_controller", "dialogue_box", "screen_text", "stage_controller", "audio_controller", "quick_save_button", "quick_load_button", "save_panel_button", "auto_play_button", "achievement_button", "settings_button", "save_panel", "save_feedback_label", "error_tooltip_panel", "error_tooltip_label", "error_action_container", "save_system", "settings_adapter", "camera_controller")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -48,8 +48,8 @@ settings_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/S
 save_panel = NodePath("KonadoUI/SaveLayer/KonadoSavePanel")
 save_feedback_label = NodePath("KonadoUI/DialogueLayer/FunctionBar/SaveFeedback")
 error_tooltip_panel = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip")
-error_tooltip_label = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer/ErrorText")
-error_skip_button = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip/Skip")
+error_tooltip_label = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer/Content/ErrorText")
+error_action_container = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer/Content/ErrorActions")
 save_system = NodePath("KonadoSaveSystem")
 settings_adapter = NodePath("KonadoSettingsAdapter")
 camera_controller = NodePath("KonadoUI/StageLayer/StageController/KonadoCameraController")
@@ -270,26 +270,22 @@ theme_override_constants/margin_top = 66
 theme_override_constants/margin_right = 66
 theme_override_constants/margin_bottom = 66
 
-[node name="ErrorText" type="Label" parent="KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer" unique_id=735988474]
+[node name="Content" type="VBoxContainer" parent="KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="ErrorText" type="Label" parent="KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer/Content" unique_id=735988474]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
-size_flags_vertical = 1
+size_flags_vertical = 3
 autowrap_mode = 3
 
-[node name="Skip" type="Button" parent="KonadoUI/SystemLayer/KonadoErrorToolTip" unique_id=283867520]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -24.0
-offset_top = -10.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 42
-text = "KONADO_ERROR_SKIP"
+[node name="ErrorActions" type="HFlowContainer" parent="KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer/Content" unique_id=283867520]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 18
+theme_override_constants/v_separation = 12
+alignment = 2
 
 [node name="KonadoSaveSystem" type="Node" parent="." unique_id=8383492]
 script = ExtResource("10_ra855")

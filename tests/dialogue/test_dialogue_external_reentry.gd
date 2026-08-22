@@ -13,6 +13,10 @@ func _run() -> void:
 	await _test_line_start_reentry_replaces_program_safely()
 	await _test_line_end_reentry_does_not_advance_old_program()
 	await _test_jump_line_end_reentry_does_not_fail_replacement()
+	await _test_failure_report_listener_can_recover_synchronously()
+	await _test_failure_can_be_replaced_synchronously()
+	await _test_non_transactional_failure_reentry_hides_stale_overlay()
+	await _test_failure_resolution_reentry_replaces_program_safely()
 	await _test_wait_signal_replacement_ignores_old_signal()
 	await _test_stage_completion_is_request_scoped()
 	await _test_voice_wait_contracts()
@@ -110,6 +114,137 @@ func _test_jump_line_end_reentry_does_not_fail_replacement() -> void:
 		manager.dialogue_box.dialogue_text,
 		"replacement",
 		"jump line-end callbacks cannot cancel the replacement Program",
+	)
+	await _free_node(manager)
+
+
+func _test_failure_resolution_reentry_replaces_program_safely() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	manager.set_shot(
+		_compile_shot(
+			(
+				"if %missing == 1:\n"
+				+ '\t"Kona" "stale" [id=stale]\n'
+				+ "else:\n"
+				+ '\t"Kona" "also stale" [id=also_stale]\n'
+				+ "endif\nend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.FAILED)
+	manager.runtime_failure_resolved.connect(
+		func(_failure: Dictionary, _resolution: StringName) -> void:
+			manager.set_shot(_compile_shot('"Kona" "replacement" [id=new]\nend'))
+			manager.start_dialogue()
+	)
+	manager.variable_store.set_value("missing", 1)
+	_expect(
+		manager.resolve_runtime_failure(&"retry"),
+		"Retry settles the failed transaction",
+	)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:new", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"replacement",
+		"a resolution listener can replace playback without the old recovery resuming over it",
+	)
+	await _free_node(manager)
+
+
+func _test_failure_report_listener_can_recover_synchronously() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	var recovery_accepted := [false]
+	manager.runtime_failure_reported.connect(
+		func(_failure: Dictionary) -> void:
+			manager.variable_store.set_value("missing", 1)
+			recovery_accepted[0] = manager.resolve_runtime_failure(&"retry")
+	)
+	manager.set_shot(
+		_compile_shot(
+			(
+				"if %missing == 1:\n"
+				+ '\t"Kona" "recovered" [id=recovered]\n'
+				+ "else:\n"
+				+ '\t"Kona" "stale" [id=stale]\n'
+				+ "endif\nend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:recovered", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect(recovery_accepted[0], "a report listener can resolve the suspended transaction")
+	_expect(
+		not manager.error_tooltip_panel.visible,
+		"synchronous recovery never leaves a stale failure overlay",
+	)
+	await _free_node(manager)
+
+
+func _test_failure_can_be_replaced_synchronously() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	var resolutions: Array[StringName] = []
+	manager.runtime_failure_resolved.connect(
+		func(_failure: Dictionary, resolution: StringName) -> void: resolutions.append(resolution)
+	)
+	manager.set_shot(
+		_compile_shot(
+			(
+				"if %missing == 1:\n"
+				+ '\t"Kona" "stale" [id=stale]\n'
+				+ "else:\n"
+				+ '\t"Kona" "also stale" [id=also_stale]\n'
+				+ "endif\nend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.FAILED)
+	manager.set_shot(_compile_shot('"Kona" "replacement" [id=replacement]\nend'))
+	_expect_equal(
+		resolutions,
+		[&"replace_shot"],
+		"replacing a failed shot closes the failure lifecycle exactly once",
+	)
+	_expect(manager.pending_runtime_failure.is_empty(), "replacement clears stale actions")
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:replacement", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"replacement",
+		"the replacement Program owns subsequent playback",
+	)
+	await _free_node(manager)
+
+
+func _test_non_transactional_failure_reentry_hides_stale_overlay() -> void:
+	var manager := await _create_manager()
+	manager.enable_overlay_log = true
+	manager.report_runtime_failures_to_console = false
+	manager.set_shot(_compile_shot('"Kona" "stale" [id=stale]\nend'))
+	manager.runtime_failure_reported.connect(
+		func(_failure: Dictionary) -> void:
+			manager.set_shot(_compile_shot('"Kona" "replacement" [id=replacement]\nend'))
+			manager.start_dialogue()
+	)
+	manager._fail_current(
+		KonadoExecutionFailure.new(&"runtime.test_failure", "test failure without a transaction")
+	)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:replacement", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect(
+		not manager.error_tooltip_panel.visible,
+		"a synchronous replacement prevents a non-transactional stale error overlay",
 	)
 	await _free_node(manager)
 

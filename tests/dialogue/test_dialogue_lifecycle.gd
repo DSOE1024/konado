@@ -17,6 +17,11 @@ func _init() -> void:
 func _run() -> void:
 	await _test_auto_start_waits_for_parent_configuration()
 	await _test_missing_condition_variable_reports_its_name()
+	await _test_failed_condition_can_retry_after_live_fix()
+	await _test_failed_condition_requires_an_explicit_branch()
+	await _test_reversible_linear_failure_can_be_skipped()
+	await _test_barrier_failure_can_only_stop()
+	await _test_failed_recovery_preflight_is_non_destructive()
 	await _test_nested_condition_choice_reaches_branch()
 	await _test_set_shot_and_complete_dialogue()
 	await _test_visibility_commands_are_atomic()
@@ -26,6 +31,7 @@ func _run() -> void:
 	await _test_stop_cancels_all_pending_callbacks()
 	await _test_committed_variable_can_rollback_while_waiting()
 	await _test_checkpoint_restores_committed_boundary()
+	await _test_execution_snapshot_restores_original_program()
 	await _test_actor_framing_checkpoint_restore()
 	if _failures == 0:
 		print("PASS: atomic dialogue lifecycle tests")
@@ -80,6 +86,260 @@ func _test_missing_condition_variable_reports_its_name() -> void:
 		"%missing",
 		"condition failures identify the exact variable resource",
 	)
+	await _free_node(manager)
+
+
+func _test_failed_condition_can_retry_after_live_fix() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	var reports: Array[Dictionary] = []
+	var resolutions: Array[Dictionary] = []
+	manager.runtime_failure_reported.connect(
+		func(report: Dictionary) -> void: reports.append(report)
+	)
+	manager.runtime_failure_resolved.connect(
+		func(report: Dictionary, resolution: StringName) -> void:
+			(
+				resolutions
+				. append(
+					{
+						"report": report,
+						"resolution": resolution,
+						"state": manager.dialogue_state,
+					}
+				)
+			)
+	)
+	manager.set_shot(
+		_compile_shot(
+			(
+				"if %love == 0:\n"
+				+ '\t"Kona" "retry succeeded" [id=retry_succeeded]\n'
+				+ "else:\n"
+				+ '\t"Kona" "wrong branch" [id=wrong_branch]\n'
+				+ "endif\nend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.FAILED)
+	_expect_equal(
+		manager.pending_runtime_failure.get("code"),
+		"variable.not_found",
+		"a failed instruction remains available as a structured paused failure",
+	)
+	var actions := (
+		manager.pending_runtime_failure.get("recovery_actions", PackedStringArray())
+		as PackedStringArray
+	)
+	_expect(&"retry" in actions, "a reversible condition can be retried")
+	_expect(&"continue_false" in actions, "a failed condition exposes its false edge")
+	_expect(&"continue_true" in actions, "a failed condition exposes its true edge")
+	_expect(not (&"skip" in actions), "a condition never offers an ambiguous generic skip")
+	_expect_equal(reports.size(), 1, "one failed instruction publishes one structured report")
+	if not reports.is_empty():
+		_expect(
+			bool(reports[0].get("recoverable", false)),
+			"the structured report declares a safely recoverable failure",
+		)
+		_expect_equal(
+			reports[0].get("recovery_actions"),
+			actions,
+			"the structured report and the live recovery API expose the same actions",
+		)
+	manager.variable_store.set_value("love", 0)
+	_expect(
+		manager.resolve_runtime_failure(&"retry"),
+		"retry accepts the live debugger correction",
+	)
+	_expect_equal(resolutions.size(), 1, "a successful recovery is reported exactly once")
+	if not resolutions.is_empty():
+		_expect_equal(resolutions[0].resolution, &"retry", "the resolution identifies Retry")
+		_expect_equal(
+			resolutions[0].state,
+			KonadoDialogueManager.DialogState.EXECUTING,
+			"resolution observers see the resumed state rather than the stale failure state",
+		)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:retry_succeeded", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"retry succeeded",
+		"retry re-executes the original condition against the corrected state",
+	)
+	await _free_node(manager)
+
+
+func _test_failed_condition_requires_an_explicit_branch() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	manager.set_shot(
+		_compile_shot(
+			(
+				"if %missing == 1:\n"
+				+ '\t"Kona" "true branch" [id=true_branch]\n'
+				+ "else:\n"
+				+ '\t"Kona" "false branch" [id=false_branch]\n'
+				+ "endif\nend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.FAILED)
+	_expect(
+		manager.resolve_runtime_failure(&"continue_false"),
+		"the developer can explicitly select the false branch",
+	)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:false_branch", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"false branch",
+		"condition recovery commits the selected control-flow edge",
+	)
+	var history := manager.get_execution_history()
+	_expect_equal(
+		history[0].get("result"),
+		KonadoVirtualMachine.Result.SKIPPED,
+		"an explicitly bypassed condition is auditable in VM history",
+	)
+	await _free_node(manager)
+
+
+func _test_reversible_linear_failure_can_be_skipped() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	manager.enable_overlay_log = true
+	manager.set_shot(
+		_compile_shot(
+			(
+				"actor change Ghost missing [id=missing_actor]\n"
+				+ '"Kona" "continued" [id=continued]\nend'
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.FAILED)
+	_expect(
+		&"skip" in manager.pending_runtime_failure.get("recovery_actions", PackedStringArray()),
+		"a reversible instruction with one successor exposes Skip",
+	)
+	_expect(manager.error_tooltip_panel.visible, "a recoverable failure opens the action overlay")
+	var skip_button := manager.error_action_container.get_node_or_null("SkipInstruction") as Button
+	_expect(skip_button != null, "the overlay exposes a deterministic Skip action")
+	if skip_button != null:
+		skip_button.pressed.emit()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:continued", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect(not manager.error_tooltip_panel.visible, "resuming hides the stale failure overlay")
+	_expect_equal(
+		manager.dialogue_box.dialogue_text,
+		"continued",
+		"Skip advances to the unique linear successor",
+	)
+	await _free_node(manager)
+
+
+func _test_barrier_failure_can_only_stop() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	manager._achievement_manager = null
+	manager.set_shot(_compile_shot('achievement unlock "missing" [id=barrier]\nend'))
+	manager.start_dialogue()
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.FAILED)
+	_expect_equal(
+		manager.pending_runtime_failure.get("recovery_actions", PackedStringArray()),
+		PackedStringArray([&"stop"]),
+		"an external-side-effect barrier never offers unsafe retry or skip actions",
+	)
+	_expect(
+		not manager.resolve_runtime_failure(&"retry"),
+		"an unsafe barrier cannot be retried",
+	)
+	_expect(
+		manager.resolve_runtime_failure(&"stop"),
+		"Stop safely settles an unrecoverable failure",
+	)
+	_expect_equal(
+		manager.dialogue_state,
+		KonadoDialogueManager.DialogState.OFF,
+		"Stop leaves the manager in its final state",
+	)
+	await _free_node(manager)
+
+
+func _test_failed_recovery_preflight_is_non_destructive() -> void:
+	var manager := await _create_manager()
+	manager.report_runtime_failures_to_console = false
+	var resolutions: Array[StringName] = []
+	manager.runtime_failure_resolved.connect(
+		func(_failure: Dictionary, resolution: StringName) -> void: resolutions.append(resolution)
+	)
+	manager.set_shot(
+		_compile_shot(
+			(
+				"if %missing == 1:\n"
+				+ '\t"Kona" "unreachable" [id=unreachable]\n'
+				+ "else:\n"
+				+ '\t"Kona" "also unreachable" [id=also_unreachable]\n'
+				+ "endif\nend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_state(manager, KonadoDialogueManager.DialogState.FAILED)
+	var original_failure := manager.pending_runtime_failure
+	var suspended_token := manager._active_token.duplicate(true)
+	var suspended_pc := manager._vm.pc
+	manager._complete_instruction(suspended_token)
+	(
+		manager
+		. _fail_current(
+			KonadoExecutionFailure.new(&"runtime.stale_callback", "stale callback"),
+			suspended_token,
+		)
+	)
+	_expect_equal(
+		manager.dialogue_state,
+		KonadoDialogueManager.DialogState.FAILED,
+		"late callbacks cannot commit a suspended failure token",
+	)
+	_expect_equal(manager._vm.pc, suspended_pc, "late callbacks cannot advance the failed PC")
+	_expect_equal(
+		manager.pending_runtime_failure.get("code"),
+		original_failure.get("code"),
+		"late failures cannot replace the original actionable report",
+	)
+	_expect(not manager.rollback(), "rollback rejects a failure without committed history")
+	_expect_equal(
+		manager.dialogue_state,
+		KonadoDialogueManager.DialogState.FAILED,
+		"a rejected rollback keeps the original failure suspended",
+	)
+	_expect_equal(
+		manager.pending_runtime_failure.get("code"),
+		original_failure.get("code"),
+		"a rejected rollback preserves the actionable failure report",
+	)
+	_expect(
+		not manager.restore_checkpoint("missing-checkpoint"),
+		"checkpoint restore rejects an unknown checkpoint",
+	)
+	_expect_equal(
+		manager.dialogue_state,
+		KonadoDialogueManager.DialogState.FAILED,
+		"a rejected checkpoint restore keeps the original failure suspended",
+	)
+	_expect_equal(resolutions.size(), 0, "preflight rejection does not publish a false resolution")
+	manager.stop_dialogue()
+	_expect_equal(
+		manager.dialogue_state, KonadoDialogueManager.DialogState.OFF, "Stop remains final"
+	)
+	_expect(manager.pending_runtime_failure.is_empty(), "Stop clears the suspended failure")
+	_expect_equal(resolutions, [&"stop"], "direct Stop settles the failure exactly once")
 	await _free_node(manager)
 
 
@@ -335,6 +595,33 @@ func _test_checkpoint_restores_committed_boundary() -> void:
 		manager, "ks:id:first", KonadoDialogueManager.DialogState.WAITING
 	)
 	_expect_equal(manager._temp_variables.get("score"), 1, "checkpoint restores logical state")
+	await _free_node(manager)
+
+
+func _test_execution_snapshot_restores_original_program() -> void:
+	var manager := await _create_manager()
+	var original := load("res://tests/localization/fixtures/story.ks") as KonadoShot
+	var replacement := load("res://tests/editor/fixtures/native_editor.ks") as KonadoShot
+	_expect(original != null and replacement != null, "snapshot fixtures import as KonadoShot")
+	if original == null or replacement == null:
+		await _free_node(manager)
+		return
+	manager.set_shot(original)
+	var original_fingerprint := manager.current_shot.program_fingerprint()
+	var snapshot := manager._capture_execution_snapshot()
+	_expect(not snapshot.is_empty(), "timeline captures a portable execution snapshot")
+	manager.set_shot(replacement)
+	_expect(
+		manager.current_shot.program_fingerprint() != original_fingerprint,
+		"snapshot fixture replaces the active Program before restoration",
+	)
+	_expect(manager._restore_execution_snapshot(snapshot), "timeline restores a valid snapshot")
+	_expect_equal(
+		manager.current_shot.program_fingerprint(),
+		original_fingerprint,
+		"snapshot restoration reinstalls the original Program",
+	)
+	manager.stop_dialogue()
 	await _free_node(manager)
 
 
