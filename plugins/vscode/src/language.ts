@@ -19,6 +19,7 @@ export type SymbolKind =
 	| "actors"
 	| "states"
 	| "motions"
+	| "framings"
 	| "backgrounds"
 	| "bgms"
 	| "sfx"
@@ -75,6 +76,18 @@ export interface IndexedDefinition {
 	end: number;
 	targetUri?: string;
 	scopeName?: string;
+	/** Every actor that owns a shared scene/profile resource. */
+	scopeNames?: readonly string[];
+}
+
+export function definitionHasScope(
+	definition: IndexedDefinition,
+	scopeName: string,
+): boolean {
+	return (
+		definition.scopeName === scopeName ||
+		definition.scopeNames?.includes(scopeName) === true
+	);
 }
 
 export interface ProjectSnapshot {
@@ -88,6 +101,8 @@ interface NamedParameter {
 	value: string;
 	start: number;
 	end: number;
+	valueStart: number;
+	valueEnd: number;
 }
 
 interface ParsedStatementParameters {
@@ -304,12 +319,41 @@ export function referencesForLine(
 						actorName,
 					),
 				);
+				if (tokens[1]?.text === "show") {
+					const framing = parseStatementParameters(
+						line,
+					).parameters.find(
+						(parameter) => parameter.name === "framing",
+					);
+					if (framing) {
+						results.push({
+							kind: "framings",
+							name: framing.value,
+							line: lineNumber,
+							start: framing.valueStart,
+							end: framing.valueEnd,
+							role: "reference",
+							scopeName: actorName,
+						});
+					}
+				}
 			} else if (tokens[1]?.text === "motion") {
 				add(
 					reference(
 						tokens,
 						3,
 						"motions",
+						lineNumber,
+						"reference",
+						actorName,
+					),
+				);
+			} else if (tokens[1]?.text === "framing") {
+				add(
+					reference(
+						tokens,
+						3,
+						"framings",
 						lineNumber,
 						"reference",
 						actorName,
@@ -432,11 +476,15 @@ function parseStatementParameters(content: string): ParsedStatementParameters {
 		}
 		const whole = match[0];
 		const leadingWhitespace = whole.length - whole.trimStart().length;
+		const value = match[2] ?? "";
+		const valueStart = parameterStart + offset + whole.lastIndexOf(value);
 		parameters.push({
 			name: match[1] ?? "",
-			value: match[2] ?? "",
+			value,
 			start: parameterStart + offset + leadingWhitespace,
 			end: parameterStart + pattern.lastIndex,
+			valueStart,
+			valueEnd: valueStart + value.length,
 		});
 		offset = pattern.lastIndex;
 	}
@@ -563,6 +611,20 @@ function validateNamedParameters(
 					messageZh: `命名参数“${parameter.name}”必须大于 ${definition.exclusiveMinimum}。`,
 				});
 			}
+		}
+		if (
+			(definition.type === "boolean" || definition.type === "enum") &&
+			!definition.values?.includes(parameter.value)
+		) {
+			diagnostics.push({
+				code: "syntax.named_parameter_value",
+				severity: "error",
+				line,
+				start: parameter.start,
+				end: parameter.end,
+				message: `Named parameter '${parameter.name}' must be one of: ${definition.values?.join(", ")}.`,
+				messageZh: `命名参数“${parameter.name}”必须为：${definition.values?.join("、")}。`,
+			});
 		}
 	}
 	if (seen.has("speed") && seen.has("interval")) {
@@ -1102,8 +1164,8 @@ function validateActor(
 				line,
 				action,
 				"syntax.actor_action",
-				"Actor action must be show, exit, change, move, or motion.",
-				"actor 操作必须为 show、exit、change、move 或 motion。",
+				"Actor action must be show, exit, change, move, motion, or framing.",
+				"actor 操作必须为 show、exit、change、move、motion 或 framing。",
 				fixes,
 			),
 		);
@@ -1114,6 +1176,7 @@ function validateActor(
 		change: 4,
 		move: 4,
 		motion: 4,
+		framing: 4,
 		show: 6,
 	};
 	if (
@@ -1729,6 +1792,7 @@ function appendProjectDiagnostics(
 		"actors",
 		"states",
 		"motions",
+		"framings",
 		"backgrounds",
 		"bgms",
 		"sfx",
@@ -1753,13 +1817,25 @@ function appendProjectDiagnostics(
 		if (!checkedKinds.has(item.kind)) {
 			continue;
 		}
+		if (
+			item.kind === "framings" &&
+			project.values("framings", item.scopeName).includes(item.name)
+		) {
+			continue;
+		}
 		const definitions = project
 			.definitions(item.kind, item.name)
 			.filter((definition) => {
-				if (!item.scopeName || !definition.scopeName) {
+				if (item.kind === "framings" && item.scopeName) {
+					return definitionHasScope(definition, item.scopeName);
+				}
+				if (
+					!item.scopeName ||
+					(!definition.scopeName && !definition.scopeNames?.length)
+				) {
 					return true;
 				}
-				return definition.scopeName === item.scopeName;
+				return definitionHasScope(definition, item.scopeName);
 			});
 		if (definitions.length > 0) {
 			continue;
@@ -1804,6 +1880,7 @@ export function kindLabel(kind: SymbolKind): string {
 			actors: "actor",
 			states: "actor state",
 			motions: "actor motion",
+			framings: "actor framing",
 			backgrounds: "background",
 			bgms: "BGM",
 			sfx: "sound effect",
@@ -1824,6 +1901,7 @@ function kindLabelZh(kind: SymbolKind): string {
 			actors: "角色",
 			states: "角色状态",
 			motions: "演员动作",
+			framings: "演员景别",
 			backgrounds: "背景",
 			bgms: "背景音乐",
 			sfx: "音效",
