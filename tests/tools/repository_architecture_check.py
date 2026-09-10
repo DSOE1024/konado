@@ -119,6 +119,7 @@ INTERNAL_GDSCRIPT_TYPES = {
     Path("addons/konado/runtime/dialogue/konado_choice_controller.gd"),
     Path("addons/konado/runtime/integrations/konado_settings_adapter.gd"),
     Path("addons/konado/runtime/stage/background/konado_background_transition_layer.gd"),
+    Path("addons/konado/runtime/ui/backlog/konado_backlog_panel.gd"),
     Path("addons/konado/runtime/ui/dialogue_box/konado_voice_progress_display.gd"),
     Path("addons/konado/runtime/ui/save/konado_save_panel.gd"),
 }

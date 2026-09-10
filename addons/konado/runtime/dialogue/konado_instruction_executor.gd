@@ -596,8 +596,10 @@ func screen_text(
 	if host.screen_text == null:
 		return _missing_controller("screen_text", "screen_text")
 	var screen_text := host.screen_text
+	var lines: PackedStringArray = instruction.value(&"lines")
+	host._history_coordinator().stage_screen_text(token, instruction, lines)
 	host._await_signal(screen_text.screen_text_hidden, token)
-	screen_text.display(instruction.value(&"lines"), "center", true)
+	screen_text.display(lines, "center", true)
 	return KonadoVirtualMachine.Result.WAITING
 
 

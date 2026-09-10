@@ -1,0 +1,85 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/konado/runtime/ui/backlog/konado_backlog_panel.gd" id="1_backlog_panel"]
+
+[node name="KonadoBacklogPanel" type="Control" node_paths=PackedStringArray("entry_container", "empty_label", "close_button", "scroll_container")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_backlog_panel")
+entry_container = NodePath("Backdrop/BacklogPanelContainer/Margin/VBox/Scroll/Entries")
+empty_label = NodePath("Backdrop/BacklogPanelContainer/Margin/VBox/Empty")
+close_button = NodePath("Backdrop/BacklogPanelContainer/Margin/VBox/Header/Close")
+scroll_container = NodePath("Backdrop/BacklogPanelContainer/Margin/VBox/Scroll")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.64)
+
+[node name="BacklogPanelContainer" type="PanelContainer" parent="Backdrop"]
+custom_minimum_size = Vector2(920, 620)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -310.0
+offset_right = 460.0
+offset_bottom = 310.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Backdrop/BacklogPanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="Backdrop/BacklogPanelContainer/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Backdrop/BacklogPanelContainer/Margin/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Backdrop/BacklogPanelContainer/Margin/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
+text = "KONADO_BACKLOG"
+
+[node name="Close" type="Button" parent="Backdrop/BacklogPanelContainer/Margin/VBox/Header"]
+layout_mode = 2
+text = "KONADO_CLOSE"
+
+[node name="Separator" type="HSeparator" parent="Backdrop/BacklogPanelContainer/Margin/VBox"]
+layout_mode = 2
+
+[node name="Empty" type="Label" parent="Backdrop/BacklogPanelContainer/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "KONADO_BACKLOG_EMPTY"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Backdrop/BacklogPanelContainer/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Entries" type="VBoxContainer" parent="Backdrop/BacklogPanelContainer/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12

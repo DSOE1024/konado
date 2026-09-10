@@ -38,6 +38,12 @@ const CHOICE_CONTROLLER_SCRIPT := preload(
 )
 const SAVE_SYSTEM_SCRIPT := preload("res://addons/konado/runtime/save/konado_save_system.gd")
 const SAVE_PANEL_SCRIPT := preload("res://addons/konado/runtime/ui/save/konado_save_panel.gd")
+const DIALOGUE_HISTORY_COORDINATOR := preload(
+	"res://addons/konado/runtime/dialogue/konado_dialogue_history_coordinator.gd"
+)
+const BACKLOG_PANEL_SCRIPT := preload(
+	"res://addons/konado/runtime/ui/backlog/konado_backlog_panel.gd"
+)
 const SETTINGS_ADAPTER_SCRIPT := preload(
 	"res://addons/konado/runtime/integrations/konado_settings_adapter.gd"
 )
@@ -71,7 +77,9 @@ const MAX_IMMEDIATE_INSTRUCTIONS_PER_PUMP := 4096
 @export var auto_play_button: Button
 @export var achievement_button: Button
 @export var settings_button: Button
+@export var backlog_button: Button
 @export var save_panel: SAVE_PANEL_SCRIPT
+@export var backlog_panel: BACKLOG_PANEL_SCRIPT
 @export var save_feedback_label: Label
 
 @export_category("Dialogue Resources")
@@ -93,11 +101,21 @@ const MAX_IMMEDIATE_INSTRUCTIONS_PER_PUMP := 4096
 @export var save_system: SAVE_SYSTEM_SCRIPT
 @export var settings_adapter: SETTINGS_ADAPTER_SCRIPT
 
+@export_category("Dialogue History")
+@export var max_dialogue_history_entries := 256:
+	set(value):
+		max_dialogue_history_entries = maxi(0, value)
+		if _dialogue_history_coordinator != null:
+			_dialogue_history_coordinator.history().max_entries = max_dialogue_history_entries
+
 @export_category("Camera")
 @export var camera_controller: CAMERA_CONTROLLER_SCRIPT
 
 var dialogue_state := DialogState.OFF
 var current_shot: KonadoShot
+var dialogue_history: KonadoDialogueHistory:
+	get:
+		return _history_coordinator().history()
 var pending_runtime_failure: Dictionary:
 	get:
 		return _failure_controller()._pending_report()
@@ -108,6 +126,7 @@ var _waiting_signal_name := ""
 var _dialog_data_id := 0
 var _story_localization: Node
 var _dialogue_services: RefCounted
+var _dialogue_history_coordinator: KonadoDialogueHistoryCoordinator
 var _vm := KonadoVirtualMachine.new()
 var _executor: KonadoInstructionExecutor
 var _active_token: Dictionary = {}
@@ -176,6 +195,12 @@ func _ready() -> void:
 		save_system.set_dialogue_manager(self)
 	if save_panel != null:
 		save_panel.set_save_system(save_system)
+	if backlog_panel != null:
+		backlog_panel.set_dialogue_manager(self)
+	if backlog_button != null:
+		backlog_button.visible = backlog_panel != null
+		if backlog_panel != null:
+			backlog_button.pressed.connect(backlog_panel.open_panel)
 	_failure_controller()._setup_logger()
 
 	if initialize_on_ready:
@@ -212,6 +237,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		)
 		return
 	_reset_transient_interfaces()
+	_history_coordinator().clear()
 	if stage_controller != null:
 		stage_controller.character_list = character_list
 		stage_controller.remove_all_actors(true)
@@ -228,6 +254,7 @@ func set_shot(new_shot: KonadoShot) -> void:
 		return
 	var failure_report := _failure_controller()._detach_pending_report()
 	_cancel_execution()
+	_history_coordinator().clear()
 	if screen_text != null:
 		screen_text.reset_screen_text()
 	if not _install_shot(localized):
@@ -409,6 +436,7 @@ func _complete_instruction(
 	if not _vm.commit_patch(token, next_pc, _capture_instruction_state(instruction)):
 		_fail_current("VM 提交失败", token, _instruction_failure_context(instruction))
 		return
+	_history_coordinator().commit(token)
 	_active_token.clear()
 	_waiting_signal_name = ""
 	_dialogue_typing = false
@@ -528,6 +556,7 @@ func _finish_shot() -> void:
 func _fail_current(
 	failure_value: Variant, expected_token: Dictionary = {}, instruction_context: Dictionary = {}
 ) -> void:
+	_history_coordinator().discard()
 	_failure_controller()._handle_failure(failure_value, expected_token, instruction_context)
 
 
@@ -566,6 +595,7 @@ func _cancel_execution() -> void:
 	dialogue_state = DialogState.OFF
 	_vm.cancel()
 	_active_token.clear()
+	_history_coordinator().discard()
 	_dialogue_typing = false
 	_cancel_pending_callbacks()
 
@@ -628,8 +658,10 @@ func _begin_dialogue_instruction(instruction: KonadoInstruction, token: Dictiona
 		var interval := float(instruction.value(&"interval", -1.0))
 		var speed := float(instruction.value(&"speed", 1.0))
 		dialogue_box.typing_interval = (interval if interval >= 0.0 else typing_interval / speed)
+		var content := _interpolate_variables(String(instruction.value(&"content")))
 		dialogue_box.character_name = character
-		dialogue_box.dialogue_text = _interpolate_variables(String(instruction.value(&"content")))
+		dialogue_box.dialogue_text = content
+		_history_coordinator().stage_dialogue(token, instruction, character, content)
 		_dialogue_typing = true
 		_typing_completed_callback = _on_dialogue_typing_completed.bind(token)
 		dialogue_box.typing_completed.connect(_typing_completed_callback, CONNECT_ONE_SHOT)
@@ -681,6 +713,8 @@ func _on_option_triggered(choice: Dictionary, playback_generation := -1) -> void
 		return
 	if choice_controller != null:
 		choice_controller.distroy_options()
+	if dialogue_state != DialogState.FAILED:
+		_history_coordinator().stage_choice(_active_token, _current_instruction(), choice)
 	_complete_instruction(_active_token, target_pc)
 
 
@@ -790,7 +824,10 @@ func _capture_execution_snapshot() -> Dictionary:
 
 
 func _restore_execution_snapshot(snapshot: Dictionary) -> bool:
-	return _timeline().restore_execution_snapshot(snapshot)
+	var restored := _timeline().restore_execution_snapshot(snapshot)
+	if restored:
+		_history_coordinator().clear()
+	return restored
 
 
 func _remember_shot(shot: KonadoShot) -> void:
@@ -813,6 +850,7 @@ func _enter_safe_off_state() -> void:
 	current_shot = null
 	dialogue_state = DialogState.OFF
 	_reset_transient_interfaces()
+	_history_coordinator().clear()
 	_failure_controller()._publish_external_resolution(
 		failure_report, KonadoRuntimeFailureSession.RESOLUTION_CANCELLED
 	)
@@ -822,6 +860,7 @@ func _cancel_active_instruction() -> void:
 	_playback_generation += 1
 	_vm.cancel()
 	_active_token.clear()
+	_history_coordinator().discard()
 	_dialogue_typing = false
 	dialogue_state = DialogState.OFF
 	_cancel_pending_callbacks()
@@ -923,6 +962,13 @@ func _timeline() -> KonadoRuntimeTimeline:
 	if _runtime_timeline == null:
 		_runtime_timeline = RUNTIME_TIMELINE.new(self)
 	return _runtime_timeline
+
+
+func _history_coordinator() -> KonadoDialogueHistoryCoordinator:
+	if _dialogue_history_coordinator == null:
+		_dialogue_history_coordinator = DIALOGUE_HISTORY_COORDINATOR.new(self)
+		_dialogue_history_coordinator.history().max_entries = max_dialogue_history_entries
+	return _dialogue_history_coordinator
 
 
 func _on_setting_changed(category: String, key: String, value: Variant) -> void:

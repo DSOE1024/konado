@@ -33,6 +33,12 @@ msgstr "自动播放"
 msgid "KONADO_AUTO_PLAY_STOP"
 msgstr "停止播放"
 
+msgid "KONADO_BACKLOG"
+msgstr "历史记录"
+
+msgid "KONADO_BACKLOG_EMPTY"
+msgstr "暂无对话记录"
+
 msgid "KONADO_CLOSE"
 msgstr "关闭"
 

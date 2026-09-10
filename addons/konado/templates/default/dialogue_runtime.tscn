@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://buq324t8ugy0q"]
+[gd_scene load_steps=17 format=3 uid="uid://buq324t8ugy0q"]
 
 [ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/templates/default/theme/default_theme.tres" id="1_cpdxb"]
 [ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/runtime/dialogue/konado_dialogue_manager.gd" id="2_652dd"]
@@ -13,6 +13,7 @@
 [ext_resource type="Script" uid="uid://dusoj8pkl7ecg" path="res://addons/konado/runtime/save/konado_save_system.gd" id="10_ra855"]
 [ext_resource type="Script" uid="uid://b3xcpatqnlrg" path="res://addons/konado/runtime/integrations/konado_settings_adapter.gd" id="11_cmq4a"]
 [ext_resource type="PackedScene" path="res://addons/konado/templates/default/save_panel.tscn" id="12_save_panel"]
+[ext_resource type="PackedScene" path="res://addons/konado/templates/default/backlog_panel.tscn" id="13_backlog_panel"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_b1osp"]
 
@@ -24,7 +25,7 @@ metadata/_snap_enabled = true
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
 gradient = SubResource("Gradient_6xj1n")
 
-[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("choice_controller", "dialogue_box", "screen_text", "stage_controller", "audio_controller", "quick_save_button", "quick_load_button", "save_panel_button", "auto_play_button", "achievement_button", "settings_button", "save_panel", "save_feedback_label", "error_tooltip_panel", "error_tooltip_label", "error_action_container", "save_system", "settings_adapter", "camera_controller")]
+[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("choice_controller", "dialogue_box", "screen_text", "stage_controller", "audio_controller", "quick_save_button", "quick_load_button", "save_panel_button", "auto_play_button", "achievement_button", "settings_button", "backlog_button", "save_panel", "backlog_panel", "save_feedback_label", "error_tooltip_panel", "error_tooltip_label", "error_action_container", "save_system", "settings_adapter", "camera_controller")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -45,7 +46,9 @@ save_panel_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer
 auto_play_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/AutoplayButton")
 achievement_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/AchievementButton")
 settings_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/SettingsButton")
+backlog_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/BacklogButton")
 save_panel = NodePath("KonadoUI/SaveLayer/KonadoSavePanel")
+backlog_panel = NodePath("KonadoUI/BacklogLayer/KonadoBacklogPanel")
 save_feedback_label = NodePath("KonadoUI/DialogueLayer/FunctionBar/SaveFeedback")
 error_tooltip_panel = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip")
 error_tooltip_label = NodePath("KonadoUI/SystemLayer/KonadoErrorToolTip/MarginContainer/Content/ErrorText")
@@ -208,6 +211,12 @@ theme_type_variation = &"FlatButton"
 text = "KONADO_SAVE_DATA"
 flat = true
 
+[node name="BacklogButton" type="Button" parent="KonadoUI/DialogueLayer/FunctionBar/ButtonContainer"]
+layout_mode = 2
+theme_type_variation = &"FlatButton"
+text = "KONADO_BACKLOG"
+flat = true
+
 [node name="AutoplayButton" type="Button" parent="KonadoUI/DialogueLayer/FunctionBar/ButtonContainer" unique_id=2120412483]
 layout_mode = 2
 theme_type_variation = &"FlatButton"
@@ -247,6 +256,11 @@ layer = 120
 layer = 50
 
 [node name="KonadoSavePanel" parent="KonadoUI/SaveLayer" instance=ExtResource("12_save_panel")]
+
+[node name="BacklogLayer" type="CanvasLayer" parent="KonadoUI"]
+layer = 60
+
+[node name="KonadoBacklogPanel" parent="KonadoUI/BacklogLayer" instance=ExtResource("13_backlog_panel")]
 
 [node name="KonadoErrorToolTip" type="ColorRect" parent="KonadoUI/SystemLayer" unique_id=1152539807]
 visible = false

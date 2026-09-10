@@ -98,6 +98,7 @@ jobs:
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_external_reentry.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_localization_lifecycle.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_default_dialogue_template.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_history.gd
 
       - name: Guard KonadoScript performance complexity
         run: >-

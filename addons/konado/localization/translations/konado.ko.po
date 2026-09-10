@@ -33,6 +33,12 @@ msgstr "자동 재생"
 msgid "KONADO_AUTO_PLAY_STOP"
 msgstr "자동 재생 중지"
 
+msgid "KONADO_BACKLOG"
+msgstr "백로그"
+
+msgid "KONADO_BACKLOG_EMPTY"
+msgstr "아직 대화 기록이 없습니다"
+
 msgid "KONADO_CLOSE"
 msgstr "닫기"
 
