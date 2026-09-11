@@ -15,16 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  workflow-lint:
-    name: Workflow syntax
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Run actionlint
-        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7
-
   gdscript-lint:
     name: GDScript lint
     runs-on: ubuntu-24.04
@@ -99,6 +89,8 @@ jobs:
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_localization_lifecycle.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_default_dialogue_template.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_history.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_rollback.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_rollback_stress.gd
 
       - name: Guard KonadoScript performance complexity
         run: >-
@@ -114,6 +106,7 @@ jobs:
         run: |
           python3 .github/scripts/run_godot_test.py tests/character/test_actor_initial_state.gd
           python3 .github/scripts/run_godot_test.py tests/character/test_actor_state_transition.gd
+          python3 .github/scripts/run_godot_test.py tests/character/test_actor_motion.gd
           python3 .github/scripts/run_godot_test.py tests/character/test_character_transition_frame.gd
           xvfb-run -a python3 .github/scripts/run_godot_test.py --rendering tests/character/test_character_transition_rendering.gd
 

@@ -53,12 +53,13 @@ func play_motion(motion_name: String, params: Dictionary = {}) -> void:
 		var custom_speed := 1.0
 		if params.has("duration"):
 			var duration := float(params["duration"])
-			if duration <= 0.0:
+			# 0 表示禁用动画（与其它组件的 duration 约定一致）；负数/未指定表示使用动画自身时长。
+			if duration == 0.0:
 				motion_started.emit(motion_name)
 				_finish_motion(motion_name)
 				return
 			var animation := animation_player.get_animation(motion_name)
-			if animation != null and animation.length > 0.0:
+			if duration > 0.0 and animation != null and animation.length > 0.0:
 				custom_speed = animation.length / duration
 		animation_player.play(motion_name, -1.0, custom_speed)
 		animation_player.seek(0, true)

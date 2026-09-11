@@ -25,7 +25,7 @@ metadata/_snap_enabled = true
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
 gradient = SubResource("Gradient_6xj1n")
 
-[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("choice_controller", "dialogue_box", "screen_text", "stage_controller", "audio_controller", "quick_save_button", "quick_load_button", "save_panel_button", "auto_play_button", "achievement_button", "settings_button", "backlog_button", "save_panel", "backlog_panel", "save_feedback_label", "error_tooltip_panel", "error_tooltip_label", "error_action_container", "save_system", "settings_adapter", "camera_controller")]
+[node name="KonadoDialogue" type="Control" unique_id=1487339260 node_paths=PackedStringArray("choice_controller", "dialogue_box", "screen_text", "stage_controller", "audio_controller", "quick_save_button", "quick_load_button", "save_panel_button", "auto_play_button", "achievement_button", "settings_button", "backlog_button", "back_button", "save_panel", "backlog_panel", "save_feedback_label", "error_tooltip_panel", "error_tooltip_label", "error_action_container", "save_system", "settings_adapter", "camera_controller")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -47,6 +47,7 @@ auto_play_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/
 achievement_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/AchievementButton")
 settings_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/SettingsButton")
 backlog_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/BacklogButton")
+back_button = NodePath("KonadoUI/DialogueLayer/FunctionBar/ButtonContainer/BackButton")
 save_panel = NodePath("KonadoUI/SaveLayer/KonadoSavePanel")
 backlog_panel = NodePath("KonadoUI/BacklogLayer/KonadoBacklogPanel")
 save_feedback_label = NodePath("KonadoUI/DialogueLayer/FunctionBar/SaveFeedback")
@@ -215,6 +216,12 @@ flat = true
 layout_mode = 2
 theme_type_variation = &"FlatButton"
 text = "KONADO_BACKLOG"
+flat = true
+
+[node name="BackButton" type="Button" parent="KonadoUI/DialogueLayer/FunctionBar/ButtonContainer"]
+layout_mode = 2
+theme_type_variation = &"FlatButton"
+text = "KONADO_BACK"
 flat = true
 
 [node name="AutoplayButton" type="Button" parent="KonadoUI/DialogueLayer/FunctionBar/ButtonContainer" unique_id=2120412483]

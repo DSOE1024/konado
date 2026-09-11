@@ -63,6 +63,13 @@ dialogue_manager.dialogue_history.rollback_policy = (
 )
 ```
 
+歷史面板的每一列也是**回退入口**：點擊已提交的條目會直接回退到那一句（詳見[對話回退（上一句）](./dialogue-rollback.md) 的「Backlog 跳轉」）。條目自帶 VM 提交序號，因此自訂介面也能直接驅動：
+
+```gdscript
+dialogue_manager.timeline.can_rollback_to_entry(serial)
+dialogue_manager.timeline.rollback_to_entry(serial)
+```
+
 ## 預設範本
 
 預設對話範本在功能列提供「歷史記錄」按鈕，並實例化 `res://addons/konado/templates/default/backlog_panel.tscn`，其腳本為 `res://addons/konado/runtime/ui/backlog/konado_backlog_panel.gd`。若在自訂範本中未連接這兩個匯出，功能會自動停用，不影響其他邏輯。

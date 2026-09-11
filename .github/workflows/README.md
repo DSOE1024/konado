@@ -3,7 +3,8 @@
 | 工作流 | 触发方式 | 职责 | 是否写入仓库 |
 | --- | --- | --- | --- |
 | `identity-check.yml` | PR 创建、重开、更新或转为可审查 | 检查最多 250 个提交的作者、提交者和身份 trailer；发现已知 AI 提交邮箱或超出可核验上限时留言并关闭 PR | 是，关闭并评论 PR |
-| `quality-check.yml` | PR、`main` Push、手动 | Action 语法、GDScript 静态与架构测试、Konado.NET 编译、VS Code 扩展检查与打包、插件与文档资源完整性 | 否 |
+| `quality-check.yml` | PR、`main` Push、手动 | GDScript 静态与架构测试、Konado.NET 编译、VS Code 扩展检查与打包、插件与文档资源完整性 | 否 |
+| `workflow-lint.yml` | 工作流文件的 PR/Push、手动 | 独立负责工作流静态检查：用固定版本 actionlint 逐个检查 `.github/workflows` 下全部工作流的语法、表达式、Action 用法与内嵌 shell/Python 脚本，逐个打印 PASS/FAIL，并在 `-verbose` 下打印项目解析结果与每个文件的错误数 | 否 |
 | `export-check.yml` | 相关项目文件的 PR/Push、手动 | 调用可复用构建，验证 Windows、Linux、Web、Android 导出 | 否 |
 | `project-export.yml` | 仅 `workflow_call` | 统一四个平台的 Godot 4.7.1 构建与产物上传 | 否 |
 | `docs-build.yml` | 文档 PR、`workflow_call` | 构建 VitePress 并上传站点产物 | 否 |
@@ -13,6 +14,7 @@
 
 ## 设计约束
 
+- 工作流静态检查由 `workflow-lint.yml` 独立负责，`quality-check.yml` 不再重复同一项检查。
 - PR 构建和质量检查使用只读权限；身份策略仅授予读取提交元数据、评论和关闭 PR 所需的最小权限。
 - 身份策略使用 `pull_request_target` 读取 GitHub API 元数据，不检出或执行 PR 分支代码。
 - 构建逻辑集中在 `project-export.yml`，CI 与正式发布共用，避免平台配置漂移。

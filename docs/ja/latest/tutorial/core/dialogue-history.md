@@ -63,6 +63,13 @@ dialogue_manager.dialogue_history.rollback_policy = (
 )
 ```
 
+履歴パネルの各行は**ロールバックの入口**でもあります：コミット済みのエントリをクリックするとその行へ戻ります（詳細は[会話ロールバック（一つ前へ）](./dialogue-rollback.md) の「Backlog ジャンプ」）。エントリは VM コミット連番を持つため、独自 UI からも同じ経路を呼べます：
+
+```gdscript
+dialogue_manager.timeline.can_rollback_to_entry(serial)
+dialogue_manager.timeline.rollback_to_entry(serial)
+```
+
 ## デフォルトテンプレート
 
 デフォルトの会話テンプレートは機能バーに「バックログ」ボタンを追加し、`res://addons/konado/templates/default/backlog_panel.tscn`（スクリプトは `res://addons/konado/runtime/ui/backlog/konado_backlog_panel.gd`）を生成します。カスタムテンプレートでこれらのエクスポートを設定しない場合、機能は自動的に無効になり、他への影響はありません。

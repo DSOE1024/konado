@@ -49,6 +49,7 @@ func _run() -> void:
 
 	_expect(manager.backlog_button != null, "default template exposes the backlog button")
 	_expect(manager.backlog_panel != null, "default template contains a backlog panel")
+	_expect(manager.back_button != null, "default template exposes the back button")
 	if manager.backlog_panel != null:
 		manager.backlog_button.pressed.emit()
 		_expect(manager.backlog_panel.visible, "the backlog button opens the backlog panel")

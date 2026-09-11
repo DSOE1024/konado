@@ -227,13 +227,15 @@ const COMMANDS := {
 		"blocking": false,
 		"rollback": ROLLBACK_REVERSIBLE
 	},
+	# signal 是“可重放”的一次性副作用：回退可以跨越它，重放到该指令时会重新发射，
+	# 由信号处理函数自行保证幂等（例如只改快照内的脚本变量）。成就指令保持不可逆，外部计数不会被二次累加。
 	"signal":
 	{
 		"opcode": KonadoOpcode.Type.SIGNAL,
 		"operands": [["content", STRING, false]],
 		"parameters": {},
 		"blocking": false,
-		"rollback": ROLLBACK_BARRIER
+		"rollback": ROLLBACK_REVERSIBLE
 	},
 	"achievement.unlock":
 	{
@@ -338,6 +340,8 @@ const COMMANDS := {
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
 	},
+	# 异步相机指令只改变相机变换，属于快照可逆状态：回退会取消进行中的 Tween 并按快照还原，
+	# 继续前进时会重新执行，因此它们不是不可逆副作用。
 	"camera.move.async":
 	{
 		"opcode": KonadoOpcode.Type.CAMERA_MOVE_ASYNC,
@@ -345,7 +349,7 @@ const COMMANDS := {
 		[["camera", STRING, true], ["transition", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": false,
-		"rollback": ROLLBACK_BARRIER
+		"rollback": ROLLBACK_REVERSIBLE
 	},
 	"camera.reset.async":
 	{
@@ -353,7 +357,7 @@ const COMMANDS := {
 		"operands": [["transition", STRING, true], ["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": false,
-		"rollback": ROLLBACK_BARRIER
+		"rollback": ROLLBACK_REVERSIBLE
 	},
 	"camera.shake.async":
 	{
@@ -361,7 +365,7 @@ const COMMANDS := {
 		"operands": [["duration", VALUE, true]],
 		"parameters": {"duration": {"type": "number", "min": 0.0}},
 		"blocking": false,
-		"rollback": ROLLBACK_BARRIER
+		"rollback": ROLLBACK_REVERSIBLE
 	},
 	"camera.stop.async":
 	{
@@ -369,7 +373,7 @@ const COMMANDS := {
 		"operands": [],
 		"parameters": {},
 		"blocking": false,
-		"rollback": ROLLBACK_BARRIER
+		"rollback": ROLLBACK_REVERSIBLE
 	},
 }
 

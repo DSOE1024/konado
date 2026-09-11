@@ -3,8 +3,12 @@
 ### New Features
 
 - Added a bounded, atomic dialogue, choice, and screen-text history (backlog) with a default backlog panel
+- Backlog entries support click-to-rollback: clicking any line in the history returns to that line
+- Added rollback to the previous dialogue line.
 
 ### Improvements
+
+- Fixed an issue where actor move did not write the new position, so save/load and rollback now correctly restore character positions.
 
 ## 2.8.0 - Nanguoli
 

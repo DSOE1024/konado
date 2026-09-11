@@ -22,6 +22,12 @@ func execute(instruction: KonadoInstruction, token: Dictionary) -> int:
 	var host := _host_ref.get_ref() as KonadoDialogueManager
 	if host == null:
 		return _failed(&"runtime.host_unavailable", "对话管理器已失效")
+	# 回退重放：该不可逆指令此前已经生效，此处跳过执行以避免重复副作用。
+	if host._vm._should_skip_rewind(instruction.stable_key()):
+		host._vm._consume_rewind_skip(instruction.stable_key())
+		if host._token_is_active(token):
+			host._complete_instruction(token, instruction.next_pc())
+		return KonadoVirtualMachine.Result.COMPLETED
 	var handler: Callable = _handlers.get(instruction.opcode(), Callable())
 	if not handler.is_valid():
 		return _failed(
@@ -173,18 +179,14 @@ func _actor_motion(
 	var fallback := _actor_failure(
 		&"stage.actor_motion_failed", "actor.motion", actor_id, "", motion_name
 	)
+	# 未指定 duration 时编译器会填入 -1 哨兵：不能把它当成显式时长传给动作层，
+	# 否则动作层会判定“时长为 0 或负数”而立刻播完，动作在画面上根本看不到。
+	var params := {}
+	var motion_duration := float(instruction.value(&"duration"))
+	if motion_duration >= 0.0:
+		params["duration"] = motion_duration
 	var request_id := host._begin_stage_operation(token, fallback)
-	(
-		host
-		. stage_controller
-		. play_actor_motion(
-			actor_id,
-			motion_name,
-			{"duration": float(instruction.value(&"duration"))},
-			false,
-			request_id,
-		)
-	)
+	host.stage_controller.play_actor_motion(actor_id, motion_name, params, false, request_id)
 	return KonadoVirtualMachine.Result.WAITING
 
 

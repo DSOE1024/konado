@@ -22,6 +22,7 @@ var history_bytes_limit := DEFAULT_HISTORY_BYTES_LIMIT
 var checkpoint_bytes_limit := DEFAULT_CHECKPOINT_BYTES_LIMIT
 
 var _active_token: Dictionary = {}
+var _rewind_skip_keys: Dictionary = {}
 var _history_slots: Array[Dictionary] = []
 var _history_head := 0
 var _history_count := 0
@@ -185,7 +186,7 @@ func cancel() -> void:
 	_active_token.clear()
 
 
-func can_rollback(steps := 1, allow_cancelling_active := false) -> bool:
+func can_rollback(steps := 1, allow_cancelling_active := false, allow_barriers := false) -> bool:
 	if (
 		steps <= 0
 		or steps > _history_count
@@ -193,14 +194,19 @@ func can_rollback(steps := 1, allow_cancelling_active := false) -> bool:
 	):
 		return false
 	for offset in range(steps - 1, -1, -1):
-		if bool(_record_from_end(offset)["barrier"]):
-			return false
+		# allow_barriers 供“回到上一句”这类玩家回退使用：不可逆副作用不阻断回退，
+		# 由调用方保证重放时不重复执行这些指令。
+		if allow_barriers or not bool(_record_from_end(offset)["barrier"]):
+			continue
+		return false
 	return true
 
 
-func rollback(steps: int, restore: Callable, allow_cancelling_active := false) -> bool:
+func rollback(
+	steps: int, restore: Callable, allow_cancelling_active := false, allow_barriers := false
+) -> bool:
 	_last_restore_preserved = true
-	if not can_rollback(steps, allow_cancelling_active) or not restore.is_valid():
+	if not can_rollback(steps, allow_cancelling_active, allow_barriers) or not restore.is_valid():
 		return false
 	var restored_state := _current_state.duplicate(true)
 	for offset in range(steps):
@@ -228,6 +234,27 @@ func rollback(steps: int, restore: Callable, allow_cancelling_active := false) -
 	_current_state = restored_state
 	generation += 1
 	return true
+
+
+## 登记“回退时已跨越、重放时不得重复执行”的不可逆指令键。
+func _prepare_rewind_skips(keys: PackedStringArray) -> void:
+	for key: String in keys:
+		if not key.is_empty():
+			_rewind_skip_keys[key] = true
+
+
+## 跳过键带上剧本来源路径，避免不同剧本复用相同稳定键时误用。
+func _rewind_skip_key(instruction_key: String) -> String:
+	var source_path := program.source_path if program != null else ""
+	return "%s|%s" % [source_path, instruction_key]
+
+
+func _should_skip_rewind(instruction_key: String) -> bool:
+	return _rewind_skip_keys.has(_rewind_skip_key(instruction_key))
+
+
+func _consume_rewind_skip(instruction_key: String) -> void:
+	_rewind_skip_keys.erase(_rewind_skip_key(instruction_key))
 
 
 func create_checkpoint(label: String, state: Dictionary) -> String:
@@ -349,6 +376,8 @@ func clear_history() -> void:
 	_checkpoints.clear()
 	_checkpoint_order.clear()
 	_checkpoint_bytes_total = 0
+	# 已登记的重放跳过键指向的是被清掉的历史记录，必须同时失效。
+	_rewind_skip_keys.clear()
 
 
 func _last_failed_restore_preserved_state() -> bool:

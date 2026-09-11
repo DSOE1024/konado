@@ -769,8 +769,7 @@ func change_actor_state(
 	)
 
 
-## 播放指定演员的舞台层动作，例如 shake、jump_twice、bounce。
-## 这里不进入角色场景，避免把整体位移和内部表情/媒体播放混在一起。
+## 播放指定演员的舞台层动作（如 shake、jump_twice、bounce）；不进入角色场景，避免与内部表情/媒体播放混淆。
 func play_actor_motion(
 	actor_id: String,
 	motion_name: String,
@@ -937,9 +936,11 @@ func move_actor(
 		_operation_tracker().complete(request_id, false, _last_failure)
 		actor_moved.emit(false)
 		return
+	if actor_states.has(actor_id):
+		var target_position := clampi(target_h_division, 0, actor.horizontal_division)
+		actor_states[actor_id]["horizontal_position"] = target_position
 	if not actor.set_stage_position(actor.horizontal_division, target_h_division, duration):
-		# 目标值在补间开始时就会更新。重复请求同一目标时必须继续等待正在运行的
-		# 补间，不能提前释放 KonadoScript 的移动指令。
+		# 目标值在补间开始时就会更新；重复请求同一目标时必须继续等待正在运行的补间。
 		if not actor._is_stage_position_moving():
 			_operation_tracker().take_actor_move(actor_id)
 			_operation_tracker().complete(request_id, true)
