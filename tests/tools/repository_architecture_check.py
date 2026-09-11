@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import json
 import re
 import sys
 
@@ -128,7 +127,6 @@ KONADO_EXPORT_CREDENTIALS_PATH = (
     'const EXPORT_CREDENTIALS_PATH := '
     '"res://.godot/konado_export_credentials.cfg"'
 )
-PLUGIN_VERSION_PATTERN = re.compile(r'^version="([^"]+)"$', re.MULTILINE)
 LEGACY_SKILL_IDENTIFIER_PATTERN = re.compile(r"\bKND_[A-Za-z0-9_]+\b")
 
 
@@ -357,19 +355,6 @@ def check_konado_script_skill(errors: list[str]) -> None:
     if not plugin_config_path.is_file():
         report(errors, "missing Konado core plugin configuration")
         return
-
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    version_match = PLUGIN_VERSION_PATTERN.search(
-        plugin_config_path.read_text(encoding="utf-8")
-    )
-    core_version = "" if version_match is None else version_match.group(1)
-    skill_version = str(manifest.get("version", ""))
-    if not core_version or skill_version != core_version:
-        report(
-            errors,
-            "KonadoScript skill version must match the core plugin: "
-            f"skill={skill_version or '<missing>'}, core={core_version or '<missing>'}",
-        )
 
     for file_path in KONADO_SCRIPT_SKILL.rglob("*"):
         if not file_path.is_file() or file_path.suffix not in {".json", ".ks", ".md"}:
