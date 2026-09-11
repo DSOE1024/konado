@@ -30,13 +30,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      # Running actionlint without file arguments makes it discover every
-      # workflow under the nearest .github/workflows directory, including the
-      # reusable ones, and check them with the same rules. The official image
+      # Every workflow is checked in its own run so the log reports a PASS or
+      # FAIL line per file, together with the errors of the failing files.
+      # actionlint still resolves the repository root from each path argument,
+      # so local reusable workflow calls stay validated. The official image
       # bundles shellcheck and pyflakes, so run: scripts are checked too.
       - name: Check every workflow file
+        shell: bash
         run: |
-          docker run --rm \
-            -v "$PWD:/repo" \
-            -w /repo \
-            "rhysd/actionlint:${ACTIONLINT_VERSION}"
+          set -euo pipefail
+
+          mapfile -t files < <(
+            find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) | sort
+          )
+
+          if (( ${#files[@]} == 0 )); then
+            echo "::error::No workflow file was found under .github/workflows."
+            exit 1
+          fi
+
+          failed=0
+          for file in "${files[@]}"; do
+            if output="$(docker run --rm \
+              -v "$PWD:/repo" \
+              -w /repo \
+              "rhysd/actionlint:${ACTIONLINT_VERSION}" \
+              "$file" 2>&1)"; then
+              echo "PASS: $file"
+            else
+              echo "FAIL: $file"
+              printf '%s\n' "$output"
+              failed=$((failed + 1))
+            fi
+          done
+
+          if (( failed > 0 )); then
+            echo "::error::actionlint reported problems in ${failed} of ${#files[@]} workflow file(s)."
+            exit 1
+          fi
+          echo "All ${#files[@]} workflow file(s) passed actionlint."
