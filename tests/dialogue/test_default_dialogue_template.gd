@@ -47,6 +47,14 @@ func _run() -> void:
 		manager.save_panel.close_panel()
 		_expect(not manager.save_panel.visible, "the save panel can be closed")
 
+	_expect(manager.backlog_button != null, "default template exposes the backlog button")
+	_expect(manager.backlog_panel != null, "default template contains a backlog panel")
+	if manager.backlog_panel != null:
+		manager.backlog_button.pressed.emit()
+		_expect(manager.backlog_panel.visible, "the backlog button opens the backlog panel")
+		manager.backlog_panel.close_panel()
+		_expect(not manager.backlog_panel.visible, "the backlog panel can be closed")
+
 	manager.queue_free()
 	await process_frame
 	if _failures == 0:

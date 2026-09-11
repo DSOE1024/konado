@@ -1,3 +1,11 @@
+## 2.8.1 - Nanguoli
+
+### New Features
+
+- Added a bounded, atomic dialogue, choice, and screen-text history (backlog) with a default backlog panel
+
+### Improvements
+
 ## 2.8.0 - Nanguoli
 
 ### New Features

@@ -33,6 +33,12 @@ msgstr "Auto Play"
 msgid "KONADO_AUTO_PLAY_STOP"
 msgstr "Stop Auto Play"
 
+msgid "KONADO_BACKLOG"
+msgstr "Backlog"
+
+msgid "KONADO_BACKLOG_EMPTY"
+msgstr "No dialogue history yet"
+
 msgid "KONADO_CLOSE"
 msgstr "Close"
 

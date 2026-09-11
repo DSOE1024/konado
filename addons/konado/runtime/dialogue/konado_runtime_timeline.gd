@@ -141,6 +141,7 @@ func _resume_restored_timeline(resolution: StringName) -> void:
 	var host := _host()
 	if host == null:
 		return
+	host._history_coordinator().trim_to_vm()
 	var restored_program := host._vm.program
 	var failure_report := host._failure_controller()._detach_pending_report()
 	host._playback_generation += 1

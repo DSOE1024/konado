@@ -33,6 +33,12 @@ msgstr "オート再生"
 msgid "KONADO_AUTO_PLAY_STOP"
 msgstr "オート再生を停止"
 
+msgid "KONADO_BACKLOG"
+msgstr "バックログ"
+
+msgid "KONADO_BACKLOG_EMPTY"
+msgstr "まだ会話履歴はありません"
+
 msgid "KONADO_CLOSE"
 msgstr "閉じる"
 
