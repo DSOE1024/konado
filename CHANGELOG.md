@@ -2,13 +2,19 @@
 
 ### New Features
 
-- Added a bounded, atomic dialogue, choice, and screen-text history (backlog) with a default backlog panel
-- Backlog entries support click-to-rollback: clicking any line in the history returns to that line
-- Added rollback to the previous dialogue line.
+- Added a history log (Backlog) for dialogue, choices, and full-screen text, with a built-in history panel in the default dialogue template
+- History entries support click-to-rewind, returning execution to the clicked line
+- Added one-step rollback to the previous dialogue line
+- Added shared error codes (such as `AC-001`) for actor, background, music, camera, script, variable, compilation, resource, and achievement failures
+- Failure messages now report the failing function, file, resource, and script line
+- Added a unified result shape: data on success, a numbered error description on failure
+- Added an error-code reference table
 
 ### Improvements
 
-- Fixed an issue where actor move did not write the new position, so save/load and rollback now correctly restore character positions.
+- Fixed `actor move` not saving the new position, so save/load and rollback now restore character positions correctly
+- Fixed an engine error when looking up a stage actor with an empty actor name
+- Single-line script compilation now records the script path, so failures can point at the right script
 
 ## 2.8.0 - Nanguoli
 
