@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Keep this in sync with the actionlint image pinned in quality-check.yml.
+  # Pinned actionlint image; this workflow is the only place that pins it.
   ACTIONLINT_VERSION: 1.7.7
 
 jobs:
@@ -32,6 +32,9 @@ jobs:
 
       # Every workflow is checked in its own run so the log reports a PASS or
       # FAIL line per file, together with the errors of the failing files.
+      # -verbose makes actionlint log the project it resolved and
+      # "Found total N errors ... for <file>" even when a file is clean, so a
+      # successful run still proves that every file was parsed and checked.
       # actionlint still resolves the repository root from each path argument,
       # so local reusable workflow calls stay validated. The official image
       # bundles shellcheck and pyflakes, so run: scripts are checked too.
@@ -51,17 +54,20 @@ jobs:
 
           failed=0
           for file in "${files[@]}"; do
+            # -verbose must precede the file path: the flag parser stops at the
+            # first non-flag argument.
             if output="$(docker run --rm \
               -v "$PWD:/repo" \
               -w /repo \
               "rhysd/actionlint:${ACTIONLINT_VERSION}" \
+              -verbose \
               "$file" 2>&1)"; then
               echo "PASS: $file"
             else
               echo "FAIL: $file"
-              printf '%s\n' "$output"
               failed=$((failed + 1))
             fi
+            printf '%s\n' "$output"
           done
 
           if (( failed > 0 )); then
