@@ -78,6 +78,7 @@ const MAX_IMMEDIATE_INSTRUCTIONS_PER_PUMP := 4096
 @export var achievement_button: Button
 @export var settings_button: Button
 @export var backlog_button: Button
+@export var back_button: Button
 @export var save_panel: SAVE_PANEL_SCRIPT
 @export var backlog_panel: BACKLOG_PANEL_SCRIPT
 @export var save_feedback_label: Label
@@ -116,6 +117,9 @@ var current_shot: KonadoShot
 var dialogue_history: KonadoDialogueHistory:
 	get:
 		return _history_coordinator().history()
+var timeline: KonadoRuntimeTimeline:
+	get:
+		return _timeline()
 var pending_runtime_failure: Dictionary:
 	get:
 		return _failure_controller()._pending_report()
@@ -201,6 +205,8 @@ func _ready() -> void:
 		backlog_button.visible = backlog_panel != null
 		if backlog_panel != null:
 			backlog_button.pressed.connect(backlog_panel.open_panel)
+	if back_button != null:
+		back_button.pressed.connect(_timeline().step_back)
 	_failure_controller()._setup_logger()
 
 	if initialize_on_ready:
@@ -347,6 +353,7 @@ func _pump() -> void:
 		if SCRIPT_RUNTIME_DEBUGGER.before_instruction(self, instruction):
 			dialogue_state = DialogState.WAITING
 			break
+		_timeline().remember_line(instruction)
 		_active_token = _vm.begin_patch(_capture_instruction_state(instruction))
 		if _active_token.is_empty():
 			_fail_current("VM 无法开始当前指令", {}, instruction_context)

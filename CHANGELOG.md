@@ -3,8 +3,19 @@
 ### New Features
 
 - Added a bounded, atomic dialogue, choice, and screen-text history (backlog) with a default backlog panel
+- Backlog entries are now clickable: clicking a recorded line rolls back to it (`timeline.can_rollback_to_entry` / `rollback_to_entry`), reusing the atomic previous-line path
+- Added one-step dialogue rollback (previous line) with a Back button; barrier-aware, flicker-free, and re-records re-selected branches
 
 ### Improvements
+
+- Rollback now restores camera, actor, background, audio and UI state from a per-line snapshot instead of accumulated deltas
+- Rollback can now cross `jump` (`jump.script`): stepping back from a jumped script returns to the previous line of the source script, and advancing replays the jump
+- Fixed asynchronous camera commands (`asyncam`) being treated as irreversible side effects, which left the camera frozen after a rollback instead of running the move again
+- Fixed `actor motion` never playing: the instruction passed the compiler's `-1` "no duration" sentinel as an explicit duration, so the motion layer finished the animation in the same frame
+- `signal` is now replayed instead of skipped: a rollback may cross it and the replayed path re-emits it, so a branch the player re-picks re-runs its handler (exact when the handler only touches snapshot state). Achievement commands stay irreversible and are still never replayed.
+- Fixed choice options staying on screen when stepping back past a choice to an earlier line; the cancelled presentation is now dismissed
+- Fixed stepping back from a choice costing an extra click: the line an option block sits on is already visible, so rollback now skips it in one step
+- Fixed `actor move` not persisting the new position, so save/load and rollback now restore actor positions correctly
 
 ## 2.8.0 - Nanguoli
 

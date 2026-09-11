@@ -136,6 +136,8 @@ actor motion kona jump_twice
 
 制作动作层时，建议让动画作用在 `CharacterMount` 上，不要直接改角色槽位本身。这样不会破坏角色的站位计算。
 
+未显式给出时长时，动作按动画自身时长播放；写 `0` 表示禁用该动画；正数则把动画缩放到该时长。
+
 ## 背景场景
 
 背景场景建议继承 `KonadoBackgroundSceneBase`。背景列表中的每个背景资源需要配置：

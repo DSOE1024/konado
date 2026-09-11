@@ -75,6 +75,13 @@ dialogue_manager.dialogue_history.rollback_policy = (
 )
 ```
 
+Every row of the backlog is also a **rollback entry point**: clicking a committed entry rolls back to that line (see "Backlog jump" in [Dialogue Rollback (Previous Line)](./dialogue-rollback.md)). Entries carry the VM commit serial, so a custom UI can drive the same path:
+
+```gdscript
+dialogue_manager.timeline.can_rollback_to_entry(serial)
+dialogue_manager.timeline.rollback_to_entry(serial)
+```
+
 ## Default template
 
 The default dialogue template adds a "Backlog" button to the function bar and instantiates `res://addons/konado/templates/default/backlog_panel.tscn`, whose script is `res://addons/konado/runtime/ui/backlog/konado_backlog_panel.gd`. If a custom template leaves these exports unset, the feature is disabled automatically and nothing else is affected.

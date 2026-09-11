@@ -501,7 +501,7 @@ func _test_vm_limits_and_barriers() -> void:
 	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
 	var shot := compiler.compile_string(
-		'signal "external"\n"Kona" "Line"\nend', "res://tests/barrier-vm.ks"
+		'achievement unlock "external"\n"Kona" "Line"\nend', "res://tests/barrier-vm.ks"
 	)
 	_expect(shot != null, "rollback barrier fixture compiles")
 	if shot == null:
@@ -514,6 +514,19 @@ func _test_vm_limits_and_barriers() -> void:
 	_expect(vm.commit(token, 1, {"value": 2}), "VM commits reversible instruction")
 	_expect(vm.can_rollback(1), "rollback remains available after a reversible instruction")
 	_expect(not vm.can_rollback(2), "rollback cannot cross an external side-effect barrier")
+	# signal 是可重放的一次性副作用：跨越它不会被拒绝（重放时会重新发射）。
+	var replayable_shot := compiler.compile_string(
+		'signal "external"\n"Kona" "Line"\nend', "res://tests/signal-vm.ks"
+	)
+	_expect(replayable_shot != null, "replayable signal fixture compiles")
+	if replayable_shot != null:
+		var replayable_vm := KonadoVirtualMachine.new()
+		_expect(replayable_vm.install(replayable_shot.program), "replayable signal installs")
+		token = replayable_vm.begin({"value": 0})
+		_expect(replayable_vm.commit(token, 1, {"value": 1}), "VM commits the signal instruction")
+		token = replayable_vm.begin({"value": 1})
+		_expect(replayable_vm.commit(token, 1, {"value": 2}), "VM commits a reversible instruction")
+		_expect(replayable_vm.can_rollback(2), "rollback crosses a replayable signal")
 	var checkpoint := vm.create_checkpoint("before-resize", {"value": 2})
 	_expect(not checkpoint.is_empty(), "VM creates an explicit checkpoint")
 	vm.history_limit = 1

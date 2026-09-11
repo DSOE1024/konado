@@ -13,6 +13,7 @@ func _run() -> void:
 	await _test_stop_discards_pending_entry()
 	await _test_rollback_keeps_history_in_sync()
 	await _test_panel_renders_committed_entries()
+	await _test_panel_entry_click_rolls_back()
 	await _test_records_choice_options_and_selection()
 	await _test_records_screen_text_lines()
 	await _test_keep_policy_preserves_history()
@@ -205,6 +206,73 @@ func _test_panel_renders_committed_entries() -> void:
 		panel.close_panel()
 		_expect(not panel.visible, "backlog panel closes")
 	await _free_node(manager)
+
+
+## Backlog 面板的行是“跳转入口”：点击已提交的行会关闭面板并回到那一句；
+## 当前显示的行（pending）只作展示，不可点击。
+func _test_panel_entry_click_rolls_back() -> void:
+	var manager := await _create_manager()
+	manager.set_shot(_compile_shot('"Kona" "one" [id=one]\n"Kona" "two" [id=two]\nend'))
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:one", KonadoDialogueManager.DialogState.WAITING
+	)
+	await _finish_current_dialogue(manager)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:two", KonadoDialogueManager.DialogState.WAITING
+	)
+	var panel := manager.backlog_panel
+	_expect(panel != null, "default template exposes a backlog panel")
+	if panel == null:
+		await _free_node(manager)
+		return
+	panel.open_panel()
+	_expect_equal(
+		panel.entry_container.get_child_count(),
+		2,
+		"the panel renders the committed and pending rows"
+	)
+	var committed_row := panel.entry_container.get_child(0) as Control
+	var pending_row := panel.entry_container.get_child(1) as Control
+	_expect(committed_row != null, "the committed row is a Control")
+	_expect(
+		int(committed_row.get_meta("konado_entry_serial", 0)) > 0,
+		"a committed row carries the VM serial it can roll back to",
+	)
+	_expect_equal(
+		int(pending_row.get_meta("konado_entry_serial", 0)),
+		0,
+		"the displayed line stays pending and keeps the default cursor",
+	)
+	var activated: Array[int] = []
+	panel.entry_activated.connect(func(serial: int) -> void: activated.append(serial))
+	committed_row.gui_input.emit(_left_click())
+	_expect(not panel.visible, "clicking a committed row closes the backlog panel")
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:one", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(manager.dialogue_box.dialogue_text, "one", "the clicked line is replayed")
+	_expect_equal(
+		activated,
+		[int(committed_row.get_meta("konado_entry_serial", 0))],
+		"the panel reports the rolled back serial",
+	)
+	pending_row.gui_input.emit(_left_click())
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:one", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		manager.dialogue_box.dialogue_text, "one", "clicking a pending row does not move playback"
+	)
+	_expect_equal(activated.size(), 1, "a pending row never reports an activation")
+	await _free_node(manager)
+
+
+func _left_click() -> InputEventMouseButton:
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = false
+	return click
 
 
 func _test_records_choice_options_and_selection() -> void:

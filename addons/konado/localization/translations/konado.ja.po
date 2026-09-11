@@ -33,6 +33,9 @@ msgstr "オート再生"
 msgid "KONADO_AUTO_PLAY_STOP"
 msgstr "オート再生を停止"
 
+msgid "KONADO_BACK"
+msgstr "戻る"
+
 msgid "KONADO_BACKLOG"
 msgstr "バックログ"
 

@@ -63,6 +63,13 @@ dialogue_manager.dialogue_history.rollback_policy = (
 )
 ```
 
+기록 패널의 각 행은 **되돌리기 진입점**이기도 합니다: 커밋된 항목을 클릭하면 그 줄로 되돌아갑니다(자세한 내용은 [대화 되돌리기(이전 대사)](./dialogue-rollback.md)의 「Backlog 점프」). 항목은 VM 커밋 일련번호를 가지므로 자체 UI에서도 같은 경로를 호출할 수 있습니다:
+
+```gdscript
+dialogue_manager.timeline.can_rollback_to_entry(serial)
+dialogue_manager.timeline.rollback_to_entry(serial)
+```
+
 ## 기본 템플릿
 
 기본 대화 템플릿은 기능 표시줄에 "백로그" 버튼을 추가하고 `res://addons/konado/templates/default/backlog_panel.tscn`(스크립트: `res://addons/konado/runtime/ui/backlog/konado_backlog_panel.gd`)을 생성합니다. 사용자 지정 템플릿에서 이 내보내기를 설정하지 않으면 기능은 자동으로 비활성화되며 다른 동작에 영향을 주지 않습니다.
