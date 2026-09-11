@@ -1,0 +1,42 @@
+name: Workflow Lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-lint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep this in sync with the actionlint image pinned in quality-check.yml.
+  ACTIONLINT_VERSION: 1.7.7
+
+jobs:
+  actionlint:
+    name: Lint all workflows
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Running actionlint without file arguments makes it discover every
+      # workflow under the nearest .github/workflows directory, including the
+      # reusable ones, and check them with the same rules. The official image
+      # bundles shellcheck and pyflakes, so run: scripts are checked too.
+      - name: Check every workflow file
+        run: |
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            "rhysd/actionlint:${ACTIONLINT_VERSION}"
