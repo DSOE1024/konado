@@ -20,8 +20,8 @@ Console example: `[AC-001] 显示角色失败：角色 ID 不能为空；于 Kon
 `actor=，指令=ks:res://sample/demo/demo.ks:12，位置=res://sample/demo/demo.ks:12`.
 Prefer `KonadoResult` for new return values: `{"ok": true, "value": …}` / `KonadoResult.error(code, message, context)`.
 
-Runnable samples live in `sample/error_gallery/` (12 cases across AC / AU / CA / AH / VA
-and the compiler); the automated check is `tests/dialogue/test_error_gallery.gd`.
+Runnable samples live in `sample/error_gallery/` (11 cases across AC / AU / CA / AH / VA);
+the automated check is `tests/dialogue/test_error_gallery.gd`.
 
 ## Full table
 

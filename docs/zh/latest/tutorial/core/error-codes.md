@@ -19,7 +19,7 @@ Konado 的每一次失败都有**稳定错误码** `<模块前缀>-<三位序号
 `actor=，指令=ks:res://sample/demo/demo.ks:12，位置=res://sample/demo/demo.ks:12`。
 新增返回值建议统一使用 `KonadoResult`：成功 `{"ok": true, "value": …}`，失败 `KonadoResult.error(code, message, context)`。
 
-可运行示例：`sample/error_gallery/`（12 条样本，覆盖 AC / AU / CA / AH / VA 与编译期诊断）；
+可运行示例：`sample/error_gallery/`（11 条样本，覆盖 AC / AU / CA / AH / VA）；
 自动断言见 `tests/dialogue/test_error_gallery.gd`。
 
 ## 错误码总表

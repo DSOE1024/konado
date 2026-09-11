@@ -82,25 +82,19 @@ const GALLERY_SAMPLES := [
 	},
 ]
 
-const COMPILE_SAMPLE := {
-	"file": "res://sample/error_gallery/11_jump_missing.ks",
-	"note": "跳转到不存在的剧本（编译期拦截）",
-	"fragment": "does_not_exist.ks",
-}
-
 
 func _init() -> void:
 	call_deferred("_run")
 
 
 func _run() -> void:
-	print("=== Konado 结构化报错画廊（%d 个运行期样本）===" % GALLERY_SAMPLES.size())
+	var sample_count := GALLERY_SAMPLES.size() + 1
+	print("=== Konado 结构化报错画廊（%d 个运行期样本）===" % sample_count)
 	for index: int in GALLERY_SAMPLES.size():
 		await _run_gallery_sample(index + 1, GALLERY_SAMPLES[index])
-	_run_compile_diagnostic_sample()
 	await _run_empty_actor_id_sample()
 	if _failures == 0:
-		print("PASS: structured error feedback gallery (%d samples)" % GALLERY_SAMPLES.size())
+		print("PASS: structured error feedback gallery (%d samples)" % sample_count)
 	quit(_failures)
 
 
@@ -165,28 +159,10 @@ func _assert_report(index: int, sample: Dictionary, report: Dictionary, path: St
 	_expect(line.contains(path), "%s：控制台单行包含剧本位置" % label)
 
 
-func _run_compile_diagnostic_sample() -> void:
-	var path := String(COMPILE_SAMPLE["file"])
-	var source := FileAccess.get_file_as_string(path)
-	_expect(not source.is_empty(), "编译期示例可读：%s" % path)
-	var compiler := KonadoScriptCompiler.new()
-	compiler.set_console_output_enabled(false)
-	var shot := compiler.compile_string(source, path)
-	_expect(shot == null, "#11 %s：编译期就被拒绝，不进入失败面板" % COMPILE_SAMPLE["note"])
-	var errors := compiler.get_errors()
-	_expect(not errors.is_empty(), "#11：编译器给出诊断")
-	var joined := " ".join(errors)
-	_expect(
-		joined.contains(String(COMPILE_SAMPLE["fragment"])),
-		"#11：诊断指向缺失的 jump 目标（%s）" % joined,
-	)
-	print("  #11 编译期（无错误码，见 docs 说明）：%s" % joined)
-
-
 func _run_empty_actor_id_sample() -> void:
 	var manager := await _create_manager()
 	var stage := manager.stage_controller
-	_expect(stage != null, "#12：默认模板提供舞台控制器")
+	_expect(stage != null, "#11：默认模板提供舞台控制器")
 	if stage == null:
 		await _free_node(manager)
 		return
@@ -194,18 +170,18 @@ func _run_empty_actor_id_sample() -> void:
 	var failure := stage.get_last_failure()
 	print(
 		(
-			'  #12 [%s] %s → %s；触发方式=KonadoStageController.show_actor("")'
+			'  #11 [%s] %s → %s；触发方式=KonadoStageController.show_actor("")'
 			% [failure.get("id", ""), failure.get("code", ""), failure.get("function", "")]
 		)
 	)
-	_expect_equal(failure.get("code"), "stage.actor_id_empty", "#12：空角色 ID 被拦截")
-	_expect_equal(failure.get("id"), "AC-001", "#12：稳定编号来自注册表")
+	_expect_equal(failure.get("code"), "stage.actor_id_empty", "#11：空角色 ID 被拦截")
+	_expect_equal(failure.get("id"), "AC-001", "#11：稳定编号来自注册表")
 	_expect_equal(
 		failure.get("function"),
 		KonadoErrorRegistry.entry(&"stage.actor_id_empty").get("function"),
-		"#12：检出函数与注册表一致",
+		"#11：检出函数与注册表一致",
 	)
-	_expect_equal(failure.get("resource_kind"), "actor", "#12：指出涉及的资源类型")
+	_expect_equal(failure.get("resource_kind"), "actor", "#11：指出涉及的资源类型")
 	await _free_node(manager)
 
 

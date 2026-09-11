@@ -10,7 +10,7 @@ Konado 的每一次失敗都有**穩定錯誤碼** `<模組前綴>-<三位序號
 主控台示例：`[AC-001] 显示角色失败：角色 ID 不能为空；于 KonadoStageController.show_actor，`
 `actor=，指令=ks:res://sample/demo/demo.ks:12，位置=res://sample/demo/demo.ks:12`。
 
-可執行範例：`sample/error_gallery/`（12 筆樣本，涵蓋 AC / AU / CA / AH / VA 與編譯期診斷）；
+可執行範例：`sample/error_gallery/`（11 筆樣本，涵蓋 AC / AU / CA / AH / VA）；
 自動斷言見 `tests/dialogue/test_error_gallery.gd`。
 
 ## 錯誤碼總表
